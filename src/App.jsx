@@ -89,7 +89,7 @@ function makePerson({ name, emoji, layer }) {
   const baseVal = LAYER_BASE_DIMS[layer] || 10;
   const dims = { depth: baseVal, trust: baseVal, reciprocity: baseVal, interaction: baseVal, sharedExperiences: baseVal, listening: baseVal };
   const overall = computeOverall(dims);
-  return { id: uid(), name, emoji, layer: layer || 1, dims, overall, interests: [], preferences: [], plans: [], experiences: [], important: [], goals: [], history: [{ date: formatAbsoluteDate(new Date()), at: toISODate(new Date()), value: overall }], timeline: [{ label: 'First met', date: 'Today' }] };
+  return { id: uid(), name, emoji, layer: layer || 1, dims, overall, interests: [], preferences: [], plans: [], experiences: [], important: [], goals: [], history: [{ date: formatAbsoluteDate(new Date()), at: toISODate(new Date()), value: overall }], timeline: [{ label: 'First met', at: toISODate(new Date()) }] };
 }
 
 const CATEGORIES = [
@@ -269,8 +269,8 @@ function parseDaysAgo(str) {
 // --- Date helpers for the calendar picker (item request: "timestamp buttons
 // with working calendar"). Journal entries store the picked day as an ISO
 // `at` date and derive their 'Today' / '2 days ago' label from it when
-// rendered (see journalDaysAgo below). Info items still store the relative
-// label itself. Events (which can be in the future) store a real ISO date,
+// rendered (see storedDay below), as do info items and timeline steps.
+// Events (which can be in the future) store a real ISO date,
 // since "3 days ago" doesn't make sense for something that hasn't happened yet.
 function startOfDay(d) { const c = new Date(d); c.setHours(0, 0, 0, 0); return c; }
 const WEEKDAY_SHORT = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -375,52 +375,75 @@ function pushHistoryPoint(history, point) {
   return sortHistory([...history, point]);
 }
 
-// Journal entries store the day they happened as `at` ('YYYY-MM-DD'), and
-// the 'Today' / '3 days ago' label and "this week" are derived from it at
-// render time. They used to store the label itself, computed once when
-// logged, so an entry read 'Today' forever. An entry without a usable `at`
-// falls back to its old `date` label, read as of `now`.
+// Journal entries, info items ("Last mentioned") and timeline steps all store
+// their day as `at` ('YYYY-MM-DD'), and the 'Today' / '3 days ago' label is
+// derived from it at render time. They used to store the label itself,
+// computed once, so anything saved as 'Today' read 'Today' forever. A record
+// without a usable `at` falls back to its old label — journal `date`, info
+// item `updated`, timeline `date` — read as of `now`.
 function parseISODay(s) {
   if (typeof s !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(s)) return null;
   const d = new Date(s + 'T00:00:00');
   return isNaN(d.getTime()) ? null : d;
 }
-function journalEntryDay(entry, now = new Date()) {
-  const at = parseISODay(entry && entry.at);
-  if (at) return at;
-  const label = entry && entry.date;
-  const daysAgo = parseDaysAgo(label);
-  if (daysAgo !== 999) { const d = startOfDay(now); d.setDate(d.getDate() - daysAgo); return d; }
-  return label ? parseAbsoluteLabel(label, now) : null;
+function storedDay(at, legacyLabel, now = new Date()) {
+  const d = parseISODay(at);
+  if (d) return d;
+  const daysAgo = parseDaysAgo(legacyLabel);
+  if (daysAgo !== 999) { const day = startOfDay(now); day.setDate(day.getDate() - daysAgo); return day; }
+  return legacyLabel ? parseAbsoluteLabel(legacyLabel, now) : null;
 }
-// 999 for an entry with no readable date, matching parseDaysAgo's "long ago".
-function journalDaysAgo(entry, now = new Date()) {
-  const d = journalEntryDay(entry, now);
+// 999 for a record with no readable date, matching parseDaysAgo's "long ago".
+function storedDaysAgo(at, legacyLabel, now = new Date()) {
+  const d = storedDay(at, legacyLabel, now);
   return d ? Math.max(0, Math.round((startOfDay(now) - d) / 86400000)) : 999;
 }
-function journalDateLabel(entry, now = new Date()) {
-  const d = journalEntryDay(entry, now);
-  return d ? dateToRelativeLabel(d, now) : String((entry && entry.date) || '—');
+function storedDateLabel(at, legacyLabel, now = new Date()) {
+  const d = storedDay(at, legacyLabel, now);
+  return d ? dateToRelativeLabel(d, now) : String(legacyLabel || '—');
 }
+
+function journalDaysAgo(entry, now = new Date()) { return storedDaysAgo(entry && entry.at, entry && entry.date, now); }
+function journalDateLabel(entry, now = new Date()) { return storedDateLabel(entry && entry.at, entry && entry.date, now); }
 // A rolling 7 days, not the calendar week.
 function isJournalThisWeek(entry, now = new Date()) { return journalDaysAgo(entry, now) < 7; }
-// Gives legacy entries (saved before `at` existed) a fixed `at`, on load
-// and on import. A stored relative label doesn't say *when* it was 'Today',
-// so it's read as of `anchor`: now (the first launch after this change) for
+function infoItemDaysAgo(item, now = new Date()) { return storedDaysAgo(item && item.at, item && item.updated, now); }
+function infoItemDateLabel(item, now = new Date()) { return storedDateLabel(item && item.at, item && item.updated, now); }
+// A step with no date at all (the "Current: <layer>" step) keeps its text, e.g. 'Now'.
+function timelineDateLabel(step, now = new Date()) { return storedDateLabel(step && step.at, step && step.date, now); }
+
+// Gives legacy records (saved before `at` existed) a fixed `at`, on load and
+// on import. A stored relative label doesn't say *when* it was 'Today', so
+// it's read as of `anchor`: now (the first launch after this change) for
 // saved data, or a backup's `exportedAt`, since no label in a backup can be
-// newer than the export. Either way an old entry is never dated earlier
+// newer than the export. Either way an old record is never dated earlier
 // than it really happened, so nobody is flagged as "haven't caught up"
 // sooner than they should be. Absolute seed labels ('Aug 31') parse
-// exactly. Entries with no readable date are left as they are.
+// exactly. Records with no readable date are left as they are.
+function backfillAnchor(anchor) {
+  const parsed = anchor ? new Date(anchor) : new Date();
+  return isNaN(parsed.getTime()) ? new Date() : parsed;
+}
+function backfillDated(records, legacyKey, ref, staleKeys = []) {
+  return records.map(r => {
+    if (!r || parseISODay(r.at)) return r;
+    const d = storedDay(r.at, r[legacyKey], ref);
+    if (!d) return r;
+    const next = { ...r, at: toISODate(d) };
+    [legacyKey, ...staleKeys].forEach(k => { delete next[k]; }); // stale once `at` exists; nothing reads them
+    return next;
+  });
+}
 function backfillJournalDates(journal, anchor) {
-  const parsedAnchor = anchor ? new Date(anchor) : new Date();
-  const ref = isNaN(parsedAnchor.getTime()) ? new Date() : parsedAnchor;
-  return journal.map(j => {
-    if (parseISODay(j && j.at)) return j;
-    const d = journalEntryDay(j, ref);
-    if (!d) return j;
-    const next = { ...j, at: toISODate(d) };
-    delete next.date; delete next.isThisWeek; // stale once `at` exists; nothing reads them
+  return backfillDated(journal, 'date', backfillAnchor(anchor), ['isThisWeek']);
+}
+function backfillPeopleDates(people, anchor) {
+  const ref = backfillAnchor(anchor);
+  return people.map(p => {
+    if (!p || typeof p !== 'object') return p;
+    const next = { ...p };
+    CATEGORIES.forEach(c => { if (Array.isArray(p[c.key])) next[c.key] = backfillDated(p[c.key], 'updated', ref); });
+    if (Array.isArray(p.timeline)) next.timeline = backfillDated(p.timeline, 'date', ref);
     return next;
   });
 }
@@ -581,12 +604,12 @@ function homeGoalTitle(goal, name) {
   return goal.title;
 }
 
-function generateSuggestions(person) {
+function generateSuggestions(person, now = new Date()) {
   const candidates = [];
-  person.plans.filter(i => !i.archived).forEach(it => { const d = parseDaysAgo(it.updated); if (d >= 3) candidates.push({ d, headline: `You haven't asked about "${it.text}" in a while.`, body: "You could ask what's new with it, or how they're feeling about it." }); });
-  person.important.filter(i => !i.archived).forEach(it => { const d = parseDaysAgo(it.updated); if (d >= 3) candidates.push({ d, headline: `${person.name} mentioned "${it.text}" a little while ago.`, body: 'It might be worth asking how that went.' }); });
-  person.experiences.filter(i => !i.archived).forEach(it => { const d = parseDaysAgo(it.updated); if (d >= 7) candidates.push({ d, headline: `${person.name} once told you about "${it.text}".`, body: 'You could bring it up if it feels natural.' }); });
-  person.interests.filter(i => !i.archived).forEach(it => { const d = parseDaysAgo(it.updated); if (d >= 7) candidates.push({ d, headline: `${person.name} is into ${it.text}.`, body: 'Ask what got them into it, or bring it up next time you talk.' }); });
+  person.plans.filter(i => !i.archived).forEach(it => { const d = infoItemDaysAgo(it, now); if (d >= 3) candidates.push({ d, headline: `You haven't asked about "${it.text}" in a while.`, body: "You could ask what's new with it, or how they're feeling about it." }); });
+  person.important.filter(i => !i.archived).forEach(it => { const d = infoItemDaysAgo(it, now); if (d >= 3) candidates.push({ d, headline: `${person.name} mentioned "${it.text}" a little while ago.`, body: 'It might be worth asking how that went.' }); });
+  person.experiences.filter(i => !i.archived).forEach(it => { const d = infoItemDaysAgo(it, now); if (d >= 7) candidates.push({ d, headline: `${person.name} once told you about "${it.text}".`, body: 'You could bring it up if it feels natural.' }); });
+  person.interests.filter(i => !i.archived).forEach(it => { const d = infoItemDaysAgo(it, now); if (d >= 7) candidates.push({ d, headline: `${person.name} is into ${it.text}.`, body: 'Ask what got them into it, or bring it up next time you talk.' }); });
   candidates.sort((a, b) => b.d - a.d);
   return candidates.slice(0, 2);
 }
@@ -706,6 +729,9 @@ const SCENARIOS = {
 
 /* ============================== SEED DATA ============================== */
 
+// Seed info items and timeline steps carry legacy `updated` / `date` labels
+// instead of `at`: backfillPeopleDates resolves them whenever the sample is
+// loaded, so 'Today' is the day it's loaded.
 const INITIAL_PEOPLE = [
   {
     id: 'alex', name: 'Alex', emoji: '🧑', layer: 3,
@@ -1087,7 +1113,7 @@ function Timeline({ steps }) {
           </div>
           <div className="pb-4">
             <p className="text-sm font-medium" style={{ color: s.current ? COLORS.accent : COLORS.ink }}>{s.label}</p>
-            <p className="text-xs" style={{ color: COLORS.inkSoft }}>{s.date}</p>
+            <p className="text-xs" style={{ color: COLORS.inkSoft }}>{timelineDateLabel(s)}</p>
           </div>
         </div>
       ))}
@@ -1171,7 +1197,7 @@ function InfoItemRow({ item, onSave, onDelete, onToggleTemporary, onToggleArchiv
           ) : (
             <p className="text-sm" style={{ color: COLORS.ink }}>{item.text}{item.temporary && <span className="text-xs ml-1.5" style={{ color: COLORS.warn }}>(temporary)</span>}</p>
           )}
-          <p className="text-xs mt-0.5" style={{ color: COLORS.inkSoft }}>Last mentioned: {item.updated}</p>
+          <p className="text-xs mt-0.5" style={{ color: COLORS.inkSoft }}>Last mentioned: {infoItemDateLabel(item)}</p>
         </div>
       </div>
       <div className="flex items-center gap-1 shrink-0 pt-0.5">
@@ -3401,7 +3427,7 @@ function AddPersonModal({ onClose, onSave }) {
 
 function LayersApp() {
   const [saved] = useState(() => loadSaved());
-  const [people, setPeople] = useState(() => (saved && Array.isArray(saved.people)) ? saved.people : INITIAL_PEOPLE);
+  const [people, setPeople] = useState(() => backfillPeopleDates((saved && Array.isArray(saved.people)) ? saved.people : INITIAL_PEOPLE));
   const [journal, setJournal] = useState(() => backfillJournalDates((saved && Array.isArray(saved.journal)) ? saved.journal : INITIAL_JOURNAL));
   const [generalGoals, setGeneralGoals] = useState(() => (saved && Array.isArray(saved.generalGoals)) ? saved.generalGoals : INITIAL_GENERAL_GOALS);
   const [events, setEvents] = useState(() => (saved && Array.isArray(saved.events)) ? saved.events : []);
@@ -3603,9 +3629,8 @@ function LayersApp() {
 
   function handleLogSubmit({ personIds, type, meaningfulness, notes, activeListening, summary, pickedDate }) {
     const pd = pickedDate || new Date();
-    const dLabel = dateToRelativeLabel(pd); // for new info items' `updated` label
     const chartDate = formatAbsoluteDate(pd); // for history/goal charts — stays correct forever
-    const chartAt = toISODate(pd); // also the journal entry's `at`
+    const chartAt = toISODate(pd); // also the `at` of the journal entry and any notes saved
     const loggedNames = personIds.map(id => (people.find(p => p.id === id) || {}).name).filter(Boolean);
     const levelUps = [];
     personIds.forEach(personId => {
@@ -3638,7 +3663,7 @@ function LayersApp() {
         const newCats = {};
         CATEGORIES.forEach(c => { newCats[c.key] = p[c.key]; });
         notes.forEach(n => {
-          const item = { id: uid(), emoji: categoryMeta(n.category).emoji, text: n.text, updated: dLabel, temporary: false, archived: false };
+          const item = { id: uid(), emoji: categoryMeta(n.category).emoji, text: n.text, at: chartAt, temporary: false, archived: false };
           newCats[n.category] = [item, ...newCats[n.category]];
         });
         const why = [];
@@ -3723,16 +3748,16 @@ function LayersApp() {
   function openQuickAddInterest(personId) { setQuickInterestPersonId(personId); setQuickInterestOpen(true); }
   function closeQuickAddInterest() { setQuickInterestOpen(false); setQuickInterestPersonId(null); }
   function handleQuickAddInterestSave({ emoji, text }) {
-    setPeople(prev => prev.map(p => p.id !== quickInterestPersonId ? p : { ...p, interests: [{ id: uid(), emoji, text, updated: 'Today', temporary: false, archived: false }, ...p.interests] }));
+    setPeople(prev => prev.map(p => p.id !== quickInterestPersonId ? p : { ...p, interests: [{ id: uid(), emoji, text, at: toISODate(new Date()), temporary: false, archived: false }, ...p.interests] }));
   }
   function handleAddInfoSave({ emoji, text, temporary }) {
     const { personId, category } = addInfoTarget;
-    setPeople(prev => prev.map(p => p.id !== personId ? p : { ...p, [category]: [{ id: uid(), emoji, text, updated: 'Today', temporary: !!temporary, archived: false }, ...p[category]] }));
+    setPeople(prev => prev.map(p => p.id !== personId ? p : { ...p, [category]: [{ id: uid(), emoji, text, at: toISODate(new Date()), temporary: !!temporary, archived: false }, ...p[category]] }));
     pushToast(`Added to ${categoryMeta(category).label}`);
     setAddInfoOpen(false); setAddInfoTarget(null);
   }
   function handleSaveInfoItem(personId, category, itemId, text) {
-    setPeople(prev => prev.map(p => p.id !== personId ? p : { ...p, [category]: p[category].map(it => it.id === itemId ? { ...it, text, updated: 'Today' } : it) }));
+    setPeople(prev => prev.map(p => p.id !== personId ? p : { ...p, [category]: p[category].map(it => it.id === itemId ? { ...it, text, at: toISODate(new Date()) } : it) }));
   }
   function handleDeleteInfoItem(personId, category, itemId, text) {
     askConfirm({
@@ -3750,7 +3775,7 @@ function LayersApp() {
     setPeople(prev => prev.map(p => p.id !== personId ? p : { ...p, [category]: p[category].map(it => it.id === itemId ? { ...it, archived: !it.archived } : it) }));
   }
   function handleApproveInfo(personId, category, text, temporary) {
-    setPeople(prev => prev.map(p => p.id !== personId ? p : { ...p, [category]: [{ id: uid(), emoji: categoryMeta(category).emoji, text, updated: 'Today', temporary: !!temporary, archived: false }, ...p[category]] }));
+    setPeople(prev => prev.map(p => p.id !== personId ? p : { ...p, [category]: [{ id: uid(), emoji: categoryMeta(category).emoji, text, at: toISODate(new Date()), temporary: !!temporary, archived: false }, ...p[category]] }));
     pushToast(`Saved to ${categoryMeta(category).label}`);
   }
 
@@ -3854,7 +3879,7 @@ function LayersApp() {
       confirmLabel: 'Restore samples',
       danger: true,
       onConfirm: () => {
-        setPeople(INITIAL_PEOPLE); setJournal(backfillJournalDates(INITIAL_JOURNAL)); setGeneralGoals(INITIAL_GENERAL_GOALS); setSkills(INITIAL_SKILLS);
+        setPeople(backfillPeopleDates(INITIAL_PEOPLE)); setJournal(backfillJournalDates(INITIAL_JOURNAL)); setGeneralGoals(INITIAL_GENERAL_GOALS); setSkills(INITIAL_SKILLS);
         setScreen({ name: 'tabs' }); setActiveTab('home');
         pushToast('Sample data restored');
       },
@@ -3904,7 +3929,7 @@ function LayersApp() {
           confirmLabel: 'Import',
           danger: true,
           onConfirm: () => {
-            setPeople(Array.isArray(data.people) ? data.people : []);
+            setPeople(Array.isArray(data.people) ? backfillPeopleDates(data.people, data.exportedAt) : []);
             // Backups from before `at` existed: read their labels as of the export.
             setJournal(Array.isArray(data.journal) ? backfillJournalDates(data.journal, data.exportedAt) : []);
             setGeneralGoals(Array.isArray(data.generalGoals) ? data.generalGoals : []);
@@ -3930,7 +3955,7 @@ function LayersApp() {
       setPeople((newPeople || []).map(p => makePerson({ name: p.name, emoji: p.emoji, layer: 1 })));
       setJournal([]); setGeneralGoals([]); setSkills(EMPTY_SKILLS);
     } else {
-      setPeople(INITIAL_PEOPLE); setJournal(backfillJournalDates(INITIAL_JOURNAL)); setGeneralGoals(INITIAL_GENERAL_GOALS); setSkills(INITIAL_SKILLS);
+      setPeople(backfillPeopleDates(INITIAL_PEOPLE)); setJournal(backfillJournalDates(INITIAL_JOURNAL)); setGeneralGoals(INITIAL_GENERAL_GOALS); setSkills(INITIAL_SKILLS);
     }
     setOnboarded(true);
     setScreen({ name: 'tabs' }); setActiveTab('home');
@@ -4038,6 +4063,6 @@ function LayersApp() {
 
 // Named exports of pure logic, purely so they're unit-testable in isolation
 // (see src/logic.test.js). None of this affects the default export/rendering.
-export { clamp, computeOverall, layerForOverall, parseDaysAgo, summaryFor, homeGoalTitle, updateStatusText, getCheckInSuggestions, makePerson, generateSuggestions, journalDaysAgo, journalDateLabel, isJournalThisWeek, backfillJournalDates };
+export { clamp, computeOverall, layerForOverall, parseDaysAgo, summaryFor, homeGoalTitle, updateStatusText, getCheckInSuggestions, makePerson, generateSuggestions, journalDaysAgo, journalDateLabel, isJournalThisWeek, backfillJournalDates, infoItemDaysAgo, infoItemDateLabel, timelineDateLabel, backfillPeopleDates };
 
 export default LayersApp;

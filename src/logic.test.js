@@ -14,6 +14,10 @@ import {
   journalDateLabel,
   isJournalThisWeek,
   backfillJournalDates,
+  infoItemDaysAgo,
+  infoItemDateLabel,
+  timelineDateLabel,
+  backfillPeopleDates,
 } from './App.jsx';
 
 // Local-time dates, mid-afternoon so a test never sits on a day boundary.
@@ -278,6 +282,76 @@ describe('makePerson', () => {
     expect(p.interests).toEqual([]);
     expect(p.history.length).toBe(1);
   });
+  it('dates the "First met" timeline step instead of storing the word Today', () => {
+    const p = makePerson({ name: 'Sam', emoji: '🧑', layer: 1 });
+    expect(p.timeline).toHaveLength(1);
+    expect(p.timeline[0].label).toBe('First met');
+    expect(p.timeline[0].at).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+    expect(p.timeline[0].date).toBeUndefined();
+  });
+});
+
+describe('infoItemDaysAgo / infoItemDateLabel', () => {
+  it('ages an item saved with an ISO `at` date', () => {
+    const item = { text: 'a trip', at: '2026-09-25' };
+    expect(infoItemDaysAgo(item, NOW)).toBe(8);
+    expect(infoItemDateLabel(item, NOW)).toBe('1 week ago');
+    expect(infoItemDateLabel(item, day(2026, 9, 25))).toBe('Today');
+  });
+  it('prefers `at` over a stale legacy `updated` label', () => {
+    expect(infoItemDaysAgo({ at: '2026-09-03', updated: 'Today' }, NOW)).toBe(30);
+  });
+  it('falls back to the legacy label, read as of now', () => {
+    expect(infoItemDaysAgo({ updated: '4 days ago' }, NOW)).toBe(4);
+    expect(infoItemDateLabel({ updated: 'Yesterday' }, NOW)).toBe('Yesterday');
+  });
+  it('treats an item with no readable date as long ago', () => {
+    expect(infoItemDaysAgo({}, NOW)).toBe(999);
+    expect(infoItemDateLabel({ updated: 'whenever' }, NOW)).toBe('whenever');
+  });
+});
+
+describe('timelineDateLabel', () => {
+  it('derives the label from `at`', () => {
+    expect(timelineDateLabel({ label: 'First met', at: '2026-08-04' }, NOW)).toBe('2 months ago');
+  });
+  it('keeps undated text such as the current-layer step\'s "Now"', () => {
+    expect(timelineDateLabel({ label: 'Current: Close', date: 'Now', current: true }, NOW)).toBe('Now');
+  });
+});
+
+describe('backfillPeopleDates', () => {
+  const legacy = () => ({
+    id: 'p1', name: 'Alex',
+    interests: [{ id: 'i1', text: 'F1', updated: 'Today' }, { id: 'i2', text: 'Xbox', updated: '9 days ago' }],
+    preferences: [], plans: [{ id: 'pl1', text: 'Japan', updated: 'whenever' }],
+    experiences: [], important: [{ id: 'im1', text: 'Exam', updated: '1 day ago', temporary: true }],
+    timeline: [{ label: 'First met', date: '2 months ago' }, { label: 'First proper conversation', date: '2 weeks ago' }],
+  });
+
+  it('dates info items and timeline steps, and drops the stale labels', () => {
+    const [p] = backfillPeopleDates([legacy()], NOW);
+    expect(p.interests.map(i => i.at)).toEqual(['2026-10-03', '2026-09-24']);
+    expect(p.important[0]).toEqual({ id: 'im1', text: 'Exam', at: '2026-10-02', temporary: true });
+    expect(p.timeline).toEqual([{ label: 'First met', at: '2026-08-04' }, { label: 'First proper conversation', at: '2026-09-19' }]);
+    expect(p.interests[0].updated).toBeUndefined();
+  });
+  it('leaves undatable items and everything else untouched', () => {
+    const [p] = backfillPeopleDates([legacy()], NOW);
+    expect(p.plans[0]).toEqual({ id: 'pl1', text: 'Japan', updated: 'whenever' });
+    expect(p.name).toBe('Alex');
+  });
+  it('is idempotent, so it is safe to run on every load', () => {
+    const once = backfillPeopleDates([legacy()], NOW);
+    expect(backfillPeopleDates(once, day(2026, 12, 1))).toEqual(once);
+  });
+  it('anchors a backup\'s labels to its export date', () => {
+    const [p] = backfillPeopleDates([legacy()], '2026-09-20T09:00:00');
+    expect(p.interests[0].at).toBe('2026-09-20');
+  });
+  it('copes with people missing categories or a timeline', () => {
+    expect(backfillPeopleDates([{ id: 'x', name: 'New' }], NOW)).toEqual([{ id: 'x', name: 'New' }]);
+  });
 });
 
 describe('generateSuggestions', () => {
@@ -309,5 +383,10 @@ describe('generateSuggestions', () => {
       interests: [{ text: 'd', updated: '20 days ago', archived: false }],
     });
     expect(generateSuggestions(p).length).toBeLessThanOrEqual(2);
+  });
+  it('lets a note saved "today" become a suggestion once it has aged', () => {
+    const p = person({ plans: [{ text: 'a trip', at: '2026-10-03', archived: false }] });
+    expect(generateSuggestions(p, NOW)).toHaveLength(0);
+    expect(generateSuggestions(p, day(2026, 10, 7))).toHaveLength(1);
   });
 });

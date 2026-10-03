@@ -55,12 +55,23 @@ type Person = {
   experiences: InfoItem[]; important: InfoItem[]; // the five CATEGORIES
   goals: Goal[];
   history: HistoryPoint[];                    // layer-progress chart
-  timeline: { label: string; date: string }[];
+  timeline: TimelineStep[];
   justLeveledUp?: boolean;                    // drives the level-up pulse; cleared by onClearLevelUpFlag
   lastChange?: { before: number; after: number; why: string[] };
 };
 
-type InfoItem = { id: string; emoji: string; text: string; updated: string /* relative label */; temporary: boolean; archived: boolean };
+type InfoItem = {
+  id: string; emoji: string; text: string;
+  at: string;                                 // 'YYYY-MM-DD': the day it was last mentioned or edited ("Last mentioned" is derived from it)
+  updated?: string;                           // legacy label ('Today', '9 days ago'), only until backfilled
+  temporary: boolean; archived: boolean;
+};
+
+type TimelineStep = {
+  label: string;                              // 'First met', 'First personal conversation', …
+  at: string;                                 // 'YYYY-MM-DD'
+  date?: string;                              // legacy label ('2 months ago'), only until backfilled
+};
 
 type Goal = {
   id: string; personId: string | null;        // null = general/skill goal (generalGoals)
@@ -99,29 +110,41 @@ type Skills = Record<'activeListening'|'followUp'|'reciprocity'|'selfDisclosure'
   { label: string; current: number; history: { date: string; value: number }[] }>;
 ```
 
-### Dates: two different schemes
+### Dates: store the day, derive the label
 
-- **Info items and person timelines** store relative labels (`'Today'`, `'3 days ago'`),
-  produced by `dateToRelativeLabel` and read back by `parseDaysAgo`. These labels are
-  never refreshed. See [known-issues.md](../known-issues.md) for what that breaks.
-- **Journal entries, chart histories and events** store absolute ISO dates.
-  - A journal entry's day is its `at`. `journalDateLabel` derives "3 days ago" from it,
-    `journalDaysAgo` gives the age in days, and `isJournalThisWeek` means the last 7 days
-    (rolling, not the calendar week). They're evaluated on every render, so labels age.
-    The Journal, Home (recent activity, "being developed", the quiet-people list), the
-    Coach's "Last time you spoke" hook and `getCheckInSuggestions` all use these helpers.
-    Never store a derived label on an entry.
-  - History points carry a display label plus an ISO `at` key. `sortHistory` sorts and
-    de-duplicates points by day, so logging twice on one day updates that day's point.
-  - Events store ISO dates because they can be in the future.
+Every date in the data is an absolute ISO day. Nothing stores a relative label like
+`'Today'` any more, because a stored label never ages.
 
-#### Journal entries saved before `at` existed
+- **Journal entries, info items and timeline steps** keep their day in `at`. The shared
+  helpers `storedDay` / `storedDaysAgo` / `storedDateLabel` turn it into an age or a
+  "3 days ago" label on every render, so labels age on their own. Each record type has a
+  thin wrapper:
+  - journal: `journalDateLabel`, `journalDaysAgo`, and `isJournalThisWeek` (the last 7
+    days, rolling, not the calendar week). Used by the Journal, Home (recent activity,
+    "being developed", the quiet-people list), the Coach's "Last time you spoke" hook and
+    `getCheckInSuggestions`.
+  - info items: `infoItemDateLabel` ("Last mentioned: …" on the profile) and
+    `infoItemDaysAgo` (the 3- and 7-day thresholds in `generateSuggestions`, which feeds
+    "Ideas for next time").
+  - timeline: `timelineDateLabel`. The "Current: <layer>" step is added at render time
+    with the text `'Now'` and no `at`, and the helper passes such text through unchanged.
 
-Older entries, like the seed `INITIAL_JOURNAL`, have only a `date` label (and a stale
-`isThisWeek` flag). `backfillJournalDates` gives them an `at` when the journal is loaded
-from `localStorage`, when a backup is imported, and when sample data is loaded. It removes
-`date` and `isThisWeek` once `at` is set, and it skips entries that already have an `at`,
-so each entry is dated once and then never moves.
+  When you write one of these records, set `at: toISODate(day)`. A logged note uses the
+  interaction's picked date, and adding or editing an item uses today. Never store a
+  derived label.
+- **Chart history points** carry a display label plus an ISO `at` key. `sortHistory`
+  sorts and de-duplicates points by day, so logging twice on one day updates that day's point.
+- **Events** store ISO dates because they can be in the future.
+
+#### Records saved before `at` existed
+
+Older data, and the seed `INITIAL_JOURNAL` / `INITIAL_PEOPLE`, only has labels: journal
+`date` (plus a stale `isThisWeek` flag), info-item `updated` and timeline `date`.
+`backfillJournalDates` and `backfillPeopleDates` give each record an `at` when data is
+loaded from `localStorage`, when a backup is imported, and when sample data is loaded.
+Both use the same `backfillDated` routine. It removes the legacy label once `at` is set,
+and it skips records that already have an `at`, so each record is dated once and then
+never moves.
 
 - **Absolute labels** (`'Aug 31'`, `'Aug 20, 2025'`) are parsed exactly by
   `parseAbsoluteLabel`. A label without a year means its most recent past occurrence.
@@ -133,7 +156,7 @@ so each entry is dated once and then never moves.
   a backfilled date is never *earlier* than the real one. A person last logged as
   "Today" weeks ago therefore starts aging from the anchor, rather than being flagged as
   overdue immediately. `'N months ago'` stays approximate (30-day months).
-- **Unreadable labels** are left alone. The entry shows its `date` text as-is and counts
+- **Unreadable labels** are left alone. The record shows its label text as-is and counts
   as long ago (999 days), which is what `parseDaysAgo` did before.
 
 ## Progression model
@@ -170,7 +193,7 @@ The Me tab's **Export** writes `layers-backup-YYYY-MM-DD.json`:
 
 **Import** asks for confirmation and then *replaces* all of that state. Fields that are
 missing or have the wrong type fall back to empty values. It does no schema or version
-migration, apart from dating journal entries that have no `at` (see
-[above](#journal-entries-saved-before-at-existed)), so old backups still import. Journal
-entries in new backups have `at` and no `date`. An older version of the app would show
-them without a date label.
+migration, apart from dating records that have no `at` (see
+[above](#records-saved-before-at-existed)), so old backups still import. Records in new
+backups have `at` and no legacy label. An app older than 1.0.25 would show them without a
+date label.
