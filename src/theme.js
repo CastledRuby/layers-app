@@ -1,6 +1,7 @@
 // Design tokens and the global stylesheet. COLORS maps each token to a CSS
 // variable, so the whole app follows .layers-root / .layers-root.dark.
 
+import { FONT_FACES } from './fonts.js';
 
 const THEME_LIGHT = {
   paper: '#F5F6F1',
@@ -51,7 +52,7 @@ function cssVarBlock(theme) {
 }
 
 export const CSS = `
-@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Manrope:wght@400;500;600;700;800&display=swap');
+${FONT_FACES}
 
 * { box-sizing: border-box; }
 html, body { margin: 0; padding: 0; }

@@ -48,6 +48,7 @@ feature is guarded by `hasUpdater` / `hasSystemBridge` checks in `LayersApp`.
 │   ├── main.jsx              React entry: mounts <LayersApp/> in StrictMode
 │   ├── App.jsx               LayersApp: all state, handlers, shortcuts, layout
 │   ├── theme.js              Design tokens + the global CSS string
+│   ├── fonts.js              Bundled Fraunces/Manrope @font-face rules (works offline)
 │   ├── data/                 Static data (constants, seed, coach scenarios)
 │   ├── lib/                  Pure logic: dates, progress, text, storage
 │   ├── components/           Shared UI: Sheet, atoms, rows, pickers, BottomNav

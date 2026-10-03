@@ -27,8 +27,19 @@ To add a colour, add the key to both `THEME_LIGHT` and `THEME_DARK`, then use
 3. **The `CSS` template string** (injected by `<style>{CSS}</style>` inside
    `.layers-root`) holds structural classes Tailwind doesn't express well: `.phone-frame`,
    `.sheet-*`, `.nav-bar`, `.fab-btn`, `.toast*`, keyframe animations and
-   reduced-motion overrides. It also loads the Fraunces (display) and Manrope (body)
-   Google fonts.
+   reduced-motion overrides. It starts with the `@font-face` rules from
+   [`src/fonts.js`](../../src/fonts.js).
+
+### Fonts
+
+Fraunces (display, `.font-display`) and Manrope (body) are **bundled**, so the app works
+offline and makes no network request on launch. `src/fonts.js` imports the woff2 files from
+`@fontsource-variable/fraunces` and `@fontsource-variable/manrope` (SIL OFL). It uses
+Fraunces with its weight and optical-size axes and Manrope with its weight axis, Latin and
+Latin Extended subsets only (~160 KB). Vite inlines them into the Electron build as data
+URIs. The families keep their plain names, so `font-family: 'Fraunces'` / `'Manrope'`
+work as before. To add a weight or subset, add a `face(...)` line there. Don't
+reintroduce a Google Fonts `@import`.
 
 ## Layout skeleton
 

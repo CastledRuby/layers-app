@@ -4,7 +4,7 @@
 > Run `npm run docs:map` after changing anything under `src/`, `electron/*.cjs` or `package.json` scripts.
 > Hand-written explanations live in the other files under [`docs/`](../README.md).
 
-Package: `layers-web` v1.0.25 · `src/`: 34 files, 4341 lines, 37 components, 49 top-level functions, 40 constants.
+Package: `layers-web` v1.0.25 · `src/`: 35 files, 4375 lines, 37 components, 50 top-level functions, 43 constants.
 
 ## Source files
 
@@ -12,11 +12,11 @@ Package: `layers-web` v1.0.25 · `src/`: 34 files, 4341 lines, 37 components, 49
 |---|---|---|---|
 | [main.jsx](../../src/main.jsx) | 11 | — | — |
 | [App.jsx](../../src/App.jsx) | 673 | LayersApp | `components/BottomNav`, `components/sheetLayer`, `data/constants`, `data/seed`, `lib/dates`, `lib/progress`, `lib/storage`, `lib/text`, `lib/util`, `modals/AddInfoModal`, `modals/AddPersonModal`, `modals/ConfirmDialog`, `modals/EditPersonModal`, `modals/GoalModal`, `modals/LogInteractionModal`, `modals/QuickAddInterestModal`, `modals/ShortcutsModal`, `modals/TemplatePickerModal`, `theme`, `views/CoachView`, `views/GoalsView`, `views/HomeView`, `views/JournalView`, `views/MeView`, `views/OnboardingView`, `views/PeopleView`, `views/PersonProfile` |
-| [theme.js](../../src/theme.js) | 128 | THEME_LIGHT, THEME_DARK, COLORS, cssVarBlock, CSS | — |
+| [theme.js](../../src/theme.js) | 129 | THEME_LIGHT, THEME_DARK, COLORS, cssVarBlock, CSS | `fonts` |
 | [data/constants.js](../../src/data/constants.js) | 167 | LAYERS, getLayer, DIM_ORDER, DIM_LABELS, DIM_COLORS, LAYER_BASE_DIMS, CATEGORIES, categoryMeta, SHORTCUTS, EMOJI_CHOICES, … (+17) | `theme` |
 | [data/scenarios.js](../../src/data/scenarios.js) | 115 | SCENARIOS | — |
 | [data/seed.js](../../src/data/seed.js) | 172 | INITIAL_PEOPLE, INITIAL_GENERAL_GOALS, INITIAL_JOURNAL, INITIAL_SKILLS, EMPTY_SKILLS | — |
-| [lib/dates.js](../../src/lib/dates.js) | 229 | parseDaysAgo, startOfDay, WEEKDAY_SHORT, WEEKDAY_FULL, formatWeekdays, MONTH_NAMES, dateToRelativeLabel, formatCalendarDate, toISODate, formatAbsoluteDate, … (+20) | `data/constants` |
+| [lib/dates.js](../../src/lib/dates.js) | 234 | parseDaysAgo, startOfDay, WEEKDAY_SHORT, WEEKDAY_FULL, formatWeekdays, MONTH_NAMES, dateToRelativeLabel, formatCalendarDate, toISODate, formatAbsoluteDate, … (+20) | `data/constants` |
 | [lib/progress.js](../../src/lib/progress.js) | 44 | layerForOverall, advanceLayer, computeOverall, makePerson, generateGoalDescription | `data/constants`, `lib/dates`, `lib/util` |
 | [lib/storage.js](../../src/lib/storage.js) | 34 | STORAGE_KEY, loadSaved, persistState, LAST_NOTIFIED_KEY, getLastNotifiedDate, setLastNotifiedDate | — |
 | [lib/text.js](../../src/lib/text.js) | 96 | summaryFor, updateStatusText, homeGoalTitle, generateSuggestions, getCheckInSuggestions, HOOKS, buildPotentialHooks | `data/constants`, `lib/dates` |
@@ -44,6 +44,7 @@ Package: `layers-web` v1.0.25 · `src/`: 34 files, 4341 lines, 37 components, 49
 | [views/OnboardingView.jsx](../../src/views/OnboardingView.jsx) | 80 | OnboardingView | `data/constants`, `theme` |
 | [views/PeopleView.jsx](../../src/views/PeopleView.jsx) | 183 | PeopleView | `components/atoms`, `data/constants`, `lib/text`, `theme` |
 | [views/PersonProfile.jsx](../../src/views/PersonProfile.jsx) | 243 | AdjustSlider, PrepareTipsModal, PersonProfile | `components/Sheet`, `components/atoms`, `components/rows`, `data/constants`, `lib/dates`, `lib/text`, `theme` |
+| [fonts.js](../../src/fonts.js) | 28 | LATIN, LATIN_EXT, face, FONT_FACES | — |
 
 ## Components
 
@@ -91,7 +92,7 @@ Package: `layers-web` v1.0.25 · `src/`: 34 files, 4341 lines, 37 components, 49
 
 | Function | Defined | Exported | Unit-tested |
 |---|---|---|---|
-| `cssVarBlock` | [theme.js:49](../../src/theme.js#L49) |  |  |
+| `cssVarBlock` | [theme.js:50](../../src/theme.js#L50) |  |  |
 | `getLayer` | [constants.js:13](../../src/data/constants.js#L13) | ✓ |  |
 | `categoryMeta` | [constants.js:31](../../src/data/constants.js#L31) | ✓ |  |
 | `presetMeta` | [constants.js:87](../../src/data/constants.js#L87) | ✓ |  |
@@ -102,26 +103,26 @@ Package: `layers-web` v1.0.25 · `src/`: 34 files, 4341 lines, 37 components, 49
 | `formatCalendarDate` | [dates.js:52](../../src/lib/dates.js#L52) | ✓ |  |
 | `toISODate` | [dates.js:63](../../src/lib/dates.js#L63) | ✓ |  |
 | `formatAbsoluteDate` | [dates.js:72](../../src/lib/dates.js#L72) | ✓ |  |
-| `parseAbsoluteLabel` | [dates.js:78](../../src/lib/dates.js#L78) |  |  |
-| `historySortKey` | [dates.js:95](../../src/lib/dates.js#L95) |  |  |
-| `sortHistory` | [dates.js:113](../../src/lib/dates.js#L113) | ✓ |  |
-| `pushHistoryPoint` | [dates.js:130](../../src/lib/dates.js#L130) | ✓ |  |
-| `parseISODay` | [dates.js:140](../../src/lib/dates.js#L140) |  |  |
-| `storedDay` | [dates.js:146](../../src/lib/dates.js#L146) |  |  |
-| `storedDaysAgo` | [dates.js:155](../../src/lib/dates.js#L155) |  |  |
-| `storedDateLabel` | [dates.js:160](../../src/lib/dates.js#L160) |  |  |
-| `journalDaysAgo` | [dates.js:165](../../src/lib/dates.js#L165) | ✓ | ✓ |
-| `journalDateLabel` | [dates.js:167](../../src/lib/dates.js#L167) | ✓ | ✓ |
-| `isJournalThisWeek` | [dates.js:170](../../src/lib/dates.js#L170) | ✓ | ✓ |
-| `infoItemDaysAgo` | [dates.js:172](../../src/lib/dates.js#L172) | ✓ | ✓ |
-| `infoItemDateLabel` | [dates.js:174](../../src/lib/dates.js#L174) | ✓ | ✓ |
-| `timelineDateLabel` | [dates.js:177](../../src/lib/dates.js#L177) | ✓ | ✓ |
-| `backfillAnchor` | [dates.js:187](../../src/lib/dates.js#L187) |  |  |
-| `backfillDated` | [dates.js:192](../../src/lib/dates.js#L192) |  |  |
-| `backfillJournalDates` | [dates.js:203](../../src/lib/dates.js#L203) | ✓ | ✓ |
-| `backfillPeopleDates` | [dates.js:207](../../src/lib/dates.js#L207) | ✓ | ✓ |
-| `formatTime12` | [dates.js:220](../../src/lib/dates.js#L220) | ✓ |  |
-| `nowToMinutes` | [dates.js:228](../../src/lib/dates.js#L228) | ✓ |  |
+| `parseAbsoluteLabel` | [dates.js:77](../../src/lib/dates.js#L77) |  |  |
+| `historySortKey` | [dates.js:94](../../src/lib/dates.js#L94) |  |  |
+| `sortHistory` | [dates.js:112](../../src/lib/dates.js#L112) | ✓ |  |
+| `pushHistoryPoint` | [dates.js:129](../../src/lib/dates.js#L129) | ✓ |  |
+| `parseISODay` | [dates.js:139](../../src/lib/dates.js#L139) |  |  |
+| `storedDay` | [dates.js:145](../../src/lib/dates.js#L145) |  |  |
+| `storedDaysAgo` | [dates.js:154](../../src/lib/dates.js#L154) |  |  |
+| `storedDateLabel` | [dates.js:159](../../src/lib/dates.js#L159) |  |  |
+| `journalDaysAgo` | [dates.js:164](../../src/lib/dates.js#L164) | ✓ | ✓ |
+| `journalDateLabel` | [dates.js:166](../../src/lib/dates.js#L166) | ✓ | ✓ |
+| `isJournalThisWeek` | [dates.js:169](../../src/lib/dates.js#L169) | ✓ | ✓ |
+| `infoItemDaysAgo` | [dates.js:171](../../src/lib/dates.js#L171) | ✓ | ✓ |
+| `infoItemDateLabel` | [dates.js:173](../../src/lib/dates.js#L173) | ✓ | ✓ |
+| `timelineDateLabel` | [dates.js:179](../../src/lib/dates.js#L179) | ✓ | ✓ |
+| `backfillAnchor` | [dates.js:192](../../src/lib/dates.js#L192) |  |  |
+| `backfillDated` | [dates.js:197](../../src/lib/dates.js#L197) |  |  |
+| `backfillJournalDates` | [dates.js:208](../../src/lib/dates.js#L208) | ✓ | ✓ |
+| `backfillPeopleDates` | [dates.js:212](../../src/lib/dates.js#L212) | ✓ | ✓ |
+| `formatTime12` | [dates.js:225](../../src/lib/dates.js#L225) | ✓ |  |
+| `nowToMinutes` | [dates.js:233](../../src/lib/dates.js#L233) | ✓ |  |
 | `layerForOverall` | [progress.js:7](../../src/lib/progress.js#L7) | ✓ | ✓ |
 | `advanceLayer` | [progress.js:13](../../src/lib/progress.js#L13) | ✓ |  |
 | `computeOverall` | [progress.js:26](../../src/lib/progress.js#L26) | ✓ | ✓ |
@@ -140,15 +141,16 @@ Package: `layers-web` v1.0.25 · `src/`: 34 files, 4341 lines, 37 components, 49
 | `clamp` | [util.js:4](../../src/lib/util.js#L4) | ✓ | ✓ |
 | `uidCounter` | [util.js:6](../../src/lib/util.js#L6) |  |  |
 | `uid` | [util.js:8](../../src/lib/util.js#L8) | ✓ |  |
+| `face` | [fonts.js:18](../../src/fonts.js#L18) |  |  |
 
 ## Constants
 
 | Constant | Defined |
 |---|---|
-| `THEME_LIGHT` | [theme.js:5](../../src/theme.js#L5) |
-| `THEME_DARK` | [theme.js:24](../../src/theme.js#L24) |
-| `COLORS` | [theme.js:47](../../src/theme.js#L47) |
-| `CSS` | [theme.js:53](../../src/theme.js#L53) |
+| `THEME_LIGHT` | [theme.js:6](../../src/theme.js#L6) |
+| `THEME_DARK` | [theme.js:25](../../src/theme.js#L25) |
+| `COLORS` | [theme.js:48](../../src/theme.js#L48) |
+| `CSS` | [theme.js:54](../../src/theme.js#L54) |
 | `LAYERS` | [constants.js:6](../../src/data/constants.js#L6) |
 | `DIM_ORDER` | [constants.js:15](../../src/data/constants.js#L15) |
 | `DIM_LABELS` | [constants.js:17](../../src/data/constants.js#L17) |
@@ -185,6 +187,9 @@ Package: `layers-web` v1.0.25 · `src/`: 34 files, 4341 lines, 37 components, 49
 | `STORAGE_KEY` | [storage.js:4](../../src/lib/storage.js#L4) |
 | `LAST_NOTIFIED_KEY` | [storage.js:25](../../src/lib/storage.js#L25) |
 | `HOOKS` | [text.js:61](../../src/lib/text.js#L61) |
+| `LATIN` | [fonts.js:15](../../src/fonts.js#L15) |
+| `LATIN_EXT` | [fonts.js:16](../../src/fonts.js#L16) |
+| `FONT_FACES` | [fonts.js:22](../../src/fonts.js#L22) |
 
 ## Electron IPC
 

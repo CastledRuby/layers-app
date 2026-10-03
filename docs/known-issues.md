@@ -32,9 +32,6 @@ Follow the checklist in [build-and-release.md](build-and-release.md). Consider a
   the next time that view re-renders.
 - **Startup flash in dark mode.** `BrowserWindow` uses a hard-coded light
   `backgroundColor` (`#F5F6F1`).
-- **Fonts fetched from Google.** The fonts come from `fonts.googleapis.com` on every
-  launch. That's a network call from a "private, on-device" app, and offline launches
-  fall back to system fonts. Consider bundling the two font files.
 - **Unused files.** The `electron/*-light.png` / `*-dark.png` icon variants aren't
   referenced anywhere. The `src/assets/*` files are Vite template leftovers.
 - **Misleading updater setting.** `autoDownload = false` is set, but the
@@ -46,6 +43,7 @@ Follow the checklist in [build-and-release.md](build-and-release.md). Consider a
 
 | Version | Issue |
 |---|---|
+| 1.0.26 | Fonts were fetched from `fonts.googleapis.com` on every launch, so offline launches fell back to system fonts and the "private" app made a network call. Fraunces and Manrope are now bundled ([renderer/ui-system.md](renderer/ui-system.md#fonts)). |
 | 1.0.26 | `src/App.jsx` was a ~4,000-line monolith. It's now split by role into `data/`, `lib/`, `components/`, `modals/` and `views/` ([renderer/app-structure.md](renderer/app-structure.md)), and Fast Refresh works again. |
 | 1.0.25 | Info-item ("Last mentioned") and timeline dates never aged, so profile suggestions ("Ideas for next time") never appeared for notes you saved. They now store an ISO `at` like journal entries, and `backfillPeopleDates` dates existing data on load. See [renderer/state-and-data.md](renderer/state-and-data.md#dates-store-the-day-derive-the-label). |
 | 1.0.24 | Sheets rendered outside the theme scope. They had transparent panels, black text, didn't line up with the phone frame on tall windows, and used the wrong font. Fixed with `.app-shell`/`.sheet-layer` + `SheetPortal`. See [renderer/ui-system.md](renderer/ui-system.md#history-of-the-edit-goal-bug-fixed-in-1024). |
