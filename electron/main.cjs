@@ -21,16 +21,28 @@ let isQuitting = false;
 // the *first* launch the sole owner of the app; any later launch attempt
 // immediately quits itself and instead fires 'second-instance' on the
 // original process, which is where we bring the existing window forward.
+//
+// `Layers.exe --quit` asks a running Layers to quit cleanly. The release
+// script (scripts/release.mjs) runs it before installing an update, so the
+// app shuts down normally and flushes localStorage, instead of the installer
+// force-killing it. With no instance running there's nothing to quit, so
+// that launch just exits.
+const quitRequested = process.argv.includes('--quit');
 const gotSingleInstanceLock = app.requestSingleInstanceLock();
 
-if (!gotSingleInstanceLock) {
+if (!gotSingleInstanceLock || quitRequested) {
   // Another instance already owns the lock — this process has no reason
   // to exist. app.exit() terminates immediately (unlike app.quit(), which
   // is a graceful async request), so we're certain nothing below this
   // block — window creation, tray creation, whenReady — ever runs.
   app.exit(0);
 } else {
-  app.on('second-instance', () => {
+  app.on('second-instance', (_event, argv) => {
+    if (argv.includes('--quit')) {
+      isQuitting = true;
+      app.quit();
+      return;
+    }
     if (!mainWindow) return;
     if (mainWindow.isMinimized()) mainWindow.restore();
     if (!mainWindow.isVisible()) mainWindow.show();

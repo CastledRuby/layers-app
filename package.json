@@ -10,6 +10,7 @@
     "build:local": "vite build --config vite.config.local.js",
     "sync:app": "node scripts/sync-app.mjs",
     "docs:map": "node scripts/gen-code-map.mjs",
+    "release": "node scripts/release.mjs",
     "build:electron": "npm run build:local && npm run sync:app",
     "lint": "oxlint",
     "test": "vitest run",

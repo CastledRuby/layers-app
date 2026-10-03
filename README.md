@@ -27,10 +27,12 @@ npm run build:electron
 npx electron .
 ```
 
-Build a Windows installer into `release/` (bump `version` in `package.json` first):
+To ship a new version, run this. It bumps the version, tests, builds, publishes the GitHub
+release and installs it on this computer (see
+[Releasing](docs/build-and-release.md#releasing)):
 
 ```bash
-npm run electron:build:win
+npm run release
 ```
 
 ## Documentation

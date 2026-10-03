@@ -11,7 +11,8 @@
 | Rebuild what Electron loads | `npm run build:electron` | `dist-local/index.html` → copied to `electron/app/index.html` |
 | Run the desktop app from source | `npm run build:electron` then `npx electron .` | Uses `electron/main.cjs` (package.json `"main"`). It shares the installed app's name (`layers-web`), so it uses the same data in `%APPDATA%\layers-web`, and it exits silently while the installed Layers is running (single-instance lock). Quit Layers from the tray first, or add `--user-data-dir=<temp folder>` for a separate profile. |
 | Windows installer + portable exe | `npm run electron:build:win` | `release/Layers Setup x.y.z.exe`, `release/Layers x.y.z.exe`, `release/win-unpacked/` |
-| Publish a release to GitHub | `npm run electron:publish:win` | Same, plus upload to `CastledRuby/layers-app` Releases (needs `GH_TOKEN`) |
+| **Release a new version** | `npm run release` | Bumps the version, tests, builds, pushes to `main`, publishes the GitHub release, then installs it on this computer. See [Releasing](#releasing). |
+| Reinstall the current version here | `npm run release -- --install-only` | Silently installs `release/Layers Setup x.y.z.exe` and relaunches Layers |
 | Linux AppImage | `npm run build:electron && npm run electron:build:linux` | `electron:build:linux` does **not** rebuild the renderer on its own |
 
 ## Why there are two Vite configs
@@ -44,19 +45,50 @@ and `node_modules/` for the two runtime packages and their dependencies. The 1.0
 was 55 MB, because `react`, all of `recharts`/d3 and about 4,200 `lucide-react` files
 were in it.
 
-## Release checklist
+## Releasing
 
-1. `npm test` and `npm run lint` are clean (warnings are acceptable).
-2. **Bump `version` in `package.json`.** electron-updater compares versions, so it only
-   offers an update when the new version is strictly higher than the installed one.
-   Rebuilding with an unchanged number produces an installer the updater ignores, and
-   the Me tab shows the same version for two different builds.
-3. `npm run build:electron`. Check that `electron/app/index.html` has a fresh timestamp.
-4. `npm run docs:map` so the generated map shows the new version.
-5. `npm run electron:build:win` (local) or `npm run electron:publish:win` (GitHub release).
-6. Install `release/Layers Setup x.y.z.exe`, or let the installed app auto-update, and
-   check the version in the Me tab.
-7. Commit `package.json`, `electron/app/index.html`, `docs/generated/code-map.md` and the source together.
+```bash
+npm run release
+```
+
+[`scripts/release.mjs`](../scripts/release.mjs) does the whole release in this order. Every
+local step runs before anything leaves the computer, so a failed test or build leaves
+GitHub untouched.
+
+1. **Preflight.** The working tree must be clean, `HEAD` must contain `origin/main` (so
+   the push is a fast-forward), and the GitHub CLI must be logged in.
+2. **Bump** `package.json` / `package-lock.json`: patch by default, or pass `minor`,
+   `major` or an exact version (`npm run release -- 1.1.0`). electron-updater only offers
+   versions strictly higher than the installed one, so every release needs a new number.
+3. **Test and build:** `npm test`, `build:electron`, `docs:map`, then
+   `electron-builder --win --x64 --publish never`.
+4. **Commit** `Release vX.Y.Z` and push it to `main`.
+5. **Publish** a non-draft GitHub release `vX.Y.Z` at that commit, using the GitHub CLI.
+   Assets are uploaded under the hyphenated names that `latest.yml` points at
+   (`Layers-Setup-X.Y.Z.exe`, its `.blockmap`, the portable `Layers-X.Y.Z.exe`,
+   `latest.yml`). Release notes default to the commit subjects since the previous tag;
+   pass `--notes file.md` to write your own. Afterwards the script checks that the public
+   update feed (`releases/latest/download/latest.yml`) offers the new version.
+6. **Install here.** It runs `Layers.exe --quit` so the running app shuts down cleanly and
+   saves its data (builds before 1.0.25 ignore this, and the installer closes them
+   instead). Then it runs the installer silently (`/S --force-run`), reads the installed
+   `app.asar` to confirm the version, and waits for Layers to relaunch. Your data in
+   `%APPDATA%` is untouched. Pass `--no-install` to skip this step.
+
+**Recovering from a failed step:**
+
+- If a test or build fails, nothing has been committed or pushed yet. Fix the problem,
+  discard the version bump (`git checkout -- package.json package-lock.json`), and run the
+  release again.
+- If the upload fails after the push, run `npm run release -- --publish-only`. It
+  uploads the files already in `release/` for the current version, then installs.
+- If the install fails, run `npm run release -- --install-only`.
+
+**Setup on a new computer:** install the GitHub CLI (`winget install GitHub.cli`) and run
+`gh auth login` as an account that can publish to `CastledRuby/layers-app`. No
+`GH_TOKEN` is needed. `npm run electron:publish:win` (electron-builder's own publisher)
+still works if you set `GH_TOKEN`, but it creates a *draft* release that you then have to
+publish by hand.
 
 ## "Is my installed app actually running the new code?"
 

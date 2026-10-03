@@ -4,30 +4,30 @@
 > Run `npm run docs:map` after changing `src/App.jsx`, `electron/*.cjs` or `package.json` scripts.
 > Hand-written explanations live in the other files under [`docs/`](../README.md).
 
-Package: `layers-web` v1.0.24 · `src/App.jsx`: 4044 lines, 37 components, 41 top-level functions, 40 constants.
+Package: `layers-web` v1.0.24 · `src/App.jsx`: 4069 lines, 37 components, 49 top-level functions, 40 constants.
 
 ## App.jsx sections
 
 | Section | Starts | Contains |
 |---|---|---|
 | DESIGN TOKENS | [App.jsx:6](../../src/App.jsx#L6) | THEME_LIGHT, THEME_DARK, COLORS, LAYERS, getLayer, layerForOverall, advanceLayer, DIM_ORDER, DIM_LABELS, DIM_COLORS, computeOverall, LAYER_BASE_DIMS, … (+19) |
-| HELPERS | [App.jsx:252](../../src/App.jsx#L252) | clamp, uidCounter, uid, parseDaysAgo, startOfDay, WEEKDAY_SHORT, WEEKDAY_FULL, formatWeekdays, MONTH_NAMES, dateToRelativeLabel, formatCalendarDate, toISODate, … (+19) |
-| MOCK SCREENSHOT-ANALYSIS SCENARIOS | [App.jsx:594](../../src/App.jsx#L594) | SCENARIOS |
-| SEED DATA | [App.jsx:707](../../src/App.jsx#L707) | INITIAL_PEOPLE, INITIAL_GENERAL_GOALS, INITIAL_JOURNAL, INITIAL_SKILLS, SKILL_ORDER, FOCUS_SKILL_KEY, FOCUS_TEXT, CHALLENGE_TEXT, EMPTY_SKILLS, FOCUS_OPTIONS, FOCUS_LABELS |
-| LOCAL PERSISTENCE | [App.jsx:886](../../src/App.jsx#L886) | STORAGE_KEY, loadSaved, persistState, LAST_NOTIFIED_KEY, getLastNotifiedDate, setLastNotifiedDate, getCheckInSuggestions |
-| CSS | [App.jsx:926](../../src/App.jsx#L926) | cssVarBlock, CSS |
-| UI ATOMS | [App.jsx:1008](../../src/App.jsx#L1008) | CircularProgress, ProgressBar, LabeledBar, Avatar, LayerBadge, ChatBubble, Timeline, ConvStateBadge |
-| GOAL ROW / INFO ROW / NAV / SHEET | [App.jsx:1111](../../src/App.jsx#L1111) | GoalRow, InfoItemRow, BottomNav, SheetLayerContext, SheetPortal, Sheet |
-| HOME | [App.jsx:1248](../../src/App.jsx#L1248) | HomeView |
-| PEOPLE | [App.jsx:1524](../../src/App.jsx#L1524) | PeopleView |
-| PERSON PROFILE | [App.jsx:1700](../../src/App.jsx#L1700) | AdjustSlider, PrepareTipsModal, PersonProfile |
-| GOALS OVERVIEW | [App.jsx:1932](../../src/App.jsx#L1932) | GoalsView |
-| JOURNAL | [App.jsx:1991](../../src/App.jsx#L1991) | JournalView |
-| CONVERSATION COACH | [App.jsx:2078](../../src/App.jsx#L2078) | HOOKS, buildPotentialHooks, CoachView |
-| ME / SOCIAL SKILLS | [App.jsx:2468](../../src/App.jsx#L2468) | MeView |
-| ONBOARDING | [App.jsx:2619](../../src/App.jsx#L2619) | OnboardingView |
-| MODALS | [App.jsx:2694](../../src/App.jsx#L2694) | ConfirmDialog, EditPersonModal, LogInteractionModal, GoalModal, TemplatePickerModal, QuickAddInterestModal, AddInfoModal, AddPersonModal |
-| APP | [App.jsx:3400](../../src/App.jsx#L3400) | LayersApp |
+| HELPERS | [App.jsx:252](../../src/App.jsx#L252) | clamp, uidCounter, uid, parseDaysAgo, startOfDay, WEEKDAY_SHORT, WEEKDAY_FULL, formatWeekdays, MONTH_NAMES, dateToRelativeLabel, formatCalendarDate, toISODate, … (+27) |
+| MOCK SCREENSHOT-ANALYSIS SCENARIOS | [App.jsx:617](../../src/App.jsx#L617) | SCENARIOS |
+| SEED DATA | [App.jsx:730](../../src/App.jsx#L730) | INITIAL_PEOPLE, INITIAL_GENERAL_GOALS, INITIAL_JOURNAL, INITIAL_SKILLS, SKILL_ORDER, FOCUS_SKILL_KEY, FOCUS_TEXT, CHALLENGE_TEXT, EMPTY_SKILLS, FOCUS_OPTIONS, FOCUS_LABELS |
+| LOCAL PERSISTENCE | [App.jsx:912](../../src/App.jsx#L912) | STORAGE_KEY, loadSaved, persistState, LAST_NOTIFIED_KEY, getLastNotifiedDate, setLastNotifiedDate, getCheckInSuggestions |
+| CSS | [App.jsx:952](../../src/App.jsx#L952) | cssVarBlock, CSS |
+| UI ATOMS | [App.jsx:1034](../../src/App.jsx#L1034) | CircularProgress, ProgressBar, LabeledBar, Avatar, LayerBadge, ChatBubble, Timeline, ConvStateBadge |
+| GOAL ROW / INFO ROW / NAV / SHEET | [App.jsx:1137](../../src/App.jsx#L1137) | GoalRow, InfoItemRow, BottomNav, SheetLayerContext, SheetPortal, Sheet |
+| HOME | [App.jsx:1274](../../src/App.jsx#L1274) | HomeView |
+| PEOPLE | [App.jsx:1550](../../src/App.jsx#L1550) | PeopleView |
+| PERSON PROFILE | [App.jsx:1726](../../src/App.jsx#L1726) | AdjustSlider, PrepareTipsModal, PersonProfile |
+| GOALS OVERVIEW | [App.jsx:1958](../../src/App.jsx#L1958) | GoalsView |
+| JOURNAL | [App.jsx:2017](../../src/App.jsx#L2017) | JournalView |
+| CONVERSATION COACH | [App.jsx:2104](../../src/App.jsx#L2104) | HOOKS, buildPotentialHooks, CoachView |
+| ME / SOCIAL SKILLS | [App.jsx:2494](../../src/App.jsx#L2494) | MeView |
+| ONBOARDING | [App.jsx:2645](../../src/App.jsx#L2645) | OnboardingView |
+| MODALS | [App.jsx:2720](../../src/App.jsx#L2720) | ConfirmDialog, EditPersonModal, LogInteractionModal, GoalModal, TemplatePickerModal, QuickAddInterestModal, AddInfoModal, AddPersonModal |
+| APP | [App.jsx:3426](../../src/App.jsx#L3426) | LayersApp |
 
 ## Components
 
@@ -35,41 +35,41 @@ Package: `layers-web` v1.0.24 · `src/App.jsx`: 4044 lines, 37 components, 41 to
 |---|---|---|---|---|
 | `ShortcutKey` | [App.jsx:119](../../src/App.jsx#L119) | DESIGN TOKENS | `label` | `ShortcutsModal` |
 | `ShortcutsModal` | [App.jsx:123](../../src/App.jsx#L123) | DESIGN TOKENS | `onClose` | `LayersApp` |
-| `DateDropdown` | [App.jsx:428](../../src/App.jsx#L428) | HELPERS | `value`, `onChange`, `maxDate`, `minDate` | `LogInteractionModal`, `GoalModal` |
-| `TimeDropdown` | [App.jsx:499](../../src/App.jsx#L499) | HELPERS | `value`, `onChange` | `LogInteractionModal` |
-| `CircularProgress` | [App.jsx:1010](../../src/App.jsx#L1010) | UI ATOMS | `percent`, `size`, `stroke`, `color`, `track`, `label` | `PersonProfile` |
-| `ProgressBar` | [App.jsx:1030](../../src/App.jsx#L1030) | UI ATOMS | `percent`, `color`, `height`, `track` | `LabeledBar`, `GoalRow`, `HomeView`, `PeopleView` |
-| `LabeledBar` | [App.jsx:1038](../../src/App.jsx#L1038) | UI ATOMS | `label`, `percent`, `color`, `size` | `PersonProfile`, `CoachView`, `MeView` |
-| `Avatar` | [App.jsx:1050](../../src/App.jsx#L1050) | UI ATOMS | `emoji`, `size`, `ringColor`, `bg` | `HomeView`, `PeopleView`, `PersonProfile`, `GoalsView`, `CoachView`, `LogInteractionModal`, `GoalModal` |
-| `LayerBadge` | [App.jsx:1058](../../src/App.jsx#L1058) | UI ATOMS | `layerId` | `PeopleView`, `PersonProfile`, `CoachView` |
-| `ChatBubble` | [App.jsx:1068](../../src/App.jsx#L1068) | UI ATOMS | `who`, `text` | `CoachView` |
-| `Timeline` | [App.jsx:1079](../../src/App.jsx#L1079) | UI ATOMS | `steps` | `PersonProfile` |
-| `ConvStateBadge` | [App.jsx:1098](../../src/App.jsx#L1098) | UI ATOMS | `stateKey` | `CoachView` |
-| `GoalRow` | [App.jsx:1113](../../src/App.jsx#L1113) | GOAL ROW / INFO ROW / NAV / SHEET | `goal`, `color`, `personName`, `onBump`, `onEdit`, `onDelete` | `PersonProfile`, `GoalsView` |
-| `InfoItemRow` | [App.jsx:1159](../../src/App.jsx#L1159) | GOAL ROW / INFO ROW / NAV / SHEET | `item`, `onSave`, `onDelete`, `onToggleTemporary`, `onToggleArchive` | `PersonProfile` |
-| `BottomNav` | [App.jsx:1191](../../src/App.jsx#L1191) | GOAL ROW / INFO ROW / NAV / SHEET | `active`, `onChange` | `LayersApp` |
-| `SheetLayerContext` | [App.jsx:1219](../../src/App.jsx#L1219) | GOAL ROW / INFO ROW / NAV / SHEET | — | `LayersApp` |
-| `SheetPortal` | [App.jsx:1225](../../src/App.jsx#L1225) | GOAL ROW / INFO ROW / NAV / SHEET | `children` | `Sheet`, `ConfirmDialog` |
-| `Sheet` | [App.jsx:1230](../../src/App.jsx#L1230) | GOAL ROW / INFO ROW / NAV / SHEET | `title`, `onClose`, `children`, `footer`, `tall` | `ShortcutsModal`, `DateDropdown`, `TimeDropdown`, `PrepareTipsModal`, `EditPersonModal`, `LogInteractionModal`, `GoalModal`, `TemplatePickerModal`, `AddInfoModal`, `AddPersonModal` |
-| `HomeView` | [App.jsx:1250](../../src/App.jsx#L1250) | HOME | `people`, `journal`, `generalGoals`, `events`, `profile`, `onOpenPerson`, `onSwitchTab`, `onOpenGoals`, `onOpenCoach`, `onLogEvent`, `onManageEvents`, `onEditEvent`, `onDeleteEvent` | `LayersApp` |
-| `PeopleView` | [App.jsx:1526](../../src/App.jsx#L1526) | PEOPLE | `people`, `journal`, `onOpenPerson`, `onAddPerson` | `LayersApp` |
-| `AdjustSlider` | [App.jsx:1702](../../src/App.jsx#L1702) | PERSON PROFILE | `label`, `value`, `onChange`, `color` | `PersonProfile` |
-| `PrepareTipsModal` | [App.jsx:1714](../../src/App.jsx#L1714) | PERSON PROFILE | `person`, `journal`, `onClose`, `onOpenFullCoach` | `PersonProfile` |
-| `PersonProfile` | [App.jsx:1741](../../src/App.jsx#L1741) | PERSON PROFILE | `person`, `journal`, `onBack`, `onOpenLog`, `onOpenGoalCreate`, `onOpenGoalEdit`, `onDeleteGoal`, `onBumpGoal`, `onOpenAddInfo`, `onOpenQuickAddInterest`, `onSaveInfo`, `onDeleteInfo`, `onToggleTemporary`, `onToggleArchive`, `onAdjust`, `onOpenCoach`, `onEditPerson`, `onClearLevelUpFlag` | — |
-| `GoalsView` | [App.jsx:1934](../../src/App.jsx#L1934) | GOALS OVERVIEW | `people`, `generalGoals`, `onBack`, `onOpenPerson`, `onOpenGoalCreate`, `onOpenGoalEdit`, `onDeleteGoal`, `onBumpGoal` | `LayersApp` |
-| `JournalView` | [App.jsx:1993](../../src/App.jsx#L1993) | JOURNAL | `people`, `journal`, `onOpenPerson` | `LayersApp` |
-| `CoachView` | [App.jsx:2116](../../src/App.jsx#L2116) | CONVERSATION COACH | `people`, `journal`, `generalGoals`, `initialPersonId`, `initialTab`, `onOpenLog`, `onApproveInfo`, `onLogFromAnalysis`, `onOpenPerson` | `LayersApp` |
-| `MeView` | [App.jsx:2470](../../src/App.jsx#L2470) | ME / SOCIAL SKILLS | `people`, `journal`, `skills`, `generalGoals`, `profile`, `onBack`, `onRestoreSample`, `onStartOver`, `onExport`, `onImportClick`, `hasUpdater`, `updateStatus`, `onCheckForUpdates`, `onInstallUpdate`, `theme`, `onSetTheme`, `hasSystemBridge`, `autoLaunch`, `onToggleAutoLaunch`, `onOpenShortcuts`, `appVersion` | `LayersApp` |
-| `OnboardingView` | [App.jsx:2621](../../src/App.jsx#L2621) | ONBOARDING | `initialName`, `initialFocus`, `onComplete` | `LayersApp` |
-| `ConfirmDialog` | [App.jsx:2696](../../src/App.jsx#L2696) | MODALS | `title`, `message`, `confirmLabel`, `danger`, `onConfirm`, `onCancel` | `LayersApp` |
-| `EditPersonModal` | [App.jsx:2718](../../src/App.jsx#L2718) | MODALS | `person`, `onClose`, `onSave`, `onDelete` | `LayersApp` |
-| `LogInteractionModal` | [App.jsx:2739](../../src/App.jsx#L2739) | MODALS | `people`, `defaultPersonId`, `events`, `initialStep`, `initialEditEvent`, `onClose`, `onSubmit`, `onCreateEvent`, `onUpdateEvent`, `onDeleteEvent` | `LayersApp` |
-| `GoalModal` | [App.jsx:3121](../../src/App.jsx#L3121) | MODALS | `people`, `defaultPersonId`, `editingGoal`, `editingPersonId`, `onClose`, `onSave` | `LayersApp` |
-| `TemplatePickerModal` | [App.jsx:3269](../../src/App.jsx#L3269) | MODALS | `title`, `subtitle`, `onClose`, `onPick`, `allowMultiple` | `HomeView`, `LogInteractionModal` |
-| `QuickAddInterestModal` | [App.jsx:3329](../../src/App.jsx#L3329) | MODALS | `personName`, `onClose`, `onSave` | `LayersApp` |
-| `AddInfoModal` | [App.jsx:3341](../../src/App.jsx#L3341) | MODALS | `personName`, `category`, `onClose`, `onSave` | `LayersApp` |
-| `AddPersonModal` | [App.jsx:3370](../../src/App.jsx#L3370) | MODALS | `onClose`, `onSave` | `LayersApp` |
-| `LayersApp` | [App.jsx:3402](../../src/App.jsx#L3402) | APP | — | `main.jsx` (root) |
+| `DateDropdown` | [App.jsx:451](../../src/App.jsx#L451) | HELPERS | `value`, `onChange`, `maxDate`, `minDate` | `LogInteractionModal`, `GoalModal` |
+| `TimeDropdown` | [App.jsx:522](../../src/App.jsx#L522) | HELPERS | `value`, `onChange` | `LogInteractionModal` |
+| `CircularProgress` | [App.jsx:1036](../../src/App.jsx#L1036) | UI ATOMS | `percent`, `size`, `stroke`, `color`, `track`, `label` | `PersonProfile` |
+| `ProgressBar` | [App.jsx:1056](../../src/App.jsx#L1056) | UI ATOMS | `percent`, `color`, `height`, `track` | `LabeledBar`, `GoalRow`, `HomeView`, `PeopleView` |
+| `LabeledBar` | [App.jsx:1064](../../src/App.jsx#L1064) | UI ATOMS | `label`, `percent`, `color`, `size` | `PersonProfile`, `CoachView`, `MeView` |
+| `Avatar` | [App.jsx:1076](../../src/App.jsx#L1076) | UI ATOMS | `emoji`, `size`, `ringColor`, `bg` | `HomeView`, `PeopleView`, `PersonProfile`, `GoalsView`, `CoachView`, `LogInteractionModal`, `GoalModal` |
+| `LayerBadge` | [App.jsx:1084](../../src/App.jsx#L1084) | UI ATOMS | `layerId` | `PeopleView`, `PersonProfile`, `CoachView` |
+| `ChatBubble` | [App.jsx:1094](../../src/App.jsx#L1094) | UI ATOMS | `who`, `text` | `CoachView` |
+| `Timeline` | [App.jsx:1105](../../src/App.jsx#L1105) | UI ATOMS | `steps` | `PersonProfile` |
+| `ConvStateBadge` | [App.jsx:1124](../../src/App.jsx#L1124) | UI ATOMS | `stateKey` | `CoachView` |
+| `GoalRow` | [App.jsx:1139](../../src/App.jsx#L1139) | GOAL ROW / INFO ROW / NAV / SHEET | `goal`, `color`, `personName`, `onBump`, `onEdit`, `onDelete` | `PersonProfile`, `GoalsView` |
+| `InfoItemRow` | [App.jsx:1185](../../src/App.jsx#L1185) | GOAL ROW / INFO ROW / NAV / SHEET | `item`, `onSave`, `onDelete`, `onToggleTemporary`, `onToggleArchive` | `PersonProfile` |
+| `BottomNav` | [App.jsx:1217](../../src/App.jsx#L1217) | GOAL ROW / INFO ROW / NAV / SHEET | `active`, `onChange` | `LayersApp` |
+| `SheetLayerContext` | [App.jsx:1245](../../src/App.jsx#L1245) | GOAL ROW / INFO ROW / NAV / SHEET | — | `LayersApp` |
+| `SheetPortal` | [App.jsx:1251](../../src/App.jsx#L1251) | GOAL ROW / INFO ROW / NAV / SHEET | `children` | `Sheet`, `ConfirmDialog` |
+| `Sheet` | [App.jsx:1256](../../src/App.jsx#L1256) | GOAL ROW / INFO ROW / NAV / SHEET | `title`, `onClose`, `children`, `footer`, `tall` | `ShortcutsModal`, `DateDropdown`, `TimeDropdown`, `PrepareTipsModal`, `EditPersonModal`, `LogInteractionModal`, `GoalModal`, `TemplatePickerModal`, `AddInfoModal`, `AddPersonModal` |
+| `HomeView` | [App.jsx:1276](../../src/App.jsx#L1276) | HOME | `people`, `journal`, `generalGoals`, `events`, `profile`, `onOpenPerson`, `onSwitchTab`, `onOpenGoals`, `onOpenCoach`, `onLogEvent`, `onManageEvents`, `onEditEvent`, `onDeleteEvent` | `LayersApp` |
+| `PeopleView` | [App.jsx:1552](../../src/App.jsx#L1552) | PEOPLE | `people`, `journal`, `onOpenPerson`, `onAddPerson` | `LayersApp` |
+| `AdjustSlider` | [App.jsx:1728](../../src/App.jsx#L1728) | PERSON PROFILE | `label`, `value`, `onChange`, `color` | `PersonProfile` |
+| `PrepareTipsModal` | [App.jsx:1740](../../src/App.jsx#L1740) | PERSON PROFILE | `person`, `journal`, `onClose`, `onOpenFullCoach` | `PersonProfile` |
+| `PersonProfile` | [App.jsx:1767](../../src/App.jsx#L1767) | PERSON PROFILE | `person`, `journal`, `onBack`, `onOpenLog`, `onOpenGoalCreate`, `onOpenGoalEdit`, `onDeleteGoal`, `onBumpGoal`, `onOpenAddInfo`, `onOpenQuickAddInterest`, `onSaveInfo`, `onDeleteInfo`, `onToggleTemporary`, `onToggleArchive`, `onAdjust`, `onOpenCoach`, `onEditPerson`, `onClearLevelUpFlag` | — |
+| `GoalsView` | [App.jsx:1960](../../src/App.jsx#L1960) | GOALS OVERVIEW | `people`, `generalGoals`, `onBack`, `onOpenPerson`, `onOpenGoalCreate`, `onOpenGoalEdit`, `onDeleteGoal`, `onBumpGoal` | `LayersApp` |
+| `JournalView` | [App.jsx:2019](../../src/App.jsx#L2019) | JOURNAL | `people`, `journal`, `onOpenPerson` | `LayersApp` |
+| `CoachView` | [App.jsx:2142](../../src/App.jsx#L2142) | CONVERSATION COACH | `people`, `journal`, `generalGoals`, `initialPersonId`, `initialTab`, `onOpenLog`, `onApproveInfo`, `onLogFromAnalysis`, `onOpenPerson` | `LayersApp` |
+| `MeView` | [App.jsx:2496](../../src/App.jsx#L2496) | ME / SOCIAL SKILLS | `people`, `journal`, `skills`, `generalGoals`, `profile`, `onBack`, `onRestoreSample`, `onStartOver`, `onExport`, `onImportClick`, `hasUpdater`, `updateStatus`, `onCheckForUpdates`, `onInstallUpdate`, `theme`, `onSetTheme`, `hasSystemBridge`, `autoLaunch`, `onToggleAutoLaunch`, `onOpenShortcuts`, `appVersion` | `LayersApp` |
+| `OnboardingView` | [App.jsx:2647](../../src/App.jsx#L2647) | ONBOARDING | `initialName`, `initialFocus`, `onComplete` | `LayersApp` |
+| `ConfirmDialog` | [App.jsx:2722](../../src/App.jsx#L2722) | MODALS | `title`, `message`, `confirmLabel`, `danger`, `onConfirm`, `onCancel` | `LayersApp` |
+| `EditPersonModal` | [App.jsx:2744](../../src/App.jsx#L2744) | MODALS | `person`, `onClose`, `onSave`, `onDelete` | `LayersApp` |
+| `LogInteractionModal` | [App.jsx:2765](../../src/App.jsx#L2765) | MODALS | `people`, `defaultPersonId`, `events`, `initialStep`, `initialEditEvent`, `onClose`, `onSubmit`, `onCreateEvent`, `onUpdateEvent`, `onDeleteEvent` | `LayersApp` |
+| `GoalModal` | [App.jsx:3147](../../src/App.jsx#L3147) | MODALS | `people`, `defaultPersonId`, `editingGoal`, `editingPersonId`, `onClose`, `onSave` | `LayersApp` |
+| `TemplatePickerModal` | [App.jsx:3295](../../src/App.jsx#L3295) | MODALS | `title`, `subtitle`, `onClose`, `onPick`, `allowMultiple` | `HomeView`, `LogInteractionModal` |
+| `QuickAddInterestModal` | [App.jsx:3355](../../src/App.jsx#L3355) | MODALS | `personName`, `onClose`, `onSave` | `LayersApp` |
+| `AddInfoModal` | [App.jsx:3367](../../src/App.jsx#L3367) | MODALS | `personName`, `category`, `onClose`, `onSave` | `LayersApp` |
+| `AddPersonModal` | [App.jsx:3396](../../src/App.jsx#L3396) | MODALS | `onClose`, `onSave` | `LayersApp` |
+| `LayersApp` | [App.jsx:3428](../../src/App.jsx#L3428) | APP | — | `main.jsx` (root) |
 
 ## Functions
 
@@ -97,25 +97,33 @@ Package: `layers-web` v1.0.24 · `src/App.jsx`: 4044 lines, 37 components, 41 to
 | `historySortKey` | [App.jsx:341](../../src/App.jsx#L341) | HELPERS |  |
 | `sortHistory` | [App.jsx:358](../../src/App.jsx#L358) | HELPERS |  |
 | `pushHistoryPoint` | [App.jsx:374](../../src/App.jsx#L374) | HELPERS |  |
-| `parseISODay` | [App.jsx:383](../../src/App.jsx#L383) | HELPERS |  |
-| `journalEntryDay` | [App.jsx:388](../../src/App.jsx#L388) | HELPERS |  |
-| `journalDaysAgo` | [App.jsx:397](../../src/App.jsx#L397) | HELPERS | ✓ |
-| `journalDateLabel` | [App.jsx:401](../../src/App.jsx#L401) | HELPERS | ✓ |
-| `isJournalThisWeek` | [App.jsx:406](../../src/App.jsx#L406) | HELPERS | ✓ |
-| `backfillJournalDates` | [App.jsx:415](../../src/App.jsx#L415) | HELPERS | ✓ |
-| `formatTime12` | [App.jsx:490](../../src/App.jsx#L490) | HELPERS |  |
-| `nowToMinutes` | [App.jsx:497](../../src/App.jsx#L497) | HELPERS |  |
-| `summaryFor` | [App.jsx:549](../../src/App.jsx#L549) | HELPERS | ✓ |
-| `updateStatusText` | [App.jsx:555](../../src/App.jsx#L555) | HELPERS | ✓ |
-| `homeGoalTitle` | [App.jsx:569](../../src/App.jsx#L569) | HELPERS | ✓ |
-| `generateSuggestions` | [App.jsx:584](../../src/App.jsx#L584) | HELPERS | ✓ |
-| `loadSaved` | [App.jsx:890](../../src/App.jsx#L890) | LOCAL PERSISTENCE |  |
-| `persistState` | [App.jsx:901](../../src/App.jsx#L901) | LOCAL PERSISTENCE |  |
-| `getLastNotifiedDate` | [App.jsx:910](../../src/App.jsx#L910) | LOCAL PERSISTENCE |  |
-| `setLastNotifiedDate` | [App.jsx:913](../../src/App.jsx#L913) | LOCAL PERSISTENCE |  |
-| `getCheckInSuggestions` | [App.jsx:917](../../src/App.jsx#L917) | LOCAL PERSISTENCE | ✓ |
-| `cssVarBlock` | [App.jsx:928](../../src/App.jsx#L928) | CSS |  |
-| `buildPotentialHooks` | [App.jsx:2092](../../src/App.jsx#L2092) | CONVERSATION COACH |  |
+| `parseISODay` | [App.jsx:384](../../src/App.jsx#L384) | HELPERS |  |
+| `storedDay` | [App.jsx:389](../../src/App.jsx#L389) | HELPERS |  |
+| `storedDaysAgo` | [App.jsx:397](../../src/App.jsx#L397) | HELPERS |  |
+| `storedDateLabel` | [App.jsx:401](../../src/App.jsx#L401) | HELPERS |  |
+| `journalDaysAgo` | [App.jsx:406](../../src/App.jsx#L406) | HELPERS | ✓ |
+| `journalDateLabel` | [App.jsx:407](../../src/App.jsx#L407) | HELPERS | ✓ |
+| `isJournalThisWeek` | [App.jsx:409](../../src/App.jsx#L409) | HELPERS | ✓ |
+| `infoItemDaysAgo` | [App.jsx:410](../../src/App.jsx#L410) | HELPERS | ✓ |
+| `infoItemDateLabel` | [App.jsx:411](../../src/App.jsx#L411) | HELPERS | ✓ |
+| `timelineDateLabel` | [App.jsx:413](../../src/App.jsx#L413) | HELPERS | ✓ |
+| `backfillAnchor` | [App.jsx:423](../../src/App.jsx#L423) | HELPERS |  |
+| `backfillDated` | [App.jsx:427](../../src/App.jsx#L427) | HELPERS |  |
+| `backfillJournalDates` | [App.jsx:437](../../src/App.jsx#L437) | HELPERS | ✓ |
+| `backfillPeopleDates` | [App.jsx:440](../../src/App.jsx#L440) | HELPERS | ✓ |
+| `formatTime12` | [App.jsx:513](../../src/App.jsx#L513) | HELPERS |  |
+| `nowToMinutes` | [App.jsx:520](../../src/App.jsx#L520) | HELPERS |  |
+| `summaryFor` | [App.jsx:572](../../src/App.jsx#L572) | HELPERS | ✓ |
+| `updateStatusText` | [App.jsx:578](../../src/App.jsx#L578) | HELPERS | ✓ |
+| `homeGoalTitle` | [App.jsx:592](../../src/App.jsx#L592) | HELPERS | ✓ |
+| `generateSuggestions` | [App.jsx:607](../../src/App.jsx#L607) | HELPERS | ✓ |
+| `loadSaved` | [App.jsx:916](../../src/App.jsx#L916) | LOCAL PERSISTENCE |  |
+| `persistState` | [App.jsx:927](../../src/App.jsx#L927) | LOCAL PERSISTENCE |  |
+| `getLastNotifiedDate` | [App.jsx:936](../../src/App.jsx#L936) | LOCAL PERSISTENCE |  |
+| `setLastNotifiedDate` | [App.jsx:939](../../src/App.jsx#L939) | LOCAL PERSISTENCE |  |
+| `getCheckInSuggestions` | [App.jsx:943](../../src/App.jsx#L943) | LOCAL PERSISTENCE | ✓ |
+| `cssVarBlock` | [App.jsx:954](../../src/App.jsx#L954) | CSS |  |
+| `buildPotentialHooks` | [App.jsx:2118](../../src/App.jsx#L2118) | CONVERSATION COACH |  |
 
 ## Constants
 
@@ -145,22 +153,22 @@ Package: `layers-web` v1.0.24 · `src/App.jsx`: 4044 lines, 37 components, 41 to
 | `WEEKDAY_SHORT` | [App.jsx:276](../../src/App.jsx#L276) | HELPERS |
 | `WEEKDAY_FULL` | [App.jsx:277](../../src/App.jsx#L277) | HELPERS |
 | `MONTH_NAMES` | [App.jsx:287](../../src/App.jsx#L287) | HELPERS |
-| `SCENARIOS` | [App.jsx:596](../../src/App.jsx#L596) | MOCK SCREENSHOT-ANALYSIS SCENARIOS |
-| `INITIAL_PEOPLE` | [App.jsx:709](../../src/App.jsx#L709) | SEED DATA |
-| `INITIAL_GENERAL_GOALS` | [App.jsx:839](../../src/App.jsx#L839) | SEED DATA |
-| `INITIAL_JOURNAL` | [App.jsx:846](../../src/App.jsx#L846) | SEED DATA |
-| `INITIAL_SKILLS` | [App.jsx:856](../../src/App.jsx#L856) | SEED DATA |
-| `SKILL_ORDER` | [App.jsx:864](../../src/App.jsx#L864) | SEED DATA |
-| `FOCUS_SKILL_KEY` | [App.jsx:865](../../src/App.jsx#L865) | SEED DATA |
-| `FOCUS_TEXT` | [App.jsx:866](../../src/App.jsx#L866) | SEED DATA |
-| `CHALLENGE_TEXT` | [App.jsx:867](../../src/App.jsx#L867) | SEED DATA |
-| `EMPTY_SKILLS` | [App.jsx:869](../../src/App.jsx#L869) | SEED DATA |
-| `FOCUS_OPTIONS` | [App.jsx:878](../../src/App.jsx#L878) | SEED DATA |
-| `FOCUS_LABELS` | [App.jsx:884](../../src/App.jsx#L884) | SEED DATA |
-| `STORAGE_KEY` | [App.jsx:888](../../src/App.jsx#L888) | LOCAL PERSISTENCE |
-| `LAST_NOTIFIED_KEY` | [App.jsx:909](../../src/App.jsx#L909) | LOCAL PERSISTENCE |
-| `CSS` | [App.jsx:932](../../src/App.jsx#L932) | CSS |
-| `HOOKS` | [App.jsx:2080](../../src/App.jsx#L2080) | CONVERSATION COACH |
+| `SCENARIOS` | [App.jsx:619](../../src/App.jsx#L619) | MOCK SCREENSHOT-ANALYSIS SCENARIOS |
+| `INITIAL_PEOPLE` | [App.jsx:735](../../src/App.jsx#L735) | SEED DATA |
+| `INITIAL_GENERAL_GOALS` | [App.jsx:865](../../src/App.jsx#L865) | SEED DATA |
+| `INITIAL_JOURNAL` | [App.jsx:872](../../src/App.jsx#L872) | SEED DATA |
+| `INITIAL_SKILLS` | [App.jsx:882](../../src/App.jsx#L882) | SEED DATA |
+| `SKILL_ORDER` | [App.jsx:890](../../src/App.jsx#L890) | SEED DATA |
+| `FOCUS_SKILL_KEY` | [App.jsx:891](../../src/App.jsx#L891) | SEED DATA |
+| `FOCUS_TEXT` | [App.jsx:892](../../src/App.jsx#L892) | SEED DATA |
+| `CHALLENGE_TEXT` | [App.jsx:893](../../src/App.jsx#L893) | SEED DATA |
+| `EMPTY_SKILLS` | [App.jsx:895](../../src/App.jsx#L895) | SEED DATA |
+| `FOCUS_OPTIONS` | [App.jsx:904](../../src/App.jsx#L904) | SEED DATA |
+| `FOCUS_LABELS` | [App.jsx:910](../../src/App.jsx#L910) | SEED DATA |
+| `STORAGE_KEY` | [App.jsx:914](../../src/App.jsx#L914) | LOCAL PERSISTENCE |
+| `LAST_NOTIFIED_KEY` | [App.jsx:935](../../src/App.jsx#L935) | LOCAL PERSISTENCE |
+| `CSS` | [App.jsx:958](../../src/App.jsx#L958) | CSS |
+| `HOOKS` | [App.jsx:2106](../../src/App.jsx#L2106) | CONVERSATION COACH |
 
 ## Electron IPC
 
@@ -168,12 +176,12 @@ Package: `layers-web` v1.0.24 · `src/App.jsx`: 4044 lines, 37 components, 41 to
 
 | Channel | Direction | Defined |
 |---|---|---|
-| `update-status` | main → renderer push | [main.cjs:43](../../electron/main.cjs#L43) |
-| `check-for-updates` | invoke → handle | [main.cjs:79](../../electron/main.cjs#L79) |
-| `quit-and-install` | send → on | [main.cjs:90](../../electron/main.cjs#L90) |
-| `get-app-version` | invoke → handle | [main.cjs:159](../../electron/main.cjs#L159) |
-| `get-auto-launch` | invoke → handle | [main.cjs:164](../../electron/main.cjs#L164) |
-| `set-auto-launch` | invoke → handle | [main.cjs:167](../../electron/main.cjs#L167) |
+| `update-status` | main → renderer push | [main.cjs:55](../../electron/main.cjs#L55) |
+| `check-for-updates` | invoke → handle | [main.cjs:91](../../electron/main.cjs#L91) |
+| `quit-and-install` | send → on | [main.cjs:102](../../electron/main.cjs#L102) |
+| `get-app-version` | invoke → handle | [main.cjs:171](../../electron/main.cjs#L171) |
+| `get-auto-launch` | invoke → handle | [main.cjs:176](../../electron/main.cjs#L176) |
+| `set-auto-launch` | invoke → handle | [main.cjs:179](../../electron/main.cjs#L179) |
 
 ### Preload bridges (what the renderer can call)
 
@@ -199,6 +207,7 @@ None — every channel is wired on both sides.
 | `npm run build:local` | `vite build --config vite.config.local.js` |
 | `npm run sync:app` | `node scripts/sync-app.mjs` |
 | `npm run docs:map` | `node scripts/gen-code-map.mjs` |
+| `npm run release` | `node scripts/release.mjs` |
 | `npm run build:electron` | `npm run build:local && npm run sync:app` |
 | `npm run lint` | `oxlint` |
 | `npm run test` | `vitest run` |
