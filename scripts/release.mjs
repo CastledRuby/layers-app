@@ -8,7 +8,8 @@
 //   npm run release -- --publish-only     upload the current version's built files (after a failed upload)
 //   npm run release -- --install-only     just install the current version's installer from release/<version>/
 //
-// Order: everything local (bump, test, build, package) runs before anything
+// Order: everything local (bump, verify, build, package, end-to-end tests on
+// that exact build) runs before anything
 // leaves this computer, so a failure there leaves GitHub untouched. Then:
 // commit "Release vX.Y.Z" and push it to main, create the published GitHub
 // release with the asset names latest.yml expects, check the public update
@@ -194,11 +195,13 @@ async function main() {
   }
   log(`Releasing ${v}`);
 
-  npm('test');
-  npm('run', 'build:electron');
   npm('run', 'docs:map');
+  npm('run', 'verify');
+  npm('run', 'build:electron');
   run('npx', ['electron-builder', '--win', '--x64', '--publish', 'never', `--config.directories.output=release/${v}`], { shell: true });
   checkBuiltFiles(v);
+  // The packaged app itself, before it's published (docs/testing.md).
+  run('node', ['scripts/e2e.mjs', '--exe', join(releaseDir(v), 'win-unpacked', 'Layers.exe')]);
 
   git('add', '-A');
   git('commit', '--quiet', '-m', `Release v${v}`);
