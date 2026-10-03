@@ -4,7 +4,7 @@
 > Run `npm run docs:map` after changing `src/App.jsx`, `electron/*.cjs` or `package.json` scripts.
 > Hand-written explanations live in the other files under [`docs/`](../README.md).
 
-Package: `layers-web` v1.0.24 · `src/App.jsx`: 4069 lines, 37 components, 49 top-level functions, 40 constants.
+Package: `layers-web` v1.0.25 · `src/App.jsx`: 4069 lines, 37 components, 49 top-level functions, 40 constants.
 
 ## App.jsx sections
 
