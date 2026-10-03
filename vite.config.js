@@ -25,6 +25,9 @@ export default defineConfig({
   },
   test: {
     // .claude/worktrees/ holds full checkouts of this repo made by Claude Code.
-    exclude: [...configDefaults.exclude, '.claude/**'],
+    // tests/e2e/ is Playwright's (npm run test:e2e), not Vitest's.
+    exclude: [...configDefaults.exclude, '.claude/**', 'tests/e2e/**'],
+    // Unit tests run in Node; tests/app/ opts into jsdom per file.
+    setupFiles: ['tests/setup.js'],
   },
 })
