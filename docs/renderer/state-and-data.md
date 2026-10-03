@@ -2,7 +2,7 @@
 
 ## Where state lives
 
-All app state is `useState` in `LayersApp` (section **APP**). Screens receive slices as
+All app state is `useState` in `LayersApp` ([`src/App.jsx`](../../src/App.jsx)). Screens receive slices as
 props, and they receive mutations as `on*` callbacks that point at `handle*` functions
 in `LayersApp`. Child components never call a setter for shared data directly.
 

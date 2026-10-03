@@ -42,7 +42,7 @@ The project is mapped in **[`docs/`](docs/README.md)**:
 - [Architecture](docs/architecture.md): processes, folder layout, build pipeline
 - [Build & release](docs/build-and-release.md): commands, release checklist, checking which build is installed
 - [Electron shell](docs/electron.md): window, tray, shortcuts, auto-update, IPC bridge
-- [Renderer structure](docs/renderer/app-structure.md): screens, navigation, modals inside `src/App.jsx`
+- [Renderer structure](docs/renderer/app-structure.md): which file holds what in `src/`, screens, navigation, modals
 - [State & data](docs/renderer/state-and-data.md): data model, persistence, progression maths
 - [UI system](docs/renderer/ui-system.md): theme tokens, layout, the sheet/portal system
 - [Known issues](docs/known-issues.md): evaluation findings and tech debt

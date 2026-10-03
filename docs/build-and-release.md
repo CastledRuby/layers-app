@@ -24,7 +24,7 @@
 
 `scripts/sync-app.mjs` copies that file to `electron/app/index.html`, the only renderer
 file electron-builder packages. **`electron/app/index.html` is a committed build
-artifact.** If it's older than `src/App.jsx`, the desktop app is running old code.
+artifact.** If it's older than the files in `src/`, the desktop app is running old code.
 
 ## Dependencies vs devDependencies
 

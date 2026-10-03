@@ -2,7 +2,7 @@
 
 ## Colours and theming
 
-- `THEME_LIGHT` and `THEME_DARK` (section **DESIGN TOKENS**) are matching palettes:
+- `THEME_LIGHT` and `THEME_DARK` ([`src/theme.js`](../../src/theme.js)) are matching palettes:
   `paper`, `paperRaised`, `ink`, `inkSoft`, `line`, `accent`, `accentSoft`, four layer
   colours (each with `Tint`/`Deep`), plus `plum`, `teal`, `good`, `warn`, `alert`.
 - `COLORS` **doesn't hold colours.** It maps each key to a CSS variable reference, so

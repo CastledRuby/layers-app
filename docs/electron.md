@@ -33,7 +33,7 @@ plain browser.
 | `onStatus(cb)` → `unsubscribe` | `on('update-status')` | Main pushes `{ state: 'checking' \| 'available' \| 'up-to-date' \| 'downloading' \| 'ready' \| 'not-configured' \| 'error', version?, percent?, message? }` |
 
 The renderer turns these statuses into toasts and the Me-tab update row
-(`updateStatusText()` in App.jsx, which is unit-tested).
+(`updateStatusText()` in `src/lib/text.js`, which is unit-tested).
 
 ### `window.layersSystem`
 
@@ -55,7 +55,7 @@ Ctrl+Shift+L doesn't message the renderer. Up to 1.0.23 it also sent
 2. Expose a narrow function in `preload.cjs` under the existing `layersSystem` or
    `layersUpdater` object. Never expose `ipcRenderer` itself. For listeners, return an
    unsubscribe function, following `onStatus`.
-3. In `App.jsx`, feature-detect (`window.layersSystem && window.layersSystem.newThing`)
+3. In `LayersApp` (`src/App.jsx`), feature-detect (`window.layersSystem && window.layersSystem.newThing`)
    so the web build keeps working. Subscribe inside a `useEffect` that returns the
    unsubscribe.
 4. Run `npm run docs:map`. The *Channel mismatches* list in the code map should stay empty.

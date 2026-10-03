@@ -17,32 +17,11 @@ change `src/` and package without `npm run build:electron`, or install a build w
 bumping `version`, the app runs stale code that looks current. That happened with the
 "Edit goal" bug: the installed 1.0.23 (Sep 19) predated the source's 1.0.23 (Sep 25).
 Follow the checklist in [build-and-release.md](build-and-release.md). Consider a
-`prepackage` guard that fails when `electron/app/index.html` is older than `src/App.jsx`.
+`prepackage` guard that fails when `electron/app/index.html` is older than the files in `src/`.
 
 ## Maintainability
 
-### 2. `src/App.jsx` is a ~4,000-line monolith
-
-Every component, constant and handler is in one file. Fast Refresh can't hot-swap it,
-because it also exports non-components (the `only-export-components` lint warnings),
-so every edit reloads the page. A low-risk split is to follow the existing section banners:
-
-```text
-src/theme.js          THEME_*, COLORS, CSS
-src/data/*.js         PRESETS, NOTE_TEMPLATES, SCENARIOS, seed data
-src/lib/dates.js      date helpers + history helpers
-src/lib/progress.js   computeOverall, advanceLayer, layerForOverall, log/adjust maths
-src/components/*.jsx  atoms, Sheet/SheetPortal, GoalRow, InfoItemRow, pickers
-src/views/*.jsx       one file per screen
-src/modals/*.jsx      one file per modal
-src/App.jsx           LayersApp only
-```
-
-The pure maths in `handleLogSubmit` / `handleLogFromAnalysis` / `handleAdjust` is
-currently untestable because it's inlined in the handlers. Extracting it into
-`src/lib/progress.js` would allow unit tests.
-
-### 3. Smaller items
+### 2. Smaller items
 
 - **Unchecked imports.** A backup's `version` field isn't checked, and individual
   entities aren't validated, so a malformed file can crash a view.
@@ -60,13 +39,14 @@ currently untestable because it's inlined in the handlers. Extracting it into
   referenced anywhere. The `src/assets/*` files are Vite template leftovers.
 - **Misleading updater setting.** `autoDownload = false` is set, but the
   `update-available` handler calls `downloadUpdate()` immediately anyway.
-- **Lint warnings.** oxlint reports warnings, not errors, in `App.jsx`: unused catch
+- **Lint warnings.** oxlint reports warnings, not errors, in `src/`: unused catch
   params and props, one `exhaustive-deps` in `GoalsView`, one `no-unused-expressions`.
 
 ## Resolved
 
 | Version | Issue |
 |---|---|
+| 1.0.26 | `src/App.jsx` was a ~4,000-line monolith. It's now split by role into `data/`, `lib/`, `components/`, `modals/` and `views/` ([renderer/app-structure.md](renderer/app-structure.md)), and Fast Refresh works again. |
 | 1.0.25 | Info-item ("Last mentioned") and timeline dates never aged, so profile suggestions ("Ideas for next time") never appeared for notes you saved. They now store an ISO `at` like journal entries, and `backfillPeopleDates` dates existing data on load. See [renderer/state-and-data.md](renderer/state-and-data.md#dates-store-the-day-derive-the-label). |
 | 1.0.24 | Sheets rendered outside the theme scope. They had transparent panels, black text, didn't line up with the phone frame on tall windows, and used the wrong font. Fixed with `.app-shell`/`.sheet-layer` + `SheetPortal`. See [renderer/ui-system.md](renderer/ui-system.md#history-of-the-edit-goal-bug-fixed-in-1024). |
 | 1.0.24 | Journal dates never aged. Entries read "Today" forever, weekly counts only grew, and check-in reminders never fired. Entries now store an ISO `at` date, labels and "this week" are derived when rendered, and older entries are backfilled by `backfillJournalDates`. See [renderer/state-and-data.md](renderer/state-and-data.md#dates-store-the-day-derive-the-label). |

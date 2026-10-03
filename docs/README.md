@@ -5,7 +5,7 @@ React single-page app packaged as a Windows/Linux desktop app with Electron, and
 all data in `localStorage` on the device.
 
 These docs map the project so you can find your way around a codebase whose renderer
-lives in one ~4,000-line file (`src/App.jsx`).
+is split across `src/` by role (data, logic, components, modals, views).
 
 ## Start here
 
@@ -14,7 +14,7 @@ lives in one ~4,000-line file (`src/App.jsx`).
 | Get the big picture: processes, folders, how a build becomes an `.exe` | [architecture.md](architecture.md) |
 | Run, build, version and ship a release (and avoid running a stale build) | [build-and-release.md](build-and-release.md) |
 | Change the desktop shell: window, tray, shortcuts, auto-update, IPC | [electron.md](electron.md) |
-| Find a screen or component inside `App.jsx`, or see how screens connect | [renderer/app-structure.md](renderer/app-structure.md) |
+| Find which file a screen, sheet or helper lives in, or see how screens connect | [renderer/app-structure.md](renderer/app-structure.md) |
 | Understand the data model, persistence and the layer/progress maths | [renderer/state-and-data.md](renderer/state-and-data.md) |
 | Change colours, themes, layout, sheets/modals, toasts or shortcuts | [renderer/ui-system.md](renderer/ui-system.md) |
 | See what's broken, risky or worth cleaning up | [known-issues.md](known-issues.md) |
@@ -25,7 +25,7 @@ lives in one ~4,000-line file (`src/App.jsx`).
 The docs come in two kinds:
 
 - **Hand-written docs** (everything except `generated/`) explain *what* things are and
-  *why*. They name functions and section banners, not line numbers, so they survive edits.
+  *why*. They name files and functions, not line numbers, so they survive edits.
 - **The generated code map** (`generated/code-map.md`) records *where* things are, with
   line links. `scripts/gen-code-map.mjs` rebuilds it from the source:
 
@@ -48,4 +48,3 @@ The table above tells you which page owns which topic.
 
 - File links are relative, so they work on GitHub and in VS Code's Markdown preview.
 - Mermaid diagrams (` ```mermaid `) render on GitHub and in VS Code with a Mermaid extension.
-- "Section" means one of the `/* ===== NAME ===== */` banners that divide `App.jsx`.

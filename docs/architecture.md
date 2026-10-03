@@ -46,9 +46,15 @@ feature is guarded by `hasUpdater` / `hasSystemBridge` checks in `LayersApp`.
 .
 ├── src/                      Renderer source (the actual app)
 │   ├── main.jsx              React entry: mounts <LayersApp/> in StrictMode
-│   ├── App.jsx               Everything else — tokens, data, logic, CSS, every component
+│   ├── App.jsx               LayersApp: all state, handlers, shortcuts, layout
+│   ├── theme.js              Design tokens + the global CSS string
+│   ├── data/                 Static data (constants, seed, coach scenarios)
+│   ├── lib/                  Pure logic: dates, progress, text, storage
+│   ├── components/           Shared UI: Sheet, atoms, rows, pickers, BottomNav
+│   ├── modals/               One file per sheet/dialog
+│   ├── views/                One file per screen
 │   ├── index.css             Tailwind directives + html/body reset
-│   ├── logic.test.js         Vitest unit tests for the pure helpers exported from App.jsx
+│   ├── logic.test.js         Vitest unit tests for lib/
 │   └── assets/               Vite template leftovers (unused)
 ├── public/                   Copied as-is into web builds (icon.svg, PWA manifest.json)
 ├── index.html                Vite HTML entry
@@ -118,7 +124,7 @@ flowchart TD
 | Concern | Choice |
 |---|---|
 | UI | React 19 (`react-dom/client`, StrictMode) |
-| Styling | Tailwind 3 utility classes + one runtime CSS string (`CSS` in App.jsx) + inline `style={{…}}` using `COLORS` tokens |
+| Styling | Tailwind 3 utility classes + one runtime CSS string (`CSS` in `theme.js`) + inline `style={{…}}` using `COLORS` tokens |
 | Icons / charts | `lucide-react`, `recharts` |
 | Bundler | Vite 8 + `@vitejs/plugin-react`; `vite-plugin-singlefile` for the Electron build |
 | Desktop | Electron 44, `electron-window-state`, `electron-updater`, `electron-builder` (NSIS + portable, AppImage) |

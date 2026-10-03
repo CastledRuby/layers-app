@@ -1,13 +1,14 @@
-// Generates docs/generated/code-map.md: a line-numbered index of the
-// renderer (src/App.jsx), the Electron IPC surface and the npm scripts.
-// App.jsx is one ~4,000-line file, so hand-written docs describe *what*
-// things are and link here for *where* they are — this file is rebuilt
-// from source instead of drifting.
+// Generates docs/generated/code-map.md: a line-numbered index of every
+// renderer source file under src/ (components with their props and who
+// renders them, functions, constants), the Electron IPC surface and the
+// npm scripts. Hand-written docs describe *what* things are and link here
+// for *where* they are, and this file is rebuilt from source instead of
+// drifting.
 //
 //   npm run docs:map          regenerate
 //   npm run docs:map -- --check   exit 1 if the committed map is stale
-import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs';
-import { dirname, join } from 'node:path';
+import { readFileSync, writeFileSync, mkdirSync, existsSync, readdirSync } from 'node:fs';
+import { dirname, join, posix } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
@@ -15,25 +16,36 @@ const read = (p) => readFileSync(join(root, p), 'utf8').replace(/\r\n/g, '\n');
 const OUT = 'docs/generated/code-map.md';
 // Links are relative to docs/generated/.
 const link = (file, line) => `[${file.split('/').pop()}:${line}](../../${file}#L${line})`;
+const fileLink = (file) => `[${file.replace(/^src\//, '')}](../../${file})`;
 
-/* ---------- src/App.jsx ---------- */
+/* ---------- src/ ---------- */
 
-const APP = 'src/App.jsx';
-const appLines = read(APP).split('\n');
+function walk(dir) {
+  return readdirSync(join(root, dir), { withFileTypes: true }).flatMap(e => {
+    const p = `${dir}/${e.name}`;
+    if (e.isDirectory()) return walk(p);
+    return /\.jsx?$/.test(e.name) && !/\.test\.jsx?$/.test(e.name) ? [p] : [];
+  });
+}
+// main.jsx and App.jsx first, then folders in dependency order.
+const ORDER = ['src/main.jsx', 'src/App.jsx', 'src/theme.js', 'src/data/', 'src/lib/', 'src/components/', 'src/modals/', 'src/views/'];
+const rank = (f) => { const i = ORDER.findIndex(o => f === o || f.startsWith(o)); return i < 0 ? ORDER.length : i; };
+const files = walk('src').sort((a, b) => rank(a) - rank(b) || a.localeCompare(b));
+const fileLines = Object.fromEntries(files.map(f => [f, read(f).split('\n')]));
 
-// Top-level declarations only (column 0), so nested helpers inside
-// components don't show up as their own entries.
+// Top-level declarations only (column 0, optionally exported), so nested
+// helpers inside components don't show up as their own entries.
 const decls = [];
-const sections = [];
-appLines.forEach((text, i) => {
-  const line = i + 1;
-  const banner = text.match(/^\/\* =+ (.+?) =+ \*\/$/);
-  if (banner) { sections.push({ name: banner[1], line }); return; }
-  const fn = text.match(/^(?:export )?function (\w+)\s*\((.*)/);
-  if (fn) { decls.push({ name: fn[1], line, kind: /^[A-Z]/.test(fn[1]) ? 'component' : 'function', props: parseProps(fn[2]) }); return; }
-  const c = text.match(/^(?:export )?(?:const|let) (\w+)\s*=/);
-  if (c) decls.push({ name: c[1], line, kind: /^[A-Z][A-Z0-9_]*$/.test(c[1]) ? 'constant' : (/^[A-Z]/.test(c[1]) ? 'component' : 'function'), props: [] });
-});
+for (const file of files) {
+  fileLines[file].forEach((text, i) => {
+    const line = i + 1;
+    const exported = text.startsWith('export ');
+    const fn = text.match(/^(?:export )?function (\w+)\s*\((.*)/);
+    if (fn) { decls.push({ file, name: fn[1], line, exported, kind: /^[A-Z]/.test(fn[1]) ? 'component' : 'function', props: parseProps(fn[2]) }); return; }
+    const c = text.match(/^(?:export )?(?:const|let) (\w+)\s*=/);
+    if (c) decls.push({ file, name: c[1], line, exported, kind: /^[A-Z][A-Z0-9_]*$/.test(c[1]) ? 'constant' : (/^[A-Z]/.test(c[1]) ? 'component' : 'function'), props: [] });
+  });
+}
 
 // "({ a, b = 1, c })" -> ['a', 'b', 'c']; tolerates defaults containing
 // commas/braces by only splitting at brace depth 1.
@@ -52,14 +64,9 @@ function parseProps(rest) {
   return names.map(s => s.trim().split(/[=:\s]/)[0]).filter(Boolean);
 }
 
-function sectionOf(line) {
-  let s = sections[0] ? sections[0].name : '';
-  for (const sec of sections) if (sec.line <= line) s = sec.name;
-  return s;
-}
-function ownerOf(line) {
+function ownerOf(file, line) {
   let owner = null;
-  for (const d of decls) if (d.line <= line) owner = d; else break;
+  for (const d of decls) if (d.file === file && d.line <= line) owner = d;
   return owner ? owner.name : null;
 }
 
@@ -67,16 +74,24 @@ function ownerOf(line) {
 // occurrence, attributed to the top-level declaration that contains it.
 const components = decls.filter(d => d.kind === 'component');
 const usedBy = Object.fromEntries(components.map(c => [c.name, new Set()]));
-appLines.forEach((text, i) => {
-  for (const m of text.matchAll(/<([A-Z]\w*)[\s/>.]/g)) {
-    if (!usedBy[m[1]]) continue;
-    const owner = ownerOf(i + 1);
-    if (owner && owner !== m[1]) usedBy[m[1]].add(owner);
-  }
-});
+for (const file of files) {
+  fileLines[file].forEach((text, i) => {
+    for (const m of text.matchAll(/<([A-Z]\w*)[\s/>.]/g)) {
+      if (!usedBy[m[1]]) continue;
+      const owner = ownerOf(file, i + 1) || file.split('/').pop();
+      if (owner !== m[1]) usedBy[m[1]].add(owner);
+    }
+  });
+}
 
-const exportsLine = appLines.findIndex(l => /^export \{/.test(l));
-const testedExports = exportsLine >= 0 ? appLines[exportsLine].replace(/^export \{\s*|\s*\};?$/g, '').split(/\s*,\s*/) : [];
+// Local imports per file, for the file table.
+const importsOf = Object.fromEntries(files.map(f => [f, [...read(f).matchAll(/^import .* from '(\.[^']+)';$/gm)].map(m => m[1])]));
+
+// Names the unit tests import.
+const testedExports = readdirSync(join(root, 'src'))
+  .filter(n => /\.test\.jsx?$/.test(n))
+  .flatMap(n => [...read(`src/${n}`).matchAll(/import\s*\{([^}]+)\}\s*from/g)])
+  .flatMap(m => m[1].split(',').map(s => s.trim()).filter(Boolean));
 
 /* ---------- Electron ---------- */
 
@@ -110,37 +125,39 @@ const pkg = JSON.parse(read('package.json'));
 /* ---------- render ---------- */
 
 const out = [];
+const totalLines = files.reduce((n, f) => n + fileLines[f].length, 0);
 out.push('# Code map (generated)', '');
 out.push('> **Auto-generated by `scripts/gen-code-map.mjs` — do not edit by hand.**');
-out.push('> Run `npm run docs:map` after changing `src/App.jsx`, `electron/*.cjs` or `package.json` scripts.');
+out.push('> Run `npm run docs:map` after changing anything under `src/`, `electron/*.cjs` or `package.json` scripts.');
 out.push('> Hand-written explanations live in the other files under [`docs/`](../README.md).', '');
-out.push(`Package: \`${pkg.name}\` v${pkg.version} · \`${APP}\`: ${appLines.length} lines, ${components.length} components, ${decls.filter(d => d.kind === 'function').length} top-level functions, ${decls.filter(d => d.kind === 'constant').length} constants.`, '');
+out.push(`Package: \`${pkg.name}\` v${pkg.version} · \`src/\`: ${files.length} files, ${totalLines} lines, ${components.length} components, ${decls.filter(d => d.kind === 'function').length} top-level functions, ${decls.filter(d => d.kind === 'constant').length} constants.`, '');
 
-out.push('## App.jsx sections', '');
-out.push('| Section | Starts | Contains |', '|---|---|---|');
-sections.forEach((s, idx) => {
-  const end = sections[idx + 1] ? sections[idx + 1].line : Infinity;
-  const inside = decls.filter(d => d.line > s.line && d.line < end).map(d => d.name);
-  out.push(`| ${s.name} | ${link(APP, s.line)} | ${inside.length > 12 ? inside.slice(0, 12).join(', ') + `, … (+${inside.length - 12})` : inside.join(', ')} |`);
+out.push('## Source files', '');
+out.push('| File | Lines | Declares | Imports from |', '|---|---|---|---|');
+files.forEach(f => {
+  const inside = decls.filter(d => d.file === f).map(d => d.name);
+  const shown = inside.length > 10 ? inside.slice(0, 10).join(', ') + `, … (+${inside.length - 10})` : (inside.join(', ') || '—');
+  const deps = importsOf[f].map(p => `\`${posix.join(posix.dirname(f), p).replace(/^src\//, '').replace(/\.jsx?$/, '')}\``).join(', ') || '—';
+  out.push(`| ${fileLink(f)} | ${fileLines[f].length} | ${shown} | ${deps} |`);
 });
 out.push('');
 
 out.push('## Components', '');
-out.push('| Component | Defined | Section | Props | Rendered by |', '|---|---|---|---|---|');
+out.push('| Component | Defined | Props | Rendered by |', '|---|---|---|---|');
 components.forEach(c => {
   const by = [...usedBy[c.name]];
-  out.push(`| \`${c.name}\` | ${link(APP, c.line)} | ${sectionOf(c.line)} | ${c.props.length ? c.props.map(p => `\`${p}\``).join(', ') : '—'} | ${by.length ? by.map(b => `\`${b}\``).join(', ') : (c.name === 'LayersApp' ? '`main.jsx` (root)' : '—')} |`);
+  out.push(`| \`${c.name}\` | ${link(c.file, c.line)} | ${c.props.length ? c.props.map(p => `\`${p}\``).join(', ') : '—'} | ${by.length ? by.map(b => `\`${b}\``).join(', ') : '—'} |`);
 });
 out.push('');
 
 out.push('## Functions', '');
-out.push('| Function | Defined | Section | Unit-tested export |', '|---|---|---|---|');
-decls.filter(d => d.kind === 'function').forEach(d => out.push(`| \`${d.name}\` | ${link(APP, d.line)} | ${sectionOf(d.line)} | ${testedExports.includes(d.name) ? '✓' : ''} |`));
+out.push('| Function | Defined | Exported | Unit-tested |', '|---|---|---|---|');
+decls.filter(d => d.kind === 'function').forEach(d => out.push(`| \`${d.name}\` | ${link(d.file, d.line)} | ${d.exported ? '✓' : ''} | ${testedExports.includes(d.name) ? '✓' : ''} |`));
 out.push('');
 
 out.push('## Constants', '');
-out.push('| Constant | Defined | Section |', '|---|---|---|');
-decls.filter(d => d.kind === 'constant').forEach(d => out.push(`| \`${d.name}\` | ${link(APP, d.line)} | ${sectionOf(d.line)} |`));
+out.push('| Constant | Defined |', '|---|---|');
+decls.filter(d => d.kind === 'constant').forEach(d => out.push(`| \`${d.name}\` | ${link(d.file, d.line)} |`));
 out.push('');
 
 out.push('## Electron IPC', '');
@@ -181,5 +198,5 @@ if (process.argv.includes('--check')) {
 } else {
   mkdirSync(dirname(outPath), { recursive: true });
   writeFileSync(outPath, text);
-  console.log(`[docs:map] Wrote ${OUT} (${components.length} components, ${sections.length} sections).`);
+  console.log(`[docs:map] Wrote ${OUT} (${files.length} source files, ${components.length} components).`);
 }

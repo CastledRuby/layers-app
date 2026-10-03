@@ -1,15 +1,9 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { clamp } from './lib/util.js';
+import { computeOverall, layerForOverall, makePerson } from './lib/progress.js';
+import { summaryFor, homeGoalTitle, updateStatusText, getCheckInSuggestions, generateSuggestions } from './lib/text.js';
 import {
-  clamp,
-  computeOverall,
-  layerForOverall,
   parseDaysAgo,
-  summaryFor,
-  homeGoalTitle,
-  updateStatusText,
-  getCheckInSuggestions,
-  makePerson,
-  generateSuggestions,
   journalDaysAgo,
   journalDateLabel,
   isJournalThisWeek,
@@ -18,7 +12,7 @@ import {
   infoItemDateLabel,
   timelineDateLabel,
   backfillPeopleDates,
-} from './App.jsx';
+} from './lib/dates.js';
 
 // Local-time dates, mid-afternoon so a test never sits on a day boundary.
 const day = (y, m, d) => new Date(y, m - 1, d, 15, 30);

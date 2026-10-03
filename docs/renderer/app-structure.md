@@ -1,30 +1,44 @@
-# Renderer structure (`src/App.jsx`)
+# Renderer structure (`src/`)
 
-Everything in the renderer except the React mount (`src/main.jsx`) lives in
-[`src/App.jsx`](../../src/App.jsx). The file is divided by `/* ===== NAME ===== */` banners,
-and that order is the dependency order: tokens → data → helpers → CSS → atoms → screens →
-modals → the root component.
+The renderer is split by role. Imports only point down the list below, so there are no
+circular imports:
 
-Line-numbered tables of every section, component (with props and "rendered by"),
-function and constant are in [../generated/code-map.md](../generated/code-map.md).
+```text
+src/main.jsx                  mounts <LayersApp/>
+src/App.jsx                   LayersApp: all state, handlers, keyboard shortcuts, Electron wiring, layout
+src/theme.js                  design tokens (THEME_*, COLORS) and the global CSS string
+src/data/                     static data: no React, no logic
+src/lib/                      pure logic: no React (except hooks.js), unit-tested
+src/components/               shared UI pieces
+src/modals/                   one file per sheet/dialog
+src/views/                    one file per screen
+```
 
-## File layout by section
+Line-numbered tables of every file, component (with props and "rendered by"), function
+and constant are in [../generated/code-map.md](../generated/code-map.md).
 
-| Section banner | What lives there |
+## File layout
+
+| File | What lives there |
 |---|---|
-| **DESIGN TOKENS** | `THEME_LIGHT` / `THEME_DARK` palettes, `COLORS` (CSS-variable references), `LAYERS` (the 4 relationship layers), the six relationship dimensions (`DIM_*`), `makePerson`, info `CATEGORIES`, keyboard `SHORTCUTS` + `ShortcutsModal`, emoji lists, `NOTE_TEMPLATES` (quick-detail library), goal `PRESETS` + `PRESET_VARIANTS`, interaction `TYPE_META`, active-listening `AL_ITEMS`, `CONV_STATES`, `ACHIEVEMENTS` |
-| **HELPERS** | `clamp`, `uid`, relative/absolute date helpers (`parseDaysAgo`, `dateToRelativeLabel`, `formatAbsoluteDate`, `toISODate`), chart-history helpers (`sortHistory`, `pushHistoryPoint`), journal-date helpers (`journalDaysAgo`, `journalDateLabel`, `isJournalThisWeek`, `backfillJournalDates`), `DateDropdown`, `TimeDropdown`, text builders (`summaryFor`, `updateStatusText`, `homeGoalTitle`, `generateSuggestions`) |
-| **MOCK SCREENSHOT-ANALYSIS SCENARIOS** | `SCENARIOS`: canned transcripts and gradings used by the Coach "Analyse" tab. There is no real image analysis. |
-| **SEED DATA** | Example people, goals, journal entries and skills (`INITIAL_*`), `EMPTY_SKILLS`, onboarding `FOCUS_OPTIONS` |
-| **LOCAL PERSISTENCE** | `STORAGE_KEY`, `loadSaved`, `persistState`, daily check-in notification bookkeeping, `getCheckInSuggestions` |
-| **CSS** | The `CSS` template string injected by `<style>{CSS}</style>`: theme variables, phone frame, sheet layer, nav, FAB, toasts, animations. See [ui-system.md](ui-system.md). |
-| **UI ATOMS** | `CircularProgress`, `ProgressBar`, `LabeledBar`, `Avatar`, `LayerBadge`, `ChatBubble`, `Timeline`, `ConvStateBadge` |
-| **GOAL ROW / INFO ROW / NAV / SHEET** | `GoalRow`, `InfoItemRow`, `BottomNav`, and the overlay plumbing: `SheetLayerContext`, `SheetPortal`, `Sheet` |
-| **HOME** · **PEOPLE** · **PERSON PROFILE** · **GOALS OVERVIEW** · **JOURNAL** · **CONVERSATION COACH** · **ME / SOCIAL SKILLS** · **ONBOARDING** | One section per screen (below) |
-| **MODALS** | `ConfirmDialog`, `EditPersonModal`, `LogInteractionModal`, `GoalModal`, `TemplatePickerModal`, `QuickAddInterestModal`, `AddInfoModal`, `AddPersonModal` |
-| **APP** | `LayersApp`: all state, every mutation handler, keyboard shortcuts, Electron bridge wiring, and the top-level layout |
+| [`theme.js`](../../src/theme.js) | `THEME_LIGHT` / `THEME_DARK` palettes, `COLORS` (CSS-variable references), and the `CSS` string injected by `<style>{CSS}</style>`: theme variables, phone frame, sheet layer, nav, FAB, toasts, animations. See [ui-system.md](ui-system.md). |
+| [`data/constants.js`](../../src/data/constants.js) | `LAYERS` (the 4 relationship layers), the six dimensions (`DIM_*`), info `CATEGORIES`, keyboard `SHORTCUTS`, emoji lists, `NOTE_TEMPLATES` (quick-detail library), goal `PRESETS` + `PRESET_VARIANTS`, interaction `TYPE_META`, active-listening `AL_ITEMS`, `CONV_STATES`, `ACHIEVEMENTS`, onboarding `FOCUS_OPTIONS`, skills order |
+| [`data/seed.js`](../../src/data/seed.js) | Example people, goals, journal and skills (`INITIAL_*`), `EMPTY_SKILLS` |
+| [`data/scenarios.js`](../../src/data/scenarios.js) | `SCENARIOS`: canned transcripts and gradings for the Coach "Analyse" tab. There is no real image analysis. |
+| [`lib/util.js`](../../src/lib/util.js) | `clamp`, `uid` |
+| [`lib/dates.js`](../../src/lib/dates.js) | Every date helper: relative/absolute labels, chart history (`sortHistory`, `pushHistoryPoint`), the stored-`at` helpers for journal entries, info items and timeline steps, and the `backfill*` loaders. See [state-and-data.md](state-and-data.md#dates-store-the-day-derive-the-label). |
+| [`lib/progress.js`](../../src/lib/progress.js) | `computeOverall`, `layerForOverall`, `advanceLayer`, `makePerson`, `generateGoalDescription` |
+| [`lib/text.js`](../../src/lib/text.js) | Sentence builders: `summaryFor`, `homeGoalTitle`, `generateSuggestions`, `getCheckInSuggestions`, `buildPotentialHooks`, `updateStatusText` |
+| [`lib/storage.js`](../../src/lib/storage.js) | `loadSaved` / `persistState` (the `layers-app-state-v1` key) and the last-notified-day bookkeeping |
+| [`components/`](../../src/components/) | `Sheet` + `SheetPortal` (and `sheetLayer.js` for the context), `atoms.jsx` (`CircularProgress`, `ProgressBar`, `LabeledBar`, `Avatar`, `LayerBadge`, `ChatBubble`, `Timeline`, `ConvStateBadge`), `rows.jsx` (`GoalRow`, `InfoItemRow`), `BottomNav`, `pickers.jsx` (`DateDropdown`, `TimeDropdown`) |
+| [`modals/`](../../src/modals/) | `ConfirmDialog`, `EditPersonModal`, `LogInteractionModal`, `GoalModal`, `TemplatePickerModal`, `QuickAddInterestModal`, `AddInfoModal`, `AddPersonModal`, `ShortcutsModal` |
+| [`views/`](../../src/views/) | `HomeView`, `PeopleView`, `PersonProfile` (with `AdjustSlider`, `PrepareTipsModal`), `GoalsView`, `JournalView`, `CoachView`, `MeView`, `OnboardingView` |
+| [`App.jsx`](../../src/App.jsx) | `LayersApp` only |
 
-At the bottom, a named `export { … }` exposes pure helpers for `src/logic.test.js`.
+Where new code goes: anything without React goes in `lib/` (and gets a test in
+`src/logic.test.js`); a new screen gets its own file in `views/`, a new sheet one in
+`modals/`. Component files export only components. React Fast Refresh needs that, and
+it's why `SheetLayerContext` lives in its own `sheetLayer.js`.
 
 ## Navigation model
 
