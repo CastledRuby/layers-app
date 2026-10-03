@@ -85,7 +85,7 @@ export function Timeline({ steps }) {
           </div>
           <div className="pb-4">
             <p className="text-sm font-medium" style={{ color: s.current ? COLORS.accent : COLORS.ink }}>{s.label}</p>
-            <p className="text-xs" style={{ color: COLORS.inkSoft }}>{timelineDateLabel(s)}</p>
+            <p className="text-xs" style={{ color: COLORS.inkSoft }}>{s.prefix || ''}{timelineDateLabel(s)}</p>
           </div>
         </div>
       ))}

@@ -7,7 +7,7 @@ import { GoalRow } from '../components/rows.jsx';
 import { getLayer } from '../data/constants.js';
 import { COLORS } from '../theme.js';
 
-export function GoalsView({ people, generalGoals, onBack, onOpenPerson, onOpenGoalCreate, onOpenGoalEdit, onDeleteGoal, onBumpGoal }) {
+export function GoalsView({ today, people, generalGoals, onBack, onOpenPerson, onOpenGoalCreate, onOpenGoalEdit, onDeleteGoal, onBumpGoal }) {
   const [filter, setFilter] = useState('active');
   const passFilter = g => filter === 'all' ? true : filter === 'active' ? g.progress < 100 : g.progress >= 100;
 
@@ -52,7 +52,7 @@ export function GoalsView({ people, generalGoals, onBack, onOpenPerson, onOpenGo
               <span className="text-sm font-semibold" style={{ color: COLORS.ink }}>{grp.name}</span>
             </button>
             {grp.goals.map(g => (
-              <GoalRow key={g.id} goal={g} color={grp.color}
+              <GoalRow key={g.id} goal={g} color={grp.color} today={today}
                 onBump={() => onBumpGoal(grp.id, g.id)}
                 onEdit={() => onOpenGoalEdit(grp.id, g)}
                 onDelete={() => onDeleteGoal(grp.id, g.id, g.title)} />

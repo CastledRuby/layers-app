@@ -7,7 +7,8 @@ import { Sheet } from '../components/Sheet.jsx';
 import { Avatar, CircularProgress, LabeledBar, LayerBadge, Timeline } from '../components/atoms.jsx';
 import { GoalRow, InfoItemRow } from '../components/rows.jsx';
 import { CATEGORIES, DIM_COLORS, DIM_LABELS, DIM_ORDER, getLayer } from '../data/constants.js';
-import { parseISODay, sortHistory } from '../lib/dates.js';
+import { parseISODay, sortByDay, sortHistory } from '../lib/dates.js';
+import { computeOverall, dimsEqual, placeOnLayers, progressDelta } from '../lib/progress.js';
 import { buildPotentialHooks, generateSuggestions } from '../lib/text.js';
 import { COLORS } from '../theme.js';
 
@@ -66,7 +67,14 @@ export function PersonProfile({ today, person, journal, onBack, onOpenLog, onOpe
   }, [person.justLeveledUp, person.id, onClearLevelUpFlag]);
 
   function openAdjust() { setDraft(person.dims); setShowAdjust(true); }
-  function saveAdjust() { onAdjust(draft); setShowAdjust(false); }
+  // Saving untouched sliders just closes the panel; nothing moves.
+  function saveAdjust() { if (!dimsEqual(draft, person.dims)) onAdjust(draft); setShowAdjust(false); }
+  // Where saving would put them, shown before you save.
+  const preview = showAdjust ? placeOnLayers(computeOverall(draft)) : null;
+  const change = person.lastChange
+    ? { ...person.lastChange, beforeLayer: person.lastChange.beforeLayer || person.layer, afterLayer: person.lastChange.afterLayer || person.layer }
+    : null;
+  const changeDelta = change ? progressDelta({ layer: change.beforeLayer, overall: change.before }, { layer: change.afterLayer, overall: change.after }) : 0;
 
   return (
     <div className="fade-anim px-5 pt-6 pb-6">
@@ -106,14 +114,20 @@ export function PersonProfile({ today, person, journal, onBack, onOpenLog, onOpe
         </p>
       </div>
 
-      {person.lastChange && (
+      {change && (
         <div className="mt-5 rounded-2xl p-4" style={{ background: l.tint }}>
+          {/* Across a layer change the percentages restart, so the card names
+              both layers and counts the gain through them (it used to say +0%). */}
           <div className="flex items-center justify-between">
-            <p className="text-sm font-semibold" style={{ color: l.deep }}>{person.lastChange.before}% → {person.lastChange.after}%</p>
-            <p className="text-sm font-semibold" style={{ color: l.deep }}>+{Math.max(0, person.lastChange.after - person.lastChange.before)}%</p>
+            <p className="text-sm font-semibold" style={{ color: l.deep }}>
+              {change.beforeLayer !== change.afterLayer
+                ? `Layer ${change.beforeLayer} · ${change.before}% → Layer ${change.afterLayer} · ${change.after}%`
+                : `${change.before}% → ${change.after}%`}
+            </p>
+            <p className="text-sm font-semibold" style={{ color: l.deep }}>{changeDelta >= 0 ? '+' : '−'}{Math.abs(changeDelta)}%</p>
           </div>
           <p className="text-xs mt-1 mb-1.5" style={{ color: COLORS.inkSoft }}>Why:</p>
-          {person.lastChange.why.map((w, i) => (<p key={i} className="text-xs" style={{ color: COLORS.ink }}>✓ {w}</p>))}
+          {change.why.map((w, i) => (<p key={i} className="text-xs" style={{ color: COLORS.ink }}>✓ {w}</p>))}
         </div>
       )}
 
@@ -130,6 +144,11 @@ export function PersonProfile({ today, person, journal, onBack, onOpenLog, onOpe
         <div className="mt-3 rounded-2xl p-4" style={{ background: COLORS.paperRaised, border: `1px solid ${COLORS.line}` }}>
           <p className="text-xs mb-3" style={{ color: COLORS.inkSoft }}>These are your own impressions, not precise measurements. Adjust them any time.</p>
           {DIM_ORDER.map(k => (<AdjustSlider key={k} label={DIM_LABELS[k]} value={draft[k]} onChange={v => setDraft(d => ({ ...d, [k]: v }))} color={DIM_COLORS[k]} />))}
+          <p className="text-xs mt-1" role="status" style={{ color: preview && preview.layer !== person.layer ? COLORS.accent : COLORS.inkSoft, fontWeight: preview && preview.layer !== person.layer ? 600 : 400 }}>
+            {dimsEqual(draft, person.dims)
+              ? 'Move a slider to change these. Saving now changes nothing.'
+              : `Saving puts ${person.name} at Layer ${preview.layer}: ${getLayer(preview.layer).name}, ${preview.overall}%${preview.layer !== person.layer ? ` (now Layer ${person.layer})` : ''}.`}
+          </p>
         </div>
       )}
 
@@ -156,7 +175,7 @@ export function PersonProfile({ today, person, journal, onBack, onOpenLog, onOpe
           {person.goals.length === 0 ? (
             <p className="text-sm" style={{ color: COLORS.inkSoft }}>No goals yet for {person.name}. Add one to start tracking progress.</p>
           ) : person.goals.map(g => (
-            <GoalRow key={g.id} goal={g} color={l.color}
+            <GoalRow key={g.id} goal={g} color={l.color} today={today}
               onBump={() => onBumpGoal(person.id, g.id)}
               onEdit={() => onOpenGoalEdit(person.id, g)}
               onDelete={() => onDeleteGoal(person.id, g.id, g.title)} />
@@ -217,7 +236,7 @@ export function PersonProfile({ today, person, journal, onBack, onOpenLog, onOpe
       <div className="mt-7">
         <p className="font-display" style={{ fontSize: 18, color: COLORS.ink }}>Relationship timeline</p>
         <div className="mt-3">
-          <Timeline steps={[...person.timeline, { label: `Current: ${l.name}`, date: 'Now', current: true }]} />
+          <Timeline steps={[...sortByDay(person.timeline || []), { label: `Current: Layer ${person.layer}, ${l.name}`, at: today, prefix: 'As of ', current: true }]} />
         </div>
       </div>
 

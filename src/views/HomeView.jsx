@@ -4,7 +4,7 @@ import { useMemo, useState } from 'react';
 import { Repeat, X } from 'lucide-react';
 import { Avatar, ProgressBar } from '../components/atoms.jsx';
 import { FOCUS_LABELS, getLayer } from '../data/constants.js';
-import { formatCalendarDate, formatTime12, formatWeekdays, isJournalThisWeek, journalDateLabel, journalDaysAgo, parseISODay, startOfDay } from '../lib/dates.js';
+import { formatCalendarDate, formatTime12, formatWeekdays, isJournalThisWeek, journalDateLabel, journalDaysAgo, newestFirst, parseISODay, startOfDay } from '../lib/dates.js';
 import { homeGoalTitle, summaryFor } from '../lib/text.js';
 import { TemplatePickerModal } from '../modals/TemplatePickerModal.jsx';
 import { COLORS } from '../theme.js';
@@ -23,11 +23,9 @@ export function HomeView({ today, people, journal, generalGoals, events, profile
   const [upcomingTemplatesOpen, setUpcomingTemplatesOpen] = useState(false);
   const [manageEventsOpen, setManageEventsOpen] = useState(false);
 
-  // "Upcoming" is Layers' current, honest take on reminders: a same-session
-  // in-app list of what's due soon, computed fresh each time Home renders.
-  // It is NOT an OS-level push notification — Layers doesn't yet have any
-  // background/notification permission plumbing in the Electron main
-  // process, so nothing fires while the app is closed or minimized.
+  // "Upcoming" lists what's due in the next week, worked out from `today`.
+  // These are in-app reminders: the only desktop notification Layers sends is
+  // the daily check-in nudge (lib/hooks.js).
   const upcoming = useMemo(() => {
     const day = startOfDay(now);
     const items = [];
@@ -77,7 +75,7 @@ export function HomeView({ today, people, journal, generalGoals, events, profile
     return [...fromPeople, ...fromGeneral].sort((a, b) => b.progress - a.progress).slice(0, 4);
   }, [people, generalGoals]);
 
-  const recent = journal.slice(0, 3);
+  const recent = useMemo(() => newestFirst(journal, now).filter(j => peopleById[j.personId]).slice(0, 3), [journal, now, peopleById]);
 
   return (
     <div className="px-5 pt-6 pb-4">
@@ -137,8 +135,8 @@ export function HomeView({ today, people, journal, generalGoals, events, profile
         </div>
       </div>
 
-      {(upcoming.length > 0 || (events && events.length > 0)) && (
-        <div className="mt-7">
+      {/* Always shown, so "+ New" is there before the first reminder exists. */}
+      <div className="mt-7">
           <div className="flex items-center justify-between">
             <p className="font-display" style={{ fontSize: 19, color: COLORS.ink }}>Upcoming</p>
             <div className="flex items-center gap-3">
@@ -148,7 +146,7 @@ export function HomeView({ today, people, journal, generalGoals, events, profile
               <button onClick={onManageEvents} className="text-xs font-medium" style={{ color: COLORS.accent }}>+ New</button>
             </div>
           </div>
-          <p className="text-xs mt-0.5 mb-2.5" style={{ color: COLORS.inkSoft }}>In-app reminders — Layers doesn't send OS notifications yet.</p>
+          <p className="text-xs mt-0.5 mb-2.5" style={{ color: COLORS.inkSoft }}>{upcoming.length > 0 ? 'Reminders for the next 7 days.' : 'Nothing in the next 7 days. Use + New for a one-off or weekly reminder.'}</p>
 
           {manageEventsOpen && (
             <div className="rounded-2xl p-3.5 mb-3" style={{ background: COLORS.paperRaised, border: `1px solid ${COLORS.line}` }}>
@@ -165,7 +163,7 @@ export function HomeView({ today, people, journal, generalGoals, events, profile
                         <div style={{ minWidth: 0 }}>
                           <p className="text-xs font-semibold truncate" style={{ color: COLORS.ink }}>{ev.title}</p>
                           <p className="text-xs mt-0.5" style={{ color: COLORS.inkSoft }}>
-                            {ev.kind === 'recurring' ? formatWeekdays(evWeekdays) : (ev.date || 'One-off')}
+                            {ev.kind === 'recurring' ? formatWeekdays(evWeekdays) : ev.date ? `${formatCalendarDate(new Date(`${ev.date}T00:00:00`))}${ev.date < today ? ' (passed)' : ''}` : 'One-off'}
                             {ev.time != null ? ` · ${formatTime12(ev.time)}` : ''}
                             {evPeople.length > 0 ? ` · ${evPeople.map(p => p.name).join(', ')}` : ''}
                           </p>
@@ -229,15 +227,14 @@ export function HomeView({ today, people, journal, generalGoals, events, profile
                     </div>
                   )}
                   {isOpen && evPeople.length === 0 && (
-                    <p className="text-xs mt-2" style={{ color: COLORS.inkSoft }}>This event has no one linked to it, so there's nothing to log — edit it under People to add someone.</p>
+                    <p className="text-xs mt-2" style={{ color: COLORS.inkSoft }}>Nobody is linked to this reminder, so there's nothing to log. Use Manage, then Edit, to add someone.</p>
                   )}
                 </div>
               );
             })}
           </div>
           )}
-        </div>
-      )}
+      </div>
 
       {quietPeople.length > 0 && (
         <div className="mt-7">

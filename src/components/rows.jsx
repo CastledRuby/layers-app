@@ -1,23 +1,25 @@
 // List rows for goals and saved info items.
 
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { Archive, Check, Clock, Pencil, Trash2, TrendingUp } from 'lucide-react';
 import { ProgressBar } from './atoms.jsx';
 import { presetMeta } from '../data/constants.js';
-import { infoItemDateLabel, startOfDay } from '../lib/dates.js';
+import { infoItemDateLabel, parseISODay, startOfDay } from '../lib/dates.js';
 import { COLORS } from '../theme.js';
 
-export function GoalRow({ goal, color, personName, onBump, onEdit, onDelete }) {
+// `today` ('YYYY-MM-DD', from useToday) keeps "Due in 2 days" correct after
+// midnight; it used to be worked out once and kept until something else changed.
+export function GoalRow({ goal, color, today, onBump, onEdit, onDelete }) {
   const done = goal.progress >= 100;
   const preset = presetMeta(goal.type);
-  const dueInfo = useMemo(() => {
-    if (!goal.dueDate || done) return null;
+  let dueInfo = null;
+  if (goal.dueDate && !done) {
     const due = new Date(goal.dueDate + 'T00:00:00');
-    const daysUntil = Math.round((due - startOfDay(new Date())) / 86400000);
+    const daysUntil = Math.round((due - startOfDay(parseISODay(today) || new Date())) / 86400000);
     const dueColor = daysUntil < 0 ? COLORS.alert : daysUntil <= 3 ? COLORS.warn : COLORS.good;
     const label = daysUntil < 0 ? `${Math.abs(daysUntil)} day${Math.abs(daysUntil) === 1 ? '' : 's'} overdue` : daysUntil === 0 ? 'Due today' : `Due in ${daysUntil} day${daysUntil === 1 ? '' : 's'}`;
-    return { dueColor, label };
-  }, [goal.dueDate, done]);
+    dueInfo = { dueColor, label };
+  }
   return (
     <div className="rounded-2xl p-3 mb-2" style={{ background: COLORS.paperRaised, border: `1px solid ${COLORS.line}`, borderLeft: `4px solid ${color}` }}>
       <div className="flex items-start justify-between gap-2">

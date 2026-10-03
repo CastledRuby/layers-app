@@ -6,15 +6,17 @@ import { Calendar, Check, Clock, MessageCircle, Plus, Repeat, X } from 'lucide-r
 import { Sheet } from '../components/Sheet.jsx';
 import { Avatar } from '../components/atoms.jsx';
 import { DateDropdown, TimeDropdown } from '../components/pickers.jsx';
-import { AL_ITEMS, getLayer, TYPE_META, TYPE_ORDER } from '../data/constants.js';
-import { formatTime12, formatWeekdays, nowToMinutes, toISODate, WEEKDAY_SHORT } from '../lib/dates.js';
+import { AL_ITEMS, getLayer, NOTE_TEMPLATE_CATEGORY, TYPE_META, TYPE_ORDER } from '../data/constants.js';
+import { formatCalendarDate, formatTime12, formatWeekdays, nowToMinutes, toISODate, WEEKDAY_SHORT } from '../lib/dates.js';
 import { TemplatePickerModal } from './TemplatePickerModal.jsx';
 import { COLORS } from '../theme.js';
 
 export function LogInteractionModal({ people, defaultPersonId, events, initialStep, initialEditEvent, onClose, onSubmit, onCreateEvent, onUpdateEvent, onDeleteEvent }) {
   const [step, setStep] = useState(initialStep || 'kind'); // kind -> type -> who -> details  |  kind -> eventKind -> eventChoice -> eventForm/eventList
   const [type, setType] = useState(null);
-  const [personIds, setPersonIds] = useState(defaultPersonId ? [defaultPersonId] : []);
+  // Only preselect someone who still exists (Coach can pass a removed person).
+  const startPerson = defaultPersonId && people.some(p => p.id === defaultPersonId) ? defaultPersonId : null;
+  const [personIds, setPersonIds] = useState(startPerson ? [startPerson] : []);
   const [meaningfulness, setMeaningfulness] = useState(3);
   const [al, setAl] = useState([]);
   const [quickNote, setQuickNote] = useState('');
@@ -24,7 +26,7 @@ export function LogInteractionModal({ people, defaultPersonId, events, initialSt
 
   const [eventKind, setEventKind] = useState(null); // 'recurring' | 'oneoff'
   const [eventTitle, setEventTitle] = useState('');
-  const [eventPersonIds, setEventPersonIds] = useState(defaultPersonId ? [defaultPersonId] : []);
+  const [eventPersonIds, setEventPersonIds] = useState(startPerson ? [startPerson] : []);
   const [eventDate, setEventDate] = useState(() => new Date());
   const [eventWeekdays, setEventWeekdays] = useState([new Date().getDay()]);
   const [eventTime, setEventTime] = useState(() => nowToMinutes());
@@ -44,7 +46,7 @@ export function LogInteractionModal({ people, defaultPersonId, events, initialSt
   useEffect(() => {
     if (step !== 'details') return;
     function onKey(e) {
-      if (noteTemplatesOpen) return;
+      if (noteTemplatesOpen || e.ctrlKey || e.metaKey || e.altKey) return;
       const tag = document.activeElement && document.activeElement.tagName;
       if (tag === 'INPUT' || tag === 'TEXTAREA') return;
       if (e.key === 'd' || e.key === 'D') { e.preventDefault(); setNoteTemplatesOpen(true); }
@@ -75,7 +77,14 @@ export function LogInteractionModal({ people, defaultPersonId, events, initialSt
   }, []);
 
   const canSave = personIds.length > 0 && type;
-  function handleSave() { if (!canSave) return; const combined = [...quickNoteTags, quickNote.trim()].filter(Boolean).join(', '); onSubmit({ personIds, type, meaningfulness, notes: [], activeListening: al, summary: combined || undefined, pickedDate: logDate }); }
+  // Topics picked with "+ Add detail" are also saved on the person's profile
+  // (NOTE_TEMPLATE_CATEGORY says where) when the log is with one person; a
+  // group log keeps them in its note only. They used to reach only the note.
+  const profileNotes = personIds.length === 1
+    ? quickNoteTags.filter(t => NOTE_TEMPLATE_CATEGORY[t.cat]).map(t => ({ category: NOTE_TEMPLATE_CATEGORY[t.cat], text: t.text, emoji: t.emoji }))
+    : [];
+  const loggedPerson = personIds.length === 1 ? people.find(p => p.id === personIds[0]) : null;
+  function handleSave() { if (!canSave) return; const combined = [...quickNoteTags.map(t => t.text), quickNote.trim()].filter(Boolean).join(', '); onSubmit({ personIds, type, meaningfulness, notes: profileNotes, activeListening: al, summary: combined || undefined, pickedDate: logDate }); }
 
   const canSaveEvent = eventTitle.trim().length > 0 && (eventKind !== 'recurring' || eventWeekdays.length > 0);
   function handleSaveEvent() {
@@ -121,10 +130,11 @@ export function LogInteractionModal({ people, defaultPersonId, events, initialSt
     <Sheet title={titles[step]} onClose={onClose} footer={footer} tall>
       {step === 'kind' && (
         <div className="grid grid-cols-2 gap-3">
-          <button onClick={() => setStep('type')} className="rounded-2xl py-6 flex flex-col items-center gap-2" style={{ background: COLORS.paperRaised, border: `1.5px solid ${COLORS.line}` }}>
+          {/* With nobody in your circle yet, only events can be made. */}
+          <button onClick={() => people.length > 0 && setStep('type')} disabled={people.length === 0} className="rounded-2xl py-6 flex flex-col items-center gap-2" style={{ background: COLORS.paperRaised, border: `1.5px solid ${COLORS.line}`, opacity: people.length === 0 ? 0.55 : 1 }}>
             <MessageCircle size={26} color={COLORS.accent} />
             <span className="text-sm font-semibold" style={{ color: COLORS.ink }}>Interaction</span>
-            <span className="text-xs text-center" style={{ color: COLORS.inkSoft }}>Something that already happened</span>
+            <span className="text-xs text-center" style={{ color: COLORS.inkSoft }}>{people.length === 0 ? 'Add someone in People first' : 'Something that already happened'}</span>
           </button>
           <button onClick={() => setStep('eventKind')} className="rounded-2xl py-6 flex flex-col items-center gap-2" style={{ background: COLORS.paperRaised, border: `1.5px solid ${COLORS.line}` }}>
             <Calendar size={26} color={COLORS.accent} />
@@ -190,17 +200,20 @@ export function LogInteractionModal({ people, defaultPersonId, events, initialSt
             <button type="button" onClick={() => setNoteTemplatesOpen(true)} className="text-xs font-semibold" style={{ color: COLORS.accent }}>+ Add detail <span style={{ fontFamily: 'monospace', opacity: 0.7 }}>(D)</span></button>
           </div>
           {noteTemplatesOpen && (
-            <TemplatePickerModal title="Add detail" onClose={() => setNoteTemplatesOpen(false)} onPick={(item) => setQuickNoteTags(prev => [...prev, item])} />
+            <TemplatePickerModal title="Add detail" onClose={() => setNoteTemplatesOpen(false)} onPick={(text, emoji, cat) => setQuickNoteTags(prev => [...prev, { text, emoji, cat }])} />
           )}
           {quickNoteTags.length > 0 && (
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 10 }}>
               {quickNoteTags.map((tag, i) => (
                 <span key={i} className="flex items-center gap-1 text-xs rounded-full pl-2.5 pr-1.5 py-1" style={{ background: COLORS.accentSoft, color: COLORS.accent }}>
-                  {tag}
-                  <button onClick={() => setQuickNoteTags(prev => prev.filter((_, idx) => idx !== i))} aria-label={`Remove "${tag}"`} className="p-0.5"><X size={11} /></button>
+                  {tag.text}
+                  <button onClick={() => setQuickNoteTags(prev => prev.filter((_, idx) => idx !== i))} aria-label={`Remove "${tag.text}"`} className="p-0.5"><X size={11} /></button>
                 </span>
               ))}
             </div>
+          )}
+          {profileNotes.length > 0 && loggedPerson && (
+            <p className="text-xs mb-2.5" style={{ color: COLORS.inkSoft }}>Topics are also saved to {loggedPerson.name}'s profile.</p>
           )}
           <input value={quickNote} onChange={e => setQuickNote(e.target.value)} placeholder="e.g. Caught up after school, good chat" className="w-full text-sm rounded-xl px-3 py-2.5 mb-5" style={{ border: `1px solid ${COLORS.line}` }} />
 
@@ -332,7 +345,7 @@ export function LogInteractionModal({ people, defaultPersonId, events, initialSt
         <>
           <button onClick={() => { setStep('eventChoice'); setSelectedExisting(null); }} className="text-xs font-semibold mb-3" style={{ color: COLORS.inkSoft }}>‹ Back</button>
           {existingOfKind.map(ev => {
-            const evPeople = ev.personIds.map(id => people.find(p => p.id === id)).filter(Boolean);
+            const evPeople = (ev.personIds || []).map(id => people.find(p => p.id === id)).filter(Boolean);
             const isSel = selectedExisting === ev.id;
             const evWeekdays = ev.weekdays || (ev.weekday != null ? [ev.weekday] : []);
             return (
@@ -340,7 +353,7 @@ export function LogInteractionModal({ people, defaultPersonId, events, initialSt
                 <button onClick={() => { const next = isSel ? null : ev.id; setSelectedExisting(next); if (next) { setLogMeaningfulness(ev.defaultMeaningfulness || 3); setLogQuickDetailTags([]); setLogTemplatesOpen(false); } }} className="w-full text-left">
                   <p className="text-sm font-semibold" style={{ color: COLORS.ink }}>{ev.title}</p>
                   <p className="text-xs mt-0.5" style={{ color: COLORS.inkSoft }}>
-                    {ev.kind === 'recurring' ? formatWeekdays(evWeekdays) : ev.date}
+                    {ev.kind === 'recurring' ? formatWeekdays(evWeekdays) : (ev.date ? formatCalendarDate(new Date(`${ev.date}T00:00:00`)) : 'One-off')}
                     {ev.time != null ? ` · ${formatTime12(ev.time)}` : ''}
                     {evPeople.length > 0 ? ` · ${evPeople.map(p => p.name).join(', ')}` : ''}
                   </p>

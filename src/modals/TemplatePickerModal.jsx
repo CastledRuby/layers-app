@@ -12,22 +12,24 @@ import { COLORS } from '../theme.js';
 // when logging and "Quick add interest" on a person's profile. Big buttons
 // filling the sheet rather than a small scrolling strip. onPick receives
 // (text, emoji) so callers that need an icon (interests) have one, and
-// callers that just want text (notes) can ignore the second argument.
+// callers that just want text (notes) can ignore the second argument. The
+// third is the NOTE_TEMPLATES category key ('custom' for typed text), which
+// the log uses to file a topic on the person's profile.
 export function TemplatePickerModal({ title, subtitle, onClose, onPick, allowMultiple }) {
   const [cat, setCat] = useState(null); // null = category grid | 'custom' | a NOTE_TEMPLATES key
   const [customText, setCustomText] = useState('');
   const [pickedCount, setPickedCount] = useState(0);
   const catData = cat && cat !== 'custom' ? NOTE_TEMPLATES.find(c => c.key === cat) : null;
 
-  function pickItem(text, emoji) {
-    onPick(text, emoji);
+  function pickItem(text, emoji, catKey) {
+    onPick(text, emoji, catKey);
     if (!allowMultiple) { onClose(); return; }
     setPickedCount(c => c + 1);
     setCat(null);
   }
   function saveCustom() {
     if (!customText.trim()) return;
-    pickItem(customText.trim(), '✏️');
+    pickItem(customText.trim(), '✏️', 'custom');
     setCustomText('');
   }
 
@@ -64,7 +66,7 @@ export function TemplatePickerModal({ title, subtitle, onClose, onPick, allowMul
           <button onClick={() => setCat(null)} className="text-xs font-semibold mb-3" style={{ color: COLORS.inkSoft }}>‹ Back</button>
           <div className="grid grid-cols-2 gap-2.5">
             {catData.items.map(item => (
-              <button key={item} onClick={() => pickItem(item, catData.emoji)} className="text-sm font-medium rounded-xl py-3.5 px-2 text-center" style={{ background: COLORS.accentSoft, color: COLORS.accent }}>{item}</button>
+              <button key={item} onClick={() => pickItem(item, catData.emoji, catData.key)} className="text-sm font-medium rounded-xl py-3.5 px-2 text-center" style={{ background: COLORS.accentSoft, color: COLORS.accent }}>{item}</button>
             ))}
           </div>
         </>

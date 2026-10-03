@@ -18,7 +18,8 @@ export const DIM_LABELS = { depth: 'Depth', trust: 'Trust', reciprocity: 'Recipr
 
 export const DIM_COLORS = { depth: COLORS.layer3, trust: COLORS.layer4, reciprocity: COLORS.plum, interaction: COLORS.layer1, sharedExperiences: COLORS.teal, listening: COLORS.layer2 };
 
-export const LAYER_BASE_DIMS = { 1: 10, 2: 30, 3: 55, 4: 80 };
+// Starting dimensions for someone added at each layer: 20% into its 25-point band.
+export const LAYER_BASE_DIMS = { 1: 5, 2: 30, 3: 55, 4: 80 };
 
 export const CATEGORIES = [
   { key: 'interests', label: 'Interests', placeholder: 'e.g. Loves rock climbing', emoji: '⭐' },
@@ -65,6 +66,17 @@ export const NOTE_TEMPLATES = [
   { key: 'clubs', label: 'Clubs/activities', emoji: '🧩', items: ['Debate team', 'Drama club', 'Student council', 'Choir/band', 'Scouts', 'Volunteering', 'Part-time job', 'Church/faith group', 'Gym', 'Book club'] },
   { key: 'life', label: 'Life stuff', emoji: '🌱', items: ['Family', 'A pet', 'Moving house', 'A trip/holiday', 'A relationship', 'Feeling stressed', 'Feeling excited', 'A health thing', 'A celebration', 'A tough week'] },
 ];
+
+// Where a topic picked with "+ Add detail" while logging is saved on the
+// person's profile (only when the log is with one person; a group log keeps
+// topics in its note). Hobby-type topics are interests; school/work and life
+// topics ("An exam", "Moving house") are temporary "Important" items, which
+// Prepare turns into "ask how it went". Custom text stays in the note only.
+export const NOTE_TEMPLATE_CATEGORY = {
+  sports: 'interests', videogames: 'interests', boardgames: 'interests', music: 'interests',
+  movies: 'interests', shows: 'interests', hobbies: 'interests', clubs: 'interests',
+  school: 'important', life: 'important',
+};
 
 export const PRESETS = [
   { key: 'becomeCloser', category: 'relationship', label: 'Become closer friends', emoji: '🤗', hint: 'Feel more like close friends day-to-day', suggestion: 'Small, low-pressure hangouts often build closeness faster than big conversations.' },
@@ -151,10 +163,17 @@ export const ACHIEVEMENTS = [
 export const SKILL_ORDER = ['activeListening', 'followUp', 'reciprocity', 'selfDisclosure', 'readingCues', 'knowingWhenToStop'];
 
 export const FOCUS_SKILL_KEY = 'reciprocity';
-
-export const FOCUS_TEXT = 'You ask strong follow-up questions, but you sometimes ask another question when you could share your own experience.';
-
-export const CHALLENGE_TEXT = 'In your next 3 conversations, when someone says something you can relate to, share your own experience before asking another question.';
+// The Me tab's "Your biggest strength" is your highest skill and "Current
+// focus" your lowest, each with its own tip and challenge. (Both used to be
+// fixed, so a brand-new user was told they "ask strong follow-up questions".)
+export const SKILL_TIPS = {
+  activeListening: { emoji: '🎧', focus: 'Listening well is the base of every good conversation: let people finish, and show you heard them.', challenge: 'In your next 3 conversations, put what they said into your own words once before you reply.' },
+  followUp: { emoji: '❓', focus: 'A good follow-up question shows you were listening and makes people feel interesting.', challenge: 'In your next 3 conversations, pick one detail they mention and ask about that detail specifically.' },
+  reciprocity: { emoji: '🔄', focus: 'Conversations feel balanced when you share about as much as you ask.', challenge: 'In your next 3 conversations, when someone says something you can relate to, share your own experience before asking another question.' },
+  selfDisclosure: { emoji: '💫', focus: 'Sharing a little about yourself helps people feel they know you, and invites them to share back.', challenge: "In your next 3 conversations, share one thing you're genuinely excited or unsure about." },
+  readingCues: { emoji: '👀', focus: 'Noticing energy, reply length and tone tells you when to go deeper and when to ease off.', challenge: 'In your next 5 conversations, notice one moment their energy changed, and what changed it.' },
+  knowingWhenToStop: { emoji: '🌤️', focus: 'Ending on a good note leaves people looking forward to the next conversation.', challenge: "In your next 3 conversations, wrap up while it's still going well, and mention when you'll talk next." },
+};
 
 export const FOCUS_OPTIONS = [
   { key: 'new', label: 'Building new friendships' },

@@ -6,14 +6,15 @@
 import { useEffect, useRef, useState } from 'react';
 import { Plus } from 'lucide-react';
 import { BottomNav } from './components/BottomNav.jsx';
-import { SheetLayerContext } from './components/sheetLayer.js';
-import { CATEGORIES, categoryMeta, getLayer } from './data/constants.js';
+import { ErrorBoundary } from './components/ErrorBoundary.jsx';
+import { hasOpenSheet, SheetLayerContext, topSheet } from './components/sheetLayer.js';
+import { categoryMeta, getLayer } from './data/constants.js';
 import { EMPTY_SKILLS, INITIAL_GENERAL_GOALS, INITIAL_JOURNAL, INITIAL_PEOPLE, INITIAL_SKILLS } from './data/seed.js';
-import { backfillJournalDates, backfillPeopleDates, formatAbsoluteDate, pushHistoryPoint, toISODate } from './lib/dates.js';
-import { advanceLayer, computeOverall, layerForOverall, makePerson } from './lib/progress.js';
+import { backfillJournalDates, backfillPeopleDates, backfillSkillDates, formatAbsoluteDate, pushHistoryPoint, toISODate } from './lib/dates.js';
+import { advanceLayer, bumpSkills, chartDay, computeOverall, dimsEqual, makePerson, movePerson, placeOnLayers } from './lib/progress.js';
 import { MAX_BACKUP_BYTES, createBackup, validateBackup } from './lib/backup.js';
 import { useDailyCheckIn, useToday } from './lib/hooks.js';
-import { loadSaved, persistState } from './lib/storage.js';
+import { loadSavedState, persistState } from './lib/storage.js';
 import { clamp, uid } from './lib/util.js';
 import { AddInfoModal } from './modals/AddInfoModal.jsx';
 import { AddPersonModal } from './modals/AddPersonModal.jsx';
@@ -34,13 +35,46 @@ import { OnboardingView } from './views/OnboardingView.jsx';
 import { PeopleView } from './views/PeopleView.jsx';
 import { PersonProfile } from './views/PersonProfile.jsx';
 
+// The sample people, goals, journal and skills, dated as of today.
+function sampleData() {
+  return {
+    people: backfillPeopleDates(INITIAL_PEOPLE),
+    journal: backfillJournalDates(INITIAL_JOURNAL),
+    generalGoals: INITIAL_GENERAL_GOALS,
+    skills: backfillSkillDates(INITIAL_SKILLS),
+  };
+}
+
+// Events can only point at people who exist.
+function unlinkMissingPeople(events, people) {
+  const ids = new Set(people.map(p => p.id));
+  return events.map(e => (e.personIds || []).every(id => ids.has(id)) ? e : { ...e, personIds: (e.personIds || []).filter(id => ids.has(id)) });
+}
+
+// Info items from a log. A topic that's already saved gets its "last
+// mentioned" day refreshed (and comes out of the archive) instead of being
+// added twice.
+function addNotes(person, notes, at) {
+  const cats = {};
+  notes.forEach(n => {
+    const list = cats[n.category] || person[n.category] || [];
+    const existing = list.find(it => it.text.trim().toLowerCase() === n.text.trim().toLowerCase());
+    cats[n.category] = existing
+      ? list.map(it => it === existing ? { ...it, at, archived: false } : it)
+      : [{ id: uid(), emoji: n.emoji || categoryMeta(n.category).emoji, text: n.text, at, temporary: n.category === 'important', archived: false }, ...list];
+  });
+  return cats;
+}
+
 function LayersApp() {
-  const [saved] = useState(() => loadSaved());
-  const [people, setPeople] = useState(() => backfillPeopleDates((saved && Array.isArray(saved.people)) ? saved.people : INITIAL_PEOPLE));
-  const [journal, setJournal] = useState(() => backfillJournalDates((saved && Array.isArray(saved.journal)) ? saved.journal : INITIAL_JOURNAL));
-  const [generalGoals, setGeneralGoals] = useState(() => (saved && Array.isArray(saved.generalGoals)) ? saved.generalGoals : INITIAL_GENERAL_GOALS);
-  const [events, setEvents] = useState(() => (saved && Array.isArray(saved.events)) ? saved.events : []);
-  const [skills, setSkills] = useState(() => (saved && saved.skills) ? saved.skills : INITIAL_SKILLS);
+  // Saved data is checked like an imported backup; see lib/storage.js.
+  const [loaded] = useState(() => loadSavedState());
+  const saved = loaded.state;
+  const [people, setPeople] = useState(() => backfillPeopleDates(saved ? saved.people : INITIAL_PEOPLE));
+  const [journal, setJournal] = useState(() => backfillJournalDates(saved ? saved.journal : INITIAL_JOURNAL));
+  const [generalGoals, setGeneralGoals] = useState(() => saved ? saved.generalGoals : INITIAL_GENERAL_GOALS);
+  const [events, setEvents] = useState(() => saved ? saved.events : []);
+  const [skills, setSkills] = useState(() => backfillSkillDates(saved ? saved.skills : INITIAL_SKILLS));
   const [profile, setProfile] = useState(() => (saved && saved.profile) ? saved.profile : { name: '', focus: null });
   const [onboarded, setOnboarded] = useState(() => !!(saved && saved.onboarded));
   const [theme, setTheme] = useState(() => (saved && saved.theme === 'dark') ? 'dark' : 'light');
@@ -71,15 +105,36 @@ function LayersApp() {
   const [editPersonOpen, setEditPersonOpen] = useState(false);
   const [confirmState, setConfirmState] = useState(null);
   const [sheetLayer, setSheetLayer] = useState(null);
+  const [searchFocus, setSearchFocus] = useState(null);
   const importInputRef = useRef(null);
+  const saveFailed = useRef(false);
 
   function askConfirm(opts) {
     setConfirmState({ ...opts, onConfirm: () => { opts.onConfirm(); setConfirmState(null); }, onCancel: () => setConfirmState(null) });
   }
 
   useEffect(() => {
-    persistState({ people, journal, generalGoals, events, skills, profile, onboarded, theme });
+    const ok = persistState({ people, journal, generalGoals, events, skills, profile, onboarded, theme });
+    // Say so once if saving fails (storage full), rather than silently losing
+    // every change after it.
+    if (!ok && !saveFailed.current) pushToast("Layers couldn't save your latest changes: storage may be full. Export a backup from Me to keep a copy.");
+    saveFailed.current = !ok;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [people, journal, generalGoals, events, skills, profile, onboarded, theme]);
+
+  // Saved data that couldn't be read, or needed repair, is explained once at
+  // startup. A copy of the original is kept either way (lib/storage.js).
+  useEffect(() => {
+    const problem = loaded.problem;
+    if (!problem) return;
+    const copy = problem.copyKept
+      ? ' A copy of the original was kept on this computer, so nothing is lost for good.'
+      : " The original couldn't be copied because storage is full.";
+    askConfirm(problem.kind === 'unreadable'
+      ? { title: "Your saved data couldn't be read", message: `Layers is starting fresh.${copy} If you have a backup, restore it from Me, Import data.`, confirmLabel: 'OK', hideCancel: true, onConfirm: () => {} }
+      : { title: 'Some saved data was repaired', message: `Layers skipped ${problem.warnings.join('; ')}, which couldn't be read.${copy}`, confirmLabel: 'OK', hideCancel: true, onConfirm: () => {} });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // "Today" for date-derived labels, and the once-a-day check-in reminder.
   const today = useToday();
@@ -126,67 +181,59 @@ function LayersApp() {
     window.layersSystem.setAutoLaunch(next);
   }
 
+  // "/" switches to People or Journal, then focuses its search box once it
+  // has rendered. It used to look for the box before switching, so it did
+  // nothing from Home, Coach or Me.
+  useEffect(() => {
+    if (!searchFocus) return;
+    const el = document.getElementById(`${searchFocus.target}-search-input`);
+    if (el) el.focus();
+  }, [searchFocus]);
+
   useEffect(() => {
     function onKeyDown(e) {
+      // Esc leaves a search box, or closes the top-most sheet or dialog only
+      // (a picker opened inside a sheet closes by itself). See sheetLayer.js.
       if (e.key === 'Escape') {
         const activeEl = document.activeElement;
         if (activeEl && (activeEl.id === 'people-search-input' || activeEl.id === 'journal-search-input')) { activeEl.blur(); return; }
-        if (standaloneDetailOpen) { setStandaloneDetailOpen(false); return; }
-        if (shortcutsOpen) { setShortcutsOpen(false); return; }
-        if (confirmState) { confirmState.onCancel(); return; }
-        if (editPersonOpen) { closeEditPerson(); return; }
-        if (addPersonOpen) { setAddPersonOpen(false); return; }
-        if (addInfoOpen) { closeAddInfo(); return; }
-        if (quickInterestOpen) { closeQuickAddInterest(); return; }
-        if (goalModalOpen) { closeGoalModal(); return; }
-        if (logOpen) { closeLog(); return; }
+        const top = topSheet();
+        if (top) top.close();
         return;
       }
-      const tag = document.activeElement && document.activeElement.tagName;
-      const typing = tag === 'INPUT' || tag === 'TEXTAREA';
-      const anyModalOpen = !!confirmState || editPersonOpen || addPersonOpen || addInfoOpen || quickInterestOpen || goalModalOpen || logOpen || shortcutsOpen || standaloneDetailOpen;
+      // A focused slider or checkbox isn't typing; a text field is.
+      const el = document.activeElement;
+      const typing = !!el && (el.tagName === 'TEXTAREA' || el.isContentEditable || (el.tagName === 'INPUT' && !['range', 'checkbox', 'radio', 'button', 'submit'].includes(el.type)));
+      if (typing || !onboarded || hasOpenSheet()) return;
+      // Single-key shortcuts ignore Ctrl/Alt/Win combinations, so Ctrl+N or
+      // Alt+D (browser and Windows habits) don't open anything.
+      const plain = !e.ctrlKey && !e.metaKey && !e.altKey;
+      const ctrlOnly = (e.ctrlKey || e.metaKey) && !e.altKey;
 
-      // '?' opens the shortcuts reference even while a modal isn't open;
-      // still blocked while typing so it doesn't fire mid-sentence.
-      if (!typing && onboarded && !anyModalOpen && e.key === '?') {
-        e.preventDefault();
-        setShortcutsOpen(true);
-        return;
-      }
-      // 'D' opens Add Detail as a standalone lookup — no log screen needed.
-      // A pick here copies straight to clipboard since there's no note field
-      // to append into outside an active logging session.
-      if (!typing && onboarded && !anyModalOpen && (e.key === 'd' || e.key === 'D')) {
-        e.preventDefault();
-        setStandaloneDetailOpen(true);
-        return;
-      }
-      if (typing || !onboarded || anyModalOpen) return;
-
-      if (e.key === 'n' || e.key === 'N') {
-        e.preventDefault();
-        openLog(null);
-        return;
-      }
-      if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'a' || e.key === 'A')) {
+      if (plain && e.key === '?') { e.preventDefault(); setShortcutsOpen(true); return; }
+      // 'D' opens Add Detail as a standalone lookup; a pick is copied to the
+      // clipboard, since there's no note to add it to outside a log.
+      if (plain && (e.key === 'd' || e.key === 'D')) { e.preventDefault(); setStandaloneDetailOpen(true); return; }
+      if (plain && (e.key === 'n' || e.key === 'N')) { e.preventDefault(); openLog(null); return; }
+      if (ctrlOnly && e.shiftKey && (e.key === 'a' || e.key === 'A')) {
         e.preventDefault();
         setActiveTab('people'); setScreen({ name: 'tabs' }); setAddPersonOpen(true);
         return;
       }
-      if ((e.ctrlKey || e.metaKey) && ['1', '2', '3', '4', '5'].includes(e.key)) {
+      if (ctrlOnly && !e.shiftKey && ['1', '2', '3', '4', '5'].includes(e.key)) {
         e.preventDefault();
         const tabs = ['home', 'people', 'coach', 'journal', 'me'];
         switchTab(tabs[Number(e.key) - 1]);
         return;
       }
-      if (e.key === '/') {
+      if (plain && e.key === '/') {
         e.preventDefault();
-        const id = activeTab === 'journal' ? 'journal-search-input' : 'people-search-input';
-        const el = document.getElementById(id);
-        if (el) { if (activeTab !== 'journal' && activeTab !== 'people') switchTab('people'); el.focus(); }
+        const target = activeTab === 'journal' && screen.name === 'tabs' ? 'journal' : 'people';
+        switchTab(target);
+        setSearchFocus({ target, at: Date.now() });
         return;
       }
-      if (e.key === 'Backspace' && screen.name !== 'tabs') {
+      if (plain && e.key === 'Backspace' && screen.name !== 'tabs') {
         e.preventDefault();
         backToTabs();
         return;
@@ -195,7 +242,7 @@ function LayersApp() {
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [confirmState, editPersonOpen, addPersonOpen, addInfoOpen, quickInterestOpen, goalModalOpen, logOpen, shortcutsOpen, standaloneDetailOpen, onboarded, activeTab, screen.name]);
+  }, [onboarded, activeTab, screen.name]);
 
   function pushToast(text) {
     const id = uid();
@@ -212,8 +259,9 @@ function LayersApp() {
   function switchTab(tab) { setActiveTab(tab); setScreen({ name: 'tabs' }); }
   function openCoach(personId, tab) { setCoachInit({ personId: personId || null, tab: tab || 'prepare' }); setActiveTab('coach'); setScreen({ name: 'tabs' }); }
 
+  // With nobody in your circle the log still opens: "Event" works without
+  // people, and "Interaction" explains that it needs someone first.
   function openLog(personId) {
-    if (people.length === 0) { pushToast('Add someone in People first'); return; }
     setLogDefaultPerson(personId || null); setLogInitialStep(null); setLogEditEvent(null); setLogOpen(true);
   }
   function openEventManager() {
@@ -226,67 +274,66 @@ function LayersApp() {
 
   function handleLogSubmit({ personIds, type, meaningfulness, notes, activeListening, summary, pickedDate }) {
     const pd = pickedDate || new Date();
-    const chartDate = formatAbsoluteDate(pd); // for history/goal charts — stays correct forever
-    const chartAt = toISODate(pd); // also the `at` of the journal entry and any notes saved
+    const chartAt = toISODate(pd); // the journal entry's day, and "last mentioned" for any notes
     const loggedNames = personIds.map(id => (people.find(p => p.id === id) || {}).name).filter(Boolean);
     const levelUps = [];
-    personIds.forEach(personId => {
-      setPeople(prev => prev.map(p => {
-        if (p.id !== personId) return p;
-        const depthBump = meaningfulness >= 4 ? Math.round(meaningfulness * 2.6) : Math.round(meaningfulness * 1.3);
-        const trustBump = Math.round(meaningfulness * 2.2);
-        const reciprocityBump = Math.round(meaningfulness * 1.6 + activeListening.length * 1.5);
-        const interactionBump = Math.round(meaningfulness * 2.2);
-        const sharedExpBump = (type === 'activity' || type === 'hangout') ? Math.round(meaningfulness * 2.6) : Math.round(meaningfulness * 0.8);
-        const listeningBump = Math.round(activeListening.length * 3.5 + (meaningfulness >= 4 ? 2 : 0));
-        const newDims = {
-          depth: clamp(p.dims.depth + depthBump, 0, 100),
-          trust: clamp(p.dims.trust + trustBump, 0, 100),
-          reciprocity: clamp(p.dims.reciprocity + reciprocityBump, 0, 100),
-          interaction: clamp(p.dims.interaction + interactionBump, 0, 100),
-          sharedExperiences: clamp(p.dims.sharedExperiences + sharedExpBump, 0, 100),
-          listening: clamp(p.dims.listening + listeningBump, 0, 100),
-        };
-        // Layer progress moves more slowly than before, and only for
-        // interactions you rated 4 or 5 — a brief/low-meaningfulness chat
-        // still updates the six quality dimensions above (so specific
-        // things you did well are still reflected there), but doesn't
-        // nudge the big layer-progress meter on its own.
-        const dimBumpAvg = (depthBump + trustBump + reciprocityBump + interactionBump + sharedExpBump + listeningBump) / 6;
-        const progressBump = meaningfulness >= 4 ? Math.round(dimBumpAvg * 0.55) : 0;
-        const { layer: newLayer, progress: newOverall, leveledUp } = advanceLayer(p.layer, p.overall, progressBump);
-        const goalBump = Math.round(meaningfulness * 3.2);
-        const newGoals = p.goals.map(g => g.progress >= 100 ? g : { ...g, progress: clamp(g.progress + goalBump, 0, 100), history: pushHistoryPoint(g.history, { date: chartDate, at: chartAt, value: clamp(g.progress + goalBump, 0, 100) }) });
-        const newCats = {};
-        CATEGORIES.forEach(c => { newCats[c.key] = p[c.key]; });
-        notes.forEach(n => {
-          const item = { id: uid(), emoji: categoryMeta(n.category).emoji, text: n.text, at: chartAt, temporary: false, archived: false };
-          newCats[n.category] = [item, ...newCats[n.category]];
-        });
-        const why = [];
-        if (leveledUp) why.push(`Reached Layer ${newLayer}: ${getLayer(newLayer).name}`);
-        if (type === 'activity' || type === 'hangout') why.push('Shared an experience together');
-        if (notes.some(n => n.category === 'interests')) why.push('Discovered a shared interest');
-        if (activeListening.length >= 2) why.push('Good reciprocal conversation');
-        if (meaningfulness >= 4) why.push('Personal experience discussed');
-        if (why.length === 0) why.push('Logged a new interaction');
-        if (leveledUp) levelUps.push({ name: p.name, layer: newLayer });
-        return { ...p, dims: newDims, overall: newOverall, layer: newLayer, goals: newGoals, ...newCats, justLeveledUp: leveledUp || p.justLeveledUp, lastChange: { before: p.overall, after: newOverall, why }, history: pushHistoryPoint(p.history, { date: chartDate, at: chartAt, value: newOverall }) };
-      }));
+    // Worked out from the current people in one pass, so every level-up is
+    // known before the toasts below. (They used to be collected inside
+    // setPeople updaters, which React may run later, so only the first
+    // person's level-up was announced.)
+    const nextPeople = people.map(p => {
+      if (!personIds.includes(p.id)) return p;
+      const depthBump = meaningfulness >= 4 ? Math.round(meaningfulness * 2.6) : Math.round(meaningfulness * 1.3);
+      const trustBump = Math.round(meaningfulness * 2.2);
+      const reciprocityBump = Math.round(meaningfulness * 1.6 + activeListening.length * 1.5);
+      const interactionBump = Math.round(meaningfulness * 2.2);
+      const sharedExpBump = (type === 'activity' || type === 'hangout') ? Math.round(meaningfulness * 2.6) : Math.round(meaningfulness * 0.8);
+      const listeningBump = Math.round(activeListening.length * 3.5 + (meaningfulness >= 4 ? 2 : 0));
+      const newDims = {
+        depth: clamp(p.dims.depth + depthBump, 0, 100),
+        trust: clamp(p.dims.trust + trustBump, 0, 100),
+        reciprocity: clamp(p.dims.reciprocity + reciprocityBump, 0, 100),
+        interaction: clamp(p.dims.interaction + interactionBump, 0, 100),
+        sharedExperiences: clamp(p.dims.sharedExperiences + sharedExpBump, 0, 100),
+        listening: clamp(p.dims.listening + listeningBump, 0, 100),
+      };
+      // Layer progress moves more slowly than before, and only for
+      // interactions you rated 4 or 5 — a brief/low-meaningfulness chat
+      // still updates the six quality dimensions above (so specific
+      // things you did well are still reflected there), but doesn't
+      // nudge the big layer-progress meter on its own.
+      const dimBumpAvg = (depthBump + trustBump + reciprocityBump + interactionBump + sharedExpBump + listeningBump) / 6;
+      const progressBump = meaningfulness >= 4 ? Math.round(dimBumpAvg * 0.55) : 0;
+      const { layer: newLayer, progress: newOverall, leveledUp } = advanceLayer(p.layer, p.overall, progressBump);
+      const goalBump = Math.round(meaningfulness * 3.2);
+      const newGoals = p.goals.map(g => {
+        if (g.progress >= 100) return g;
+        const value = clamp(g.progress + goalBump, 0, 100);
+        const day = chartDay(g.history, chartAt);
+        return { ...g, progress: value, history: pushHistoryPoint(g.history || [], { date: formatAbsoluteDate(new Date(`${day}T00:00:00`)), at: day, value }) };
+      });
+      const newInterest = notes.some(n => n.category === 'interests' && !(p.interests || []).some(it => it.text.trim().toLowerCase() === n.text.trim().toLowerCase()));
+      const why = [];
+      if (leveledUp) why.push(`Reached Layer ${newLayer}: ${getLayer(newLayer).name}`);
+      if (type === 'activity' || type === 'hangout') why.push('Shared an experience together');
+      if (newInterest) why.push('Discovered a shared interest');
+      if (activeListening.length >= 2) why.push('Good reciprocal conversation');
+      if (meaningfulness >= 4) why.push('Personal experience discussed');
+      if (why.length === 0) why.push('Logged a new interaction');
+      if (leveledUp) levelUps.push({ name: p.name, layer: newLayer });
+      return movePerson(p, { layer: newLayer, overall: newOverall, at: chartAt, why, extra: { dims: newDims, goals: newGoals, ...addNotes(p, notes, chartAt) } });
     });
+    setPeople(nextPeople);
     setJournal(prev => [
       ...personIds.map(personId => ({ id: uid(), personId, at: chartAt, type, meaningfulness, added: notes.map(n => n.text), activeListening, ...(summary ? { summary } : {}) })),
       ...prev,
     ]);
-    setSkills(prev => {
-      const next = { ...prev };
-      const bump = (key, amt) => { if (amt <= 0) return; next[key] = { ...next[key], current: clamp(next[key].current + amt, 0, 100) }; };
-      bump('activeListening', activeListening.length);
-      if (activeListening.includes('followup')) bump('followUp', 2);
-      if (activeListening.includes('paraphrase') || activeListening.length >= 2) bump('reciprocity', 1);
-      if (notes.length > 0) bump('selfDisclosure', 1);
-      return next;
-    });
+    setSkills(prev => bumpSkills(prev, {
+      activeListening: activeListening.length,
+      followUp: activeListening.includes('followup') ? 2 : 0,
+      reciprocity: activeListening.includes('paraphrase') || activeListening.length >= 2 ? 1 : 0,
+      selfDisclosure: notes.length > 0 ? 1 : 0,
+    }));
     setLogOpen(false);
     const who = loggedNames.length <= 2 ? loggedNames.join(' and ') : `${loggedNames.slice(0, 2).join(', ')} and ${loggedNames.length - 2} other${loggedNames.length - 2 > 1 ? 's' : ''}`;
     pushToast(who ? `Logged time with ${who}` : 'Interaction logged');
@@ -294,7 +341,7 @@ function LayersApp() {
   }
 
   function handleCreateEvent({ title, personIds, kind, date, weekdays, time, defaultMeaningfulness }) {
-    setEvents(prev => [{ id: uid(), title, personIds, kind, date, weekdays, time, defaultMeaningfulness, createdAt: 'Today' }, ...prev]);
+    setEvents(prev => [{ id: uid(), title, personIds, kind, date, weekdays, time, defaultMeaningfulness, createdAt: toISODate(new Date()) }, ...prev]);
     pushToast(kind === 'recurring' ? 'Recurring event saved' : 'Event saved');
   }
   function handleUpdateEvent(eventId, { title, personIds, kind, date, weekdays, time, defaultMeaningfulness }) {
@@ -302,8 +349,14 @@ function LayersApp() {
     pushToast('Event updated');
   }
   function handleDeleteEvent(eventId) {
-    setEvents(prev => prev.filter(e => e.id !== eventId));
-    pushToast('Event deleted');
+    const ev = events.find(e => e.id === eventId);
+    askConfirm({
+      title: 'Delete this event?',
+      message: ev ? `"${ev.title}" will be removed for good.` : 'This event will be removed for good.',
+      confirmLabel: 'Delete event',
+      danger: true,
+      onConfirm: () => { setEvents(prev => prev.filter(e => e.id !== eventId)); pushToast('Event deleted'); },
+    });
   }
 
   function updateGoalsFor(personId, updater) {
@@ -372,24 +425,26 @@ function LayersApp() {
     setPeople(prev => prev.map(p => p.id !== personId ? p : { ...p, [category]: p[category].map(it => it.id === itemId ? { ...it, archived: !it.archived } : it) }));
   }
   function handleApproveInfo(personId, category, text, temporary) {
-    setPeople(prev => prev.map(p => p.id !== personId ? p : { ...p, [category]: [{ id: uid(), emoji: categoryMeta(category).emoji, text, at: toISODate(new Date()), temporary: !!temporary, archived: false }, ...p[category]] }));
+    const clean = String(text || '').trim();
+    if (!clean) return; // an edit cleared to nothing isn't saved as an empty item
+    setPeople(prev => prev.map(p => p.id !== personId ? p : { ...p, [category]: [{ id: uid(), emoji: categoryMeta(category).emoji, text: clean, at: toISODate(new Date()), temporary: !!temporary, archived: false }, ...p[category]] }));
     pushToast(`Saved to ${categoryMeta(category).label}`);
   }
 
+  // Adjust maps the dimensions onto the layers absolutely (placeOnLayers).
+  // Saving with nothing changed does nothing: it used to re-place the person
+  // from dimensions that logging had grown faster than layer progress, which
+  // could move them to another layer.
   function handleAdjust(personId, dims) {
-    let leveledUpInfo = null;
-    setPeople(prev => prev.map(p => {
-      if (p.id !== personId) return p;
-      const avg = computeOverall(dims);
-      const newLayer = layerForOverall(avg); // same 0-25/25-50/50-75/75-100 bands as before, spanning all 4 layers
-      const bandStart = (newLayer - 1) * 25;
-      const newOverall = newLayer >= 4 && avg >= 100 ? 100 : clamp(Math.round(((avg - bandStart) / 25) * 100), 0, 100);
-      const leveledUp = newLayer > p.layer;
-      if (leveledUp) leveledUpInfo = { name: p.name, layer: newLayer };
-      const why = leveledUp ? [`Reached Layer ${newLayer}: ${getLayer(newLayer).name}`, 'You manually adjusted these values'] : ['You manually adjusted these values'];
-      return { ...p, dims, overall: newOverall, layer: newLayer, justLeveledUp: leveledUp || p.justLeveledUp, lastChange: { before: p.overall, after: newOverall, why }, history: pushHistoryPoint(p.history, { date: formatAbsoluteDate(new Date()), at: toISODate(new Date()), value: newOverall }) };
-    }));
-    if (leveledUpInfo) pushToast(`🎉 ${leveledUpInfo.name} moved up to Layer ${leveledUpInfo.layer}: ${getLayer(leveledUpInfo.layer).name}!`);
+    const person = people.find(p => p.id === personId);
+    if (!person) return;
+    if (dimsEqual(person.dims, dims)) { pushToast('No changes'); return; }
+    const { layer, overall } = placeOnLayers(computeOverall(dims));
+    const leveledUp = layer > person.layer;
+    const why = leveledUp ? [`Reached Layer ${layer}: ${getLayer(layer).name}`, 'You manually adjusted these values'] : ['You manually adjusted these values'];
+    setPeople(prev => prev.map(p => p.id !== personId ? p : movePerson(p, { layer, overall, at: toISODate(new Date()), why, extra: { dims } })));
+    if (leveledUp) pushToast(`🎉 ${person.name} moved up to Layer ${layer}: ${getLayer(layer).name}!`);
+    else if (layer < person.layer) pushToast(`${person.name} moved to Layer ${layer}: ${getLayer(layer).name}`);
     else pushToast('Progress updated');
   }
   function handleClearLevelUpFlag(personId) {
@@ -398,45 +453,45 @@ function LayersApp() {
 
   function handleLogFromAnalysis(personId, scenario) {
     const g = scenario.grading;
-    let leveledUpInfo = null;
-    setPeople(prev => prev.map(p => {
-      if (p.id !== personId) return p;
-      const depthBump = Math.round(g.depth / 14);
-      const trustBump = Math.round(g.overall / 16);
-      const reciprocityBump = Math.round(g.reciprocity / 14);
-      const interactionBump = 4;
-      const sharedExpBump = 2;
-      const listeningBump = Math.round(g.activeListening / 14);
-      const newDims = {
-        depth: clamp(p.dims.depth + depthBump, 0, 100),
-        trust: clamp(p.dims.trust + trustBump, 0, 100),
-        reciprocity: clamp(p.dims.reciprocity + reciprocityBump, 0, 100),
-        interaction: clamp(p.dims.interaction + interactionBump, 0, 100),
-        sharedExperiences: clamp(p.dims.sharedExperiences + sharedExpBump, 0, 100),
-        listening: clamp(p.dims.listening + listeningBump, 0, 100),
-      };
-      const dimBumpAvg = (depthBump + trustBump + reciprocityBump + interactionBump + sharedExpBump + listeningBump) / 6;
-      const progressBump = g.overall >= 70 ? Math.round(dimBumpAvg * 0.55) : 0;
-      const { layer: newLayer, progress: newOverall, leveledUp } = advanceLayer(p.layer, p.overall, progressBump);
-      const goalBump = Math.round(g.overall / 10);
-      const newGoals = p.goals.map(gl => gl.progress >= 100 ? gl : { ...gl, progress: clamp(gl.progress + goalBump, 0, 100), history: pushHistoryPoint(gl.history, { date: formatAbsoluteDate(new Date()), at: toISODate(new Date()), value: clamp(gl.progress + goalBump, 0, 100) }) });
-      if (leveledUp) leveledUpInfo = { name: p.name, layer: newLayer };
-      const why = leveledUp ? [`Reached Layer ${newLayer}: ${getLayer(newLayer).name}`, ...scenario.wentWell] : scenario.wentWell;
-      return { ...p, dims: newDims, overall: newOverall, layer: newLayer, goals: newGoals, justLeveledUp: leveledUp || p.justLeveledUp, lastChange: { before: p.overall, after: newOverall, why }, history: pushHistoryPoint(p.history, { date: formatAbsoluteDate(new Date()), at: toISODate(new Date()), value: newOverall }) };
-    }));
-    if (leveledUpInfo) pushToast(`🎉 ${leveledUpInfo.name} moved up to Layer ${leveledUpInfo.layer}: ${getLayer(leveledUpInfo.layer).name}!`);
-    setJournal(prev => [{ id: uid(), personId, at: toISODate(new Date()), type: 'analysed', meaningfulness: clamp(Math.round(g.overall / 20), 1, 5), added: [], activeListening: [], analysis: { grading: g, conversationState: scenario.conversationState } }, ...prev]);
-    setSkills(prev => {
-      const next = { ...prev };
-      const bump = (key, amt) => { next[key] = { ...next[key], current: clamp(next[key].current + amt, 0, 100) }; };
-      bump('activeListening', Math.round(g.activeListening / 25));
-      bump('readingCues', 2);
-      bump('reciprocity', Math.round(g.reciprocity / 25));
-      if (scenario.conversationState === 'windingDown') bump('knowingWhenToStop', 3);
-      return next;
-    });
     const person = people.find(p => p.id === personId);
-    pushToast(person ? `Logged and updated ${person.name}'s progress` : 'Interaction logged');
+    if (!person) return;
+    const day = toISODate(new Date());
+    const depthBump = Math.round(g.depth / 14);
+    const trustBump = Math.round(g.overall / 16);
+    const reciprocityBump = Math.round(g.reciprocity / 14);
+    const interactionBump = 4;
+    const sharedExpBump = 2;
+    const listeningBump = Math.round(g.activeListening / 14);
+    const newDims = {
+      depth: clamp(person.dims.depth + depthBump, 0, 100),
+      trust: clamp(person.dims.trust + trustBump, 0, 100),
+      reciprocity: clamp(person.dims.reciprocity + reciprocityBump, 0, 100),
+      interaction: clamp(person.dims.interaction + interactionBump, 0, 100),
+      sharedExperiences: clamp(person.dims.sharedExperiences + sharedExpBump, 0, 100),
+      listening: clamp(person.dims.listening + listeningBump, 0, 100),
+    };
+    const dimBumpAvg = (depthBump + trustBump + reciprocityBump + interactionBump + sharedExpBump + listeningBump) / 6;
+    const progressBump = g.overall >= 70 ? Math.round(dimBumpAvg * 0.55) : 0;
+    const { layer: newLayer, progress: newOverall, leveledUp } = advanceLayer(person.layer, person.overall, progressBump);
+    // The review's "Goal progress: +N%" is exactly what's applied (it used to
+    // apply a tenth of the overall grade instead).
+    const goalBump = typeof g.goalImpact === 'number' ? g.goalImpact : Math.round(g.overall / 10);
+    const newGoals = person.goals.map(gl => {
+      if (gl.progress >= 100) return gl;
+      const value = clamp(gl.progress + goalBump, 0, 100);
+      return { ...gl, progress: value, history: pushHistoryPoint(gl.history || [], { date: formatAbsoluteDate(new Date()), at: day, value }) };
+    });
+    const why = leveledUp ? [`Reached Layer ${newLayer}: ${getLayer(newLayer).name}`, ...scenario.wentWell] : scenario.wentWell;
+    setPeople(prev => prev.map(p => p.id !== personId ? p : movePerson(p, { layer: newLayer, overall: newOverall, at: day, why, extra: { dims: newDims, goals: newGoals } })));
+    if (leveledUp) pushToast(`🎉 ${person.name} moved up to Layer ${newLayer}: ${getLayer(newLayer).name}!`);
+    setJournal(prev => [{ id: uid(), personId, at: day, type: 'analysed', meaningfulness: clamp(Math.round(g.overall / 20), 1, 5), added: [], activeListening: [], analysis: { grading: g, conversationState: scenario.conversationState } }, ...prev]);
+    setSkills(prev => bumpSkills(prev, {
+      activeListening: Math.round(g.activeListening / 25),
+      readingCues: 2,
+      reciprocity: Math.round(g.reciprocity / 25),
+      knowingWhenToStop: scenario.conversationState === 'windingDown' ? 3 : 0,
+    }));
+    pushToast(`Logged and updated ${person.name}'s progress`);
   }
 
   function handleAddPerson({ name, emoji, layer }) {
@@ -463,6 +518,10 @@ function LayersApp() {
       onConfirm: () => {
         setPeople(prev => prev.filter(p => p.id !== personId));
         setJournal(prev => prev.filter(j => j.personId !== personId));
+        setEvents(prev => prev.map(e => (e.personIds || []).includes(personId) ? { ...e, personIds: e.personIds.filter(id => id !== personId) } : e));
+        // Coach remembers who it was opened for; it would otherwise reopen on
+        // someone who no longer exists.
+        setCoachInit(c => c.personId === personId ? { ...c, personId: null } : c);
         setScreen({ name: 'tabs' }); setActiveTab('people');
         pushToast(`${name} was removed`);
       },
@@ -476,7 +535,10 @@ function LayersApp() {
       confirmLabel: 'Restore samples',
       danger: true,
       onConfirm: () => {
-        setPeople(backfillPeopleDates(INITIAL_PEOPLE)); setJournal(backfillJournalDates(INITIAL_JOURNAL)); setGeneralGoals(INITIAL_GENERAL_GOALS); setSkills(INITIAL_SKILLS);
+        const sample = sampleData();
+        setPeople(sample.people); setJournal(sample.journal); setGeneralGoals(sample.generalGoals); setSkills(sample.skills);
+        setEvents(prev => unlinkMissingPeople(prev, sample.people));
+        setCoachInit(c => ({ ...c, personId: null }));
         setScreen({ name: 'tabs' }); setActiveTab('home');
         pushToast('Sample data restored');
       },
@@ -491,6 +553,7 @@ function LayersApp() {
       danger: true,
       onConfirm: () => {
         setPeople([]); setJournal([]); setGeneralGoals([]); setEvents([]); setSkills(EMPTY_SKILLS);
+        setCoachInit(c => ({ ...c, personId: null }));
         setScreen({ name: 'tabs' }); setActiveTab('home');
         setOnboarded(false);
       },
@@ -503,7 +566,7 @@ function LayersApp() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `layers-backup-${new Date().toISOString().slice(0, 10)}.json`;
+    a.download = `layers-backup-${toISODate(new Date())}.json`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -539,8 +602,9 @@ function LayersApp() {
           setJournal(backfillJournalDates(data.journal, data.exportedAt));
           setGeneralGoals(data.generalGoals);
           setEvents(data.events);
-          setSkills(data.skills);
+          setSkills(backfillSkillDates(data.skills, data.exportedAt));
           setProfile(data.profile);
+          setCoachInit(c => ({ ...c, personId: null }));
           setOnboarded(true);
           setScreen({ name: 'tabs' }); setActiveTab('home');
           pushToast('Backup imported');
@@ -556,7 +620,8 @@ function LayersApp() {
       setPeople((newPeople || []).map(p => makePerson({ name: p.name, emoji: p.emoji, layer: 1 })));
       setJournal([]); setGeneralGoals([]); setSkills(EMPTY_SKILLS);
     } else {
-      setPeople(backfillPeopleDates(INITIAL_PEOPLE)); setJournal(backfillJournalDates(INITIAL_JOURNAL)); setGeneralGoals(INITIAL_GENERAL_GOALS); setSkills(INITIAL_SKILLS);
+      const sample = sampleData();
+      setPeople(sample.people); setJournal(sample.journal); setGeneralGoals(sample.generalGoals); setSkills(sample.skills);
     }
     setOnboarded(true);
     setScreen({ name: 'tabs' }); setActiveTab('home');
@@ -569,47 +634,50 @@ function LayersApp() {
         <div className="app-shell">
           <div className="phone-frame">
             <div className="scroll-area no-scrollbar" style={{ paddingBottom: (!onboarded || screen.name !== 'tabs') ? 30 : 110 }}>
-              {!onboarded ? (
-                <OnboardingView initialName={profile.name} initialFocus={profile.focus} onComplete={handleOnboardingComplete} />
-              ) : (
-                <>
-                  {screen.name === 'person' && selectedPerson && (
-                    <PersonProfile
-                      today={today}
-                      person={selectedPerson}
-                      journal={journal}
-                      onBack={backToTabs}
-                      onOpenLog={openLog}
-                      onOpenGoalCreate={openGoalCreate}
-                      onOpenGoalEdit={openGoalEdit}
-                      onDeleteGoal={handleDeleteGoal}
-                      onBumpGoal={handleBumpGoal}
-                      onOpenAddInfo={openAddInfo}
-                      onOpenQuickAddInterest={openQuickAddInterest}
-                      onSaveInfo={handleSaveInfoItem}
-                      onDeleteInfo={handleDeleteInfoItem}
-                      onToggleTemporary={handleToggleTemporary}
-                      onToggleArchive={handleToggleArchive}
-                      onAdjust={(dims) => handleAdjust(selectedPerson.id, dims)}
-                      onOpenCoach={(pid) => openCoach(pid, 'prepare')}
-                      onEditPerson={openEditPerson}
-                      onClearLevelUpFlag={handleClearLevelUpFlag}
-                    />
-                  )}
-                  {screen.name === 'goals' && (
-                    <GoalsView people={people} generalGoals={generalGoals} onBack={backToTabs} onOpenPerson={openPerson} onOpenGoalCreate={openGoalCreate} onOpenGoalEdit={openGoalEdit} onDeleteGoal={handleDeleteGoal} onBumpGoal={handleBumpGoal} />
-                  )}
-                  {screen.name === 'tabs' && (
-                    <>
-                      {activeTab === 'home' && <HomeView today={today} people={people} journal={journal} generalGoals={generalGoals} events={events} profile={profile} onOpenPerson={openPerson} onSwitchTab={switchTab} onOpenGoals={openGoalsOverview} onOpenCoach={(tab) => openCoach(null, tab)} onLogEvent={(ev, meaningfulness, detail) => handleLogSubmit({ personIds: ev.personIds, type: 'other', meaningfulness, notes: [], activeListening: [], summary: detail ? `${ev.title} — ${detail}` : ev.title, pickedDate: new Date() })} onManageEvents={openEventManager} onEditEvent={openEditRecurringEvent} onDeleteEvent={handleDeleteEvent} />}
-                      {activeTab === 'people' && <PeopleView people={people} journal={journal} onOpenPerson={openPerson} onAddPerson={() => setAddPersonOpen(true)} />}
-                      {activeTab === 'coach' && <CoachView people={people} journal={journal} generalGoals={generalGoals} initialPersonId={coachInit.personId} initialTab={coachInit.tab} onOpenLog={openLog} onApproveInfo={handleApproveInfo} onLogFromAnalysis={handleLogFromAnalysis} onOpenPerson={openPerson} />}
-                      {activeTab === 'journal' && <JournalView people={people} journal={journal} onOpenPerson={openPerson} />}
-                      {activeTab === 'me' && <MeView people={people} journal={journal} skills={skills} generalGoals={generalGoals} profile={profile} onRestoreSample={handleRestoreSample} onStartOver={handleStartOver} onExport={handleExportData} onImportClick={handleImportClick} hasUpdater={hasUpdater} updateStatus={updateStatus} onCheckForUpdates={handleCheckForUpdates} onInstallUpdate={handleInstallUpdate} theme={theme} onSetTheme={setTheme} hasSystemBridge={hasSystemBridge} autoLaunch={autoLaunch} onToggleAutoLaunch={handleToggleAutoLaunch} onOpenShortcuts={() => setShortcutsOpen(true)} appVersion={appVersion} />}
-                    </>
-                  )}
-                </>
-              )}
+              {/* A crash while rendering a screen shows a way out instead of a blank window. */}
+              <ErrorBoundary key={`${onboarded}-${screen.name}-${screen.personId || ''}-${activeTab}`} onHome={() => switchTab('home')}>
+                {!onboarded ? (
+                  <OnboardingView initialName={profile.name} initialFocus={profile.focus} onComplete={handleOnboardingComplete} />
+                ) : (
+                  <>
+                    {screen.name === 'person' && selectedPerson && (
+                      <PersonProfile
+                        today={today}
+                        person={selectedPerson}
+                        journal={journal}
+                        onBack={backToTabs}
+                        onOpenLog={openLog}
+                        onOpenGoalCreate={openGoalCreate}
+                        onOpenGoalEdit={openGoalEdit}
+                        onDeleteGoal={handleDeleteGoal}
+                        onBumpGoal={handleBumpGoal}
+                        onOpenAddInfo={openAddInfo}
+                        onOpenQuickAddInterest={openQuickAddInterest}
+                        onSaveInfo={handleSaveInfoItem}
+                        onDeleteInfo={handleDeleteInfoItem}
+                        onToggleTemporary={handleToggleTemporary}
+                        onToggleArchive={handleToggleArchive}
+                        onAdjust={(dims) => handleAdjust(selectedPerson.id, dims)}
+                        onOpenCoach={(pid) => openCoach(pid, 'prepare')}
+                        onEditPerson={openEditPerson}
+                        onClearLevelUpFlag={handleClearLevelUpFlag}
+                      />
+                    )}
+                    {screen.name === 'goals' && (
+                      <GoalsView today={today} people={people} generalGoals={generalGoals} onBack={backToTabs} onOpenPerson={openPerson} onOpenGoalCreate={openGoalCreate} onOpenGoalEdit={openGoalEdit} onDeleteGoal={handleDeleteGoal} onBumpGoal={handleBumpGoal} />
+                    )}
+                    {screen.name === 'tabs' && (
+                      <>
+                        {activeTab === 'home' && <HomeView today={today} people={people} journal={journal} generalGoals={generalGoals} events={events} profile={profile} onOpenPerson={openPerson} onSwitchTab={switchTab} onOpenGoals={openGoalsOverview} onOpenCoach={(tab) => openCoach(null, tab)} onLogEvent={(ev, meaningfulness, detail) => handleLogSubmit({ personIds: ev.personIds, type: 'other', meaningfulness, notes: [], activeListening: [], summary: detail ? `${ev.title} — ${detail}` : ev.title, pickedDate: new Date() })} onManageEvents={openEventManager} onEditEvent={openEditRecurringEvent} onDeleteEvent={handleDeleteEvent} />}
+                        {activeTab === 'people' && <PeopleView people={people} journal={journal} onOpenPerson={openPerson} onAddPerson={() => setAddPersonOpen(true)} />}
+                        {activeTab === 'coach' && <CoachView people={people} journal={journal} initialPersonId={coachInit.personId} initialTab={coachInit.tab} onOpenLog={openLog} onApproveInfo={handleApproveInfo} onLogFromAnalysis={handleLogFromAnalysis} onOpenPerson={openPerson} />}
+                        {activeTab === 'journal' && <JournalView people={people} journal={journal} onOpenPerson={openPerson} />}
+                        {activeTab === 'me' && <MeView people={people} journal={journal} skills={skills} generalGoals={generalGoals} profile={profile} onRestoreSample={handleRestoreSample} onStartOver={handleStartOver} onExport={handleExportData} onImportClick={handleImportClick} hasUpdater={hasUpdater} updateStatus={updateStatus} onCheckForUpdates={handleCheckForUpdates} onInstallUpdate={handleInstallUpdate} theme={theme} onSetTheme={setTheme} hasSystemBridge={hasSystemBridge} autoLaunch={autoLaunch} onToggleAutoLaunch={handleToggleAutoLaunch} onOpenShortcuts={() => setShortcutsOpen(true)} appVersion={appVersion} />}
+                      </>
+                    )}
+                  </>
+                )}
+              </ErrorBoundary>
             </div>
 
             {onboarded && screen.name === 'tabs' && (
@@ -652,7 +720,7 @@ function LayersApp() {
                 onDelete={() => handleDeletePerson(selectedPerson.id, selectedPerson.name)} />
             )}
             {confirmState && (
-              <ConfirmDialog title={confirmState.title} message={confirmState.message} confirmLabel={confirmState.confirmLabel} danger={confirmState.danger} onConfirm={confirmState.onConfirm} onCancel={confirmState.onCancel} />
+              <ConfirmDialog title={confirmState.title} message={confirmState.message} confirmLabel={confirmState.confirmLabel} danger={confirmState.danger} hideCancel={confirmState.hideCancel} onConfirm={confirmState.onConfirm} onCancel={confirmState.onCancel} />
             )}
           </div>
           {/* Where every Sheet/ConfirmDialog portals to — see SheetPortal. */}

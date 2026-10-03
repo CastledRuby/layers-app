@@ -168,6 +168,13 @@ export function journalDateLabel(entry, now = new Date()) { return storedDateLab
 // A rolling 7 days, not the calendar week.
 export function isJournalThisWeek(entry, now = new Date()) { return journalDaysAgo(entry, now) < 7; }
 
+// Newest day first. Entries on the same day keep their stored order, which is
+// newest-logged first. (Home's "Recent activity" used to take the first three
+// stored entries, so a log backdated to last month showed as the latest.)
+export function newestFirst(journal, now = new Date()) {
+  return [...journal].sort((a, b) => journalDaysAgo(a, now) - journalDaysAgo(b, now));
+}
+
 export function infoItemDaysAgo(item, now = new Date()) { return storedDaysAgo(item && item.at, item && item.updated, now); }
 
 export function infoItemDateLabel(item, now = new Date()) { return storedDateLabel(item && item.at, item && item.updated, now); }
@@ -189,6 +196,13 @@ export function timelineDateLabel(step, now = new Date()) {
 // than it really happened, so nobody is flagged as "haven't caught up"
 // sooner than they should be. Absolute seed labels ('Aug 31') parse
 // exactly. Records with no readable date are left as they are.
+// Timeline steps in date order, so a step added for a backdated log lands
+// where it belongs. Steps with no readable date keep their place at the end.
+export function sortByDay(steps, now = new Date()) {
+  const time = (s) => { const d = storedDay(s && s.at, s && s.date, now); return d ? d.getTime() : Infinity; };
+  return [...steps].sort((a, b) => time(a) - time(b));
+}
+
 function backfillAnchor(anchor) {
   const parsed = anchor ? new Date(anchor) : new Date();
   return isNaN(parsed.getTime()) ? new Date() : parsed;
@@ -218,6 +232,40 @@ export function backfillPeopleDates(people, anchor) {
     if (Array.isArray(p.timeline)) next.timeline = backfillDated(p.timeline, 'date', ref);
     return next;
   });
+}
+
+// Skill history in the sample data used bare month labels ('Sep' ... 'Jan')
+// with no `at`, which can't be sorted against new points. Each one gets the
+// 1st of its month, walking back from the newest point so the months stay in
+// order across a year boundary ('Jan' is this January, 'Dec' the one before).
+export function backfillSkillDates(skills, anchor) {
+  if (!skills || typeof skills !== 'object') return skills;
+  const ref = startOfDay(backfillAnchor(anchor));
+  const next = {};
+  Object.entries(skills).forEach(([key, skill]) => {
+    if (!skill || !Array.isArray(skill.history) || skill.history.every(h => h && parseISODay(h.at))) { next[key] = skill; return; }
+    let cursor = ref;
+    const history = [...skill.history];
+    for (let i = history.length - 1; i >= 0; i--) {
+      const h = history[i];
+      if (!h || typeof h !== 'object') continue;
+      const known = parseISODay(h.at);
+      if (known) { cursor = known; continue; }
+      const month = MONTH_NAMES.findIndex(m => String(h.date || '').trim().length >= 3 && m.toLowerCase().startsWith(String(h.date).trim().toLowerCase()));
+      let d = null;
+      if (month !== -1 && /^[A-Za-z]{3,9}$/.test(String(h.date).trim())) {
+        d = new Date(cursor.getFullYear(), month, 1);
+        if (d > cursor) d = new Date(cursor.getFullYear() - 1, month, 1);
+      } else {
+        d = storedDay(h.at, h.date, ref);
+      }
+      if (!d) continue;
+      history[i] = { ...h, at: toISODate(d) };
+      cursor = new Date(d.getFullYear(), d.getMonth(), d.getDate() - 1);
+    }
+    next[key] = { ...skill, history };
+  });
+  return next;
 }
 
 // Minutes-since-midnight is the source of truth for TimeDropdown; formatted

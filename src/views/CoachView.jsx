@@ -8,16 +8,17 @@ import { SCENARIOS } from '../data/scenarios.js';
 import { buildPotentialHooks, HOOKS } from '../lib/text.js';
 import { COLORS } from '../theme.js';
 
-export function CoachView({ people, journal, generalGoals, initialPersonId, initialTab, onOpenLog, onApproveInfo, onLogFromAnalysis, onOpenPerson }) {
+export function CoachView({ people, journal, initialPersonId, initialTab, onOpenLog, onApproveInfo, onLogFromAnalysis, onOpenPerson }) {
   const [tab, setTab] = useState(initialTab || 'prepare');
   const [preparePersonId, setPreparePersonId] = useState(initialPersonId || (people[0] && people[0].id) || null);
   const [analysisPersonId, setAnalysisPersonId] = useState(initialTab === 'analyse' ? initialPersonId || null : null);
   const [step, setStep] = useState('pick');
   const [scenarioKey, setScenarioKey] = useState(null);
-  const [infoStatus, setInfoStatus] = useState({});
   const [infoDrafts, setInfoDrafts] = useState({});
   const [editingIndex, setEditingIndex] = useState(null);
-  const [logged, setLogged] = useState(false);
+  // What's been saved, ignored and logged for each person + sample, so going
+  // back and picking the same sample again can't save it twice.
+  const [sessions, setSessions] = useState({});
 
   useEffect(() => {
     if (step === 'loading') {
@@ -26,29 +27,47 @@ export function CoachView({ people, journal, generalGoals, initialPersonId, init
     }
   }, [step]);
 
-  const preparePerson = people.find(p => p.id === preparePersonId) || null;
+  // Coach can be opened for someone who has since been removed (or whose id
+  // came from a restored or imported backup). Prepare then falls back to the
+  // first person, and Analyse asks who the conversation was with: it used to
+  // read the missing person's emoji and blank the whole window.
+  const preparePerson = people.find(p => p.id === preparePersonId) || people[0] || null;
   const scenario = scenarioKey ? SCENARIOS[scenarioKey] : null;
   const scenarioPerson = people.find(p => p.id === analysisPersonId) || null;
+  const sessionKey = scenarioPerson && scenarioKey ? `${scenarioPerson.id}:${scenarioKey}` : null;
+  const session = (sessionKey && sessions[sessionKey]) || { infoStatus: {}, logged: false };
+  const infoStatus = session.infoStatus;
+  const logged = session.logged;
+  function updateSession(change) {
+    setSessions(all => {
+      const current = all[sessionKey] || { infoStatus: {}, logged: false };
+      return { ...all, [sessionKey]: { ...current, ...change(current) } };
+    });
+  }
 
   function pickScenario(key) {
     const sc = SCENARIOS[key];
     setScenarioKey(key);
-    setInfoStatus({});
     setInfoDrafts(Object.fromEntries(sc.extractedInfo.map((it, i) => [i, it.text])));
     setEditingIndex(null);
-    setLogged(false);
     setStep('loading');
   }
   function resetAnalyse() { setStep('pick'); setScenarioKey(null); }
   function changeAnalysisPerson() { setAnalysisPersonId(null); resetAnalyse(); }
   function saveInfoItem(i) {
     const it = scenario.extractedInfo[i];
-    onApproveInfo(analysisPersonId, it.category, infoDrafts[i], it.temporary);
-    setInfoStatus(s => ({ ...s, [i]: 'saved' }));
+    const text = String(infoDrafts[i] || '').trim();
+    if (!text) return;
+    onApproveInfo(scenarioPerson.id, it.category, text, it.temporary);
+    updateSession(s => ({ infoStatus: { ...s.infoStatus, [i]: 'saved' } }));
     setEditingIndex(null);
   }
-  function ignoreInfoItem(i) { setInfoStatus(s => ({ ...s, [i]: 'ignored' })); setEditingIndex(null); }
-  function handleLogAnalysis() { onLogFromAnalysis(analysisPersonId, scenario); setLogged(true); }
+  function ignoreInfoItem(i) { updateSession(s => ({ infoStatus: { ...s.infoStatus, [i]: 'ignored' } })); setEditingIndex(null); }
+  function handleLogAnalysis() {
+    if (logged) return;
+    onLogFromAnalysis(scenarioPerson.id, scenario);
+    updateSession(() => ({ logged: true }));
+  }
 
   return (
     <div className="px-5 pt-6 pb-4">
@@ -66,7 +85,7 @@ export function CoachView({ people, journal, generalGoals, initialPersonId, init
           <p className="text-sm font-semibold mb-2" style={{ color: COLORS.ink }}>Who are you about to talk to?</p>
           <div style={{ display: 'flex', flexWrap: 'wrap', columnGap: 8, rowGap: 12, paddingBottom: 4, marginBottom: 16, maxHeight: 168, overflowY: 'auto' }}>
             {people.map(p => {
-              const active = preparePersonId === p.id; const l = getLayer(p.layer);
+              const active = !!preparePerson && preparePerson.id === p.id; const l = getLayer(p.layer);
               return (
                 <button key={p.id} onClick={() => setPreparePersonId(p.id)} className="flex flex-col items-center gap-1 shrink-0" style={{ width: 56 }}>
                   <Avatar emoji={p.emoji} size={44} ringColor={active ? COLORS.accent : l.color} />
@@ -169,8 +188,8 @@ export function CoachView({ people, journal, generalGoals, initialPersonId, init
           </div>
 
           <div className="flex items-center gap-2 mt-5">
-            <button onClick={() => onOpenLog(preparePersonId)} className="flex-1 text-sm font-semibold rounded-full py-3 text-center" style={{ background: COLORS.accent, color: '#fff' }}>Log this conversation</button>
-            <button onClick={() => { setAnalysisPersonId(preparePersonId); setTab('analyse'); }} className="flex-1 text-sm font-semibold rounded-full py-3 text-center" style={{ background: COLORS.paperRaised, color: COLORS.accent, border: `1px solid ${COLORS.accent}` }}>Analyse a screenshot</button>
+            <button onClick={() => onOpenLog(preparePerson ? preparePerson.id : null)} className="flex-1 text-sm font-semibold rounded-full py-3 text-center" style={{ background: COLORS.accent, color: '#fff' }}>Log this conversation</button>
+            <button onClick={() => { setAnalysisPersonId(preparePerson ? preparePerson.id : null); setTab('analyse'); }} className="flex-1 text-sm font-semibold rounded-full py-3 text-center" style={{ background: COLORS.paperRaised, color: COLORS.accent, border: `1px solid ${COLORS.accent}` }}>Analyse a screenshot</button>
           </div>
 
           <p className="text-xs text-center mt-5" style={{ color: COLORS.inkSoft }}>Good social skills are about noticing, responding and adapting, not forcing a particular outcome.</p>
@@ -181,7 +200,7 @@ export function CoachView({ people, journal, generalGoals, initialPersonId, init
         <div className="mt-5">
           {people.length === 0 ? (
             <p className="text-sm" style={{ color: COLORS.inkSoft }}>Add someone in the People tab first, then come back to analyse a conversation with them.</p>
-          ) : !analysisPersonId ? (
+          ) : !scenarioPerson ? (
             <>
               <p className="text-sm font-semibold mb-2" style={{ color: COLORS.ink }}>Who is this conversation with?</p>
               <div style={{ display: 'flex', flexWrap: 'wrap', columnGap: 8, rowGap: 12, paddingBottom: 4, maxHeight: 168, overflowY: 'auto' }}>
@@ -303,7 +322,7 @@ export function CoachView({ people, journal, generalGoals, initialPersonId, init
                       <p className="text-xs mt-1.5" style={{ color: COLORS.inkSoft }}>Ignored</p>
                     ) : (
                       <div className="flex items-center gap-3 mt-1.5">
-                        <button onClick={() => saveInfoItem(i)} className="text-xs font-semibold" style={{ color: COLORS.accent }}>Save</button>
+                        <button onClick={() => saveInfoItem(i)} disabled={!String(infoDrafts[i] || '').trim()} className="text-xs font-semibold" style={{ color: String(infoDrafts[i] || '').trim() ? COLORS.accent : COLORS.inkSoft }}>Save</button>
                         <button onClick={() => setEditingIndex(i)} className="text-xs font-semibold" style={{ color: COLORS.inkSoft }}>Edit</button>
                         <button onClick={() => ignoreInfoItem(i)} className="text-xs font-semibold" style={{ color: COLORS.inkSoft }}>Ignore</button>
                       </div>

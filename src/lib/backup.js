@@ -102,7 +102,9 @@ function cleanSkills(skills) {
 }
 
 // Returns { ok: false, error } or { ok: true, data, summary, warnings }.
-export function validateBackup(raw) {
+// storage.js also runs the app's own saved state through it at startup
+// (source 'saved'), which only changes the wording of the warnings.
+export function validateBackup(raw, { source = 'backup' } = {}) {
   const fail = (error) => ({ ok: false, error });
   if (!isObject(raw) || !('people' in raw)) return fail("That file isn't a Layers backup.");
   if ('version' in raw && (typeof raw.version !== 'number' || raw.version < 1)) return fail("That file isn't a Layers backup (it has an unknown format).");
@@ -136,7 +138,7 @@ export function validateBackup(raw) {
   const warnings = [];
   if (skipped.people) warnings.push(`${count(skipped.people, 'person', 'people')} without a name`);
   if (skipped.duplicates) warnings.push(count(skipped.duplicates, 'duplicate person', 'duplicate people'));
-  if (skipped.entries) warnings.push(`${count(skipped.entries, 'journal entry', 'journal entries')} for people not in the backup`);
+  if (skipped.entries) warnings.push(`${count(skipped.entries, 'journal entry', 'journal entries')} for people ${source === 'saved' ? 'who are no longer in your circle' : 'not in the backup'}`);
   if (skipped.goals) warnings.push(`${count(skipped.goals, 'goal')} without a title`);
   if (skipped.items) warnings.push(`${count(skipped.items, 'saved detail')} without text`);
   if (skipped.events) warnings.push(`${count(skipped.events, 'event')} with a missing title or date`);

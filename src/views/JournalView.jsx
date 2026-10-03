@@ -62,7 +62,7 @@ export function JournalView({ people, journal, onOpenPerson }) {
 
       <div className="mt-5">
         {groups.length === 0 ? (
-          <p className="text-sm mt-4" style={{ color: COLORS.inkSoft }}>No interactions match this filter.</p>
+          <p className="text-sm mt-4" style={{ color: COLORS.inkSoft }}>{journal.length === 0 ? 'Nothing logged yet. Tap + to log your first interaction.' : 'No interactions match this filter.'}</p>
         ) : groups.map((grp, gi) => (
           <div key={gi} className="mb-5">
             <p className="text-xs font-semibold mb-2" style={{ color: COLORS.inkSoft }}>{grp.date}</p>

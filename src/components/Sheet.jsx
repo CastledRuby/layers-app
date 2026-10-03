@@ -4,7 +4,7 @@
 import { useContext } from 'react';
 import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
-import { SheetLayerContext } from './sheetLayer.js';
+import { SheetLayerContext, useOpenSheet } from './sheetLayer.js';
 import { COLORS } from '../theme.js';
 
 // Never fall back to document.body: content portaled outside .layers-root
@@ -17,6 +17,7 @@ export function SheetPortal({ children }) {
 }
 
 export function Sheet({ title, onClose, children, footer, tall }) {
+  useOpenSheet(onClose);
   return (
     <SheetPortal>
       <div className="sheet">

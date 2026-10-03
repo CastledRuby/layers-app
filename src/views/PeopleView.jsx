@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react';
 import { Search, UserPlus } from 'lucide-react';
 import { Avatar, LayerBadge, ProgressBar } from '../components/atoms.jsx';
 import { getLayer, LAYERS } from '../data/constants.js';
+import { sortHistory } from '../lib/dates.js';
 import { getCheckInSuggestions } from '../lib/text.js';
 import { COLORS } from '../theme.js';
 
@@ -19,10 +20,14 @@ export function PeopleView({ people, journal, onOpenPerson, onAddPerson }) {
   const rotationOffset = { 1: 0, 2: 26, 3: 11, 4: 40 };
   const overviewData = useMemo(() => {
     const withTrend = filteredPeople.map(p => {
+      // Points are per-layer percentages; newer ones also record their layer,
+      // so a level-up (Layer 2 at 95% -> Layer 3 at 5%) reads as a rise.
       let trend = 'flat';
-      if (p.history.length >= 2) {
-        const last = p.history[p.history.length - 1].value;
-        const prev = p.history[p.history.length - 2].value;
+      const hist = sortHistory(p.history || []);
+      if (hist.length >= 2) {
+        const position = (h) => ((h.layer || p.layer) - 1) * 100 + h.value;
+        const last = position(hist[hist.length - 1]);
+        const prev = position(hist[hist.length - 2]);
         trend = last > prev ? 'up' : last < prev ? 'down' : 'flat';
       }
       return { ...p, trend };

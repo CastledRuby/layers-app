@@ -4,14 +4,20 @@ import { useMemo, useState } from 'react';
 import { Download, Upload } from 'lucide-react';
 import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { LabeledBar } from '../components/atoms.jsx';
-import { ACHIEVEMENTS, CATEGORIES, CHALLENGE_TEXT, FOCUS_SKILL_KEY, FOCUS_TEXT, SKILL_ORDER } from '../data/constants.js';
+import { ACHIEVEMENTS, CATEGORIES, FOCUS_SKILL_KEY, SKILL_ORDER, SKILL_TIPS } from '../data/constants.js';
+import { sortHistory } from '../lib/dates.js';
 import { updateStatusText } from '../lib/text.js';
 import { COLORS } from '../theme.js';
 
 export function MeView({ people, journal, skills, generalGoals, profile, onBack, onRestoreSample, onStartOver, onExport, onImportClick, hasUpdater, updateStatus, onCheckForUpdates, onInstallUpdate, theme, onSetTheme, hasSystemBridge, autoLaunch, onToggleAutoLaunch, onOpenShortcuts, appVersion }) {
   const [chartSkill, setChartSkill] = useState(FOCUS_SKILL_KEY);
 
+  // Strength is your highest skill and focus your lowest. Until something has
+  // been tracked (every skill at 0%) there's neither, just a starting tip.
+  const tracked = SKILL_ORDER.some(k => skills[k].current > 0);
   const strengthKey = useMemo(() => SKILL_ORDER.reduce((best, k) => skills[k].current > skills[best].current ? k : best, SKILL_ORDER[0]), [skills]);
+  const focusKey = useMemo(() => SKILL_ORDER.reduce((low, k) => skills[k].current < skills[low].current ? k : low, SKILL_ORDER[0]), [skills]);
+  const chartData = useMemo(() => sortHistory(skills[chartSkill].history || []), [skills, chartSkill]);
 
   const unlocked = useMemo(() => {
     const totalInfo = people.reduce((sum, p) => sum + CATEGORIES.reduce((s2, c) => s2 + p[c.key].length, 0), 0);
@@ -35,21 +41,28 @@ export function MeView({ people, journal, skills, generalGoals, profile, onBack,
         {SKILL_ORDER.map(k => (<LabeledBar key={k} label={skills[k].label} percent={skills[k].current} color={COLORS.accent} size="lg" />))}
       </div>
 
-      <div className="grid grid-cols-1 gap-2.5 mt-6">
-        <div className="rounded-2xl p-3.5" style={{ background: COLORS.accentSoft }}>
-          <p className="text-xs font-semibold" style={{ color: COLORS.accent }}>Your biggest strength</p>
-          <p className="text-sm mt-1" style={{ color: COLORS.ink }}>🎧 {skills[strengthKey].label}</p>
+      {tracked ? (
+        <div className="grid grid-cols-1 gap-2.5 mt-6">
+          <div className="rounded-2xl p-3.5" style={{ background: COLORS.accentSoft }}>
+            <p className="text-xs font-semibold" style={{ color: COLORS.accent }}>Your biggest strength</p>
+            <p className="text-sm mt-1" style={{ color: COLORS.ink }}>{SKILL_TIPS[strengthKey].emoji} {skills[strengthKey].label}</p>
+          </div>
+          <div className="rounded-2xl p-3.5" style={{ background: COLORS.layer3Tint }}>
+            <p className="text-xs font-semibold" style={{ color: COLORS.layer3Deep }}>Current focus</p>
+            <p className="text-sm mt-1" style={{ color: COLORS.ink }}>{SKILL_TIPS[focusKey].emoji} {skills[focusKey].label}</p>
+            <p className="text-xs mt-1.5" style={{ color: COLORS.inkSoft }}>{SKILL_TIPS[focusKey].focus}</p>
+          </div>
+          <div className="rounded-2xl p-3.5" style={{ background: COLORS.paperRaised, border: `1px solid ${COLORS.line}` }}>
+            <p className="text-xs font-semibold" style={{ color: COLORS.ink }}>Current challenge</p>
+            <p className="text-xs mt-1.5" style={{ color: COLORS.inkSoft }}>{SKILL_TIPS[focusKey].challenge}</p>
+          </div>
         </div>
-        <div className="rounded-2xl p-3.5" style={{ background: COLORS.layer3Tint }}>
-          <p className="text-xs font-semibold" style={{ color: COLORS.layer3Deep }}>Current focus</p>
-          <p className="text-sm mt-1" style={{ color: COLORS.ink }}>🔄 {skills[FOCUS_SKILL_KEY].label}</p>
-          <p className="text-xs mt-1.5" style={{ color: COLORS.inkSoft }}>{FOCUS_TEXT}</p>
+      ) : (
+        <div className="rounded-2xl p-3.5 mt-6" style={{ background: COLORS.accentSoft }}>
+          <p className="text-xs font-semibold" style={{ color: COLORS.accent }}>Getting started</p>
+          <p className="text-xs mt-1.5" style={{ color: COLORS.ink }}>Your skills start at 0% and grow as you log conversations. When you log one, tick what you practised, like asking follow-up questions, and your strengths and next focus will show up here.</p>
         </div>
-        <div className="rounded-2xl p-3.5" style={{ background: COLORS.paperRaised, border: `1px solid ${COLORS.line}` }}>
-          <p className="text-xs font-semibold" style={{ color: COLORS.ink }}>Current challenge</p>
-          <p className="text-xs mt-1.5" style={{ color: COLORS.inkSoft }}>{CHALLENGE_TEXT}</p>
-        </div>
-      </div>
+      )}
 
       <div className="mt-7">
         <p className="font-display" style={{ fontSize: 18, color: COLORS.ink }}>Progress history</p>
@@ -60,7 +73,7 @@ export function MeView({ people, journal, skills, generalGoals, profile, onBack,
         </div>
         <div className="mt-3" style={{ width: '100%', height: 170 }}>
           <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={skills[chartSkill].history} margin={{ top: 8, right: 14, left: -12, bottom: 0 }}>
+            <LineChart data={chartData} margin={{ top: 8, right: 14, left: -12, bottom: 0 }}>
               <CartesianGrid stroke={COLORS.line} strokeDasharray="3 3" vertical={false} />
               <XAxis dataKey="date" tick={{ fontSize: 10, fill: COLORS.inkSoft }} axisLine={{ stroke: COLORS.line }} tickLine={false} interval={0} padding={{ left: 18, right: 18 }} />
               <YAxis domain={[0, 100]} tick={{ fontSize: 10, fill: COLORS.inkSoft }} axisLine={false} tickLine={false} width={26} />

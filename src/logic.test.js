@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { clamp } from './lib/util.js';
-import { computeOverall, layerForOverall, makePerson } from './lib/progress.js';
+import { computeOverall, layerForOverall, makePerson, placeOnLayers } from './lib/progress.js';
 import { summaryFor, homeGoalTitle, updateStatusText, getCheckInSuggestions, generateSuggestions, checkInReminder } from './lib/text.js';
 import {
   parseDaysAgo,
@@ -266,9 +266,11 @@ describe('makePerson', () => {
     const p = makePerson({ name: 'Sam', emoji: '🧑', layer: 3 });
     expect(p.layer).toBe(3);
   });
-  it('sets starting dimension/overall values consistent with that layer', () => {
-    const p = makePerson({ name: 'Sam', emoji: '🧑', layer: 4 });
-    expect(layerForOverall(p.overall)).toBe(4);
+  it('starts exactly where Adjust would place their starting dimensions, at every layer', () => {
+    [1, 2, 3, 4].forEach(layer => {
+      const p = makePerson({ name: 'Sam', emoji: '🧑', layer });
+      expect(placeOnLayers(computeOverall(p.dims))).toEqual({ layer, overall: p.overall });
+    });
   });
   it('gives every new person an empty history/goals/info starting point', () => {
     const p = makePerson({ name: 'Sam', emoji: '🧑', layer: 1 });

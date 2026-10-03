@@ -2,13 +2,17 @@
 // people" and "Restore sample data".
 
 
+// Each person's layer and percentage are exactly where Adjust would place
+// their dimensions (see placeOnLayers), so the sample can't jump layers when
+// Adjust is saved unchanged. A test in tests/app checks this.
+//
 // Seed info items and timeline steps carry legacy `updated` / `date` labels
 // instead of `at`: backfillPeopleDates resolves them whenever the sample is
 // loaded, so 'Today' is the day it's loaded.
 export const INITIAL_PEOPLE = [
   {
     id: 'alex', name: 'Alex', emoji: '🧑', layer: 3,
-    dims: { depth: 70, trust: 72, reciprocity: 78, interaction: 84, sharedExperiences: 61, listening: 86 }, overall: 72,
+    dims: { depth: 62, trust: 66, reciprocity: 70, interaction: 76, sharedExperiences: 56, listening: 78 }, overall: 72,
     interests: [
       { id: 'alex-int-1', emoji: '🏎️', text: 'Formula 1', updated: 'Today', temporary: false, archived: false },
       { id: 'alex-int-2', emoji: '🎮', text: 'Xbox', updated: '9 days ago', temporary: false, archived: false },
@@ -42,7 +46,7 @@ export const INITIAL_PEOPLE = [
   },
   {
     id: 'jamie', name: 'Jamie', emoji: '🧑‍🦱', layer: 2,
-    dims: { depth: 45, trust: 48, reciprocity: 52, interaction: 55, sharedExperiences: 40, listening: 58 }, overall: 49,
+    dims: { depth: 33, trust: 36, reciprocity: 40, interaction: 42, sharedExperiences: 28, listening: 43 }, overall: 48,
     interests: [
       { id: 'jamie-int-1', emoji: '🎌', text: 'Anime', updated: '3 days ago', temporary: false, archived: false },
       { id: 'jamie-int-2', emoji: '🎲', text: 'Board games', updated: '9 days ago', temporary: false, archived: false },
@@ -61,7 +65,7 @@ export const INITIAL_PEOPLE = [
       { id: 'jamie-goal-1', personId: 'jamie', category: 'relationship', type: 'learn', title: 'Learn more about them', description: 'Discover 3 shared interests', progress: 50, history: [{ date: 'Aug 22', value: 30 }, { date: 'Sep 1', value: 50 }] },
       { id: 'jamie-goal-2', personId: 'jamie', category: 'relationship', type: 'deeper', title: 'Have deeper conversations', description: 'Have 2 meaningful conversations', progress: 30, history: [{ date: 'Aug 22', value: 15 }, { date: 'Sep 1', value: 30 }] },
     ],
-    history: [{ date: 'Aug 22', value: 30 }, { date: 'Aug 27', value: 40 }, { date: 'Sep 1', value: 50 }],
+    history: [{ date: 'Aug 22', value: 30 }, { date: 'Aug 27', value: 40 }, { date: 'Sep 1', value: 48 }],
     timeline: [
       { label: 'First met', date: '3 weeks ago' },
       { label: 'First proper conversation', date: '2 weeks ago' },
@@ -70,7 +74,7 @@ export const INITIAL_PEOPLE = [
   },
   {
     id: 'priya', name: 'Priya', emoji: '🧕', layer: 4,
-    dims: { depth: 85, trust: 92, reciprocity: 88, interaction: 85, sharedExperiences: 82, listening: 90 }, overall: 87,
+    dims: { depth: 85, trust: 92, reciprocity: 88, interaction: 85, sharedExperiences: 82, listening: 90 }, overall: 48,
     interests: [
       { id: 'priya-int-1', emoji: '🥾', text: 'Hiking', updated: '5 days ago', temporary: false, archived: false },
       { id: 'priya-int-2', emoji: '📷', text: 'Photography', updated: '12 days ago', temporary: false, archived: false },
@@ -91,7 +95,7 @@ export const INITIAL_PEOPLE = [
       { id: 'priya-goal-1', personId: 'priya', category: 'relationship', type: 'maintain', title: 'Maintain the friendship', description: 'Check in at least once every 2 weeks', progress: 90, history: [{ date: 'Aug 15', value: 78 }, { date: 'Sep 3', value: 90 }] },
       { id: 'priya-goal-2', personId: 'priya', category: 'skill', type: 'selfDisclosureGoal', title: 'Share more about myself', description: 'Open up about something personal', progress: 70, history: [{ date: 'Aug 15', value: 50 }, { date: 'Sep 3', value: 70 }] },
     ],
-    history: [{ date: 'Aug 15', value: 75 }, { date: 'Aug 22', value: 80 }, { date: 'Aug 29', value: 85 }, { date: 'Sep 3', value: 87 }],
+    history: [{ date: 'Aug 15', value: 30 }, { date: 'Aug 22', value: 38 }, { date: 'Aug 29', value: 44 }, { date: 'Sep 3', value: 48 }],
     timeline: [
       { label: 'First met', date: '6 months ago' },
       { label: 'First proper conversation', date: '5 months ago' },
@@ -101,7 +105,7 @@ export const INITIAL_PEOPLE = [
   },
   {
     id: 'noah', name: 'Noah', emoji: '🧑‍🎓', layer: 2,
-    dims: { depth: 38, trust: 35, reciprocity: 42, interaction: 48, sharedExperiences: 35, listening: 44 }, overall: 40,
+    dims: { depth: 38, trust: 35, reciprocity: 42, interaction: 48, sharedExperiences: 35, listening: 44 }, overall: 60,
     interests: [
       { id: 'noah-int-1', emoji: '🎸', text: 'Guitar', updated: '4 days ago', temporary: false, archived: false },
     ],
@@ -114,12 +118,12 @@ export const INITIAL_PEOPLE = [
     goals: [
       { id: 'noah-goal-1', personId: 'noah', category: 'relationship', type: 'shared', title: 'Find shared interests', description: 'Discover 2 shared interests', progress: 40, history: [{ date: 'Aug 25', value: 20 }, { date: 'Sep 2', value: 40 }] },
     ],
-    history: [{ date: 'Aug 25', value: 28 }, { date: 'Aug 30', value: 34 }, { date: 'Sep 2', value: 40 }],
+    history: [{ date: 'Aug 25', value: 44 }, { date: 'Aug 30', value: 52 }, { date: 'Sep 2', value: 60 }],
     timeline: [{ label: 'First met', date: '1 month ago' }],
   },
   {
     id: 'sam', name: 'Sam', emoji: '🧑‍🦳', layer: 1,
-    dims: { depth: 15, trust: 18, reciprocity: 20, interaction: 22, sharedExperiences: 12, listening: 22 }, overall: 18,
+    dims: { depth: 15, trust: 18, reciprocity: 20, interaction: 22, sharedExperiences: 12, listening: 22 }, overall: 72,
     interests: [
       { id: 'sam-int-1', emoji: '🧗', text: 'Rock climbing', updated: '2 weeks ago', temporary: false, archived: false },
     ],
@@ -130,7 +134,7 @@ export const INITIAL_PEOPLE = [
     goals: [
       { id: 'sam-goal-1', personId: 'sam', category: 'relationship', type: 'deeper', title: 'Have deeper conversations', description: 'Have 2 meaningful conversations', progress: 15, history: [{ date: 'Aug 27', value: 8 }, { date: 'Sep 3', value: 15 }] },
     ],
-    history: [{ date: 'Aug 27', value: 10 }, { date: 'Sep 1', value: 15 }, { date: 'Sep 3', value: 18 }],
+    history: [{ date: 'Aug 27', value: 40 }, { date: 'Sep 1', value: 56 }, { date: 'Sep 3', value: 72 }],
     timeline: [{ label: 'First met', date: '2 weeks ago' }],
   },
 ];

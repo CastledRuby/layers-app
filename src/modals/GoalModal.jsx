@@ -21,6 +21,16 @@ export function GoalModal({ people, defaultPersonId, editingGoal, editingPersonI
   const [dueDate, setDueDate] = useState(isEdit && editingGoal.dueDate ? new Date(editingGoal.dueDate + 'T00:00:00') : null);
   const [variantPickerFor, setVariantPickerFor] = useState(null);
 
+  // A preset's description mentions the person, so it's rewritten when you
+  // pick someone else (unless you've typed or picked your own).
+  function choosePerson(id) {
+    setPersonId(id);
+    if (presetKey && presetKey !== 'custom' && !descTouched) {
+      const preset = presetMeta(presetKey);
+      setDescription(preset ? generateGoalDescription(preset, people.find(p => p.id === id)) : '');
+    }
+  }
+
   function pickPreset(key) {
     setPresetKey(key);
     if (key !== 'custom' && !descTouched) {
@@ -56,14 +66,14 @@ export function GoalModal({ people, defaultPersonId, editingGoal, editingPersonI
         </div>
       ) : (
         <div style={{ display: 'flex', flexWrap: 'wrap', columnGap: 8, rowGap: 12, paddingBottom: 4, marginBottom: 20, maxHeight: 168, overflowY: 'auto' }}>
-          <button onClick={() => setPersonId(null)} className="flex flex-col items-center gap-1 shrink-0" style={{ width: 60 }}>
+          <button onClick={() => choosePerson(null)} className="flex flex-col items-center gap-1 shrink-0" style={{ width: 60 }}>
             <Avatar emoji="🎯" size={44} ringColor={personId === null ? COLORS.accent : COLORS.line} />
             <span className="text-xs" style={{ color: personId === null ? COLORS.accent : COLORS.inkSoft, fontWeight: personId === null ? 700 : 500 }}>General</span>
           </button>
           {people.map(p => {
             const active = personId === p.id; const l = getLayer(p.layer);
             return (
-              <button key={p.id} onClick={() => setPersonId(p.id)} className="flex flex-col items-center gap-1 shrink-0" style={{ width: 56 }}>
+              <button key={p.id} onClick={() => choosePerson(p.id)} className="flex flex-col items-center gap-1 shrink-0" style={{ width: 56 }}>
                 <Avatar emoji={p.emoji} size={44} ringColor={active ? COLORS.accent : l.color} />
                 <span className="text-xs truncate" style={{ maxWidth: 56, color: active ? COLORS.accent : COLORS.inkSoft, fontWeight: active ? 700 : 500 }}>{p.name}</span>
               </button>
