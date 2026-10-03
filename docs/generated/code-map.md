@@ -4,55 +4,56 @@
 > Run `npm run docs:map` after changing anything under `src/`, `electron/*.cjs` or `package.json` scripts.
 > Hand-written explanations live in the other files under [`docs/`](../README.md).
 
-Package: `layers-web` v1.0.26 · `src/`: 37 files, 4595 lines, 37 components, 66 top-level functions, 45 constants.
+Package: `layers-web` v1.0.26 · `src/`: 38 files, 5013 lines, 37 components, 84 top-level functions, 46 constants.
 
 ## Source files
 
 | File | Lines | Declares | Imports from |
 |---|---|---|---|
 | [main.jsx](../../src/main.jsx) | 11 | — | — |
-| [App.jsx](../../src/App.jsx) | 667 | LayersApp | `components/BottomNav`, `components/sheetLayer`, `data/constants`, `data/seed`, `lib/dates`, `lib/progress`, `lib/backup`, `lib/hooks`, `lib/storage`, `lib/util`, `modals/AddInfoModal`, `modals/AddPersonModal`, `modals/ConfirmDialog`, `modals/EditPersonModal`, `modals/GoalModal`, `modals/LogInteractionModal`, `modals/QuickAddInterestModal`, `modals/ShortcutsModal`, `modals/TemplatePickerModal`, `theme`, `views/CoachView`, `views/GoalsView`, `views/HomeView`, `views/JournalView`, `views/MeView`, `views/OnboardingView`, `views/PeopleView`, `views/PersonProfile` |
+| [App.jsx](../../src/App.jsx) | 746 | sampleData, unlinkMissingPeople, addNotes, LayersApp | `components/BottomNav`, `components/ErrorBoundary`, `components/sheetLayer`, `data/constants`, `data/seed`, `lib/dates`, `lib/progress`, `lib/backup`, `lib/hooks`, `lib/storage`, `lib/util`, `modals/AddInfoModal`, `modals/AddPersonModal`, `modals/ConfirmDialog`, `modals/EditPersonModal`, `modals/GoalModal`, `modals/LogInteractionModal`, `modals/QuickAddInterestModal`, `modals/ShortcutsModal`, `modals/TemplatePickerModal`, `theme`, `views/CoachView`, `views/GoalsView`, `views/HomeView`, `views/JournalView`, `views/MeView`, `views/OnboardingView`, `views/PeopleView`, `views/PersonProfile` |
 | [theme.js](../../src/theme.js) | 129 | THEME_LIGHT, THEME_DARK, COLORS, cssVarBlock, CSS | `fonts` |
-| [data/constants.js](../../src/data/constants.js) | 167 | LAYERS, getLayer, DIM_ORDER, DIM_LABELS, DIM_COLORS, LAYER_BASE_DIMS, CATEGORIES, categoryMeta, SHORTCUTS, EMOJI_CHOICES, … (+17) | `theme` |
+| [data/constants.js](../../src/data/constants.js) | 186 | LAYERS, getLayer, DIM_ORDER, DIM_LABELS, DIM_COLORS, LAYER_BASE_DIMS, CATEGORIES, categoryMeta, SHORTCUTS, EMOJI_CHOICES, … (+17) | `theme` |
 | [data/scenarios.js](../../src/data/scenarios.js) | 115 | SCENARIOS | — |
-| [data/seed.js](../../src/data/seed.js) | 172 | INITIAL_PEOPLE, INITIAL_GENERAL_GOALS, INITIAL_JOURNAL, INITIAL_SKILLS, EMPTY_SKILLS | — |
-| [lib/backup.js](../../src/lib/backup.js) | 155 | BACKUP_VERSION, MAX_BACKUP_BYTES, createBackup, isObject, isText, isISODay, num, count, cleanHistory, cleanGoal, … (+5) | `data/constants`, `data/seed`, `lib/util` |
-| [lib/dates.js](../../src/lib/dates.js) | 234 | parseDaysAgo, startOfDay, WEEKDAY_SHORT, WEEKDAY_FULL, formatWeekdays, MONTH_NAMES, dateToRelativeLabel, formatCalendarDate, toISODate, formatAbsoluteDate, … (+20) | `data/constants` |
+| [data/seed.js](../../src/data/seed.js) | 176 | INITIAL_PEOPLE, INITIAL_GENERAL_GOALS, INITIAL_JOURNAL, INITIAL_SKILLS, EMPTY_SKILLS | — |
+| [lib/backup.js](../../src/lib/backup.js) | 157 | BACKUP_VERSION, MAX_BACKUP_BYTES, createBackup, isObject, isText, isISODay, num, count, cleanHistory, cleanGoal, … (+5) | `data/constants`, `data/seed`, `lib/util` |
+| [lib/dates.js](../../src/lib/dates.js) | 282 | parseDaysAgo, startOfDay, WEEKDAY_SHORT, WEEKDAY_FULL, formatWeekdays, MONTH_NAMES, dateToRelativeLabel, formatCalendarDate, toISODate, formatAbsoluteDate, … (+23) | `data/constants` |
 | [lib/hooks.js](../../src/lib/hooks.js) | 50 | useToday, useDailyCheckIn | `lib/dates`, `lib/storage`, `lib/text` |
-| [lib/progress.js](../../src/lib/progress.js) | 44 | layerForOverall, advanceLayer, computeOverall, makePerson, generateGoalDescription | `data/constants`, `lib/dates`, `lib/util` |
-| [lib/storage.js](../../src/lib/storage.js) | 34 | STORAGE_KEY, loadSaved, persistState, LAST_NOTIFIED_KEY, getLastNotifiedDate, setLastNotifiedDate | — |
-| [lib/text.js](../../src/lib/text.js) | 111 | summaryFor, updateStatusText, homeGoalTitle, generateSuggestions, getCheckInSuggestions, checkInReminder, HOOKS, buildPotentialHooks | `data/constants`, `lib/dates` |
+| [lib/progress.js](../../src/lib/progress.js) | 112 | layerForOverall, advanceLayer, computeOverall, dimsEqual, placeOnLayers, progressDelta, chartDay, movePerson, makePerson, generateGoalDescription, … (+1) | `data/constants`, `lib/dates`, `lib/util` |
+| [lib/storage.js](../../src/lib/storage.js) | 76 | STORAGE_KEY, UNREADABLE_PREFIX, keepCopy, loadSavedState, persistState, LAST_NOTIFIED_KEY, getLastNotifiedDate, setLastNotifiedDate | `lib/backup` |
+| [lib/text.js](../../src/lib/text.js) | 113 | summaryFor, updateStatusText, homeGoalTitle, generateSuggestions, getCheckInSuggestions, checkInReminder, HOOKS, buildPotentialHooks | `data/constants`, `lib/dates` |
 | [lib/util.js](../../src/lib/util.js) | 9 | clamp, uidCounter, uid | — |
 | [components/atoms.jsx](../../src/components/atoms.jsx) | 108 | CircularProgress, ProgressBar, LabeledBar, Avatar, LayerBadge, ChatBubble, Timeline, ConvStateBadge | `data/constants`, `lib/dates`, `lib/util`, `theme` |
 | [components/BottomNav.jsx](../../src/components/BottomNav.jsx) | 28 | BottomNav | `theme` |
+| [components/ErrorBoundary.jsx](../../src/components/ErrorBoundary.jsx) | 39 | — | `theme` |
 | [components/pickers.jsx](../../src/components/pickers.jsx) | 118 | DateDropdown, TimeDropdown | `components/Sheet`, `lib/dates`, `theme` |
-| [components/rows.jsx](../../src/components/rows.jsx) | 87 | GoalRow, InfoItemRow | `components/atoms`, `data/constants`, `lib/dates`, `theme` |
-| [components/Sheet.jsx](../../src/components/Sheet.jsx) | 36 | SheetPortal, Sheet | `components/sheetLayer`, `theme` |
-| [components/sheetLayer.js](../../src/components/sheetLayer.js) | 12 | SheetLayerContext | — |
+| [components/rows.jsx](../../src/components/rows.jsx) | 89 | GoalRow, InfoItemRow | `components/atoms`, `data/constants`, `lib/dates`, `theme` |
+| [components/Sheet.jsx](../../src/components/Sheet.jsx) | 37 | SheetPortal, Sheet | `components/sheetLayer`, `theme` |
+| [components/sheetLayer.js](../../src/components/sheetLayer.js) | 40 | SheetLayerContext, openSheets, registerSheet, topSheet, hasOpenSheet, useOpenSheet | — |
 | [modals/AddInfoModal.jsx](../../src/modals/AddInfoModal.jsx) | 37 | AddInfoModal | `components/Sheet`, `data/constants`, `theme` |
 | [modals/AddPersonModal.jsx](../../src/modals/AddPersonModal.jsx) | 37 | AddPersonModal | `components/Sheet`, `data/constants`, `theme` |
-| [modals/ConfirmDialog.jsx](../../src/modals/ConfirmDialog.jsx) | 27 | ConfirmDialog | `components/Sheet`, `theme` |
+| [modals/ConfirmDialog.jsx](../../src/modals/ConfirmDialog.jsx) | 29 | ConfirmDialog | `components/Sheet`, `components/sheetLayer`, `theme` |
 | [modals/EditPersonModal.jsx](../../src/modals/EditPersonModal.jsx) | 29 | EditPersonModal | `components/Sheet`, `data/constants`, `theme` |
-| [modals/GoalModal.jsx](../../src/modals/GoalModal.jsx) | 153 | GoalModal | `components/Sheet`, `components/atoms`, `components/pickers`, `data/constants`, `lib/dates`, `lib/progress`, `lib/util`, `theme` |
-| [modals/LogInteractionModal.jsx](../../src/modals/LogInteractionModal.jsx) | 395 | LogInteractionModal | `components/Sheet`, `components/atoms`, `components/pickers`, `data/constants`, `lib/dates`, `modals/TemplatePickerModal`, `theme` |
+| [modals/GoalModal.jsx](../../src/modals/GoalModal.jsx) | 163 | GoalModal | `components/Sheet`, `components/atoms`, `components/pickers`, `data/constants`, `lib/dates`, `lib/progress`, `lib/util`, `theme` |
+| [modals/LogInteractionModal.jsx](../../src/modals/LogInteractionModal.jsx) | 408 | LogInteractionModal | `components/Sheet`, `components/atoms`, `components/pickers`, `data/constants`, `lib/dates`, `modals/TemplatePickerModal`, `theme` |
 | [modals/QuickAddInterestModal.jsx](../../src/modals/QuickAddInterestModal.jsx) | 16 | QuickAddInterestModal | `modals/TemplatePickerModal` |
 | [modals/ShortcutsModal.jsx](../../src/modals/ShortcutsModal.jsx) | 33 | ShortcutKey, ShortcutsModal | `components/Sheet`, `data/constants`, `theme` |
-| [modals/TemplatePickerModal.jsx](../../src/modals/TemplatePickerModal.jsx) | 75 | TemplatePickerModal | `components/Sheet`, `data/constants`, `theme` |
-| [views/CoachView.jsx](../../src/views/CoachView.jsx) | 362 | CoachView | `components/atoms`, `data/constants`, `data/scenarios`, `lib/text`, `theme` |
-| [views/GoalsView.jsx](../../src/views/GoalsView.jsx) | 66 | GoalsView | `components/atoms`, `components/rows`, `data/constants`, `theme` |
-| [views/HomeView.jsx](../../src/views/HomeView.jsx) | 290 | HomeView | `components/atoms`, `data/constants`, `lib/dates`, `lib/text`, `modals/TemplatePickerModal`, `theme` |
+| [modals/TemplatePickerModal.jsx](../../src/modals/TemplatePickerModal.jsx) | 77 | TemplatePickerModal | `components/Sheet`, `data/constants`, `theme` |
+| [views/CoachView.jsx](../../src/views/CoachView.jsx) | 381 | CoachView | `components/atoms`, `data/constants`, `data/scenarios`, `lib/text`, `theme` |
+| [views/GoalsView.jsx](../../src/views/GoalsView.jsx) | 65 | GoalsView | `components/atoms`, `components/rows`, `data/constants`, `theme` |
+| [views/HomeView.jsx](../../src/views/HomeView.jsx) | 287 | HomeView | `components/atoms`, `data/constants`, `lib/dates`, `lib/text`, `modals/TemplatePickerModal`, `theme` |
 | [views/JournalView.jsx](../../src/views/JournalView.jsx) | 94 | JournalView | `data/constants`, `lib/dates`, `lib/text`, `theme` |
-| [views/MeView.jsx](../../src/views/MeView.jsx) | 159 | MeView | `components/atoms`, `data/constants`, `lib/text`, `theme` |
+| [views/MeView.jsx](../../src/views/MeView.jsx) | 177 | MeView | `components/atoms`, `data/constants`, `lib/dates`, `lib/text`, `theme` |
 | [views/OnboardingView.jsx](../../src/views/OnboardingView.jsx) | 80 | OnboardingView | `data/constants`, `theme` |
-| [views/PeopleView.jsx](../../src/views/PeopleView.jsx) | 183 | PeopleView | `components/atoms`, `data/constants`, `lib/text`, `theme` |
-| [views/PersonProfile.jsx](../../src/views/PersonProfile.jsx) | 244 | AdjustSlider, PrepareTipsModal, PersonProfile | `components/Sheet`, `components/atoms`, `components/rows`, `data/constants`, `lib/dates`, `lib/text`, `theme` |
+| [views/PeopleView.jsx](../../src/views/PeopleView.jsx) | 188 | PeopleView | `components/atoms`, `data/constants`, `lib/dates`, `lib/text`, `theme` |
+| [views/PersonProfile.jsx](../../src/views/PersonProfile.jsx) | 263 | AdjustSlider, PrepareTipsModal, PersonProfile | `components/Sheet`, `components/atoms`, `components/rows`, `data/constants`, `lib/dates`, `lib/progress`, `lib/text`, `theme` |
 | [fonts.js](../../src/fonts.js) | 28 | LATIN, LATIN_EXT, face, FONT_FACES | — |
 
 ## Components
 
 | Component | Defined | Props | Rendered by |
 |---|---|---|---|
-| `LayersApp` | [App.jsx:37](../../src/App.jsx#L37) | — | — |
+| `LayersApp` | [App.jsx:69](../../src/App.jsx#L69) | — | — |
 | `CircularProgress` | [atoms.jsx:8](../../src/components/atoms.jsx#L8) | `percent`, `size`, `stroke`, `color`, `track`, `label` | `PersonProfile` |
 | `ProgressBar` | [atoms.jsx:28](../../src/components/atoms.jsx#L28) | `percent`, `color`, `height`, `track` | `LabeledBar`, `GoalRow`, `HomeView`, `PeopleView` |
 | `LabeledBar` | [atoms.jsx:36](../../src/components/atoms.jsx#L36) | `label`, `percent`, `color`, `size` | `CoachView`, `MeView`, `PersonProfile` |
@@ -64,40 +65,43 @@ Package: `layers-web` v1.0.26 · `src/`: 37 files, 4595 lines, 37 components, 66
 | `BottomNav` | [BottomNav.jsx:6](../../src/components/BottomNav.jsx#L6) | `active`, `onChange` | `LayersApp` |
 | `DateDropdown` | [pickers.jsx:9](../../src/components/pickers.jsx#L9) | `value`, `onChange`, `maxDate`, `minDate` | `GoalModal`, `LogInteractionModal` |
 | `TimeDropdown` | [pickers.jsx:69](../../src/components/pickers.jsx#L69) | `value`, `onChange` | `LogInteractionModal` |
-| `GoalRow` | [rows.jsx:10](../../src/components/rows.jsx#L10) | `goal`, `color`, `personName`, `onBump`, `onEdit`, `onDelete` | `GoalsView`, `PersonProfile` |
-| `InfoItemRow` | [rows.jsx:56](../../src/components/rows.jsx#L56) | `item`, `onSave`, `onDelete`, `onToggleTemporary`, `onToggleArchive` | `PersonProfile` |
+| `GoalRow` | [rows.jsx:12](../../src/components/rows.jsx#L12) | `goal`, `color`, `today`, `onBump`, `onEdit`, `onDelete` | `GoalsView`, `PersonProfile` |
+| `InfoItemRow` | [rows.jsx:58](../../src/components/rows.jsx#L58) | `item`, `onSave`, `onDelete`, `onToggleTemporary`, `onToggleArchive` | `PersonProfile` |
 | `SheetPortal` | [Sheet.jsx:14](../../src/components/Sheet.jsx#L14) | `children` | `Sheet`, `ConfirmDialog` |
 | `Sheet` | [Sheet.jsx:19](../../src/components/Sheet.jsx#L19) | `title`, `onClose`, `children`, `footer`, `tall` | `DateDropdown`, `TimeDropdown`, `AddInfoModal`, `AddPersonModal`, `EditPersonModal`, `GoalModal`, `LogInteractionModal`, `ShortcutsModal`, `TemplatePickerModal`, `PrepareTipsModal` |
-| `SheetLayerContext` | [sheetLayer.js:11](../../src/components/sheetLayer.js#L11) | — | `LayersApp` |
+| `SheetLayerContext` | [sheetLayer.js:12](../../src/components/sheetLayer.js#L12) | — | `LayersApp` |
 | `AddInfoModal` | [AddInfoModal.jsx:9](../../src/modals/AddInfoModal.jsx#L9) | `personName`, `category`, `onClose`, `onSave` | `LayersApp` |
 | `AddPersonModal` | [AddPersonModal.jsx:8](../../src/modals/AddPersonModal.jsx#L8) | `onClose`, `onSave` | `LayersApp` |
-| `ConfirmDialog` | [ConfirmDialog.jsx:6](../../src/modals/ConfirmDialog.jsx#L6) | `title`, `message`, `confirmLabel`, `danger`, `onConfirm`, `onCancel` | `LayersApp` |
+| `ConfirmDialog` | [ConfirmDialog.jsx:7](../../src/modals/ConfirmDialog.jsx#L7) | `title`, `message`, `confirmLabel`, `danger`, `onConfirm`, `onCancel`, `hideCancel` | `LayersApp` |
 | `EditPersonModal` | [EditPersonModal.jsx:9](../../src/modals/EditPersonModal.jsx#L9) | `person`, `onClose`, `onSave`, `onDelete` | `LayersApp` |
 | `GoalModal` | [GoalModal.jsx:14](../../src/modals/GoalModal.jsx#L14) | `people`, `defaultPersonId`, `editingGoal`, `editingPersonId`, `onClose`, `onSave` | `LayersApp` |
 | `LogInteractionModal` | [LogInteractionModal.jsx:14](../../src/modals/LogInteractionModal.jsx#L14) | `people`, `defaultPersonId`, `events`, `initialStep`, `initialEditEvent`, `onClose`, `onSubmit`, `onCreateEvent`, `onUpdateEvent`, `onDeleteEvent` | `LayersApp` |
 | `QuickAddInterestModal` | [QuickAddInterestModal.jsx:5](../../src/modals/QuickAddInterestModal.jsx#L5) | `personName`, `onClose`, `onSave` | `LayersApp` |
 | `ShortcutKey` | [ShortcutsModal.jsx:7](../../src/modals/ShortcutsModal.jsx#L7) | `label` | `ShortcutsModal` |
 | `ShortcutsModal` | [ShortcutsModal.jsx:11](../../src/modals/ShortcutsModal.jsx#L11) | `onClose` | `LayersApp` |
-| `TemplatePickerModal` | [TemplatePickerModal.jsx:16](../../src/modals/TemplatePickerModal.jsx#L16) | `title`, `subtitle`, `onClose`, `onPick`, `allowMultiple` | `LogInteractionModal`, `HomeView` |
-| `CoachView` | [CoachView.jsx:11](../../src/views/CoachView.jsx#L11) | `people`, `journal`, `generalGoals`, `initialPersonId`, `initialTab`, `onOpenLog`, `onApproveInfo`, `onLogFromAnalysis`, `onOpenPerson` | `LayersApp` |
-| `GoalsView` | [GoalsView.jsx:10](../../src/views/GoalsView.jsx#L10) | `people`, `generalGoals`, `onBack`, `onOpenPerson`, `onOpenGoalCreate`, `onOpenGoalEdit`, `onDeleteGoal`, `onBumpGoal` | `LayersApp` |
+| `TemplatePickerModal` | [TemplatePickerModal.jsx:18](../../src/modals/TemplatePickerModal.jsx#L18) | `title`, `subtitle`, `onClose`, `onPick`, `allowMultiple` | `LogInteractionModal`, `HomeView` |
+| `CoachView` | [CoachView.jsx:11](../../src/views/CoachView.jsx#L11) | `people`, `journal`, `initialPersonId`, `initialTab`, `onOpenLog`, `onApproveInfo`, `onLogFromAnalysis`, `onOpenPerson` | `LayersApp` |
+| `GoalsView` | [GoalsView.jsx:10](../../src/views/GoalsView.jsx#L10) | `today`, `people`, `generalGoals`, `onBack`, `onOpenPerson`, `onOpenGoalCreate`, `onOpenGoalEdit`, `onDeleteGoal`, `onBumpGoal` | `LayersApp` |
 | `HomeView` | [HomeView.jsx:12](../../src/views/HomeView.jsx#L12) | `today`, `people`, `journal`, `generalGoals`, `events`, `profile`, `onOpenPerson`, `onSwitchTab`, `onOpenGoals`, `onOpenCoach`, `onLogEvent`, `onManageEvents`, `onEditEvent`, `onDeleteEvent` | `LayersApp` |
 | `JournalView` | [JournalView.jsx:10](../../src/views/JournalView.jsx#L10) | `people`, `journal`, `onOpenPerson` | `LayersApp` |
-| `MeView` | [MeView.jsx:11](../../src/views/MeView.jsx#L11) | `people`, `journal`, `skills`, `generalGoals`, `profile`, `onBack`, `onRestoreSample`, `onStartOver`, `onExport`, `onImportClick`, `hasUpdater`, `updateStatus`, `onCheckForUpdates`, `onInstallUpdate`, `theme`, `onSetTheme`, `hasSystemBridge`, `autoLaunch`, `onToggleAutoLaunch`, `onOpenShortcuts`, `appVersion` | `LayersApp` |
+| `MeView` | [MeView.jsx:12](../../src/views/MeView.jsx#L12) | `people`, `journal`, `skills`, `onRestoreSample`, `onStartOver`, `onExport`, `onImportClick`, `hasUpdater`, `updateStatus`, `onCheckForUpdates`, `onInstallUpdate`, `onOpenDownloadPage`, `shortcutStatus`, `theme`, `onSetTheme`, `hasSystemBridge`, `autoLaunch`, `onToggleAutoLaunch`, `onOpenShortcuts`, `appVersion` | `LayersApp` |
 | `OnboardingView` | [OnboardingView.jsx:8](../../src/views/OnboardingView.jsx#L8) | `initialName`, `initialFocus`, `onComplete` | `LayersApp` |
-| `PeopleView` | [PeopleView.jsx:10](../../src/views/PeopleView.jsx#L10) | `people`, `journal`, `onOpenPerson`, `onAddPerson` | `LayersApp` |
-| `AdjustSlider` | [PersonProfile.jsx:14](../../src/views/PersonProfile.jsx#L14) | `label`, `value`, `onChange`, `color` | `PersonProfile` |
-| `PrepareTipsModal` | [PersonProfile.jsx:26](../../src/views/PersonProfile.jsx#L26) | `person`, `journal`, `onClose`, `onOpenFullCoach` | `PersonProfile` |
-| `PersonProfile` | [PersonProfile.jsx:53](../../src/views/PersonProfile.jsx#L53) | `today`, `person`, `journal`, `onBack`, `onOpenLog`, `onOpenGoalCreate`, `onOpenGoalEdit`, `onDeleteGoal`, `onBumpGoal`, `onOpenAddInfo`, `onOpenQuickAddInterest`, `onSaveInfo`, `onDeleteInfo`, `onToggleTemporary`, `onToggleArchive`, `onAdjust`, `onOpenCoach`, `onEditPerson`, `onClearLevelUpFlag` | — |
+| `PeopleView` | [PeopleView.jsx:11](../../src/views/PeopleView.jsx#L11) | `people`, `journal`, `onOpenPerson`, `onAddPerson` | `LayersApp` |
+| `AdjustSlider` | [PersonProfile.jsx:15](../../src/views/PersonProfile.jsx#L15) | `label`, `value`, `onChange`, `color` | `PersonProfile` |
+| `PrepareTipsModal` | [PersonProfile.jsx:27](../../src/views/PersonProfile.jsx#L27) | `person`, `journal`, `onClose`, `onOpenFullCoach` | `PersonProfile` |
+| `PersonProfile` | [PersonProfile.jsx:54](../../src/views/PersonProfile.jsx#L54) | `today`, `person`, `journal`, `onBack`, `onOpenLog`, `onOpenGoalCreate`, `onOpenGoalEdit`, `onDeleteGoal`, `onBumpGoal`, `onOpenAddInfo`, `onOpenQuickAddInterest`, `onSaveInfo`, `onDeleteInfo`, `onToggleTemporary`, `onToggleArchive`, `onAdjust`, `onOpenCoach`, `onEditPerson`, `onClearLevelUpFlag` | — |
 
 ## Functions
 
 | Function | Defined | Exported | Unit-tested |
 |---|---|---|---|
+| `sampleData` | [App.jsx:39](../../src/App.jsx#L39) |  |  |
+| `unlinkMissingPeople` | [App.jsx:49](../../src/App.jsx#L49) |  |  |
+| `addNotes` | [App.jsx:57](../../src/App.jsx#L57) |  |  |
 | `cssVarBlock` | [theme.js:50](../../src/theme.js#L50) |  |  |
 | `getLayer` | [constants.js:13](../../src/data/constants.js#L13) | ✓ |  |
-| `categoryMeta` | [constants.js:31](../../src/data/constants.js#L31) | ✓ |  |
-| `presetMeta` | [constants.js:87](../../src/data/constants.js#L87) | ✓ |  |
+| `categoryMeta` | [constants.js:32](../../src/data/constants.js#L32) | ✓ |  |
+| `presetMeta` | [constants.js:99](../../src/data/constants.js#L99) | ✓ |  |
 | `createBackup` | [backup.js:15](../../src/lib/backup.js#L15) | ✓ | ✓ |
 | `isObject` | [backup.js:19](../../src/lib/backup.js#L19) |  |  |
 | `isText` | [backup.js:20](../../src/lib/backup.js#L20) |  |  |
@@ -110,7 +114,7 @@ Package: `layers-web` v1.0.26 · `src/`: 37 files, 4595 lines, 37 components, 66
 | `cleanEntry` | [backup.js:70](../../src/lib/backup.js#L70) |  |  |
 | `cleanEvent` | [backup.js:82](../../src/lib/backup.js#L82) |  |  |
 | `cleanSkills` | [backup.js:95](../../src/lib/backup.js#L95) |  |  |
-| `validateBackup` | [backup.js:105](../../src/lib/backup.js#L105) | ✓ | ✓ |
+| `validateBackup` | [backup.js:107](../../src/lib/backup.js#L107) | ✓ | ✓ |
 | `parseDaysAgo` | [dates.js:6](../../src/lib/dates.js#L6) | ✓ | ✓ |
 | `startOfDay` | [dates.js:23](../../src/lib/dates.js#L23) | ✓ |  |
 | `formatWeekdays` | [dates.js:29](../../src/lib/dates.js#L29) | ✓ |  |
@@ -120,7 +124,7 @@ Package: `layers-web` v1.0.26 · `src/`: 37 files, 4595 lines, 37 components, 66
 | `formatAbsoluteDate` | [dates.js:72](../../src/lib/dates.js#L72) | ✓ |  |
 | `parseAbsoluteLabel` | [dates.js:77](../../src/lib/dates.js#L77) |  |  |
 | `historySortKey` | [dates.js:94](../../src/lib/dates.js#L94) |  |  |
-| `sortHistory` | [dates.js:112](../../src/lib/dates.js#L112) | ✓ |  |
+| `sortHistory` | [dates.js:112](../../src/lib/dates.js#L112) | ✓ | ✓ |
 | `pushHistoryPoint` | [dates.js:129](../../src/lib/dates.js#L129) | ✓ |  |
 | `parseISODay` | [dates.js:139](../../src/lib/dates.js#L139) | ✓ |  |
 | `storedDay` | [dates.js:145](../../src/lib/dates.js#L145) |  |  |
@@ -129,36 +133,51 @@ Package: `layers-web` v1.0.26 · `src/`: 37 files, 4595 lines, 37 components, 66
 | `journalDaysAgo` | [dates.js:164](../../src/lib/dates.js#L164) | ✓ | ✓ |
 | `journalDateLabel` | [dates.js:166](../../src/lib/dates.js#L166) | ✓ | ✓ |
 | `isJournalThisWeek` | [dates.js:169](../../src/lib/dates.js#L169) | ✓ | ✓ |
-| `infoItemDaysAgo` | [dates.js:171](../../src/lib/dates.js#L171) | ✓ | ✓ |
-| `infoItemDateLabel` | [dates.js:173](../../src/lib/dates.js#L173) | ✓ | ✓ |
-| `timelineDateLabel` | [dates.js:179](../../src/lib/dates.js#L179) | ✓ | ✓ |
-| `backfillAnchor` | [dates.js:192](../../src/lib/dates.js#L192) |  |  |
-| `backfillDated` | [dates.js:197](../../src/lib/dates.js#L197) |  |  |
-| `backfillJournalDates` | [dates.js:208](../../src/lib/dates.js#L208) | ✓ | ✓ |
-| `backfillPeopleDates` | [dates.js:212](../../src/lib/dates.js#L212) | ✓ | ✓ |
-| `formatTime12` | [dates.js:225](../../src/lib/dates.js#L225) | ✓ |  |
-| `nowToMinutes` | [dates.js:233](../../src/lib/dates.js#L233) | ✓ |  |
+| `newestFirst` | [dates.js:174](../../src/lib/dates.js#L174) | ✓ | ✓ |
+| `infoItemDaysAgo` | [dates.js:178](../../src/lib/dates.js#L178) | ✓ | ✓ |
+| `infoItemDateLabel` | [dates.js:180](../../src/lib/dates.js#L180) | ✓ | ✓ |
+| `timelineDateLabel` | [dates.js:186](../../src/lib/dates.js#L186) | ✓ | ✓ |
+| `sortByDay` | [dates.js:201](../../src/lib/dates.js#L201) | ✓ | ✓ |
+| `backfillAnchor` | [dates.js:206](../../src/lib/dates.js#L206) |  |  |
+| `backfillDated` | [dates.js:211](../../src/lib/dates.js#L211) |  |  |
+| `backfillJournalDates` | [dates.js:222](../../src/lib/dates.js#L222) | ✓ | ✓ |
+| `backfillPeopleDates` | [dates.js:226](../../src/lib/dates.js#L226) | ✓ | ✓ |
+| `backfillSkillDates` | [dates.js:241](../../src/lib/dates.js#L241) | ✓ | ✓ |
+| `formatTime12` | [dates.js:273](../../src/lib/dates.js#L273) | ✓ |  |
+| `nowToMinutes` | [dates.js:281](../../src/lib/dates.js#L281) | ✓ |  |
 | `useToday` | [hooks.js:12](../../src/lib/hooks.js#L12) | ✓ |  |
 | `useDailyCheckIn` | [hooks.js:28](../../src/lib/hooks.js#L28) | ✓ |  |
 | `layerForOverall` | [progress.js:7](../../src/lib/progress.js#L7) | ✓ | ✓ |
 | `advanceLayer` | [progress.js:13](../../src/lib/progress.js#L13) | ✓ |  |
 | `computeOverall` | [progress.js:26](../../src/lib/progress.js#L26) | ✓ | ✓ |
-| `makePerson` | [progress.js:31](../../src/lib/progress.js#L31) | ✓ | ✓ |
-| `generateGoalDescription` | [progress.js:38](../../src/lib/progress.js#L38) | ✓ |  |
-| `loadSaved` | [storage.js:6](../../src/lib/storage.js#L6) | ✓ |  |
-| `persistState` | [storage.js:17](../../src/lib/storage.js#L17) | ✓ |  |
-| `getLastNotifiedDate` | [storage.js:27](../../src/lib/storage.js#L27) | ✓ |  |
-| `setLastNotifiedDate` | [storage.js:31](../../src/lib/storage.js#L31) | ✓ |  |
+| `dimsEqual` | [progress.js:31](../../src/lib/progress.js#L31) | ✓ | ✓ |
+| `placeOnLayers` | [progress.js:36](../../src/lib/progress.js#L36) | ✓ | ✓ |
+| `progressDelta` | [progress.js:44](../../src/lib/progress.js#L44) | ✓ | ✓ |
+| `chartDay` | [progress.js:52](../../src/lib/progress.js#L52) | ✓ | ✓ |
+| `movePerson` | [progress.js:62](../../src/lib/progress.js#L62) | ✓ | ✓ |
+| `makePerson` | [progress.js:82](../../src/lib/progress.js#L82) | ✓ | ✓ |
+| `generateGoalDescription` | [progress.js:91](../../src/lib/progress.js#L91) | ✓ |  |
+| `bumpSkills` | [progress.js:101](../../src/lib/progress.js#L101) | ✓ | ✓ |
+| `keepCopy` | [storage.js:10](../../src/lib/storage.js#L10) |  |  |
+| `loadSavedState` | [storage.js:33](../../src/lib/storage.js#L33) | ✓ |  |
+| `persistState` | [storage.js:58](../../src/lib/storage.js#L58) | ✓ |  |
+| `getLastNotifiedDate` | [storage.js:69](../../src/lib/storage.js#L69) | ✓ |  |
+| `setLastNotifiedDate` | [storage.js:73](../../src/lib/storage.js#L73) | ✓ |  |
 | `summaryFor` | [text.js:7](../../src/lib/text.js#L7) | ✓ | ✓ |
 | `updateStatusText` | [text.js:13](../../src/lib/text.js#L13) | ✓ | ✓ |
-| `homeGoalTitle` | [text.js:27](../../src/lib/text.js#L27) | ✓ | ✓ |
-| `generateSuggestions` | [text.js:42](../../src/lib/text.js#L42) | ✓ | ✓ |
-| `getCheckInSuggestions` | [text.js:52](../../src/lib/text.js#L52) | ✓ | ✓ |
-| `checkInReminder` | [text.js:65](../../src/lib/text.js#L65) | ✓ | ✓ |
-| `buildPotentialHooks` | [text.js:88](../../src/lib/text.js#L88) | ✓ |  |
+| `homeGoalTitle` | [text.js:29](../../src/lib/text.js#L29) | ✓ | ✓ |
+| `generateSuggestions` | [text.js:44](../../src/lib/text.js#L44) | ✓ | ✓ |
+| `getCheckInSuggestions` | [text.js:54](../../src/lib/text.js#L54) | ✓ | ✓ |
+| `checkInReminder` | [text.js:67](../../src/lib/text.js#L67) | ✓ | ✓ |
+| `buildPotentialHooks` | [text.js:90](../../src/lib/text.js#L90) | ✓ |  |
 | `clamp` | [util.js:4](../../src/lib/util.js#L4) | ✓ | ✓ |
 | `uidCounter` | [util.js:6](../../src/lib/util.js#L6) |  |  |
 | `uid` | [util.js:8](../../src/lib/util.js#L8) | ✓ |  |
+| `openSheets` | [sheetLayer.js:19](../../src/components/sheetLayer.js#L19) |  |  |
+| `registerSheet` | [sheetLayer.js:22](../../src/components/sheetLayer.js#L22) | ✓ |  |
+| `topSheet` | [sheetLayer.js:30](../../src/components/sheetLayer.js#L30) | ✓ |  |
+| `hasOpenSheet` | [sheetLayer.js:32](../../src/components/sheetLayer.js#L32) | ✓ |  |
+| `useOpenSheet` | [sheetLayer.js:35](../../src/components/sheetLayer.js#L35) | ✓ |  |
 | `face` | [fonts.js:18](../../src/fonts.js#L18) |  |  |
 
 ## Constants
@@ -173,40 +192,41 @@ Package: `layers-web` v1.0.26 · `src/`: 37 files, 4595 lines, 37 components, 66
 | `DIM_ORDER` | [constants.js:15](../../src/data/constants.js#L15) |
 | `DIM_LABELS` | [constants.js:17](../../src/data/constants.js#L17) |
 | `DIM_COLORS` | [constants.js:19](../../src/data/constants.js#L19) |
-| `LAYER_BASE_DIMS` | [constants.js:21](../../src/data/constants.js#L21) |
-| `CATEGORIES` | [constants.js:23](../../src/data/constants.js#L23) |
-| `SHORTCUTS` | [constants.js:33](../../src/data/constants.js#L33) |
-| `EMOJI_CHOICES` | [constants.js:48](../../src/data/constants.js#L48) |
-| `PERSON_EMOJIS` | [constants.js:50](../../src/data/constants.js#L50) |
-| `NOTE_TEMPLATES` | [constants.js:56](../../src/data/constants.js#L56) |
-| `PRESETS` | [constants.js:69](../../src/data/constants.js#L69) |
-| `PRESET_VARIANTS` | [constants.js:92](../../src/data/constants.js#L92) |
-| `GOAL_DIM_PHRASES` | [constants.js:114](../../src/data/constants.js#L114) |
-| `TYPE_META` | [constants.js:116](../../src/data/constants.js#L116) |
-| `TYPE_ORDER` | [constants.js:126](../../src/data/constants.js#L126) |
-| `AL_ITEMS` | [constants.js:128](../../src/data/constants.js#L128) |
-| `CONV_STATES` | [constants.js:135](../../src/data/constants.js#L135) |
-| `ACHIEVEMENTS` | [constants.js:143](../../src/data/constants.js#L143) |
-| `SKILL_ORDER` | [constants.js:151](../../src/data/constants.js#L151) |
-| `FOCUS_SKILL_KEY` | [constants.js:153](../../src/data/constants.js#L153) |
-| `FOCUS_TEXT` | [constants.js:155](../../src/data/constants.js#L155) |
-| `CHALLENGE_TEXT` | [constants.js:157](../../src/data/constants.js#L157) |
-| `FOCUS_OPTIONS` | [constants.js:159](../../src/data/constants.js#L159) |
-| `FOCUS_LABELS` | [constants.js:166](../../src/data/constants.js#L166) |
+| `LAYER_BASE_DIMS` | [constants.js:22](../../src/data/constants.js#L22) |
+| `CATEGORIES` | [constants.js:24](../../src/data/constants.js#L24) |
+| `SHORTCUTS` | [constants.js:34](../../src/data/constants.js#L34) |
+| `EMOJI_CHOICES` | [constants.js:49](../../src/data/constants.js#L49) |
+| `PERSON_EMOJIS` | [constants.js:51](../../src/data/constants.js#L51) |
+| `NOTE_TEMPLATES` | [constants.js:57](../../src/data/constants.js#L57) |
+| `NOTE_TEMPLATE_CATEGORY` | [constants.js:75](../../src/data/constants.js#L75) |
+| `PRESETS` | [constants.js:81](../../src/data/constants.js#L81) |
+| `PRESET_VARIANTS` | [constants.js:104](../../src/data/constants.js#L104) |
+| `GOAL_DIM_PHRASES` | [constants.js:126](../../src/data/constants.js#L126) |
+| `TYPE_META` | [constants.js:128](../../src/data/constants.js#L128) |
+| `TYPE_ORDER` | [constants.js:138](../../src/data/constants.js#L138) |
+| `AL_ITEMS` | [constants.js:140](../../src/data/constants.js#L140) |
+| `CONV_STATES` | [constants.js:147](../../src/data/constants.js#L147) |
+| `ACHIEVEMENTS` | [constants.js:155](../../src/data/constants.js#L155) |
+| `SKILL_ORDER` | [constants.js:163](../../src/data/constants.js#L163) |
+| `FOCUS_SKILL_KEY` | [constants.js:165](../../src/data/constants.js#L165) |
+| `SKILL_TIPS` | [constants.js:169](../../src/data/constants.js#L169) |
+| `FOCUS_OPTIONS` | [constants.js:178](../../src/data/constants.js#L178) |
+| `FOCUS_LABELS` | [constants.js:185](../../src/data/constants.js#L185) |
 | `SCENARIOS` | [scenarios.js:5](../../src/data/scenarios.js#L5) |
-| `INITIAL_PEOPLE` | [seed.js:8](../../src/data/seed.js#L8) |
-| `INITIAL_GENERAL_GOALS` | [seed.js:138](../../src/data/seed.js#L138) |
-| `INITIAL_JOURNAL` | [seed.js:145](../../src/data/seed.js#L145) |
-| `INITIAL_SKILLS` | [seed.js:155](../../src/data/seed.js#L155) |
-| `EMPTY_SKILLS` | [seed.js:164](../../src/data/seed.js#L164) |
+| `INITIAL_PEOPLE` | [seed.js:12](../../src/data/seed.js#L12) |
+| `INITIAL_GENERAL_GOALS` | [seed.js:142](../../src/data/seed.js#L142) |
+| `INITIAL_JOURNAL` | [seed.js:149](../../src/data/seed.js#L149) |
+| `INITIAL_SKILLS` | [seed.js:159](../../src/data/seed.js#L159) |
+| `EMPTY_SKILLS` | [seed.js:168](../../src/data/seed.js#L168) |
 | `BACKUP_VERSION` | [backup.js:11](../../src/lib/backup.js#L11) |
 | `MAX_BACKUP_BYTES` | [backup.js:13](../../src/lib/backup.js#L13) |
 | `WEEKDAY_SHORT` | [dates.js:25](../../src/lib/dates.js#L25) |
 | `WEEKDAY_FULL` | [dates.js:27](../../src/lib/dates.js#L27) |
 | `MONTH_NAMES` | [dates.js:39](../../src/lib/dates.js#L39) |
-| `STORAGE_KEY` | [storage.js:4](../../src/lib/storage.js#L4) |
-| `LAST_NOTIFIED_KEY` | [storage.js:25](../../src/lib/storage.js#L25) |
-| `HOOKS` | [text.js:76](../../src/lib/text.js#L76) |
+| `STORAGE_KEY` | [storage.js:5](../../src/lib/storage.js#L5) |
+| `UNREADABLE_PREFIX` | [storage.js:8](../../src/lib/storage.js#L8) |
+| `LAST_NOTIFIED_KEY` | [storage.js:67](../../src/lib/storage.js#L67) |
+| `HOOKS` | [text.js:78](../../src/lib/text.js#L78) |
 | `LATIN` | [fonts.js:15](../../src/fonts.js#L15) |
 | `LATIN_EXT` | [fonts.js:16](../../src/fonts.js#L16) |
 | `FONT_FACES` | [fonts.js:22](../../src/fonts.js#L22) |
@@ -217,13 +237,17 @@ Package: `layers-web` v1.0.26 · `src/`: 37 files, 4595 lines, 37 components, 66
 
 | Channel | Direction | Defined |
 |---|---|---|
-| `update-status` | main → renderer push | [main.cjs:56](../../electron/main.cjs#L56) |
-| `check-for-updates` | invoke → handle | [main.cjs:92](../../electron/main.cjs#L92) |
-| `quit-and-install` | send → on | [main.cjs:103](../../electron/main.cjs#L103) |
-| `set-theme` | send → on | [main.cjs:132](../../electron/main.cjs#L132) |
-| `get-app-version` | invoke → handle | [main.cjs:203](../../electron/main.cjs#L203) |
-| `get-auto-launch` | invoke → handle | [main.cjs:208](../../electron/main.cjs#L208) |
-| `set-auto-launch` | invoke → handle | [main.cjs:211](../../electron/main.cjs#L211) |
+| `update-status` | main → renderer push | [main.cjs:102](../../electron/main.cjs#L102) |
+| `open-download-page` | invoke → handle | [main.cjs:128](../../electron/main.cjs#L128) |
+| `check-for-updates` | invoke → handle | [main.cjs:140](../../electron/main.cjs#L140) |
+| `quit-and-install` | send → on | [main.cjs:141](../../electron/main.cjs#L141) |
+| `check-for-updates` | invoke → handle | [main.cjs:165](../../electron/main.cjs#L165) |
+| `quit-and-install` | send → on | [main.cjs:176](../../electron/main.cjs#L176) |
+| `set-theme` | send → on | [main.cjs:205](../../electron/main.cjs#L205) |
+| `get-app-version` | invoke → handle | [main.cjs:319](../../electron/main.cjs#L319) |
+| `get-auto-launch` | invoke → handle | [main.cjs:332](../../electron/main.cjs#L332) |
+| `set-auto-launch` | invoke → handle | [main.cjs:342](../../electron/main.cjs#L342) |
+| `get-shortcut-status` | invoke → handle | [main.cjs:356](../../electron/main.cjs#L356) |
 
 ### Preload bridges (what the renderer can call)
 
@@ -231,11 +255,13 @@ Package: `layers-web` v1.0.26 · `src/`: 37 files, 4595 lines, 37 components, 66
 |---|---|---|
 | `window.layersUpdater.checkForUpdates()` | `check-for-updates` | [preload.cjs:4](../../electron/preload.cjs#L4) |
 | `window.layersUpdater.quitAndInstall()` | `quit-and-install` | [preload.cjs:5](../../electron/preload.cjs#L5) |
-| `window.layersUpdater.onStatus()` | `update-status` | [preload.cjs:6](../../electron/preload.cjs#L6) |
-| `window.layersSystem.getAutoLaunch()` | `get-auto-launch` | [preload.cjs:14](../../electron/preload.cjs#L14) |
-| `window.layersSystem.setAutoLaunch()` | `set-auto-launch` | [preload.cjs:15](../../electron/preload.cjs#L15) |
-| `window.layersSystem.getVersion()` | `get-app-version` | [preload.cjs:16](../../electron/preload.cjs#L16) |
-| `window.layersSystem.setTheme()` | `set-theme` | [preload.cjs:17](../../electron/preload.cjs#L17) |
+| `window.layersUpdater.openDownloadPage()` | `open-download-page` | [preload.cjs:6](../../electron/preload.cjs#L6) |
+| `window.layersUpdater.onStatus()` | `update-status` | [preload.cjs:7](../../electron/preload.cjs#L7) |
+| `window.layersSystem.getAutoLaunch()` | `get-auto-launch` | [preload.cjs:15](../../electron/preload.cjs#L15) |
+| `window.layersSystem.setAutoLaunch()` | `set-auto-launch` | [preload.cjs:16](../../electron/preload.cjs#L16) |
+| `window.layersSystem.getVersion()` | `get-app-version` | [preload.cjs:17](../../electron/preload.cjs#L17) |
+| `window.layersSystem.getShortcutStatus()` | `get-shortcut-status` | [preload.cjs:18](../../electron/preload.cjs#L18) |
+| `window.layersSystem.setTheme()` | `set-theme` | [preload.cjs:19](../../electron/preload.cjs#L19) |
 
 ### Channel mismatches
 
@@ -254,6 +280,10 @@ None — every channel is wired on both sides.
 | `npm run build:electron` | `npm run build:local && npm run sync:app` |
 | `npm run lint` | `oxlint` |
 | `npm run test` | `vitest run` |
+| `npm run test:watch` | `vitest` |
+| `npm run test:e2e` | `node scripts/e2e.mjs` |
+| `npm run verify` | `node scripts/verify.mjs` |
+| `npm run prepare` | `node scripts/install-hooks.mjs` |
 | `npm run preview` | `vite preview` |
 | `npm run electron:build:win` | `npm run build:electron && electron-builder --win --x64` |
 | `npm run electron:build:linux` | `electron-builder --linux --x64` |

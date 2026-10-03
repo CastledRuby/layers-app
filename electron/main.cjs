@@ -1,4 +1,5 @@
-const { app, BrowserWindow, Tray, Menu, nativeImage, ipcMain, globalShortcut } = require('electron');
+const { app, BrowserWindow, Tray, Menu, nativeImage, nativeTheme, ipcMain, globalShortcut, shell } = require('electron');
+const { execFileSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 const windowStateKeeper = require('electron-window-state');
@@ -11,9 +12,23 @@ const windowStateKeeper = require('electron-window-state');
 // dev run vs. the installed run) as unrelated apps.
 app.setAppUserModelId('com.layers.app');
 
+// LAYERS_USER_DATA_DIR runs Layers against a separate data folder. The
+// end-to-end tests (tests/e2e) use a temporary one, so they never touch real
+// data and their single-instance lock (kept in the data folder) doesn't
+// collide with a Layers that's already running. Must be set before the lock.
+if (process.env.LAYERS_USER_DATA_DIR) app.setPath('userData', process.env.LAYERS_USER_DATA_DIR);
+
+// electron-builder's portable .exe unpacks the app to a temporary folder and
+// runs it from there, setting PORTABLE_EXECUTABLE_FILE to the .exe itself.
+const PORTABLE_EXE = process.env.PORTABLE_EXECUTABLE_FILE || null;
+// "Launch at login" starts Layers with --hidden, straight into the tray.
+const START_HIDDEN = process.argv.includes('--hidden');
+const RELEASES_URL = 'https://github.com/CastledRuby/layers-app/releases/latest';
+
 let mainWindow = null;
 let tray = null;
 let isQuitting = false;
+let shortcutRegistered = null;
 
 // --- Single instance lock -------------------------------------------------
 // Without this, every double-click on the exe (or every login-item launch)
@@ -34,8 +49,8 @@ const gotSingleInstanceLock = app.requestSingleInstanceLock();
 if (!gotSingleInstanceLock || quitRequested) {
   // Another instance already owns the lock — this process has no reason
   // to exist. app.exit() terminates immediately (unlike app.quit(), which
-  // is a graceful async request), so we're certain nothing below this
-  // block — window creation, tray creation, whenReady — ever runs.
+  // is a graceful async request). Everything else is set up in the else
+  // branch, so nothing below runs in this process either way.
   app.exit(0);
 } else {
   app.on('second-instance', (_event, argv) => {
@@ -44,11 +59,42 @@ if (!gotSingleInstanceLock || quitRequested) {
       app.quit();
       return;
     }
-    if (!mainWindow) return;
-    if (mainWindow.isMinimized()) mainWindow.restore();
-    if (!mainWindow.isVisible()) mainWindow.show();
-    mainWindow.focus();
+    if (argv.includes('--hidden')) return; // a login launch while already running
+    showWindow();
   });
+
+  app.whenReady().then(() => {
+    setupThemeSync();
+    createWindow();
+    createTray();
+    setupAutoUpdate();
+    setupAutoLaunch();
+    setupVersionInfo();
+    registerGlobalShortcut();
+
+    app.on('activate', () => {
+      if (BrowserWindow.getAllWindows().length === 0) createWindow();
+      else showWindow();
+    });
+  });
+
+  app.on('will-quit', () => {
+    globalShortcut.unregisterAll();
+    if (tray) { tray.destroy(); tray = null; }
+  });
+
+  app.on('before-quit', () => { isQuitting = true; });
+
+  app.on('window-all-closed', () => {
+    if (isQuitting) app.quit();
+  });
+}
+
+function showWindow() {
+  if (!mainWindow || mainWindow.isDestroyed()) return;
+  if (mainWindow.isMinimized()) mainWindow.restore();
+  if (!mainWindow.isVisible()) mainWindow.show();
+  mainWindow.focus();
 }
 
 function sendStatus(status) {
@@ -66,34 +112,61 @@ function classifyUpdateError(err) {
 }
 
 // --- Auto-update -------------------------------------------------------
-// Uses electron-updater against a GitHub Releases feed. Until package.json's
-// "build.publish" points at a real repo with a published release, this
-// will simply report "not-configured" rather than erroring loudly.
+// electron-updater reads the GitHub Releases feed configured in
+// package.json's build.publish (CastledRuby/layers-app, latest.yml).
+// - Installed copies download an update as soon as one is found, and install
+//   it when Layers next quits (autoInstallOnAppQuit), or straight away from
+//   Me > "Restart & install".
+// - The portable .exe can't update itself (the feed only has the installer),
+//   so it reports the new version and offers the download page instead of
+//   downloading an installer it would then run on quit.
+// - It checks shortly after launch and every few hours, since Layers usually
+//   stays running in the tray for days.
+const UPDATE_CHECK_EVERY_MS = 6 * 60 * 60 * 1000;
+
 function setupAutoUpdate() {
-  let autoUpdater;
-  try {
-    ({ autoUpdater } = require('electron-updater'));
-  } catch (e) {
+  ipcMain.handle('open-download-page', () => shell.openExternal(RELEASES_URL));
+
+  let autoUpdater = null;
+  if (!process.env.LAYERS_NO_UPDATES) {
+    try {
+      ({ autoUpdater } = require('electron-updater'));
+    } catch {
+      autoUpdater = null;
+    }
+  }
+  if (!autoUpdater) {
+    // Tests (LAYERS_NO_UPDATES) and builds without the updater still answer.
+    ipcMain.handle('check-for-updates', () => { sendStatus({ state: 'not-configured' }); return { ok: false, state: 'not-configured' }; });
+    ipcMain.on('quit-and-install', () => {});
     return;
   }
 
+  // Downloads are started explicitly below, so their errors are reported.
   autoUpdater.autoDownload = false;
+  autoUpdater.autoInstallOnAppQuit = true;
+  let downloading = null;
+  let readyVersion = null;
 
   autoUpdater.on('checking-for-update', () => sendStatus({ state: 'checking' }));
   autoUpdater.on('update-available', (info) => {
+    if (PORTABLE_EXE) { sendStatus({ state: 'available-portable', version: info.version }); return; }
+    if (readyVersion === info.version) { sendStatus({ state: 'ready', version: info.version }); return; }
+    if (downloading === info.version) return; // a later check while it's still downloading
+    downloading = info.version;
     sendStatus({ state: 'available', version: info.version });
-    autoUpdater.downloadUpdate();
+    autoUpdater.downloadUpdate().catch((err) => { downloading = null; sendStatus(classifyUpdateError(err)); });
   });
   autoUpdater.on('update-not-available', () => sendStatus({ state: 'up-to-date' }));
   autoUpdater.on('download-progress', (p) => sendStatus({ state: 'downloading', percent: Math.round(p.percent) }));
-  autoUpdater.on('update-downloaded', (info) => sendStatus({ state: 'ready', version: info.version }));
+  autoUpdater.on('update-downloaded', (info) => { downloading = null; readyVersion = info.version; sendStatus({ state: 'ready', version: info.version }); });
   autoUpdater.on('error', (err) => sendStatus(classifyUpdateError(err)));
 
   ipcMain.handle('check-for-updates', async () => {
     try {
       await autoUpdater.checkForUpdates();
       return { ok: true };
-    } catch (e) {
+    } catch {
       const status = classifyUpdateError(e);
       sendStatus(status);
       return { ok: false, ...status };
@@ -105,9 +178,9 @@ function setupAutoUpdate() {
     autoUpdater.quitAndInstall();
   });
 
-  // One quiet check shortly after launch, in addition to whatever the
-  // person triggers manually from the Me tab.
-  setTimeout(() => { autoUpdater.checkForUpdates().catch(() => {}); }, 8000);
+  const quietCheck = () => { autoUpdater.checkForUpdates().catch(() => {}); };
+  setTimeout(quietCheck, 8000);
+  setInterval(quietCheck, UPDATE_CHECK_EVERY_MS);
 }
 
 // --- Theme-aware window background ---------------------------------------
@@ -123,7 +196,7 @@ const themeFile = () => path.join(app.getPath('userData'), 'theme.json');
 function savedTheme() {
   try {
     return JSON.parse(fs.readFileSync(themeFile(), 'utf8')).theme === 'dark' ? 'dark' : 'light';
-  } catch (e) {
+  } catch {
     return 'light';
   }
 }
@@ -135,7 +208,7 @@ function setupThemeSync() {
     if (next === savedTheme()) return;
     try {
       fs.writeFileSync(themeFile(), JSON.stringify({ theme: next }));
-    } catch (e) {
+    } catch {
       // Not fatal: the next launch just opens with the light background.
     }
   });
@@ -155,6 +228,7 @@ function createWindow() {
     height: windowState.height,
     minWidth: 360,
     minHeight: 600,
+    show: !START_HIDDEN,
     backgroundColor: BACKGROUNDS[savedTheme()],
     title: 'Layers',
     icon: path.join(__dirname, 'icon.png'),
@@ -178,20 +252,62 @@ function createWindow() {
       mainWindow.hide();
     }
   });
+  // ...except when Windows is shutting down, restarting or signing out:
+  // hiding then would hold the shutdown up ("Layers is preventing restart").
+  mainWindow.on('query-session-end', () => { isQuitting = true; });
+  mainWindow.on('session-end', () => { isQuitting = true; });
+  mainWindow.on('closed', () => { mainWindow = null; });
+
+  // If the page's process dies, reload it instead of leaving a blank window
+  // in the tray. Everything is saved as it changes, so nothing is lost. A
+  // page that keeps crashing is left alone after three tries in a minute.
+  let crashes = [];
+  mainWindow.webContents.on('render-process-gone', (_event, details) => {
+    if (details.reason === 'clean-exit' || !mainWindow || mainWindow.isDestroyed()) return;
+    const now = Date.now();
+    crashes = crashes.filter(t => now - t < 60 * 1000);
+    crashes.push(now);
+    if (crashes.length <= 3) mainWindow.reload();
+  });
+}
+
+// --- Tray ------------------------------------------------------------------
+// Windows draws the taskbar in its own light or dark mode, set separately
+// from the apps' mode (Settings > Personalization > Colors). The tray icon
+// matches it: the light icon on a dark taskbar and the dark icon on a light
+// one. (It always used the dark icon, which nearly vanished on the default
+// dark taskbar.)
+function taskbarIsDark() {
+  if (process.platform !== 'win32') return nativeTheme.shouldUseDarkColors;
+  try {
+    const out = execFileSync('reg', ['query', 'HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize', '/v', 'SystemUsesLightTheme'], { encoding: 'utf8', windowsHide: true, timeout: 3000 });
+    const m = out.match(/SystemUsesLightTheme\s+REG_DWORD\s+0x([0-9a-f]+)/i);
+    return m ? parseInt(m[1], 16) === 0 : true;
+  } catch {
+    return true; // no setting saved: Windows 10 and 11 default to a dark taskbar
+  }
+}
+
+function trayImage() {
+  const icon = nativeImage.createFromPath(path.join(__dirname, taskbarIsDark() ? 'tray-icon-light.png' : 'tray-icon-dark.png'));
+  return icon.isEmpty() ? icon : icon.resize({ width: 16, height: 16 });
 }
 
 function createTray() {
-  const trayIconPath = path.join(__dirname, 'tray-icon.png');
-  const icon = nativeImage.createFromPath(trayIconPath);
-  tray = new Tray(icon.isEmpty() ? icon : icon.resize({ width: 16, height: 16 }));
+  tray = new Tray(trayImage());
   tray.setToolTip('Layers');
   const menu = Menu.buildFromTemplate([
-    { label: 'Open Layers', click: () => { if (mainWindow) { mainWindow.show(); mainWindow.focus(); } } },
+    { label: 'Open Layers', click: showWindow },
     { type: 'separator' },
     { label: 'Quit', click: () => { isQuitting = true; app.quit(); } },
   ]);
   tray.setContextMenu(menu);
-  tray.on('click', () => { if (mainWindow) { mainWindow.isVisible() ? mainWindow.focus() : mainWindow.show(); } });
+  tray.on('click', showWindow);
+  // Pick the icon again when Windows' colours change, and now and then in
+  // case only the taskbar's mode changed (that doesn't always notify apps).
+  const refresh = () => { if (tray) tray.setImage(trayImage()); };
+  nativeTheme.on('updated', refresh);
+  setInterval(refresh, 15 * 60 * 1000);
 }
 
 // --- App version -----------------------------------------------------
@@ -204,45 +320,38 @@ function setupVersionInfo() {
 }
 
 // --- Launch at login -----------------------------------------------------
+// Registered with --hidden so Layers starts in the tray rather than popping
+// up at every login (openAsHidden only works on macOS). The portable build
+// registers its .exe, not the temporary folder it runs from, which is
+// deleted when it exits.
+function loginItem() {
+  return { path: PORTABLE_EXE || process.execPath, args: ['--hidden'] };
+}
+
 function setupAutoLaunch() {
   ipcMain.handle('get-auto-launch', () => {
-    return app.getLoginItemSettings().openAtLogin;
+    const item = loginItem();
+    if (app.getLoginItemSettings(item).openAtLogin) return true;
+    // Before 1.0.27 the entry had no --hidden: upgrade it in place.
+    if (app.getLoginItemSettings({ path: item.path }).openAtLogin) {
+      app.setLoginItemSettings({ openAtLogin: true, ...item });
+      return true;
+    }
+    return false;
   });
   ipcMain.handle('set-auto-launch', (_event, enabled) => {
-    app.setLoginItemSettings({ openAtLogin: !!enabled, openAsHidden: true });
-    return app.getLoginItemSettings().openAtLogin;
+    const item = loginItem();
+    app.setLoginItemSettings({ openAtLogin: !!enabled, ...item });
+    if (!enabled) app.setLoginItemSettings({ openAtLogin: false, path: item.path }); // and any pre-1.0.27 entry
+    return app.getLoginItemSettings(item).openAtLogin;
   });
 }
 
 // --- Global shortcut: Ctrl+Shift+L brings Layers to the foreground ---
+// register() returns false when another app already owns the combination;
+// the Me tab asks (get-shortcut-status) and says so instead of it silently
+// doing nothing.
 function registerGlobalShortcut() {
-  globalShortcut.register('CommandOrControl+Shift+L', () => {
-    if (!mainWindow) return;
-    if (mainWindow.isMinimized()) mainWindow.restore();
-    mainWindow.show();
-    mainWindow.focus();
-  });
+  shortcutRegistered = globalShortcut.register('CommandOrControl+Shift+L', showWindow);
+  ipcMain.handle('get-shortcut-status', () => ({ accelerator: 'Ctrl+Shift+L', registered: shortcutRegistered }));
 }
-
-app.whenReady().then(() => {
-  setupThemeSync();
-  createWindow();
-  createTray();
-  setupAutoUpdate();
-  setupAutoLaunch();
-  setupVersionInfo();
-  registerGlobalShortcut();
-
-  app.on('activate', () => {
-    if (BrowserWindow.getAllWindows().length === 0) createWindow();
-    else mainWindow.show();
-  });
-});
-
-app.on('will-quit', () => { globalShortcut.unregisterAll(); });
-
-app.on('before-quit', () => { isQuitting = true; });
-
-app.on('window-all-closed', () => {
-  if (isQuitting) app.quit();
-});

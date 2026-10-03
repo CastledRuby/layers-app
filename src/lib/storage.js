@@ -18,7 +18,7 @@ function keepCopy(raw, now) {
     }
     storage.setItem(`${UNREADABLE_PREFIX}${now.toISOString()}`, raw);
     return true;
-  } catch (e) {
+  } catch {
     return false; // storage full: the copy can't be kept, and the notice says so
   }
 }
@@ -34,13 +34,13 @@ export function loadSavedState(now = new Date()) {
   let raw;
   try {
     raw = window.localStorage.getItem(STORAGE_KEY);
-  } catch (e) {
+  } catch {
     return { state: null, problem: null }; // storage disabled: nothing to read
   }
   if (!raw) return { state: null, problem: null };
 
   let parsed = null;
-  try { parsed = JSON.parse(raw); } catch (e) { /* handled below */ }
+  try { parsed = JSON.parse(raw); } catch { /* handled below */ }
   const result = parsed && typeof parsed === 'object' && !Array.isArray(parsed)
     ? validateBackup({ ...parsed, version: 1 }, { source: 'saved' })
     : { ok: false };
@@ -59,7 +59,7 @@ export function persistState(state) {
   try {
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
     return true;
-  } catch (e) {
+  } catch {
     return false;
   }
 }
@@ -67,9 +67,9 @@ export function persistState(state) {
 const LAST_NOTIFIED_KEY = 'layers-last-notified-date';
 
 export function getLastNotifiedDate() {
-  try { return window.localStorage.getItem(LAST_NOTIFIED_KEY); } catch (e) { return null; }
+  try { return window.localStorage.getItem(LAST_NOTIFIED_KEY); } catch { return null; }
 }
 
 export function setLastNotifiedDate(d) {
-  try { window.localStorage.setItem(LAST_NOTIFIED_KEY, d); } catch (e) { /* ignore */ }
+  try { window.localStorage.setItem(LAST_NOTIFIED_KEY, d); } catch { /* ignore */ }
 }

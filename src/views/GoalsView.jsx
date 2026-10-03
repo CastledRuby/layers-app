@@ -9,9 +9,8 @@ import { COLORS } from '../theme.js';
 
 export function GoalsView({ today, people, generalGoals, onBack, onOpenPerson, onOpenGoalCreate, onOpenGoalEdit, onDeleteGoal, onBumpGoal }) {
   const [filter, setFilter] = useState('active');
-  const passFilter = g => filter === 'all' ? true : filter === 'active' ? g.progress < 100 : g.progress >= 100;
-
   const groups = useMemo(() => {
+    const passFilter = g => filter === 'all' ? true : filter === 'active' ? g.progress < 100 : g.progress >= 100;
     const g1 = people.map(p => ({ id: p.id, name: p.name, emoji: p.emoji, color: getLayer(p.layer).color, goals: p.goals.filter(passFilter) })).filter(g => g.goals.length > 0);
     const gen = generalGoals.filter(passFilter);
     const g2 = gen.length > 0 ? [{ id: null, name: 'My skills', emoji: '🎯', color: COLORS.accent, goals: gen }] : [];

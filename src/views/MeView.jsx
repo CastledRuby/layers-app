@@ -9,7 +9,7 @@ import { sortHistory } from '../lib/dates.js';
 import { updateStatusText } from '../lib/text.js';
 import { COLORS } from '../theme.js';
 
-export function MeView({ people, journal, skills, generalGoals, profile, onBack, onRestoreSample, onStartOver, onExport, onImportClick, hasUpdater, updateStatus, onCheckForUpdates, onInstallUpdate, theme, onSetTheme, hasSystemBridge, autoLaunch, onToggleAutoLaunch, onOpenShortcuts, appVersion }) {
+export function MeView({ people, journal, skills, onRestoreSample, onStartOver, onExport, onImportClick, hasUpdater, updateStatus, onCheckForUpdates, onInstallUpdate, onOpenDownloadPage, shortcutStatus, theme, onSetTheme, hasSystemBridge, autoLaunch, onToggleAutoLaunch, onOpenShortcuts, appVersion }) {
   const [chartSkill, setChartSkill] = useState(FOCUS_SKILL_KEY);
 
   // Strength is your highest skill and focus your lowest. Until something has
@@ -118,6 +118,9 @@ export function MeView({ people, journal, skills, generalGoals, profile, onBack,
             <span style={{ width: 14, height: 14, borderRadius: '50%', border: `1.5px solid currentColor`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{autoLaunch && <span style={{ width: 7, height: 7, borderRadius: '50%', background: 'currentColor' }} />}</span>
             {autoLaunch ? 'Launching at login' : 'Launch at login'}
           </button>
+          {shortcutStatus && shortcutStatus.registered === false && (
+            <p className="text-xs mt-2.5 font-medium" style={{ color: COLORS.alert }}>Another app is already using Ctrl+Shift+L, so it won't bring Layers forward. Close that app or change its shortcut, then restart Layers.</p>
+          )}
           <p className="text-xs mt-2.5" style={{ color: COLORS.inkSoft }}>Global shortcut: <span style={{ fontWeight: 600, color: COLORS.ink }}>Ctrl+Shift+L</span> brings Layers to the foreground from anywhere, even while minimized. In-app, press <span style={{ fontWeight: 600, color: COLORS.ink }}>N</span> to quick-log an interaction, and <span style={{ fontWeight: 600, color: COLORS.ink }}>Esc</span> to close any open dialog.</p>
         </div>
       )}
@@ -132,6 +135,8 @@ export function MeView({ people, journal, skills, generalGoals, profile, onBack,
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 12, flexWrap: 'wrap' }}>
             {updateStatus && updateStatus.state === 'ready' ? (
               <button onClick={onInstallUpdate} className="text-xs font-semibold rounded-full px-3 py-2" style={{ background: COLORS.accent, color: '#fff' }}>Restart &amp; install</button>
+            ) : updateStatus && updateStatus.state === 'available-portable' ? (
+              <button onClick={onOpenDownloadPage} className="text-xs font-semibold rounded-full px-3 py-2" style={{ background: COLORS.accent, color: '#fff' }}>Open download page</button>
             ) : (
               <button onClick={onCheckForUpdates} disabled={!!(updateStatus && (updateStatus.state === 'checking' || updateStatus.state === 'downloading'))} className="text-xs font-semibold rounded-full px-3 py-2" style={{ background: COLORS.accentSoft, color: COLORS.accent }}>Check for updates</button>
             )}

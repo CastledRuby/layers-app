@@ -16,6 +16,8 @@ export function updateStatusText(status) {
     case 'checking': return 'Checking for updates...';
     case 'up-to-date': return "You're on the latest version.";
     case 'available': return `Update v${status.version} found. Downloading...`;
+    // The portable .exe can't update itself (main.cjs).
+    case 'available-portable': return `Layers v${status.version} is out. This portable copy doesn't update itself: download the new one to replace it.`;
     case 'downloading': return `Downloading update... ${status.percent || 0}%`;
     case 'ready': return `Update v${status.version} downloaded and ready to install.`;
     case 'not-configured': return "Update checking isn't set up for this build yet.";

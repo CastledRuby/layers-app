@@ -1,0 +1,14 @@
+#!/bin/sh
+# Runs before every commit. Installed by `npm install` (scripts/install-hooks.mjs).
+# Regenerates the code map so it can't go stale, adds it to the commit, then
+# runs the fast checks (lint, code map, tests, build). See docs/testing.md.
+# To skip it once (not recommended): git commit --no-verify
+
+npm run --silent docs:map > /dev/null || exit 1
+git add docs/generated/code-map.md || exit 1
+
+if ! npm run --silent verify; then
+  echo ""
+  echo "pre-commit: npm run verify failed, so nothing was committed. Fix the problem above and commit again."
+  exit 1
+fi

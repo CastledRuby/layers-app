@@ -124,6 +124,9 @@ describe('updateStatusText', () => {
   it('describes download progress with a percentage', () => {
     expect(updateStatusText({ state: 'downloading', percent: 42 })).toContain('42%');
   });
+  it('tells a portable copy to download the new version', () => {
+    expect(updateStatusText({ state: 'available-portable', version: '1.2.0' })).toMatch(/1\.2\.0.*download/);
+  });
   it('describes the not-configured state without alarming language', () => {
     expect(updateStatusText({ state: 'not-configured' })).toMatch(/set up/i);
   });

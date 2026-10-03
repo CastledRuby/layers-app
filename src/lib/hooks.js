@@ -1,7 +1,7 @@
 // React hooks for time-based behaviour. Layers usually stays running in the
 // tray for days, so anything tied to "today" has to notice the date change
 // rather than assume the app was launched this morning.
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { toISODate } from './dates.js';
 import { getLastNotifiedDate, setLastNotifiedDate } from './storage.js';
 import { checkInReminder } from './text.js';
@@ -27,7 +27,7 @@ export function useToday() {
 // as it was at launch, so an app left in the tray never reminded you again.
 export function useDailyCheckIn(enabled, people, journal, today) {
   const latest = useRef({ people, journal });
-  latest.current = { people, journal };
+  useLayoutEffect(() => { latest.current = { people, journal }; });
   useEffect(() => {
     if (!enabled || typeof Notification === 'undefined') return undefined;
     const timer = setTimeout(() => {
@@ -40,7 +40,7 @@ export function useDailyCheckIn(enabled, people, journal, today) {
         };
         if (Notification.permission === 'granted') show();
         else if (Notification.permission === 'default') Notification.requestPermission().then(p => { if (p === 'granted') show(); });
-      } catch (e) {
+      } catch {
         // Notifications unavailable in this environment; ignore.
       }
     }, 4000);

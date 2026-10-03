@@ -87,6 +87,8 @@ function LayersApp() {
   const hasSystemBridge = typeof window !== 'undefined' && !!window.layersSystem;
   const [autoLaunch, setAutoLaunch] = useState(false);
   const [appVersion, setAppVersion] = useState(null);
+  const [shortcutStatus, setShortcutStatus] = useState(null);
+  const announcedUpdate = useRef(null);
 
   const [logOpen, setLogOpen] = useState(false);
   const [logDefaultPerson, setLogDefaultPerson] = useState(null);
@@ -144,8 +146,13 @@ function LayersApp() {
     if (!hasUpdater) return;
     const unsubscribe = window.layersUpdater.onStatus((status) => {
       setUpdateStatus(status);
+      // Each version is announced once, though main.cjs re-checks every few hours.
+      const key = `${status.state}:${status.version}`;
+      if (announcedUpdate.current === key) return;
       if (status.state === 'available') pushToast(`Downloading update v${status.version}...`);
       if (status.state === 'ready') pushToast(`Update v${status.version} ready — restart to install`);
+      if (status.state === 'available-portable') pushToast(`Layers v${status.version} is out. Get it from Me, App updates.`);
+      if (['available', 'ready', 'available-portable'].includes(status.state)) announcedUpdate.current = key;
     });
     return unsubscribe;
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -159,11 +166,15 @@ function LayersApp() {
   function handleInstallUpdate() {
     if (hasUpdater) window.layersUpdater.quitAndInstall();
   }
+  function handleOpenDownloadPage() {
+    if (hasUpdater && window.layersUpdater.openDownloadPage) window.layersUpdater.openDownloadPage();
+  }
 
   useEffect(() => {
     if (!hasSystemBridge) return;
     window.layersSystem.getAutoLaunch().then(v => setAutoLaunch(!!v)).catch(() => {});
     if (window.layersSystem.getVersion) window.layersSystem.getVersion().then(v => setAppVersion(v)).catch(() => {});
+    if (window.layersSystem.getShortcutStatus) window.layersSystem.getShortcutStatus().then(s => setShortcutStatus(s)).catch(() => {});
   }, [hasSystemBridge]);
 
   // Keep the page and the Electron window background on the theme's paper
@@ -574,7 +585,7 @@ function LayersApp() {
     pushToast('Data exported');
   }
 
-  function handleImportClick() { importInputRef.current && importInputRef.current.click(); }
+  function handleImportClick() { if (importInputRef.current) importInputRef.current.click(); }
   function handleImportFile(e) {
     const file = e.target.files && e.target.files[0];
     e.target.value = '';
@@ -584,7 +595,7 @@ function LayersApp() {
     reader.onerror = () => pushToast("That file couldn't be read.");
     reader.onload = () => {
       let raw;
-      try { raw = JSON.parse(reader.result); } catch (err) { pushToast("That file isn't a Layers backup."); return; }
+      try { raw = JSON.parse(reader.result); } catch { pushToast("That file isn't a Layers backup."); return; }
       // Check everything before anything is replaced: a wrong or damaged
       // file is refused, and damaged records are repaired or skipped.
       const result = validateBackup(raw);
@@ -672,7 +683,7 @@ function LayersApp() {
                         {activeTab === 'people' && <PeopleView people={people} journal={journal} onOpenPerson={openPerson} onAddPerson={() => setAddPersonOpen(true)} />}
                         {activeTab === 'coach' && <CoachView people={people} journal={journal} initialPersonId={coachInit.personId} initialTab={coachInit.tab} onOpenLog={openLog} onApproveInfo={handleApproveInfo} onLogFromAnalysis={handleLogFromAnalysis} onOpenPerson={openPerson} />}
                         {activeTab === 'journal' && <JournalView people={people} journal={journal} onOpenPerson={openPerson} />}
-                        {activeTab === 'me' && <MeView people={people} journal={journal} skills={skills} generalGoals={generalGoals} profile={profile} onRestoreSample={handleRestoreSample} onStartOver={handleStartOver} onExport={handleExportData} onImportClick={handleImportClick} hasUpdater={hasUpdater} updateStatus={updateStatus} onCheckForUpdates={handleCheckForUpdates} onInstallUpdate={handleInstallUpdate} theme={theme} onSetTheme={setTheme} hasSystemBridge={hasSystemBridge} autoLaunch={autoLaunch} onToggleAutoLaunch={handleToggleAutoLaunch} onOpenShortcuts={() => setShortcutsOpen(true)} appVersion={appVersion} />}
+                        {activeTab === 'me' && <MeView people={people} journal={journal} skills={skills} generalGoals={generalGoals} profile={profile} onRestoreSample={handleRestoreSample} onStartOver={handleStartOver} onExport={handleExportData} onImportClick={handleImportClick} hasUpdater={hasUpdater} updateStatus={updateStatus} onCheckForUpdates={handleCheckForUpdates} onInstallUpdate={handleInstallUpdate} onOpenDownloadPage={handleOpenDownloadPage} shortcutStatus={shortcutStatus} theme={theme} onSetTheme={setTheme} hasSystemBridge={hasSystemBridge} autoLaunch={autoLaunch} onToggleAutoLaunch={handleToggleAutoLaunch} onOpenShortcuts={() => setShortcutsOpen(true)} appVersion={appVersion} />}
                       </>
                     )}
                   </>
