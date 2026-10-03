@@ -5,37 +5,44 @@ When you fix an item, delete it here, or move it to *Resolved* with the version.
 
 ## Correctness
 
-The 2026-10-03 audit against [vision.md](vision.md) found a set of bugs, including a Coach
-crash, the exe's "Electron" identity and icon, and Adjust moving people to another layer.
-They're listed, with how each was confirmed, in [roadmap.md](roadmap.md#batch-1-fixes).
-Move each one to *Resolved* when it ships.
+The 2026-10-03 audit against [vision.md](vision.md) found 22 bugs, listed with how each
+was confirmed in [roadmap.md](roadmap.md#batch-1-fixes). All of Batch 1 is fixed in
+1.0.27 (see *Resolved* below). `tests/app/fixes.test.jsx` reproduces each one through the
+UI, so none can come back unnoticed. What comes next is the proposals in
+[roadmap.md](roadmap.md#proposals-need-a-go-ahead), each waiting for a go-ahead.
+
+One inconsistency remains on purpose until proposal P3: logging grows the six dimensions
+faster than layer progress, so Adjust's sliders can describe a different layer from the
+one shown. Adjust now previews where saving would put someone, and saving unchanged
+sliders does nothing. See
+[renderer/state-and-data.md](renderer/state-and-data.md#what-still-disagrees).
 
 ## Build & release
 
-### 1. The desktop app can silently run old code *(mitigated in 1.0.24)*
+### 1. The desktop app can silently run old code *(mitigated in 1.0.24 and 1.0.27)*
 
 Electron loads only the committed build artifact `electron/app/index.html`. If you
 change `src/` and package without `npm run build:electron`, or install a build without
 bumping `version`, the app runs stale code that looks current. That happened with the
 "Edit goal" bug: the installed 1.0.23 (Sep 19) predated the source's 1.0.23 (Sep 25).
-Follow the checklist in [build-and-release.md](build-and-release.md). Consider a
-`prepackage` guard that fails when `electron/app/index.html` is older than the files in `src/`.
-
-## Maintainability
-
-### 2. Smaller items
-
-- **Unused files.** The `electron/*-light.png` / `*-dark.png` icon variants aren't
-  referenced anywhere. The `src/assets/*` files are Vite template leftovers.
-- **Misleading updater setting.** `autoDownload = false` is set, but the
-  `update-available` handler calls `downloadUpdate()` immediately anyway.
-- **Lint warnings.** oxlint reports warnings, not errors, in `src/`: unused catch
-  params and props, one `exhaustive-deps` in `GoalsView`, one `no-unused-expressions`.
+Follow the checklist in [build-and-release.md](build-and-release.md). `npm run release`
+rebuilds the renderer itself, and since 1.0.27 it also runs the end-to-end tests on the
+packaged build it's about to publish ([testing.md](testing.md#in-the-release)). Packaging
+by hand (`electron-builder` on its own) still skips both, so consider a `prepackage` guard
+that fails when `electron/app/index.html` is older than the files in `src/`.
 
 ## Resolved
 
 | Version | Issue |
 |---|---|
+| 1.0.27 | Coach crashed to a blank window when it was opened for someone who had since been removed. Coach now falls back to the first person in Prepare and asks who the conversation was with in Analyse. Every screen is wrapped in an `ErrorBoundary` with "Go to Home" and "Reload Layers" ([renderer/ui-system.md](renderer/ui-system.md#when-a-screen-crashes)), and `main.cjs` reloads the page if its process dies ([electron.md](electron.md)). |
+| 1.0.27 | Saved data that couldn't be read was silently replaced by the sample people, and the next save overwrote it for good. Failed saves were silent too. `loadSavedState` now checks saved data with `validateBackup` at startup. Unreadable data is copied aside and explained, damaged records are repaired with a notice, and a failed save shows one toast ([renderer/state-and-data.md](renderer/state-and-data.md#loading-saved-data)). Removing a person or restoring samples also unlinks them from reminders. |
+| 1.0.27 | Adjust → Save with nothing changed could move someone to another layer. Saving unchanged sliders now does nothing, Adjust shows where saving would put them, and new and sample people start exactly where Adjust would place them ([renderer/state-and-data.md](renderer/state-and-data.md#progression-model)). |
+| 1.0.27 | `Layers.exe` called itself "Electron" by GitHub, Inc. and showed the Electron icon in the Start menu, on the desktop, the taskbar, notifications and Task Manager, because `signAndEditExecutable` was `false`. The exe now carries the Layers name, icon and version, and `author` in `package.json` supplies the company. An end-to-end test checks it. |
+| 1.0.27 | Desktop shell ([electron.md](electron.md)): the tray icon was dark on the default dark taskbar and now follows the taskbar's mode. "Launch at login" opened the window (`openAsHidden` is macOS-only) and now starts in the tray with `--hidden`; the portable build registered a temporary folder and now registers its own `.exe`. Close-to-tray no longer holds up a Windows shutdown or restart. Updates are re-checked every 6 hours. The download is started explicitly, so `autoDownload = false` is no longer misleading and a failed download is reported. The portable build offers the download page instead of downloading the installer. Me warns when another app owns Ctrl+Shift+L. |
+| 1.0.27 | Keyboard: `/` did nothing on Home, Coach or Me; Ctrl or Alt + N or D opened sheets; Esc didn't close "Prepare to talk" or Home's detail picker, and in a picker opened from another sheet it closed both. `/` now works from any tab, single-key shortcuts ignore Ctrl/Alt/Win, and Esc closes only the top sheet ([renderer/ui-system.md](renderer/ui-system.md#esc-and-the-open-sheet-stack)). |
+| 1.0.27 | What you see: topics picked while logging with one person now reach their profile. The skills chart records points. The timeline gets a dated step for every layer change. The change card counts a gain across a level-up instead of "+0%". Recent activity is ordered by date. A group log announces every level-up, not only the first. Coach applies the goal gain it shows and can't log the same analysis twice. A goal's description follows the chosen person. Due labels refresh at midnight. Reminders can be made with nobody in your circle, and deleting one asks first. Outdated wording on Home, Me and Journal is fixed. |
+| 1.0.27 | Housekeeping: the unused icon variants (`electron/icon-light.png`, `icon-dark.png`, `tray-icon.png`) and the Vite template leftovers in `src/assets/` are gone, and every oxlint warning is cleared. |
 | 1.0.26 | The "daily" check-in reminder only ran once per launch, using the data from launch time, so an app left in the tray never reminded you again. It also took "today" from the UTC date, which is still yesterday in New Zealand until around midday. `useDailyCheckIn` now re-checks whenever the local day changes (`useToday`), and Home and profile labels refresh at midnight. |
 | 1.0.26 | Imports weren't checked: a wrong or damaged file could replace your data or crash a screen (a person without a `goals` list crashed Home). `validateBackup` now refuses bad files, repairs or skips damaged records, and the confirm dialog says what will be imported ([renderer/state-and-data.md](renderer/state-and-data.md#backup-format)). |
 | 1.0.26 | Dark mode flashed white at startup (the window's background was hard-coded light). The window, the page and React now all paint the saved theme ([renderer/ui-system.md](renderer/ui-system.md#no-flash-at-startup)). |

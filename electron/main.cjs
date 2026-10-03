@@ -166,7 +166,7 @@ function setupAutoUpdate() {
     try {
       await autoUpdater.checkForUpdates();
       return { ok: true };
-    } catch {
+    } catch (e) {
       const status = classifyUpdateError(e);
       sendStatus(status);
       return { ok: false, ...status };

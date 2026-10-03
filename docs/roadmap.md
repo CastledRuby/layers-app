@@ -44,7 +44,7 @@ Following the [working principles](vision.md#working-principles):
 
 ## Batch 1: fixes
 
-These restore what the vision already describes. Ship them as one release, then install it.
+**All 22 shipped in 1.0.27**, each with a regression test in `tests/app/fixes.test.jsx`, and the end-to-end tests in `tests/e2e/` check the packaged app (see [testing.md](testing.md)). The list is kept here as the record of what was wrong.
 
 **Crashes and data safety**
 
@@ -152,8 +152,4 @@ description and a yes.
 
 ## Housekeeping
 
-These are tracked in [known-issues.md](known-issues.md):
-
-- unused icon variants and the leftover `src/assets` folder
-- oxlint warnings
-- a stale-build guard
+Done in 1.0.27: unused icon variants and `src/assets` removed, every lint warning cleared, and `no-undef` made an error. Still open: a stale-build guard for packaging by hand ([known-issues.md](known-issues.md)).

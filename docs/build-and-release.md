@@ -5,13 +5,15 @@
 | Goal | Command | Output |
 |---|---|---|
 | Develop in a browser with hot reload | `npm run dev` | http://localhost:5173 (no Electron bridges, so updater/auto-launch UI is hidden) |
-| Unit tests | `npm test` | Vitest over `src/logic.test.js`. `vite.config.js` excludes `.claude/**`, so Claude Code worktrees aren't tested twice. |
+| Check a change (run after every change) | `npm run verify` | Lint, code-map check, unit and app tests, renderer build. The pre-commit hook runs it. See [testing.md](testing.md). |
+| Unit and app tests only | `npm test` (`npm run test:watch` to rerun on save) | Vitest over `src/*.test.js` and `tests/app/`. `vite.config.js` excludes `.claude/**`, so Claude Code worktrees aren't tested twice, and `tests/e2e/`, which is Playwright's. |
+| End-to-end tests | `npm run test:e2e` | Packages `dist-e2e/win-unpacked/` and drives the real `Layers.exe` with a temporary data folder |
 | Lint | `npm run lint` | oxlint (`.oxlintrc.json`: react + oxc plugins) |
 | Refresh the code map | `npm run docs:map` | `docs/generated/code-map.md` |
 | Rebuild what Electron loads | `npm run build:electron` | `dist-local/index.html` → copied to `electron/app/index.html` |
-| Run the desktop app from source | `npm run build:electron` then `npx electron .` | Uses `electron/main.cjs` (package.json `"main"`). It shares the installed app's name (`layers-web`), so it uses the same data in `%APPDATA%\layers-web`, and it exits silently while the installed Layers is running (single-instance lock). Quit Layers from the tray first, or add `--user-data-dir=<temp folder>` for a separate profile. |
+| Run the desktop app from source | `npm run build:electron` then `npx electron .` | Uses `electron/main.cjs` (package.json `"main"`). It shares the installed app's name (`layers-web`), so it uses the same data in `%APPDATA%\layers-web`, and it exits silently while the installed Layers is running (single-instance lock). Quit Layers from the tray first, or set `LAYERS_USER_DATA_DIR` to another folder for a separate profile and lock ([electron.md](electron.md#command-line-flags-and-environment-variables)). |
 | Windows installer + portable exe | `npm run electron:build:win` | `release/Layers Setup x.y.z.exe`, `release/Layers x.y.z.exe`, `release/win-unpacked/` |
-| **Release a new version** | `npm run release` | Bumps the version, tests, builds, pushes to `main`, publishes the GitHub release, then installs it on this computer. See [Releasing](#releasing). |
+| **Release a new version** | `npm run release` | Bumps the version, verifies, builds, runs the end-to-end tests on that build, pushes to `main`, publishes the GitHub release, then installs it on this computer. See [Releasing](#releasing). |
 | Reinstall the current version here | `npm run release -- --install-only` | Silently installs `release/x.y.z/Layers Setup x.y.z.exe` and relaunches Layers |
 | Linux AppImage | `npm run build:electron && npm run electron:build:linux` | `electron:build:linux` does **not** rebuild the renderer on its own |
 
@@ -60,18 +62,25 @@ GitHub untouched.
 2. **Bump** `package.json` / `package-lock.json`: patch by default, or pass `minor`,
    `major` or an exact version (`npm run release -- 1.1.0`). electron-updater only offers
    versions strictly higher than the installed one, so every release needs a new number.
-3. **Test and build:** `npm test`, `build:electron`, `docs:map`, then
+3. **Verify and build:** `docs:map`, then `verify` (lint, code-map check, unit and app
+   tests, renderer build), then `build:electron` and
    `electron-builder --win --x64 --publish never`. Each version builds into its own folder,
    `release/x.y.z/`, because a previous build's `win-unpacked` can stay locked (antivirus,
    or an app holding its `app.asar` open), and electron-builder fails if it can't replace it.
-4. **Commit** `Release vX.Y.Z` and push it to `main`.
-5. **Publish** a non-draft GitHub release `vX.Y.Z` at that commit, using the GitHub CLI.
+   electron-builder writes the Layers name, icon, version and company (`author` in
+   `package.json`) into `Layers.exe`; see [electron.md](electron.md#packaging-config).
+4. **End-to-end tests** on the exact build about to be published:
+   `scripts/e2e.mjs --exe release/x.y.z/win-unpacked/Layers.exe`. They run the packaged app
+   with a temporary data folder, so your own data is never touched. See
+   [testing.md](testing.md#in-the-release).
+5. **Commit** `Release vX.Y.Z` and push it to `main`.
+6. **Publish** a non-draft GitHub release `vX.Y.Z` at that commit, using the GitHub CLI.
    Assets are uploaded under the hyphenated names that `latest.yml` points at
    (`Layers-Setup-X.Y.Z.exe`, its `.blockmap`, the portable `Layers-X.Y.Z.exe`,
    `latest.yml`). Release notes default to the commit subjects since the previous tag;
    pass `--notes file.md` to write your own. Afterwards the script checks that the public
    update feed (`releases/latest/download/latest.yml`) offers the new version.
-6. **Install here.** It runs `Layers.exe --quit` so the running app shuts down cleanly and
+7. **Install here.** It runs `Layers.exe --quit` so the running app shuts down cleanly and
    saves its data (builds before 1.0.25 ignore this, and the installer closes them
    instead). Then it runs the installer silently (`/S --force-run`), reads the installed
    `app.asar` to confirm the version, and waits for Layers to relaunch. Your data in
@@ -79,7 +88,7 @@ GitHub untouched.
 
 **Recovering from a failed step:**
 
-- If a test or build fails, nothing has been committed or pushed yet. Fix the problem,
+- If a check, build or end-to-end test fails, nothing has been committed or pushed yet. Fix the problem,
   discard the version bump (`git checkout -- package.json package-lock.json`), and run the
   release again.
 - If the upload fails after the push, run `npm run release -- --publish-only`. It
@@ -112,4 +121,6 @@ were labelled 1.0.23.
 |---|---|---|
 | `dist/` | Multi-file web build | Yes |
 | `dist-local/` | Single-file build (input to `sync:app`) | Yes |
+| `dist-e2e/` | The unpacked app `npm run test:e2e` builds and tests | Yes. `npm run test:e2e -- --no-build` reuses it. |
+| `test-results/` | Playwright's output from the last end-to-end run | Yes |
 | `release/` | `npm run release` output, one folder per version (`release/x.y.z/`: installer, portable exe, `latest.yml`, `win-unpacked/`, ~220 MB each). `npm run electron:build:win` writes straight into `release/`. | Yes. Keep the newest version's folder if you want `--install-only` to work. |

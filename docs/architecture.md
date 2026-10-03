@@ -55,26 +55,40 @@ feature is guarded by `hasUpdater` / `hasSystemBridge` checks in `LayersApp`.
 │   ├── modals/               One file per sheet/dialog
 │   ├── views/                One file per screen
 │   ├── index.css             Tailwind directives + html/body reset
-│   ├── logic.test.js         Vitest unit tests for lib/
-│   └── assets/               Vite template leftovers (unused)
+│   └── *.test.js             Vitest unit tests for lib/ (logic, backup, progress)
+├── tests/
+│   ├── setup.js              Vitest setup (jsdom helpers for the app tests)
+│   ├── app/                  App tests: the whole renderer in jsdom, driven like a person would
+│   └── e2e/                  End-to-end tests: Playwright drives the packaged Layers.exe
 ├── public/                   Copied as-is into web builds (icon.svg, PWA manifest.json)
 ├── index.html                Vite HTML entry
 ├── electron/
 │   ├── main.cjs              Main process
 │   ├── preload.cjs           contextBridge APIs exposed to the renderer
 │   ├── app/index.html        BUILD OUTPUT — the renderer Electron actually loads (committed)
-│   └── *.png                 App/tray icons (+ -light/-dark variants)
+│   ├── icon.png              Window, exe and installer icon
+│   └── tray-icon-*.png       Tray icons for a light (-dark) or dark (-light) taskbar
 ├── scripts/
 │   ├── sync-app.mjs          Copies dist-local/index.html → electron/app/index.html
-│   └── gen-code-map.mjs      Generates docs/generated/code-map.md
+│   ├── gen-code-map.mjs      Generates docs/generated/code-map.md
+│   ├── verify.mjs            npm run verify: lint, code-map check, tests, build
+│   ├── e2e.mjs               npm run test:e2e: packages the app, runs Playwright
+│   ├── install-hooks.mjs     npm install's "prepare": points git at .githooks/
+│   └── release.mjs           npm run release
+├── .githooks/pre-commit      Regenerates the code map and runs npm run verify
 ├── docs/                     You are here
-├── vite.config.js            Normal multi-file web build → dist/
+├── CLAUDE.md                 Short working rules for Claude Code sessions
+├── vite.config.js            Normal multi-file web build → dist/, and the Vitest config
 ├── vite.config.local.js      Single-file build (vite-plugin-singlefile) → dist-local/
+├── playwright.config.js      End-to-end test config (tests/e2e, one app at a time)
 ├── tailwind.config.js        Scans index.html + src/**/*.{js,jsx}
 ├── package.json              Scripts + electron-builder config ("build" key)
 ├── dist-local/               BUILD OUTPUT (git-ignored)
+├── dist-e2e/                 The app npm run test:e2e packages and tests (git-ignored)
 └── release/                  electron-builder output: installers, win-unpacked/ (git-ignored)
 ```
+
+The tests and the pre-commit hook are explained in [testing.md](testing.md).
 
 ## Build pipeline
 
@@ -129,4 +143,4 @@ flowchart TD
 | Icons / charts | `lucide-react`, `recharts` |
 | Bundler | Vite 8 + `@vitejs/plugin-react`; `vite-plugin-singlefile` for the Electron build |
 | Desktop | Electron 44, `electron-window-state`, `electron-updater`, `electron-builder` (NSIS + portable, AppImage) |
-| Tests / lint | Vitest 5, oxlint |
+| Tests / lint | Vitest 5 with Testing Library and jsdom (unit and app tests), Playwright (end-to-end tests of the packaged app), oxlint. See [testing.md](testing.md). |

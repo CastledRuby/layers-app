@@ -15,6 +15,7 @@ is split across `src/` by role (data, logic, components, modals, views).
 | See where each goal stands and what's next (fixes, then proposals) | [roadmap.md](roadmap.md) |
 | Get the big picture: processes, folders, how a build becomes an `.exe` | [architecture.md](architecture.md) |
 | Run, build, version and ship a release (and avoid running a stale build) | [build-and-release.md](build-and-release.md) |
+| Run the tests, or add one: unit, app and end-to-end tests, and the pre-commit hook | [testing.md](testing.md) |
 | Change the desktop shell: window, tray, shortcuts, auto-update, IPC | [electron.md](electron.md) |
 | Find which file a screen, sheet or helper lives in, or see how screens connect | [renderer/app-structure.md](renderer/app-structure.md) |
 | Understand the data model, persistence and the layer/progress maths | [renderer/state-and-data.md](renderer/state-and-data.md) |
@@ -39,12 +40,15 @@ npm run docs:map
 npm run docs:map -- --check
 ```
 
-The second command makes no changes and exits non-zero if the map is out of date. That
-makes it suitable for a pre-commit hook or CI. It also lists IPC channels that are wired
-on only one side of the Electron bridge.
+The second command makes no changes and exits non-zero if the map is out of date. It
+also lists IPC channels that are wired on only one side of the Electron bridge. The
+pre-commit hook regenerates the map on every commit, and `npm run verify` runs the check
+(see [testing.md](testing.md#the-pre-commit-hook)).
 
 When you change behaviour, update the matching hand-written page in the same commit.
-The table above tells you which page owns which topic.
+The table above tells you which page owns which topic. [`CLAUDE.md`](../CLAUDE.md) at the
+repo root gives Claude Code sessions the same rules in short: read the vision first, run
+`npm run verify` after every change, and keep the owning doc up to date.
 
 ## Conventions used in these docs
 
