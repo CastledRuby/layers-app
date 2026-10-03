@@ -28,14 +28,14 @@ how the app behaves for you is listed with the default chosen, so it can be chan
 | Onboarding | ✅ Done | Name and focus can be changed in Me (1.0.28). The focus drives Home's "Try this next". |
 | Sample data separable | ✅ Done (1.0.28) | "Remove sample people" keeps yours, and "Add sample people" adds them alongside your own. |
 | Works with zero people | ✅ Done | Checked by both the app tests and the end-to-end tests. |
-| Data-model migration | 🟡 Mostly | Old dates, skill history and logins are upgraded in place. Saved data still has no version number; see [Next](#next). |
-| People & Layers | 🟡 Mostly | Every layer change gets a dated timeline step, and Adjust previews where saving would put someone. **Logging and Adjust still use different maths: [P3](#p3-one-progress-model) needs your decision.** |
+| Data-model migration | ✅ Done | Saved data has a version number (2), and older saves are migrated once at startup. Old dates, skill history and login items are upgraded in place too. |
+| People & Layers | ✅ Done | Every layer change gets a dated timeline step. Logging keeps the dimensions inside the layer (P3 option C), so Adjust agrees with the layer shown, and its preview shows any change of percentage. |
 | Goals | ✅ Mostly | Skill goals move with their skills (1.0.28). Goals linked to a reminder move when it's logged. The variant chevron still can't be reached by keyboard. |
 | Coach, Prepare | ✅ Done (1.0.28) | Hooks come from all saved interests, plans, preferences, things to ask about, recent topics and reflections. Personal experiences are kept for Layer 3 and closer. |
 | Coach, Analyse | ✅ Works (sample conversations) | It's still a prototype on four sample chats. Real screenshot analysis is a later idea. |
 | Social skills | ✅ Done | The chart records points, and achievements are stored with dates. Strength and focus come from your real levels. |
 | Journal | ✅ Done (1.0.28) | Edit or delete an entry. Filters by person, type, period and layer, plus search, which includes reflections. |
-| Logging flow | ✅ Done (1.0.28) | The quick log is unchanged. The optional "More details" adds new info, what stood out, which goals moved, and a reflection. |
+| Logging flow | ✅ Done | The quick log is unchanged. The optional "More details" adds new info, a 1–5 rating for each of the six dimensions (type 1–5 per row), which goals moved, and a reflection. |
 | Events / reminders | ✅ Done (1.0.28) | One-off and weekly, with a done state, goal links and "remind me to follow up". Desktop notifications fire at the reminder's time, and can be switched off in Me. |
 | Me / Settings | ✅ Done | Profile, notifications, backup, privacy and sample controls. |
 | Keyboard shortcuts | ✅ Done | All 12 work. Esc closes only the top sheet, and Ctrl/Alt combinations don't trigger single-key shortcuts. |
@@ -48,7 +48,9 @@ and how.
 **Logging (P1)**
 - "More details" is **closed by default**, so the quick log stays quick. The
   active-listening checklist stayed where it was rather than moving into it.
-- "What stood out?" adds **+3** to that dimension.
+- *(Replaced at your request.)* "What stood out?" became a **1–5 rating per dimension**.
+  A rated dimension grows by `rating × 2.2` (1 → +2, 5 → +11). Goals about one dimension
+  move by its rating.
 - **Every** active goal of the people logged still moves by default, as before. Untick
   one to leave it alone.
 - Topics picked with "+ Add detail" are saved to the profile **only when logging with
@@ -117,6 +119,9 @@ Windows may refuse to start. The end-to-end tests can't run on new builds here e
 release script now stops with a clear message instead of publishing
 ([testing.md](testing.md#when-windows-blocks-the-build)).
 
+**Your decision (2026-10-04):** look into code signing once the app is more
+functional. Until then, work continues and is tested here, and nothing is released.
+
 **Options:**
 
 1. **Code signing (P8, recommended).** Signed apps from a trusted certificate are allowed,
@@ -129,6 +134,13 @@ release script now stops with a clear message instead of publishing
    `npm run release` publishes and installs 1.0.28 as usual.
 
 ### P3. One progress model
+
+**Decided: option C, built (not released yet).** You chose C on 2026-10-04. It's built: `keepDimsInLayer` runs after every log, and saved
+data version 2 migrates older saves once. See
+[state-and-data.md](renderer/state-and-data.md#dimensions-stay-inside-the-layer). The
+analysis that led to it is below for the record.
+
+#### The original proposal
 
 **The problem.** Two numbers both describe how close you are to someone:
 
@@ -166,9 +178,7 @@ US$10 a month. Once there is one, `npm run release` can sign with it.
 
 These are small and contained, so they can go in the next batch.
 
-1. **A version number on saved data.** It would make future changes to the data model
-   explicit migrations rather than backfills. It goes alongside P3 if P3 needs a
-   migration.
+1. ~~**A version number on saved data.**~~ Done with P3 (`dataVersion: 2`).
 2. **Undo for deletes.** Removing a person, an entry, a goal or a reminder shows a toast
    with "Undo" for a few seconds. It's safer than a confirm dialog alone.
 3. **Keyboard and screen-reader pass.**
@@ -193,11 +203,9 @@ start.
     share, trust and support, time together), each answered on 1–5.
   - Result: the answers set the six dimensions, and the layer and percentage come from
     them the same way Adjust works. The answers are kept, so it can be retaken later.
-- **Per-dimension meaningfulness.**
-  - This grows out of P1's "What stood out?": turn the chips into optional 1–5 ratings for
-    each dimension (trust 4, depth 2, ...).
-  - Goals that name a dimension ("Have deeper conversations") then move with that
-    dimension's rating instead of the overall one.
+- **Per-dimension meaningfulness**: ✅ built at your request, after 1.0.28. More details
+  rates each dimension 1–5, by keyboard or click. Each rating drives its dimension, and
+  goals about a dimension move by its rating.
 - **Activity heatmap.**
   - Where: an "Activity" section on each profile, plus one for everyone on the Journal.
   - What: a GitHub-style calendar of the last 6 months, shaded by how many and how

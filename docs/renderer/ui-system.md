@@ -193,8 +193,13 @@ ARIA attribute carries the state:
   and knob are two styled spans, and the knob slides with a short `left` transition.
 - **Disclosures** (the log sheet's "More details (optional)") use `aria-expanded`. They
   start closed, and the section only renders while open.
-- **Chips and single choices** (Journal filters, "What stood out?", the type and
-  meaningfulness choices in Edit entry) use `aria-pressed`. A tick list, like the log's
+- **Chips and single choices** (Journal filters, the type and meaningfulness choices in
+  Edit entry) use `aria-pressed`.
+- **Rating scales** (the log's "How did each part go?") are one `role="radiogroup"` per
+  dimension, labelled with its question, with `role="radio"` buttons 1–5. The scale fills
+  up to the rating in the dimension's colour. The highlighted row is where typing a
+  number lands; the log sheet's own key handler moves it (1–5, Backspace, arrows) while
+  More details is open and no text box has focus. A tick list, like the log's
   "Goals this moved", uses `role="checkbox"` and `aria-checked`.
 
 Older controls don't all have them yet, but new ones should. Screen readers need them,

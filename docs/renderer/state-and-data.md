@@ -140,7 +140,8 @@ type JournalEntry = {
   activeListening: string[];                  // AL_ITEMS keys
   summary?: string;                           // the note
   reflection?: string;                        // "How did it feel?" (the log's More details, or Edit entry)
-  standouts?: string[];                       // "What stood out?": dimension keys from STANDOUTS, each +STANDOUT_BUMP
+  ratings?: { [dimension]: 1|2|3|4|5 };       // "How did each part go?" (More details); only rated dimensions
+  standouts?: string[];                       // older 1.0.28 builds' "What stood out?" picks; shown, no longer written
   analysis?: { grading: object; conversationState: string }; // from Coach → Analyse
 };
 
@@ -237,7 +238,9 @@ The helpers are in [`lib/progress.js`](../../src/lib/progress.js) and unit-teste
 type, meaningfulness, profile notes, active-listening ticks, the note (`summary`) and the
 picked date. Its optional **More details** section can add three more inputs:
 
-- `standouts`: the dimension keys picked under "What stood out?" (`STANDOUTS`).
+- `ratings`: "How did each part go?", a 1–5 rating for any of the six dimensions
+  (`DIM_QUESTIONS` holds the questions). With More details open, typing a number rates
+  the highlighted row and moves down; Backspace steps back and clears; the arrows move.
 - `goalIds`: the goals left ticked under "Goals this moved". `undefined` means every
   active goal of each person in the log, and the sheet sends `undefined` unless you
   untick one. A logged reminder that's linked to a goal sends just that goal.
@@ -245,16 +248,24 @@ picked date. Its optional **More details** section can add three more inputs:
 
 Then:
 
-1. Each of the six dimensions gets a bump based on meaningfulness, interaction type and
-   active-listening ticks. Each standout adds `STANDOUT_BUMP` (+3) more to its dimension
-   and adds "You noted: …" to the `why` list. Dimensions are clamped to 0–100.
+1. Each of the six dimensions gets a bump (`dimBumps` in
+   [`lib/progress.js`](../../src/lib/progress.js)). A **rated** dimension grows by its
+   rating: `round(rating × 2.2)`, so 1 → +2, 3 → +7, 5 → +11, plus the active-listening
+   bonus for reciprocity and listening. An unrated one uses the original formula with
+   meaningfulness, interaction type and active-listening ticks. The ratings are listed
+   in the `why` ("You rated it: Depth 4, Trust 5"). Dimensions are clamped to 0–100.
 2. **Layer progress (`overall`) only moves for meaningfulness ≥ 4.** The bump is
    `round(avg(dimension bumps) × 0.55)`.
 3. `advanceLayer(layer, overall, bump)` treats each layer as its own 0–100 meter.
    Reaching 100 moves up a layer (max 4) and carries the overflow into the new layer.
    Every person's result is worked out in one pass, so a group log toasts every level-up.
+   Then `keepDimsInLayer` keeps the dimensions inside the (new) layer's band
+   ([below](#dimensions-stay-inside-the-layer)).
 4. Every unfinished goal for that person gains `round(meaningfulness × 3.2)`, or only the
-   goals in `goalIds` when it's given. An unticked goal stays where it is.
+   goals in `goalIds` when it's given. An unticked goal stays where it is. A goal about
+   one dimension (`GOAL_PRESET_DIM`: "Have deeper conversations" and depth, "Spend more
+   time together" and shared experiences, ...) uses that dimension's rating instead when
+   it was rated (`goalBumpFor`).
 5. Topics picked with "+ Add detail" are saved to the profile, but only when the log is
    with one person; a group log keeps them in its note. `NOTE_TEMPLATE_CATEGORY` in
    [`data/constants.js`](../../src/data/constants.js) says where each template category
@@ -264,7 +275,7 @@ Then:
    into the category you picked (one-person logs only). A topic that's already saved
    (same text, ignoring case) gets its `at` refreshed and leaves the archive, rather than
    being added twice (`addNotes` in `App.jsx`).
-6. A journal entry is prepended, with `standouts` and `reflection` when they're given.
+6. A journal entry is prepended, with `ratings` and `reflection` when they're given.
    Global skills get small bumps (`bumpSkills`), and skill goals whose skill went up move
    with it ([below](#skill-goals-move-with-skills)).
 
@@ -342,16 +353,30 @@ new person starts at 20% of their layer, exactly where Adjust would place them. 
 sample people in [`data/seed.js`](../../src/data/seed.js) are set the same way, and
 `src/progress.test.js` checks that they are.
 
-### What still disagrees
+### Dimensions stay inside the layer
 
-Logging and Adjust still use different maths. To Adjust, a 25-point rise in the
-dimension average is a whole layer. Logging raises the dimensions by several points each
-time but adds only about half the average bump to layer progress, and only for
-meaningfulness 4 or 5. So after some logging the dimensions describe a higher layer
-than the one shown, and moving any slider in Adjust re-places the person from those
-dimensions, which can move them to another layer. The preview says so before you save.
-Making the two agree is proposal P3, which is waiting for a decision
-([roadmap.md](../roadmap.md#p3-one-progress-model)).
+Adjust places people by their dimension average (25-point bands), but logging grows the
+dimensions faster than layer progress, on purpose: a quick chat still credits the
+dimensions, while only meaningful logs move the meter. They used to drift apart, so the
+dimensions could describe a higher layer than the one shown, and Adjust would move the
+person. P3, option C ([roadmap.md](../roadmap.md#p3-one-progress-model)) keeps them in
+step:
+
+- **`keepDimsInLayer(old, new, layer)`**, after every log and analysis. Growth that would
+  push the average past the top of the layer's band is scaled down. The dimensions that
+  grew most stay ahead, and none drops below where it was. A level-up lifts the
+  dimensions to at least the bottom of the new band. `layerDimBounds` gives each band as
+  a sum (Layer 3 is 297–446), because the average is rounded.
+- **Saved data version 2.** `persistState` writes `dataVersion: 2`. A save without it gets
+  `migrateDimsToLayers` once at startup (`loadSavedState`, which returns the
+  `migrated` names), and so does an imported backup. Only people whose dimensions are
+  outside their band move, scaled proportionally (`scaleDimsToSum`) to where their meter
+  is, so Adjust then shows the layer and percentage they already have. Their layer and
+  `overall` don't change. A one-time "Dimensions updated" notice names them.
+
+Within a layer, Adjust can still change the percentage, since it places by the
+dimensions. The preview shows both, for example "Saving puts Ana at Layer 3: Personal,
+40% (now 72%)", before anything is saved.
 
 ## Reminders and notifications
 

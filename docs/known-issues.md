@@ -11,11 +11,10 @@ was confirmed in [roadmap.md](roadmap.md#batch-1-fixes). All of Batch 1 is fixed
 UI, so none can come back unnoticed. 1.0.28 then built most of the proposals; what still
 needs a decision is in [roadmap.md](roadmap.md#needs-your-decision).
 
-One inconsistency remains on purpose until proposal P3: logging grows the six dimensions
-faster than layer progress, so Adjust's sliders can describe a different layer from the
-one shown. Adjust now previews where saving would put someone, and saving unchanged
-sliders does nothing. See
-[renderer/state-and-data.md](renderer/state-and-data.md#what-still-disagrees).
+The last inconsistency, logging and Adjust disagreeing about a person's layer, is
+resolved by P3 option C (after 1.0.28, not released yet): the dimensions stay inside
+the layer's band. See
+[renderer/state-and-data.md](renderer/state-and-data.md#dimensions-stay-inside-the-layer).
 
 ## Build & release
 

@@ -84,7 +84,7 @@ stateDiagram-v2
 | People | `PeopleView` | "Your circle": searchable list (`#people-search-input`, `/` focuses it) grouped by layer, add person |
 | Person profile | `PersonProfile` | Layer badge + layer-progress ring (level-up pulse), the last change and why, six dimension bars with **Adjust manually** sliders (previewing where saving would put them), *Prepare to talk* tips (`PrepareTipsModal`), **Ideas for next time**, **Goals** (`GoalRow`), **What I know about…** (five info categories via `InfoItemRow`, quick-add interests, temporary/archived items; a bell on a temporary item sets a "how did it go?" reminder for three days later), relationship **Timeline**, **Progress** chart |
 | Goals overview | `GoalsView` | Every goal across people plus general (skill) goals, with filters |
-| Journal | `JournalView` | Feed of logged interactions, newest first, showing each entry's reflection and what stood out. Search (`#journal-search-input`) covers names, notes, saved details and reflections. Filters by person, type, period (past week, month or 3 months, counted back from `today`) and layer, with **Clear filters**. A pencil on each entry opens `EditEntryModal`. |
+| Journal | `JournalView` | Feed of logged interactions, newest first, showing each entry's reflection and dimension ratings. Search (`#journal-search-input`) covers names, notes, saved details and reflections. Filters by person, type, period (past week, month or 3 months, counted back from `today`) and layer, with **Clear filters**. A pencil on each entry opens `EditEntryModal`. |
 | Coach | `CoachView` | **Prepare** tab: conversation hooks built from what you know (`buildPotentialHooks`, [below](#prepares-hooks)) and suggestions. **Analyse** tab: pick one of the mock `SCENARIOS` → fake loading → grading, conversation state, info to approve into a profile (`onApproveInfo`), log the result (`onLogFromAnalysis`). |
 | Me | `MeView` | A profile card (your name and focus, **Edit** opens `EditProfileModal`), "Your social skills" bars, your strength and focus (highest and lowest skill, with a tip and challenge from `SKILL_TIPS`; a "Getting started" note while every skill is 0%) + **Progress history** chart, **Achievements** (recorded ones show the day they were unlocked, locked ones how close you are), **Appearance** (light/dark), **Notifications** (switches for reminder notifications and the daily check-in nudge), Electron-only rows (version, check for updates / restart to install / open download page for the portable build, launch at login, a warning if another app owns Ctrl+Shift+L, keyboard shortcuts), data export/import, **Remove sample people** / **Add sample people** (each shown only when it would do something), delete everything |
 
@@ -150,7 +150,9 @@ flowchart LR
 
 The *details* step ends with an optional **More details** section, closed by default so
 a quick log stays quick. It holds "Something new about …?" (one-person logs only;
-saved to the profile in the category you pick), "What stood out?", "Goals this moved"
+saved to the profile in the category you pick), "How did each part go?" (a 1–5 scale
+for each dimension: type a number per row, top to bottom, or click; Backspace steps
+back), "Goals this moved"
 (every active goal is ticked; untick the ones it didn't help) and "How did it feel?" (a
 reflection). [state-and-data.md](state-and-data.md#progression-model) says what each one
 changes.
