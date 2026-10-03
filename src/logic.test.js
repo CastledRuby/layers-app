@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import {
   clamp,
   computeOverall,
@@ -10,7 +10,15 @@ import {
   getCheckInSuggestions,
   makePerson,
   generateSuggestions,
+  journalDaysAgo,
+  journalDateLabel,
+  isJournalThisWeek,
+  backfillJournalDates,
 } from './App.jsx';
+
+// Local-time dates, mid-afternoon so a test never sits on a day boundary.
+const day = (y, m, d) => new Date(y, m - 1, d, 15, 30);
+const NOW = day(2026, 10, 3);
 
 describe('clamp', () => {
   it('keeps values inside the range unchanged', () => {
@@ -153,6 +161,105 @@ describe('getCheckInSuggestions', () => {
     ];
     const result = getCheckInSuggestions(people, journal);
     expect(result).not.toContain('Alex');
+  });
+
+  it('flags someone logged weeks ago even if the entry once said "Today"', () => {
+    const journal = [{ personId: 'a', at: '2026-09-10', date: 'Today' }];
+    expect(getCheckInSuggestions(people, journal, NOW)).toContain('Alex');
+  });
+
+  it('flags from 14 days since the last entry, by its `at` date', () => {
+    expect(getCheckInSuggestions(people, [{ personId: 'a', at: '2026-09-20' }], NOW)).not.toContain('Alex');
+    expect(getCheckInSuggestions(people, [{ personId: 'a', at: '2026-09-19' }], NOW)).toContain('Alex');
+  });
+});
+
+describe('journalDaysAgo', () => {
+  it('counts whole days from the entry\'s `at` date to now', () => {
+    expect(journalDaysAgo({ at: '2026-10-03' }, NOW)).toBe(0);
+    expect(journalDaysAgo({ at: '2026-10-02' }, NOW)).toBe(1);
+    expect(journalDaysAgo({ at: '2026-09-19' }, NOW)).toBe(14);
+  });
+  it('ignores a stale stored label when `at` is present', () => {
+    expect(journalDaysAgo({ at: '2026-09-10', date: 'Today' }, NOW)).toBe(23);
+  });
+  it('falls back to the legacy label when there is no `at`', () => {
+    expect(journalDaysAgo({ date: '3 days ago' }, NOW)).toBe(3);
+    expect(journalDaysAgo({ date: 'Aug 31' }, NOW)).toBe(33);
+  });
+  it('treats an entry with no readable date as long ago', () => {
+    expect(journalDaysAgo({}, NOW)).toBe(999);
+    expect(journalDaysAgo({ date: 'whenever' }, NOW)).toBe(999);
+    expect(journalDaysAgo({ at: 'not-a-date' }, NOW)).toBe(999);
+  });
+  it('never goes negative for a future date', () => {
+    expect(journalDaysAgo({ at: '2026-10-05' }, NOW)).toBe(0);
+  });
+});
+
+describe('journalDateLabel', () => {
+  it('ages the same entry as time passes', () => {
+    const entry = { at: '2026-10-01' };
+    expect(journalDateLabel(entry, day(2026, 10, 1))).toBe('Today');
+    expect(journalDateLabel(entry, day(2026, 10, 2))).toBe('Yesterday');
+    expect(journalDateLabel(entry, day(2026, 10, 4))).toBe('3 days ago');
+    expect(journalDateLabel(entry, day(2026, 10, 22))).toBe('3 weeks ago');
+    expect(journalDateLabel(entry, day(2026, 12, 1))).toBe('2 months ago');
+  });
+  it('shows an unreadable legacy label as-is', () => {
+    expect(journalDateLabel({ date: 'whenever' }, NOW)).toBe('whenever');
+  });
+});
+
+describe('isJournalThisWeek', () => {
+  it('covers the last 7 days, including today', () => {
+    expect(isJournalThisWeek({ at: '2026-10-03' }, NOW)).toBe(true);
+    expect(isJournalThisWeek({ at: '2026-09-27' }, NOW)).toBe(true);
+    expect(isJournalThisWeek({ at: '2026-09-26' }, NOW)).toBe(false);
+  });
+  it('ignores a stale isThisWeek flag', () => {
+    expect(isJournalThisWeek({ at: '2026-08-01', isThisWeek: true }, NOW)).toBe(false);
+  });
+});
+
+describe('backfillJournalDates', () => {
+  it('reads relative labels as of the anchor and drops the stale fields', () => {
+    const [a, b] = backfillJournalDates([
+      { id: 'x', personId: 'a', date: 'Today', isThisWeek: true },
+      { id: 'y', personId: 'a', date: '3 days ago', isThisWeek: true },
+    ], NOW);
+    expect(a).toEqual({ id: 'x', personId: 'a', at: '2026-10-03' });
+    expect(b).toEqual({ id: 'y', personId: 'a', at: '2026-09-30' });
+  });
+  it('parses absolute seed labels as their most recent past occurrence', () => {
+    const out = backfillJournalDates([{ date: 'Aug 31' }, { date: 'Dec 25' }, { date: 'Aug 20, 2025' }], NOW);
+    expect(out.map(j => j.at)).toEqual(['2026-08-31', '2025-12-25', '2025-08-20']);
+  });
+  it('leaves entries that already have `at`, or have no readable date, untouched', () => {
+    const dated = { at: '2026-09-01', date: 'Today' };
+    const undatable = { date: 'whenever' };
+    const out = backfillJournalDates([dated, undatable], NOW);
+    expect(out[0]).toBe(dated);
+    expect(out[1]).toBe(undatable);
+  });
+  it('only dates an entry once, so a later load does not move it', () => {
+    const once = backfillJournalDates([{ date: 'Today' }], NOW);
+    expect(backfillJournalDates(once, day(2026, 11, 1))).toEqual(once);
+    expect(journalDateLabel(once[0], day(2026, 10, 24))).toBe('3 weeks ago');
+  });
+  it('accepts a backup\'s exportedAt string as the anchor', () => {
+    const exportedAt = day(2026, 9, 20).toISOString();
+    expect(backfillJournalDates([{ date: 'Today' }], exportedAt)[0].at).toBe('2026-09-20');
+  });
+
+  describe('without a usable anchor', () => {
+    beforeEach(() => { vi.useFakeTimers(); vi.setSystemTime(NOW); });
+    afterEach(() => { vi.useRealTimers(); });
+
+    it('falls back to now', () => {
+      expect(backfillJournalDates([{ date: 'Yesterday' }])[0].at).toBe('2026-10-02');
+      expect(backfillJournalDates([{ date: 'Yesterday' }], 'not a date')[0].at).toBe('2026-10-02');
+    });
   });
 });
 

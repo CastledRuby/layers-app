@@ -5,23 +5,17 @@ When you fix an item, delete it here, or move it to *Resolved* with the version.
 
 ## Correctness
 
-### 1. Journal dates never age, which breaks check-ins and weekly stats
+### 1. Info-item and timeline dates never age
 
-Journal entries store a relative label (`date: 'Today'`) and a `isThisWeek` flag, both
-computed once when the entry is logged and never recomputed. As a result:
-
-- the Journal keeps showing **"Today"** for an entry logged weeks ago;
-- Home's weekly counts (`journal.forEach(j => { if (j.isThisWeek) … })` in `HomeView`)
-  only ever grow;
-- `getCheckInSuggestions()` parses the stored label with `parseDaysAgo`, so a person last
-  logged as "Today" is *always* 0 days ago. The **"Haven't caught up in a while"** list
-  and the daily desktop notification never fire for anyone you've actually logged.
-
-Seed entries mix in absolute labels like `'Aug 31'`. `parseDaysAgo` can't read those, so
-it returns 999 and treats the entry as "long ago", which makes the sample data look like
-it works. **Suggested fix:** store an ISO `at` date on
-each journal entry (as chart history already does). Derive the label and "this week"
-when rendering. Backfill old entries from their label once, on load.
+Journal entries store an ISO `at` date and derive their label when rendered (see
+[renderer/state-and-data.md](renderer/state-and-data.md#dates-two-different-schemes)).
+Info items still store the label itself (`updated: 'Today'`), and so does a person's
+`timeline` (`makePerson` writes `'First met'` / `'Today'`). Neither is ever recomputed.
+`generateSuggestions` reads `updated` with `parseDaysAgo`, so a note saved as "Today"
+never reaches its 3- or 7-day threshold. Profile suggestions only appear for the sample
+data, whose labels are hard-coded (`'10 days ago'`). **Suggested fix:** the same as for
+the journal. Store an ISO date, derive the label, and backfill on load the way
+`backfillJournalDates` does.
 
 ### 2. Dead IPC channel: `trigger-log-interaction`
 
@@ -90,6 +84,11 @@ currently untestable because it's inlined in the handlers. Extracting it into
 
 - **Unchecked imports.** A backup's `version` field isn't checked, and individual
   entities aren't validated, so a malformed file can crash a view.
+- **The "daily" check-in notification only runs once per launch.** Its effect in
+  `LayersApp` depends only on `[onboarded]`, and closing the window hides it to the tray,
+  so the page is never reloaded. If the app stays running for days, the check doesn't run
+  again. For the same reason, a label like "Today" doesn't change at midnight. It updates
+  the next time that view re-renders.
 - **Startup flash in dark mode.** `BrowserWindow` uses a hard-coded light
   `backgroundColor` (`#F5F6F1`).
 - **Fonts fetched from Google.** The fonts come from `fonts.googleapis.com` on every

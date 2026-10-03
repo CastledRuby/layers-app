@@ -13,7 +13,7 @@ function and constant are in [../generated/code-map.md](../generated/code-map.md
 | Section banner | What lives there |
 |---|---|
 | **DESIGN TOKENS** | `THEME_LIGHT` / `THEME_DARK` palettes, `COLORS` (CSS-variable references), `LAYERS` (the 4 relationship layers), the six relationship dimensions (`DIM_*`), `makePerson`, info `CATEGORIES`, keyboard `SHORTCUTS` + `ShortcutsModal`, emoji lists, `NOTE_TEMPLATES` (quick-detail library), goal `PRESETS` + `PRESET_VARIANTS`, interaction `TYPE_META`, active-listening `AL_ITEMS`, `CONV_STATES`, `ACHIEVEMENTS` |
-| **HELPERS** | `clamp`, `uid`, relative/absolute date helpers (`parseDaysAgo`, `dateToRelativeLabel`, `formatAbsoluteDate`, `toISODate`), chart-history helpers (`sortHistory`, `pushHistoryPoint`), `DateDropdown`, `TimeDropdown`, text builders (`summaryFor`, `updateStatusText`, `homeGoalTitle`, `generateSuggestions`) |
+| **HELPERS** | `clamp`, `uid`, relative/absolute date helpers (`parseDaysAgo`, `dateToRelativeLabel`, `formatAbsoluteDate`, `toISODate`), chart-history helpers (`sortHistory`, `pushHistoryPoint`), journal-date helpers (`journalDaysAgo`, `journalDateLabel`, `isJournalThisWeek`, `backfillJournalDates`), `DateDropdown`, `TimeDropdown`, text builders (`summaryFor`, `updateStatusText`, `homeGoalTitle`, `generateSuggestions`) |
 | **MOCK SCREENSHOT-ANALYSIS SCENARIOS** | `SCENARIOS`: canned transcripts and gradings used by the Coach "Analyse" tab. There is no real image analysis. |
 | **SEED DATA** | Example people, goals, journal entries and skills (`INITIAL_*`), `EMPTY_SKILLS`, onboarding `FOCUS_OPTIONS` |
 | **LOCAL PERSISTENCE** | `STORAGE_KEY`, `loadSaved`, `persistState`, daily check-in notification bookkeeping, `getCheckInSuggestions` |
