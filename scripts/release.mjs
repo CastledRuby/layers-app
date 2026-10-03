@@ -5,8 +5,8 @@
 //   npm run release -- minor              or major, or an exact version like 1.2.0
 //   npm run release -- --notes notes.md   release notes (default: commit subjects since the last tag)
 //   npm run release -- --no-install       publish without installing here
-//   npm run release -- --publish-only     re-upload the current version's built files (after a failed upload)
-//   npm run release -- --install-only     just install the current version's installer from release/
+//   npm run release -- --publish-only     upload the current version's built files (after a failed upload)
+//   npm run release -- --install-only     just install the current version's installer from release/<version>/
 //
 // Order: everything local (bump, test, build, package) runs before anything
 // leaves this computer, so a failure there leaves GitHub untouched. Then:
@@ -24,7 +24,10 @@ import { fileURLToPath } from 'node:url';
 
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const REPO = 'CastledRuby/layers-app';
-const RELEASE_DIR = join(root, 'release');
+// Each version builds into its own folder, release/<version>/. A previous
+// build's win-unpacked can stay locked (antivirus, or an app that has its
+// app.asar open), and electron-builder fails when it can't replace it.
+const releaseDir = (v) => join(root, 'release', v);
 const INSTALL_DIR = join(process.env.LOCALAPPDATA || '', 'Programs', 'Layers');
 
 const args = process.argv.slice(2);
@@ -79,10 +82,10 @@ function releaseAssets(v) {
 
 function checkBuiltFiles(v) {
   for (const local of Object.values(releaseAssets(v))) {
-    if (!existsSync(join(RELEASE_DIR, local))) fail(`release/${local} is missing. Build it first (npm run electron:build:win).`);
+    if (!existsSync(join(releaseDir(v), local))) fail(`release/${v}/${local} is missing. Run a full "npm run release" to build it.`);
   }
-  const feed = readFileSync(join(RELEASE_DIR, 'latest.yml'), 'utf8');
-  if (!feed.includes(`version: ${v}`) || !feed.includes(`Layers-Setup-${v}.exe`)) fail(`release/latest.yml is not for ${v}.`);
+  const feed = readFileSync(join(releaseDir(v), 'latest.yml'), 'utf8');
+  if (!feed.includes(`version: ${v}`) || !feed.includes(`Layers-Setup-${v}.exe`)) fail(`release/${v}/latest.yml is not for ${v}.`);
 }
 
 function releaseNotes(v) {
@@ -93,7 +96,7 @@ function releaseNotes(v) {
     .split('\n').map(s => s.trim()).filter(s => s && !/^Release v/.test(s));
   const lines = ['## Changes', '', ...(subjects.length ? subjects.map(s => `- ${s}`) : ['- Maintenance release'])];
   if (prevTag) lines.push('', `**Full changelog:** https://github.com/${REPO}/compare/${prevTag}...v${v}`);
-  const file = join(RELEASE_DIR, `notes-${v}.md`);
+  const file = join(releaseDir(v), `notes-${v}.md`);
   writeFileSync(file, lines.join('\n') + '\n');
   return file;
 }
@@ -103,12 +106,12 @@ async function publish(gh, v) {
   if (spawnSync(gh, ['release', 'view', `v${v}`, '-R', REPO], { encoding: 'utf8' }).status === 0) {
     fail(`GitHub already has a v${v} release. Bump the version instead of overwriting it.`);
   }
-  const stage = join(RELEASE_DIR, `upload-${v}`);
+  const stage = join(releaseDir(v), 'upload');
   rmSync(stage, { recursive: true, force: true });
   mkdirSync(stage, { recursive: true });
   const uploads = Object.entries(releaseAssets(v)).map(([published, local]) => {
     const dest = join(stage, published);
-    copyFileSync(join(RELEASE_DIR, local), dest);
+    copyFileSync(join(releaseDir(v), local), dest);
     return dest;
   });
   const sha = gitOut('rev-parse', 'HEAD');
@@ -145,8 +148,8 @@ function layersRunning() {
 }
 
 async function install(v) {
-  const installer = join(RELEASE_DIR, `Layers Setup ${v}.exe`);
-  if (!existsSync(installer)) fail(`release/Layers Setup ${v}.exe is missing. Build it first.`);
+  const installer = join(releaseDir(v), `Layers Setup ${v}.exe`);
+  if (!existsSync(installer)) fail(`release/${v}/Layers Setup ${v}.exe is missing. Build it first.`);
   const installedExe = join(INSTALL_DIR, 'Layers.exe');
   if (layersRunning() && existsSync(installedExe)) {
     log('Asking the running Layers to quit…');
@@ -194,7 +197,7 @@ async function main() {
   npm('test');
   npm('run', 'build:electron');
   npm('run', 'docs:map');
-  run('npx', ['electron-builder', '--win', '--x64', '--publish', 'never'], { shell: true });
+  run('npx', ['electron-builder', '--win', '--x64', '--publish', 'never', `--config.directories.output=release/${v}`], { shell: true });
   checkBuiltFiles(v);
 
   git('add', '-A');

@@ -12,7 +12,7 @@
 | Run the desktop app from source | `npm run build:electron` then `npx electron .` | Uses `electron/main.cjs` (package.json `"main"`). It shares the installed app's name (`layers-web`), so it uses the same data in `%APPDATA%\layers-web`, and it exits silently while the installed Layers is running (single-instance lock). Quit Layers from the tray first, or add `--user-data-dir=<temp folder>` for a separate profile. |
 | Windows installer + portable exe | `npm run electron:build:win` | `release/Layers Setup x.y.z.exe`, `release/Layers x.y.z.exe`, `release/win-unpacked/` |
 | **Release a new version** | `npm run release` | Bumps the version, tests, builds, pushes to `main`, publishes the GitHub release, then installs it on this computer. See [Releasing](#releasing). |
-| Reinstall the current version here | `npm run release -- --install-only` | Silently installs `release/Layers Setup x.y.z.exe` and relaunches Layers |
+| Reinstall the current version here | `npm run release -- --install-only` | Silently installs `release/x.y.z/Layers Setup x.y.z.exe` and relaunches Layers |
 | Linux AppImage | `npm run build:electron && npm run electron:build:linux` | `electron:build:linux` does **not** rebuild the renderer on its own |
 
 ## Why there are two Vite configs
@@ -61,7 +61,9 @@ GitHub untouched.
    `major` or an exact version (`npm run release -- 1.1.0`). electron-updater only offers
    versions strictly higher than the installed one, so every release needs a new number.
 3. **Test and build:** `npm test`, `build:electron`, `docs:map`, then
-   `electron-builder --win --x64 --publish never`.
+   `electron-builder --win --x64 --publish never`. Each version builds into its own folder,
+   `release/x.y.z/`, because a previous build's `win-unpacked` can stay locked (antivirus,
+   or an app holding its `app.asar` open), and electron-builder fails if it can't replace it.
 4. **Commit** `Release vX.Y.Z` and push it to `main`.
 5. **Publish** a non-draft GitHub release `vX.Y.Z` at that commit, using the GitHub CLI.
    Assets are uploaded under the hyphenated names that `latest.yml` points at
@@ -81,7 +83,7 @@ GitHub untouched.
   discard the version bump (`git checkout -- package.json package-lock.json`), and run the
   release again.
 - If the upload fails after the push, run `npm run release -- --publish-only`. It
-  uploads the files already in `release/` for the current version, then installs.
+  uploads the files already in `release/x.y.z/` for the current version, then installs.
 - If the install fails, run `npm run release -- --install-only`.
 
 **Setup on a new computer:** install the GitHub CLI (`winget install GitHub.cli`) and run
@@ -110,4 +112,4 @@ were labelled 1.0.23.
 |---|---|---|
 | `dist/` | Multi-file web build | Yes |
 | `dist-local/` | Single-file build (input to `sync:app`) | Yes |
-| `release/` | Every installer ever built (~117 MB each), `win-unpacked/`, `latest.yml` | Yes. Keep the newest if you need to reinstall. |
+| `release/` | `npm run release` output, one folder per version (`release/x.y.z/`: installer, portable exe, `latest.yml`, `win-unpacked/`, ~220 MB each). `npm run electron:build:win` writes straight into `release/`. | Yes. Keep the newest version's folder if you want `--install-only` to work. |
