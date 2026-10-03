@@ -193,9 +193,25 @@ The Me tab's **Export** writes `layers-backup-YYYY-MM-DD.json`:
 { "version": 1, "exportedAt": "ISO timestamp", "people": [], "journal": [], "generalGoals": [], "events": [], "skills": {}, "profile": {} }
 ```
 
-**Import** asks for confirmation and then *replaces* all of that state. Fields that are
-missing or have the wrong type fall back to empty values. It does no schema or version
-migration, apart from dating records that have no `at` (see
-[above](#records-saved-before-at-existed)), so old backups still import. Records in new
-backups have `at` and no legacy label. An app older than 1.0.25 would show them without a
-date label.
+`createBackup` in [`src/lib/backup.js`](../../src/lib/backup.js) builds it, and
+`BACKUP_VERSION` is the format number.
+
+**Import** checks the file with `validateBackup` *before* anything is replaced:
+
+| Situation | What happens |
+|---|---|
+| Not JSON, not an object, or no `people` list | Refused: "That file isn't a Layers backup." |
+| `version` newer than `BACKUP_VERSION` | Refused: update Layers first |
+| A top-level list (`people`, `journal`, `generalGoals`, `events`) or `skills`/`profile` has the wrong type | Refused as damaged, instead of silently importing it as empty |
+| Larger than 20 MB (`MAX_BACKUP_BYTES`) | Refused before it's read |
+| A person without an `id` or `name`, or a duplicate `id` | Skipped, and counted in the confirm dialog |
+| A journal entry or event for a person who isn't in the backup; a goal without a title; a saved detail without text; an event without a title or valid date | Skipped and counted |
+| Missing lists, out-of-range numbers, unknown types | Repaired: lists become empty, numbers are clamped (layer 1–4, dimensions and progress 0–100, meaningfulness 1–5), unknown interaction types become `other` |
+
+Old backups without `version`, `events` or `generalGoals` still import. The confirm
+dialog shows the export date, what will be imported ("5 people, 7 journal entries, 10
+goals, 1 event") and anything that will be skipped. After confirming, records without an
+`at` are dated as described [above](#records-saved-before-at-existed), anchored to the
+backup's `exportedAt`. A valid backup that the app exported comes back unchanged; the round
+trip is unit-tested in `src/backup.test.js`. Records in new backups have `at` and no
+legacy label, so an app older than 1.0.25 shows them without a date label.

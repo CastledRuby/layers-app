@@ -11,6 +11,7 @@ import { CATEGORIES, categoryMeta, getLayer } from './data/constants.js';
 import { EMPTY_SKILLS, INITIAL_GENERAL_GOALS, INITIAL_JOURNAL, INITIAL_PEOPLE, INITIAL_SKILLS } from './data/seed.js';
 import { backfillJournalDates, backfillPeopleDates, formatAbsoluteDate, pushHistoryPoint, toISODate } from './lib/dates.js';
 import { advanceLayer, computeOverall, layerForOverall, makePerson } from './lib/progress.js';
+import { MAX_BACKUP_BYTES, createBackup, validateBackup } from './lib/backup.js';
 import { getLastNotifiedDate, loadSaved, persistState, setLastNotifiedDate } from './lib/storage.js';
 import { getCheckInSuggestions } from './lib/text.js';
 import { clamp, uid } from './lib/util.js';
@@ -220,7 +221,8 @@ function LayersApp() {
   function pushToast(text) {
     const id = uid();
     setToasts(t => [...t, { id, text }]);
-    setTimeout(() => setToasts(t => t.filter(x => x.id !== id)), 2600);
+    // Longer messages (import errors) stay up long enough to read.
+    setTimeout(() => setToasts(t => t.filter(x => x.id !== id)), Math.max(2600, text.length * 55));
   }
 
   const selectedPerson = screen.name === 'person' ? people.find(p => p.id === screen.personId) : null;
@@ -517,7 +519,7 @@ function LayersApp() {
   }
 
   function handleExportData() {
-    const data = { version: 1, exportedAt: new Date().toISOString(), people, journal, generalGoals, events, skills, profile };
+    const data = createBackup({ people, journal, generalGoals, events, skills, profile });
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -533,36 +535,40 @@ function LayersApp() {
   function handleImportClick() { importInputRef.current && importInputRef.current.click(); }
   function handleImportFile(e) {
     const file = e.target.files && e.target.files[0];
-    if (!file) { return; }
+    e.target.value = '';
+    if (!file) return;
+    if (file.size > MAX_BACKUP_BYTES) { pushToast("That file is too large to be a Layers backup."); return; }
     const reader = new FileReader();
+    reader.onerror = () => pushToast("That file couldn't be read.");
     reader.onload = () => {
-      try {
-        const data = JSON.parse(reader.result);
-        if (!data || typeof data !== 'object') throw new Error('bad file');
-        askConfirm({
-          title: 'Import this backup?',
-          message: 'This replaces everything currently in the app with the contents of this file.',
-          confirmLabel: 'Import',
-          danger: true,
-          onConfirm: () => {
-            setPeople(Array.isArray(data.people) ? backfillPeopleDates(data.people, data.exportedAt) : []);
-            // Backups from before `at` existed: read their labels as of the export.
-            setJournal(Array.isArray(data.journal) ? backfillJournalDates(data.journal, data.exportedAt) : []);
-            setGeneralGoals(Array.isArray(data.generalGoals) ? data.generalGoals : []);
-            setEvents(Array.isArray(data.events) ? data.events : []);
-            setSkills(data.skills && typeof data.skills === 'object' ? data.skills : EMPTY_SKILLS);
-            setProfile(data.profile && typeof data.profile === 'object' ? data.profile : { name: '', focus: null });
-            setOnboarded(true);
-            setScreen({ name: 'tabs' }); setActiveTab('home');
-            pushToast('Backup imported');
-          },
-        });
-      } catch (err) {
-        pushToast('That file could not be read as a Layers backup');
-      }
+      let raw;
+      try { raw = JSON.parse(reader.result); } catch (err) { pushToast("That file isn't a Layers backup."); return; }
+      // Check everything before anything is replaced: a wrong or damaged
+      // file is refused, and damaged records are repaired or skipped.
+      const result = validateBackup(raw);
+      if (!result.ok) { pushToast(result.error); return; }
+      const { data, summary, warnings } = result;
+      const from = data.exportedAt ? ` from ${formatAbsoluteDate(new Date(data.exportedAt))}` : '';
+      askConfirm({
+        title: 'Import this backup?',
+        message: `This replaces everything currently in the app with this backup${from}: ${summary.text}.${warnings.length ? ` Some damaged records will be skipped: ${warnings.join('; ')}.` : ''}`,
+        confirmLabel: 'Import',
+        danger: true,
+        onConfirm: () => {
+          // Backups from before `at` existed: read their labels as of the export.
+          setPeople(backfillPeopleDates(data.people, data.exportedAt));
+          setJournal(backfillJournalDates(data.journal, data.exportedAt));
+          setGeneralGoals(data.generalGoals);
+          setEvents(data.events);
+          setSkills(data.skills);
+          setProfile(data.profile);
+          setOnboarded(true);
+          setScreen({ name: 'tabs' }); setActiveTab('home');
+          pushToast('Backup imported');
+        },
+      });
     };
     reader.readAsText(file);
-    e.target.value = '';
   }
 
   function handleOnboardingComplete({ name, focus, startFresh, newPeople }) {

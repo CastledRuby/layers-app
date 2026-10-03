@@ -4,18 +4,19 @@
 > Run `npm run docs:map` after changing anything under `src/`, `electron/*.cjs` or `package.json` scripts.
 > Hand-written explanations live in the other files under [`docs/`](../README.md).
 
-Package: `layers-web` v1.0.25 · `src/`: 35 files, 4383 lines, 37 components, 50 top-level functions, 43 constants.
+Package: `layers-web` v1.0.25 · `src/`: 36 files, 4544 lines, 37 components, 63 top-level functions, 45 constants.
 
 ## Source files
 
 | File | Lines | Declares | Imports from |
 |---|---|---|---|
 | [main.jsx](../../src/main.jsx) | 11 | — | — |
-| [App.jsx](../../src/App.jsx) | 681 | LayersApp | `components/BottomNav`, `components/sheetLayer`, `data/constants`, `data/seed`, `lib/dates`, `lib/progress`, `lib/storage`, `lib/text`, `lib/util`, `modals/AddInfoModal`, `modals/AddPersonModal`, `modals/ConfirmDialog`, `modals/EditPersonModal`, `modals/GoalModal`, `modals/LogInteractionModal`, `modals/QuickAddInterestModal`, `modals/ShortcutsModal`, `modals/TemplatePickerModal`, `theme`, `views/CoachView`, `views/GoalsView`, `views/HomeView`, `views/JournalView`, `views/MeView`, `views/OnboardingView`, `views/PeopleView`, `views/PersonProfile` |
+| [App.jsx](../../src/App.jsx) | 687 | LayersApp | `components/BottomNav`, `components/sheetLayer`, `data/constants`, `data/seed`, `lib/dates`, `lib/progress`, `lib/backup`, `lib/storage`, `lib/text`, `lib/util`, `modals/AddInfoModal`, `modals/AddPersonModal`, `modals/ConfirmDialog`, `modals/EditPersonModal`, `modals/GoalModal`, `modals/LogInteractionModal`, `modals/QuickAddInterestModal`, `modals/ShortcutsModal`, `modals/TemplatePickerModal`, `theme`, `views/CoachView`, `views/GoalsView`, `views/HomeView`, `views/JournalView`, `views/MeView`, `views/OnboardingView`, `views/PeopleView`, `views/PersonProfile` |
 | [theme.js](../../src/theme.js) | 129 | THEME_LIGHT, THEME_DARK, COLORS, cssVarBlock, CSS | `fonts` |
 | [data/constants.js](../../src/data/constants.js) | 167 | LAYERS, getLayer, DIM_ORDER, DIM_LABELS, DIM_COLORS, LAYER_BASE_DIMS, CATEGORIES, categoryMeta, SHORTCUTS, EMOJI_CHOICES, … (+17) | `theme` |
 | [data/scenarios.js](../../src/data/scenarios.js) | 115 | SCENARIOS | — |
 | [data/seed.js](../../src/data/seed.js) | 172 | INITIAL_PEOPLE, INITIAL_GENERAL_GOALS, INITIAL_JOURNAL, INITIAL_SKILLS, EMPTY_SKILLS | — |
+| [lib/backup.js](../../src/lib/backup.js) | 155 | BACKUP_VERSION, MAX_BACKUP_BYTES, createBackup, isObject, isText, isISODay, num, count, cleanHistory, cleanGoal, … (+5) | `data/constants`, `data/seed`, `lib/util` |
 | [lib/dates.js](../../src/lib/dates.js) | 234 | parseDaysAgo, startOfDay, WEEKDAY_SHORT, WEEKDAY_FULL, formatWeekdays, MONTH_NAMES, dateToRelativeLabel, formatCalendarDate, toISODate, formatAbsoluteDate, … (+20) | `data/constants` |
 | [lib/progress.js](../../src/lib/progress.js) | 44 | layerForOverall, advanceLayer, computeOverall, makePerson, generateGoalDescription | `data/constants`, `lib/dates`, `lib/util` |
 | [lib/storage.js](../../src/lib/storage.js) | 34 | STORAGE_KEY, loadSaved, persistState, LAST_NOTIFIED_KEY, getLastNotifiedDate, setLastNotifiedDate | — |
@@ -50,7 +51,7 @@ Package: `layers-web` v1.0.25 · `src/`: 35 files, 4383 lines, 37 components, 50
 
 | Component | Defined | Props | Rendered by |
 |---|---|---|---|
-| `LayersApp` | [App.jsx:36](../../src/App.jsx#L36) | — | — |
+| `LayersApp` | [App.jsx:37](../../src/App.jsx#L37) | — | — |
 | `CircularProgress` | [atoms.jsx:8](../../src/components/atoms.jsx#L8) | `percent`, `size`, `stroke`, `color`, `track`, `label` | `PersonProfile` |
 | `ProgressBar` | [atoms.jsx:28](../../src/components/atoms.jsx#L28) | `percent`, `color`, `height`, `track` | `LabeledBar`, `GoalRow`, `HomeView`, `PeopleView` |
 | `LabeledBar` | [atoms.jsx:36](../../src/components/atoms.jsx#L36) | `label`, `percent`, `color`, `size` | `CoachView`, `MeView`, `PersonProfile` |
@@ -96,6 +97,19 @@ Package: `layers-web` v1.0.25 · `src/`: 35 files, 4383 lines, 37 components, 50
 | `getLayer` | [constants.js:13](../../src/data/constants.js#L13) | ✓ |  |
 | `categoryMeta` | [constants.js:31](../../src/data/constants.js#L31) | ✓ |  |
 | `presetMeta` | [constants.js:87](../../src/data/constants.js#L87) | ✓ |  |
+| `createBackup` | [backup.js:15](../../src/lib/backup.js#L15) | ✓ | ✓ |
+| `isObject` | [backup.js:19](../../src/lib/backup.js#L19) |  |  |
+| `isText` | [backup.js:20](../../src/lib/backup.js#L20) |  |  |
+| `isISODay` | [backup.js:21](../../src/lib/backup.js#L21) |  |  |
+| `num` | [backup.js:22](../../src/lib/backup.js#L22) |  |  |
+| `count` | [backup.js:23](../../src/lib/backup.js#L23) |  |  |
+| `cleanHistory` | [backup.js:25](../../src/lib/backup.js#L25) |  |  |
+| `cleanGoal` | [backup.js:31](../../src/lib/backup.js#L31) |  |  |
+| `cleanPerson` | [backup.js:46](../../src/lib/backup.js#L46) |  |  |
+| `cleanEntry` | [backup.js:70](../../src/lib/backup.js#L70) |  |  |
+| `cleanEvent` | [backup.js:82](../../src/lib/backup.js#L82) |  |  |
+| `cleanSkills` | [backup.js:95](../../src/lib/backup.js#L95) |  |  |
+| `validateBackup` | [backup.js:105](../../src/lib/backup.js#L105) | ✓ | ✓ |
 | `parseDaysAgo` | [dates.js:6](../../src/lib/dates.js#L6) | ✓ | ✓ |
 | `startOfDay` | [dates.js:23](../../src/lib/dates.js#L23) | ✓ |  |
 | `formatWeekdays` | [dates.js:29](../../src/lib/dates.js#L29) | ✓ |  |
@@ -181,6 +195,8 @@ Package: `layers-web` v1.0.25 · `src/`: 35 files, 4383 lines, 37 components, 50
 | `INITIAL_JOURNAL` | [seed.js:145](../../src/data/seed.js#L145) |
 | `INITIAL_SKILLS` | [seed.js:155](../../src/data/seed.js#L155) |
 | `EMPTY_SKILLS` | [seed.js:164](../../src/data/seed.js#L164) |
+| `BACKUP_VERSION` | [backup.js:11](../../src/lib/backup.js#L11) |
+| `MAX_BACKUP_BYTES` | [backup.js:13](../../src/lib/backup.js#L13) |
 | `WEEKDAY_SHORT` | [dates.js:25](../../src/lib/dates.js#L25) |
 | `WEEKDAY_FULL` | [dates.js:27](../../src/lib/dates.js#L27) |
 | `MONTH_NAMES` | [dates.js:39](../../src/lib/dates.js#L39) |
