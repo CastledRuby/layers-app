@@ -19,16 +19,22 @@ These are pure logic with no DOM:
 - progress
 - backups
 - check-in reminders
+- reminders and their notifications
+- Prepare's hooks
 - text
 
 They run in Node and take milliseconds. Add one whenever you change a function in
 `src/lib/`.
 
 - `src/logic.test.js` covers dates, text, progress basics and reminders.
-- `src/backup.test.js` covers the backup validator.
+- `src/backup.test.js` covers the backup validator, including recorded achievements.
 - `src/progress.test.js` covers layer placement, `movePerson`, skills, and date
   sorting and backfill. It also checks that the sample people sit exactly where
   Adjust would place them.
+- `src/prepare.test.js` covers Prepare's hooks (`buildPotentialHooks`): what they
+  draw on, their order, the six-hook limit, and experiences only from Layer 3 on.
+- `src/reminders.test.js` covers `lib/reminders.js`: the next occurrence, marking
+  done, passed one-offs, the 15-minute notification window and follow-up reminders.
 
 ## 2. App tests: `tests/app/*.test.jsx`
 
@@ -46,6 +52,10 @@ interact.
 - `fixes.test.jsx` has one test per bug fixed in 1.0.27 (see
   [roadmap.md](roadmap.md#batch-1-fixes)). Each reproduces the bug through the UI,
   so it can't come back unnoticed.
+- `proposals.test.jsx` covers the proposals built in 1.0.28 (P1, P2 and P4 to P7; see
+  [roadmap.md](roadmap.md#proposals-built-in-1028)) through the UI: the log's More
+  details, journal editing and filters, sample people, reminders and their
+  notifications, profile editing, achievements, skill goals and "Try this next".
 
 `tests/app/harness.jsx` has the helpers:
 
@@ -119,12 +129,41 @@ but the release script runs the same checks anyway.
 
 So a build that fails any test never reaches GitHub or your installed app.
 
+## When Windows blocks the build
+
+Windows 11's **Smart App Control** blocks unsigned apps it doesn't already trust, and
+every build of Layers is a new, unsigned file to it. A blocked `Layers.exe` can't start
+at all. `scripts/e2e.mjs` checks for this before running the tests and stops with
+"Windows wouldn't start … Smart App Control is probably blocking this unsigned build"
+(exit code 3). Through `npm run release`, that stops the release before anything is
+published or installed. If the installer itself is blocked, the release script restarts
+the copy that's already installed rather than leaving Layers closed.
+
+To check whether Smart App Control is on: Windows Security > App & browser control >
+Smart App Control. In the registry, `VerifiedAndReputablePolicyState` under
+`HKLM\SYSTEM\CurrentControlSet\Control\CI\Policy` is 1 when it's enforcing. The
+blocks are logged under *Microsoft-Windows-CodeIntegrity/Operational* (events 3077 and
+3118).
+
+There are two ways past it:
+
+- **Sign the app** (roadmap P8). Smart App Control allows apps signed with a trusted
+  certificate. This is the real fix, because it also covers installing and auto-updating.
+- **Turn Smart App Control off** in Windows Security. It's the owner's call, and Windows
+  doesn't let you turn it back on without reinstalling.
+
+This first happened on 2026-10-04 at 12:51 AM. Every build after that was blocked, and
+the builds before it, including the installed 1.0.27, still run.
+
 ## What isn't automated
 
 - **Visual checks:** colours, spacing, dark mode contrast, the phone frame at different
   window sizes. Use the browser preview (`npm run dev`) or look at the installed app.
 - **The tray icon and Windows notifications.** These belong to the shell, not the page.
   The tray icon's light/dark choice reads the registry (`taskbarIsDark` in `main.cjs`).
+  The app tests replace `Notification` with a stand-in to check that a reminder notifies
+  once at its time, but nothing checks that Windows shows it, or that clicking it brings
+  the window forward.
 - **Auto-update.** It's only exercised for real by installing an older version and
   letting it update.
 - **Launch at login.** It would change your real login items.

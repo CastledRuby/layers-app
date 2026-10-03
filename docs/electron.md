@@ -11,13 +11,14 @@ channel are in [generated/code-map.md](generated/code-map.md#electron-ipc).
 | App identity | `app.setAppUserModelId('com.layers.app')` | Must match `build.appId` so Windows groups taskbar entries, toasts and shortcuts with the installed app. |
 | Single instance | `app.requestSingleInstanceLock()` | A second launch calls `app.exit(0)` immediately. `Layers.exe --quit` makes the running instance quit cleanly (used by `npm run release` before installing), and exits straight away if none is running. Otherwise the first instance receives `second-instance` and calls `showWindow()`, unless the second launch had `--hidden` (a login launch while Layers is already running). |
 | Window | `createWindow()` | 420×860 default, min 360×600. Starts hidden when launched with `--hidden`. `backgroundColor` is the saved theme's paper colour (`savedTheme()` reads `theme.json` in userData), so dark mode doesn't flash white. Size and position persist via `electron-window-state` (`window-state.json` in userData). `contextIsolation: true`, `nodeIntegration: false`. Loads `electron/app/index.html` with `loadFile`. |
-| Close → tray | `mainWindow.on('close')` | Closing hides the window unless `isQuitting` is set. Quit through the tray menu, the updater or `before-quit`. `query-session-end` and `session-end` also set `isQuitting`, so hiding to the tray doesn't hold up a Windows shutdown, restart or sign-out. |
+| Close → tray | `mainWindow.on('close')` | Closing hides the window unless `isQuitting` is set. Quit through the tray menu, the updater or `before-quit`. `query-session-end` and `session-end` also set `isQuitting`, so hiding to the tray doesn't hold up a Windows shutdown, restart or sign-out. The page keeps running while hidden, so its [notifications](#notifications) still fire. |
 | Crash recovery | `webContents.on('render-process-gone')` | If the page's process dies (any reason except `clean-exit`), the window reloads instead of staying blank. Everything is saved as it changes, so nothing is lost. A page that keeps crashing is left alone after 3 reloads in a minute. |
 | Tray | `createTray()`, `trayImage()`, `taskbarIsDark()` | Menu has **Open Layers** and **Quit**. A click calls `showWindow()`. The icon follows the taskbar, which Windows themes separately from apps: `tray-icon-light.png` on a dark taskbar, `tray-icon-dark.png` on a light one. `taskbarIsDark()` reads `SystemUsesLightTheme` under `HKCU\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize` with `reg query`, and assumes dark (the Windows default) if it's missing. Other platforms use `nativeTheme.shouldUseDarkColors`. The icon is picked again on `nativeTheme`'s `updated` event and every 15 minutes, because a change to only the taskbar's mode doesn't always notify apps. Destroyed on `will-quit`. |
 | Global shortcut | `registerGlobalShortcut()` | **Ctrl+Shift+L** calls `showWindow()`. `register()` returns false when another app already owns the combination; the result is kept and reported through `get-shortcut-status`, so the Me tab can say so. Unregistered on `will-quit`. |
 | Auto-update | `setupAutoUpdate()` | See [Auto-update](#auto-update) below. |
 | Launch at login | `setupAutoLaunch()`, `loginItem()` | Registers `{ path, args: ['--hidden'] }`, so a login launch starts in the tray. (`openAsHidden` only works on macOS.) `path` is the portable `.exe` (`PORTABLE_EXECUTABLE_FILE`) when running portable, because `process.execPath` is a temporary folder that's deleted on exit; otherwise `process.execPath`. `get-auto-launch` upgrades an entry from before 1.0.27 (same path, no `--hidden`) in place, and turning it off removes both kinds. |
 | Version | `setupVersionInfo()` | Returns `app.getVersion()`, the version baked in at package time. The Me tab shows it. |
+| Show from a notification | `ipcMain.on('show-window', showWindow)` | Registered in `setupVersionInfo()`. The renderer sends it when you click one of its notifications. |
 
 ### Startup
 
@@ -25,7 +26,20 @@ All the setup above, `app.whenReady()` and the `will-quit`, `before-quit` and
 `window-all-closed` handlers are registered inside the `else` branch of the
 single-instance check. A launch that doesn't get the lock, or a `--quit` launch, calls
 `app.exit(0)` and sets nothing up. `showWindow()` is the one place that restores, shows
-and focuses the window; the tray, the shortcut, `second-instance` and `activate` all use it.
+and focuses the window; the tray, the shortcut, `second-instance`, `activate` and the
+renderer's `show-window` message all use it.
+
+### Notifications
+
+Layers' desktop notifications come from the page, not the main process. `src/lib/hooks.js`
+sends reminder notifications and the daily check-in nudge with the web `Notification` API
+([state-and-data.md](renderer/state-and-data.md#desktop-notifications)), and Electron
+shows them as Windows notifications under the app's identity (`setAppUserModelId`).
+They need the page to be running. It is while the window is hidden in the tray, because
+closing only hides it, but a Layers that has quit sends none. Chromium may slow a hidden
+page's timers, but the 30-second check and the 15-minute window leave plenty of room.
+Clicking a notification calls `layersSystem.showWindow()`, which brings the window
+forward from the tray.
 
 ### Command-line flags and environment variables
 
@@ -91,6 +105,7 @@ The renderer turns these statuses into toasts and the Me-tab update row
 | `setAutoLaunch(enabled)` | `invoke('set-auto-launch')` | Sets the login item and returns the new value |
 | `getVersion()` | `invoke('get-app-version')` | `app.getVersion()` |
 | `getShortcutStatus()` | `invoke('get-shortcut-status')` | `{ accelerator: 'Ctrl+Shift+L', registered }`. Me shows a warning when `registered` is false. |
+| `showWindow()` | `send('show-window')` | `showWindow()`: restores, shows and focuses the window. Clicking a desktop notification calls it ([below](#notifications)). |
 | `setTheme(theme)` | `send('set-theme')` | Sets the window's background colour and saves `{ theme }` to `theme.json` for the next launch (see [ui-system.md](renderer/ui-system.md#no-flash-at-startup)) |
 
 Ctrl+Shift+L doesn't message the renderer. Up to 1.0.23 it also sent

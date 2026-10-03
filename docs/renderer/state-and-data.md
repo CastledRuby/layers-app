@@ -28,19 +28,22 @@ These keys are saved as one JSON blob under `localStorage['layers-app-state-v1']
 | `generalGoals` | `Goal[]` (`personId: null`) | `INITIAL_GENERAL_GOALS` |
 | `events` | `Event[]` | `[]` |
 | `skills` | `Skills` | `INITIAL_SKILLS` |
-| `profile` | `{ name, focus }` | `{ name: '', focus: null }` |
+| `profile` | `Profile` | `{ name: '', focus: null }` |
 | `onboarded` | `boolean` | `false` |
 | `theme` | `'light' \| 'dark'` | `'light'` |
+| `achievements` | `{ [key]: 'YYYY-MM-DD' }`, or `null` until worked out | `null` (saved as `{}`). See [Achievements](#achievements). |
 
-`localStorage['layers-last-notified-date']` stores the local day (`YYYY-MM-DD`) the
-"haven't checked in" desktop notification last fired, so it fires at most once a day.
-`useDailyCheckIn` ([`src/lib/hooks.js`](../../src/lib/hooks.js)) checks 4 s after launch
-and again whenever the local date changes. `useToday` notices the change within a minute
-of midnight, or as soon as the window becomes visible again. `checkInReminder` in
-`lib/text.js` decides whether it's due and words it. `LayersApp` also passes `today` to
-`HomeView` and `PersonProfile`, whose cached date maths ("Upcoming", "haven't caught
-up", weekly counts, profile suggestions, goal due labels) runs from it, so it refreshes
-at midnight even when the app has been in the tray for days.
+Two more keys belong to the desktop notifications
+([below](#reminders-and-notifications)): `layers-last-notified-date` (the day the
+check-in nudge last fired) and `layers-notified-reminders` (which reminders have already
+notified today).
+
+`useToday` ([`src/lib/hooks.js`](../../src/lib/hooks.js)) holds the local date. It
+notices a new day within a minute of midnight, or as soon as the window becomes visible
+again. `LayersApp` passes `today` to `HomeView`, `PersonProfile` and `JournalView`, whose
+cached date maths ("Upcoming", "haven't caught up", weekly counts, profile suggestions,
+goal due labels, the journal's period filters) runs from it, so it refreshes at midnight
+even when the app has been in the tray for days.
 
 ### Loading saved data
 
@@ -71,8 +74,8 @@ for later failures until a save has worked again (the `saveFailed` ref).
 
 `screen`, `activeTab`, `coachInit`, `searchFocus` (which search box `/` should focus once
 its tab renders), toasts, every modal-open flag and its target (`goalEditing`,
-`addInfoTarget`, …), `confirmState`, updater status, auto-launch flag, shortcut status,
-app version, and `sheetLayer` (the DOM node sheets portal into).
+`addInfoTarget`, `editingEntryId`, …), `confirmState`, updater status, auto-launch flag,
+shortcut status, app version, and `sheetLayer` (the DOM node sheets portal into).
 
 ## Data model
 
@@ -135,18 +138,30 @@ type JournalEntry = {
   meaningfulness: 1|2|3|4|5;
   added: string[];                            // note texts saved to the profile
   activeListening: string[];                  // AL_ITEMS keys
-  summary?: string;
+  summary?: string;                           // the note
+  reflection?: string;                        // "How did it feel?" (the log's More details, or Edit entry)
+  standouts?: string[];                       // "What stood out?": dimension keys from STANDOUTS, each +STANDOUT_BUMP
   analysis?: { grading: object; conversationState: string }; // from Coach → Analyse
 };
 
-type Event = {
+type Event = {                                // a reminder; see Reminders and notifications
   id: string; title: string; personIds: string[];
   kind: 'oneoff' | 'recurring';
   date?: string;                              // 'YYYY-MM-DD' (one-off)
   weekdays?: number[];                        // 0=Sun…6=Sat (recurring); legacy single `weekday` also read
   time?: number | null;                       // minutes since midnight
   defaultMeaningfulness?: number;
+  goalId?: string;                            // one of its people's goals; logging the reminder moves only that goal
+  doneAt?: string;                            // one-off: the day it was marked done. It's finished for good.
+  doneDays?: string[];                        // recurring: recent days marked done or skipped (last 14; older saves have one doneOn)
   createdAt: string;                          // 'YYYY-MM-DD' ('Today' before 1.0.27)
+};
+
+type Profile = {
+  name: string;
+  focus: string | null;                       // FOCUS_OPTIONS key: 'new' | 'deepen' | 'skills' | 'mix'
+  reminderNotifications?: boolean;            // Me → Notifications; missing means on
+  checkInNotifications?: boolean;             // Me → Notifications; missing means on
 };
 
 type Skills = Record<'activeListening'|'followUp'|'reciprocity'|'selfDisclosure'|'readingCues'|'knowingWhenToStop',
@@ -189,7 +204,8 @@ Every date in the data is an absolute ISO day. Nothing stores a relative label l
 Older data, and the seed `INITIAL_JOURNAL` / `INITIAL_PEOPLE`, only has labels: journal
 `date` (plus a stale `isThisWeek` flag), info-item `updated` and timeline `date`.
 `backfillJournalDates` and `backfillPeopleDates` give each record an `at` when data is
-loaded from `localStorage`, when a backup is imported, and when sample data is loaded.
+loaded from `localStorage`, when a backup is imported, and when the sample people are
+loaded (onboarding, or Me → "Add sample people").
 Both use the same `backfillDated` routine. It removes the legacy label once `at` is set,
 and it skips records that already have an `at`, so each record is dated once and then
 never moves.
@@ -217,25 +233,40 @@ walking back from the newest point so the months stay in order across a year bou
 The helpers are in [`lib/progress.js`](../../src/lib/progress.js) and unit-tested in
 `src/progress.test.js`.
 
-**Logging an interaction** (`handleLogSubmit`):
+**Logging an interaction** (`handleLogSubmit`). The log sheet always sends the people,
+type, meaningfulness, profile notes, active-listening ticks, the note (`summary`) and the
+picked date. Its optional **More details** section can add three more inputs:
+
+- `standouts`: the dimension keys picked under "What stood out?" (`STANDOUTS`).
+- `goalIds`: the goals left ticked under "Goals this moved". `undefined` means every
+  active goal of each person in the log, and the sheet sends `undefined` unless you
+  untick one. A logged reminder that's linked to a goal sends just that goal.
+- `reflection`: "How did it feel?", saved on the journal entry.
+
+Then:
 
 1. Each of the six dimensions gets a bump based on meaningfulness, interaction type and
-   active-listening ticks (clamped to 0–100).
+   active-listening ticks. Each standout adds `STANDOUT_BUMP` (+3) more to its dimension
+   and adds "You noted: …" to the `why` list. Dimensions are clamped to 0–100.
 2. **Layer progress (`overall`) only moves for meaningfulness ≥ 4.** The bump is
    `round(avg(dimension bumps) × 0.55)`.
 3. `advanceLayer(layer, overall, bump)` treats each layer as its own 0–100 meter.
    Reaching 100 moves up a layer (max 4) and carries the overflow into the new layer.
    Every person's result is worked out in one pass, so a group log toasts every level-up.
-4. Every unfinished goal for that person gains `round(meaningfulness × 3.2)`.
+4. Every unfinished goal for that person gains `round(meaningfulness × 3.2)`, or only the
+   goals in `goalIds` when it's given. An unticked goal stays where it is.
 5. Topics picked with "+ Add detail" are saved to the profile, but only when the log is
    with one person; a group log keeps them in its note. `NOTE_TEMPLATE_CATEGORY` in
    [`data/constants.js`](../../src/data/constants.js) says where each template category
    goes: hobby-type topics become `interests`, and school/work and life topics become
    temporary `important` items, which Prepare turns into "ask how it went". Custom text
-   stays in the note. A topic that's already saved (same text, ignoring case) gets its
-   `at` refreshed and leaves the archive, rather than being added twice (`addNotes` in
-   `App.jsx`).
-6. A journal entry is prepended, and global skills get small bumps (`bumpSkills`).
+   stays in the note. More details' "Something new about …?" is saved the same way,
+   into the category you picked (one-person logs only). A topic that's already saved
+   (same text, ignoring case) gets its `at` refreshed and leaves the archive, rather than
+   being added twice (`addNotes` in `App.jsx`).
+6. A journal entry is prepended, with `standouts` and `reflection` when they're given.
+   Global skills get small bumps (`bumpSkills`), and skill goals whose skill went up move
+   with it ([below](#skill-goals-move-with-skills)).
 
 **Other paths:**
 
@@ -245,6 +276,23 @@ The helpers are in [`lib/progress.js`](../../src/lib/progress.js) and unit-teste
   and logged for each person and sample, so the same analysis can't be logged twice.
 - `handleAdjust` (manual sliders): see [Adjust](#adjust) below.
 - `handleBumpGoal` ("Mark progress") adds +20 to a goal, and a toast celebrates reaching 100.
+- `handleUpdateEntry` and `handleDeleteEntry` (the Journal's pencil, `EditEntryModal`)
+  change the record, not progress. You can change an entry's date, type,
+  meaningfulness, note and reflection, or delete it after a confirmation. What the entry
+  already added to the person, their goals and your skills stays, because later progress
+  may have been built on it, and the sheet says so. Editing removes a legacy `date` label
+  so it can't contradict the new `at`. An analysis keeps its `analysed` type.
+
+### Skill goals move with skills
+
+Each "My skills" goal preset follows one skill. `SKILL_GOAL_PRESETS` in
+[`data/constants.js`](../../src/data/constants.js) maps them: `followUpQ` → `followUp`,
+`fewerQuestions` and `reciprocal` → `reciprocity`, `recognizeSpace` →
+`knowingWhenToStop`, and so on. `handleLogSubmit` and `handleLogFromAnalysis` work out
+the new skills first. `raisedSkills(before, after)` lists the skills that went up, and
+`advanceSkillGoals(goals, raised)` adds `SKILL_GOAL_STEP` (+20) and a chart point to every
+unfinished goal that follows one of them. It runs over the general goals and the goals
+of the people in the log. Before 1.0.28 skill goals only moved with "Mark progress".
 
 ### Moving a person
 
@@ -302,14 +350,106 @@ time but adds only about half the average bump to layer progress, and only for
 meaningfulness 4 or 5. So after some logging the dimensions describe a higher layer
 than the one shown, and moving any slider in Adjust re-places the person from those
 dimensions, which can move them to another layer. The preview says so before you save.
-Making the two agree is proposal P3 in [roadmap.md](../roadmap.md#proposals-need-a-go-ahead).
+Making the two agree is proposal P3, which is waiting for a decision
+([roadmap.md](../roadmap.md#p3-one-progress-model)).
+
+## Reminders and notifications
+
+Saved events are reminders. [`lib/reminders.js`](../../src/lib/reminders.js) works out
+when each one next comes up and whether it's done. It's unit-tested in
+`src/reminders.test.js`.
+
+- **`nextOccurrence(ev, now, days = 7)`** returns the next time within `days` days, today
+  included, as `{ day, offset, when }`. `when` is "Today", "Tomorrow" or a date. It skips
+  an occurrence that's marked done. Home's **Upcoming** lists each reminder's next
+  occurrence, so a weekly reminder shows ahead of its day, not only on it.
+- **`markDone(ev, day)`**: a one-off gets `doneAt` and is finished for good. A recurring
+  one adds the day to `doneDays` and is done for that day only; every day is kept (the
+  last 14), so skipping next Wednesday doesn't undo today. `occurrenceToLog` picks the day
+  a log counts for: today if the reminder comes up today, otherwise its next time. Home's buttons say which: "Mark done",
+  "Done for today" or "Skip Mon, 6 Oct". Logging a reminder (Home's "Log this now", or the
+  log sheet's list of saved events) marks it done without a toast. `isPastOneOff` flags a
+  one-off whose day went by without being done, and Manage shows "(done)" or "(passed)".
+- **A linked goal** (`goalId`, "Linked goal" in the event form) is one of the reminder's
+  people's active goals. Logging the reminder passes `goalIds: [goalId]`, so only that
+  goal moves.
+- **`followUpEvent(person, item)`** makes a one-off reminder like
+  `Ask Sam how "Job interview" went` for three days later at 9:00 AM. It's the bell on a
+  temporary detail in the profile (`InfoItemRow`'s `onRemind`, then
+  `handleRemindFollowUp`).
+
+### Desktop notifications
+
+Two hooks in [`lib/hooks.js`](../../src/lib/hooks.js) send desktop notifications with the
+web `Notification` API. They run while the window is hidden in the tray, because closing
+only hides it. Clicking a notification calls `layersSystem.showWindow()` to bring Layers
+forward ([electron.md](../electron.md#notifications)). Each one has a switch in Me →
+Notifications, stored as a profile flag. A missing flag means on, so older profiles get
+both.
+
+| Hook | Profile flag | When it notifies | What it remembers |
+|---|---|---|---|
+| `useReminderNotifications` | `reminderNotifications` | It checks every 30 s. `dueReminders(events, now, notified)` returns today's occurrences that aren't done and whose time passed at most `NOTIFY_WINDOW_MINUTES` (15) ago. A laptop that slept through the time still gets it on waking, but not hours later. A reminder without a `time` never notifies. | `localStorage['layers-notified-reminders']`: `<eventId>:<day>` keys (the latest 200), so each reminder notifies once a day, even across restarts |
+| `useDailyCheckIn` | `checkInNotifications` | 4 s after launch, and again whenever the local date changes. `checkInReminder` in `lib/text.js` decides whether the "haven't checked in" nudge is due and words it. | `localStorage['layers-last-notified-date']`: the day it last fired, so it fires at most once a day |
+
+Neither runs before onboarding.
+
+## Achievements
+
+`ACHIEVEMENTS` in [`data/constants.js`](../../src/data/constants.js) lists five.
+[`lib/achievements.js`](../../src/lib/achievements.js) works out progress from your data:
+`achievementProgress(people, journal, skills)` returns `{ done, have, need, unit }` for
+each one, and `progressText` words it for a locked card ("2 of 5 conversations", "40% of
+75%"). "Active Listener" counts conversations with at least one active-listening tick, as
+its description says. It used to count ticks.
+
+Once reached, an achievement is recorded in the `achievements` state with the day:
+`{ firstMeaningful: '2026-10-04' }`. An effect in `LayersApp` calls
+`newlyUnlocked(progress, achievements)` whenever people, the journal or skills change,
+and records anything new. A recorded achievement stays unlocked even if the data changes
+later, for example after you remove a person, and Me shows "Unlocked Oct 4". Up to
+1.0.27 they were worked out on every render, so they could lock again.
+
+`achievements` is saved with the rest of the state and goes into backups, where
+`validateBackup` checks it ([below](#backup-format)). `null` means "not worked out yet":
+saved data or a backup from before 1.0.28, or just after "Remove sample people" or
+"Delete my data and start over". The effect then works them out from the data.
+
+**Quiet recording.** Only achievements you reach by using the app get a toast ("🏅
+Achievement unlocked: …"). Ones that loading data earns are recorded without one: at
+startup, at onboarding, when the sample people are added or removed, and on import.
+The `quietAchievements` ref starts `true` for startup, and those handlers set it again
+before changing state. The effect reads it and clears it. It's also quiet while
+`achievements` is `null` and before onboarding, so an upgrade doesn't announce everything
+at once.
+
+## Sample people
+
+The five sample people (`INITIAL_PEOPLE` in [`data/seed.js`](../../src/data/seed.js)) can
+sit beside your own. They keep fixed ids (`'alex'`, …), as do their example general
+goals (`'gen-goal-1'`, …) and journal entries (`'j1'`, …), while your own records get ids
+from `uid()`. `SAMPLE_PERSON_IDS` and `SAMPLE_GOAL_IDS` in `App.jsx` are how Me finds them.
+
+- **Remove sample people** (`handleRemoveSample`, shown while any sample person is in your
+  circle) removes them, their journal entries and the example general goals, and unlinks
+  them from reminders. People you added stay. If your skills came with the samples
+  (`skillsCameWithSamples`: their chart history still has the samples' month-only labels
+  like `'Sep'`), skills go back to `EMPTY_SKILLS`, and the confirm dialog says so.
+  Achievements are worked out again, quietly, from what's left, because the samples'
+  ones weren't yours.
+- **Add sample people** (`handleAddSample`, shown while any sample person is missing) adds
+  the missing ones with their journal entries and example goals, and never replaces
+  anything. It loads the example skill levels only if every skill is still 0%.
+
+"Restore sample data", which replaced everything, was removed in 1.0.28. Onboarding's
+"explore with example people" still loads the samples.
 
 ## Backup format
 
 The Me tab's **Export** writes `layers-backup-YYYY-MM-DD.json`:
 
 ```json
-{ "version": 1, "exportedAt": "ISO timestamp", "people": [], "journal": [], "generalGoals": [], "events": [], "skills": {}, "profile": {} }
+{ "version": 1, "exportedAt": "ISO timestamp", "people": [], "journal": [], "generalGoals": [], "events": [], "skills": {}, "profile": {}, "achievements": {} }
 ```
 
 `createBackup` in [`src/lib/backup.js`](../../src/lib/backup.js) builds it, and
@@ -327,11 +467,14 @@ own saved data gets the same check at startup ([Loading saved data](#loading-sav
 | A person without an `id` or `name`, or a duplicate `id` | Skipped, and counted in the confirm dialog |
 | A journal entry or event for a person who isn't in the backup; a goal without a title; a saved detail without text; an event without a title or valid date | Skipped and counted |
 | Missing lists, out-of-range numbers, unknown types | Repaired: lists become empty, numbers are clamped (layer 1–4, dimensions and progress 0–100, meaningfulness 1–5), unknown interaction types become `other` |
+| A journal entry's `summary` or `reflection` that isn't text, or `standouts` that isn't a list of strings | Repaired: a bad `summary` or `reflection` is dropped, because it's shown as it is, and `standouts` keeps only its strings |
+| `achievements` missing or not an object | Read as `null`, so the app works them out again from the data, quietly ([Achievements](#achievements)) |
+| An unknown achievement key, or a date that isn't `YYYY-MM-DD` | That entry is dropped |
 
-Old backups without `version`, `events` or `generalGoals` still import. The confirm
-dialog shows the export date, what will be imported ("5 people, 7 journal entries, 10
-goals, 1 event") and anything that will be skipped. After confirming, records without an
-`at` are dated as described [above](#records-saved-before-at-existed), anchored to the
+Old backups without `version`, `events`, `generalGoals` or `achievements` still import.
+The confirm dialog shows the export date, what will be imported ("5 people, 7 journal
+entries, 10 goals, 1 event") and anything that will be skipped. After confirming, records
+without an `at` are dated as described [above](#records-saved-before-at-existed), anchored to the
 backup's `exportedAt`. A valid backup that the app exported comes back unchanged; the round
 trip is unit-tested in `src/backup.test.js`. Records in new backups have `at` and no
 legacy label, so an app older than 1.0.25 shows them without a date label.

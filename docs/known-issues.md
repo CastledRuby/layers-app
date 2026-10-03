@@ -8,8 +8,8 @@ When you fix an item, delete it here, or move it to *Resolved* with the version.
 The 2026-10-03 audit against [vision.md](vision.md) found 22 bugs, listed with how each
 was confirmed in [roadmap.md](roadmap.md#batch-1-fixes). All of Batch 1 is fixed in
 1.0.27 (see *Resolved* below). `tests/app/fixes.test.jsx` reproduces each one through the
-UI, so none can come back unnoticed. What comes next is the proposals in
-[roadmap.md](roadmap.md#proposals-need-a-go-ahead), each waiting for a go-ahead.
+UI, so none can come back unnoticed. 1.0.28 then built most of the proposals; what still
+needs a decision is in [roadmap.md](roadmap.md#needs-your-decision).
 
 One inconsistency remains on purpose until proposal P3: logging grows the six dimensions
 faster than layer progress, so Adjust's sliders can describe a different layer from the

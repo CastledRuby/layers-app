@@ -9,7 +9,8 @@ Vite bundles the renderer into one self-contained HTML file (`electron/app/index
 An Electron main process (`electron/main.cjs`) loads that file into a single window and
 adds desktop features: tray icon, single-instance lock, global shortcut, launch at login
 and GitHub-Releases auto-update. These are exposed to the page through a small preload
-bridge (`electron/preload.cjs`).
+bridge (`electron/preload.cjs`). Desktop notifications for reminders and check-ins come
+from the page itself, which keeps running while the window is hidden in the tray.
 
 ## Process model
 
@@ -50,12 +51,12 @@ feature is guarded by `hasUpdater` / `hasSystemBridge` checks in `LayersApp`.
 │   ├── theme.js              Design tokens + the global CSS string
 │   ├── fonts.js              Bundled Fraunces/Manrope @font-face rules (works offline)
 │   ├── data/                 Static data (constants, seed, coach scenarios)
-│   ├── lib/                  Logic: dates, progress, text, storage, backup (+ hooks)
+│   ├── lib/                  Logic: dates, progress, text, reminders, achievements, storage, backup (+ hooks)
 │   ├── components/           Shared UI: Sheet, atoms, rows, pickers, BottomNav
 │   ├── modals/               One file per sheet/dialog
 │   ├── views/                One file per screen
 │   ├── index.css             Tailwind directives + html/body reset
-│   └── *.test.js             Vitest unit tests for lib/ (logic, backup, progress)
+│   └── *.test.js             Vitest unit tests for lib/ (logic, backup, progress, prepare, reminders)
 ├── tests/
 │   ├── setup.js              Vitest setup (jsdom helpers for the app tests)
 │   ├── app/                  App tests: the whole renderer in jsdom, driven like a person would

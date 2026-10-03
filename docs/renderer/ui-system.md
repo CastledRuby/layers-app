@@ -184,6 +184,22 @@ reloads the window ([electron.md](../electron.md)).
 `pushToast(text)` in `LayersApp` adds `{ id, text }` and removes it after 2.6 s. The
 stack lives inside `.phone-frame` above the nav bar.
 
+## Switches, disclosures and chips
+
+There's no shared component for these. Each is a plain `<button>` styled inline, and its
+ARIA attribute carries the state:
+
+- **Switches** (Me → Notifications) use `role="switch"` and `aria-checked`. The track
+  and knob are two styled spans, and the knob slides with a short `left` transition.
+- **Disclosures** (the log sheet's "More details (optional)") use `aria-expanded`. They
+  start closed, and the section only renders while open.
+- **Chips and single choices** (Journal filters, "What stood out?", the type and
+  meaningfulness choices in Edit entry) use `aria-pressed`. A tick list, like the log's
+  "Goals this moved", uses `role="checkbox"` and `aria-checked`.
+
+Older controls don't all have them yet, but new ones should. Screen readers need them,
+and the app tests find controls by them (`getByRole('switch', …)`).
+
 ## Motion
 
 `sheetUp`, `fadeIn`, `toastIn`, and the level-up pulse/glow/banner keyframes are all in
