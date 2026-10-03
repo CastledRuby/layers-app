@@ -9,7 +9,7 @@ import { sortHistory } from '../lib/dates.js';
 import { updateStatusText } from '../lib/text.js';
 import { COLORS } from '../theme.js';
 
-export function MeView({ people, journal, skills, onRestoreSample, onStartOver, onExport, onImportClick, hasUpdater, updateStatus, onCheckForUpdates, onInstallUpdate, onOpenDownloadPage, shortcutStatus, theme, onSetTheme, hasSystemBridge, autoLaunch, onToggleAutoLaunch, onOpenShortcuts, appVersion }) {
+export function MeView({ people, journal, skills, profile, onUpdateProfile, onAddSample, onRemoveSample, hasSamplePeople, canAddSample, onStartOver, onExport, onImportClick, hasUpdater, updateStatus, onCheckForUpdates, onInstallUpdate, onOpenDownloadPage, shortcutStatus, theme, onSetTheme, hasSystemBridge, autoLaunch, onToggleAutoLaunch, onOpenShortcuts, appVersion }) {
   const [chartSkill, setChartSkill] = useState(FOCUS_SKILL_KEY);
 
   // Strength is your highest skill and focus your lowest. Until something has
@@ -110,6 +110,28 @@ export function MeView({ people, journal, skills, onRestoreSample, onStartOver, 
         </div>
       </div>
 
+      <div className="mt-4 rounded-2xl p-4" style={{ background: COLORS.paperRaised, border: `1px solid ${COLORS.line}` }}>
+        <p className="text-sm font-semibold" style={{ color: COLORS.ink }}>Notifications</p>
+        <p className="text-xs mt-1.5" style={{ color: COLORS.inkSoft }}>Small desktop nudges while Layers is running, even in the tray. Click one to open Layers.</p>
+        {[
+          { key: 'reminderNotifications', label: 'Reminders at their time', hint: 'From Upcoming on Home.' },
+          { key: 'checkInNotifications', label: 'Daily check-in nudge', hint: "When you haven't logged with someone for two weeks." },
+        ].map(opt => {
+          const on = !profile || profile[opt.key] !== false;
+          return (
+            <button key={opt.key} type="button" role="switch" aria-checked={on} onClick={() => onUpdateProfile({ [opt.key]: !on })} className="w-full flex items-center justify-between gap-3 mt-3 text-left">
+              <span>
+                <span className="block text-xs font-semibold" style={{ color: COLORS.ink }}>{opt.label}</span>
+                <span className="block text-xs" style={{ color: COLORS.inkSoft }}>{opt.hint}</span>
+              </span>
+              <span style={{ width: 36, height: 20, borderRadius: 999, background: on ? COLORS.accent : COLORS.line, position: 'relative', flexShrink: 0 }}>
+                <span style={{ position: 'absolute', top: 2, left: on ? 18 : 2, width: 16, height: 16, borderRadius: '50%', background: '#fff', transition: 'left 0.15s' }} />
+              </span>
+            </button>
+          );
+        })}
+      </div>
+
       {hasSystemBridge && (
         <div className="mt-4 rounded-2xl p-4" style={{ background: COLORS.paperRaised, border: `1px solid ${COLORS.line}` }}>
           <p className="text-sm font-semibold" style={{ color: COLORS.ink }}>Startup</p>
@@ -165,7 +187,8 @@ export function MeView({ people, journal, skills, onRestoreSample, onStartOver, 
         <p className="text-sm font-semibold" style={{ color: COLORS.ink }}>Privacy</p>
         <p className="text-xs mt-1.5" style={{ color: COLORS.inkSoft }}>Layers is a private personal-development tool. Everything is saved only on this device. Screenshot analysis never happens automatically, and extracted information always waits for your approval before it's saved.</p>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 12, flexWrap: 'wrap' }}>
-          <button onClick={onRestoreSample} className="text-xs font-semibold rounded-full px-3 py-2" style={{ background: COLORS.accentSoft, color: COLORS.accent }}>Restore sample data</button>
+          {hasSamplePeople && <button onClick={onRemoveSample} className="text-xs font-semibold rounded-full px-3 py-2" style={{ background: COLORS.accentSoft, color: COLORS.accent }}>Remove sample people</button>}
+          {canAddSample && <button onClick={onAddSample} className="text-xs font-semibold rounded-full px-3 py-2" style={{ background: COLORS.accentSoft, color: COLORS.accent }}>Add sample people</button>}
           <button onClick={onStartOver} className="text-xs font-semibold rounded-full px-3 py-2" style={{ background: COLORS.layer4Tint, color: COLORS.layer4Deep }}>Delete my data and start over</button>
         </div>
       </div>

@@ -51,7 +51,7 @@ function PrepareTipsModal({ person, journal, onClose, onOpenFullCoach }) {
   );
 }
 
-export function PersonProfile({ today, person, journal, onBack, onOpenLog, onOpenGoalCreate, onOpenGoalEdit, onDeleteGoal, onBumpGoal, onOpenAddInfo, onOpenQuickAddInterest, onSaveInfo, onDeleteInfo, onToggleTemporary, onToggleArchive, onAdjust, onOpenCoach, onEditPerson, onClearLevelUpFlag }) {
+export function PersonProfile({ today, person, journal, onBack, onOpenLog, onOpenGoalCreate, onOpenGoalEdit, onDeleteGoal, onBumpGoal, onOpenAddInfo, onOpenQuickAddInterest, onSaveInfo, onDeleteInfo, onToggleTemporary, onToggleArchive, onAdjust, onOpenCoach, onEditPerson, onClearLevelUpFlag, onRemindFollowUp }) {
   const [prepareOpen, setPrepareOpen] = useState(false);
   const [showAdjust, setShowAdjust] = useState(false);
   const [draft, setDraft] = useState(person.dims);
@@ -209,7 +209,8 @@ export function PersonProfile({ today, person, journal, onBack, onOpenLog, onOpe
                         onSave={(text) => onSaveInfo(person.id, cat.key, item.id, text)}
                         onDelete={() => onDeleteInfo(person.id, cat.key, item.id, item.text)}
                         onToggleTemporary={() => onToggleTemporary(person.id, cat.key, item.id)}
-                        onToggleArchive={() => onToggleArchive(person.id, cat.key, item.id)} />
+                        onToggleArchive={() => onToggleArchive(person.id, cat.key, item.id)}
+                        onRemind={onRemindFollowUp ? () => onRemindFollowUp(person.id, item) : undefined} />
                     ))}
                   </div>
                 )}

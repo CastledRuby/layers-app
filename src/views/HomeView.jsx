@@ -4,12 +4,20 @@ import { useMemo, useState } from 'react';
 import { Repeat, X } from 'lucide-react';
 import { Avatar, ProgressBar } from '../components/atoms.jsx';
 import { FOCUS_LABELS, getLayer } from '../data/constants.js';
-import { formatCalendarDate, formatTime12, formatWeekdays, isJournalThisWeek, journalDateLabel, journalDaysAgo, newestFirst, parseISODay, startOfDay } from '../lib/dates.js';
+import { formatCalendarDate, formatTime12, formatWeekdays, isJournalThisWeek, journalDateLabel, journalDaysAgo, newestFirst, parseISODay } from '../lib/dates.js';
+import { isPastOneOff, nextOccurrence } from '../lib/reminders.js';
 import { homeGoalTitle, summaryFor } from '../lib/text.js';
 import { TemplatePickerModal } from '../modals/TemplatePickerModal.jsx';
 import { COLORS } from '../theme.js';
 
-export function HomeView({ today, people, journal, generalGoals, events, profile, onOpenPerson, onSwitchTab, onOpenGoals, onOpenCoach, onLogEvent, onManageEvents, onEditEvent, onDeleteEvent }) {
+// A one-off is done for good; a weekly reminder is done (or skipped) for
+// that day only.
+function doneLabel(ev) {
+  if (ev.kind !== 'recurring') return 'Mark done';
+  return ev.when === 'Today' ? 'Done for today' : `Skip ${ev.when}`;
+}
+
+export function HomeView({ today, people, journal, generalGoals, events, profile, onOpenPerson, onSwitchTab, onOpenGoals, onOpenCoach, onLogEvent, onMarkEventDone, onManageEvents, onEditEvent, onDeleteEvent }) {
   // `today` (from useToday) changes at midnight. The date maths below runs
   // from it, so "Upcoming", "haven't caught up" and the weekly counts
   // refresh then, even if the app has been open in the tray for days.
@@ -23,24 +31,16 @@ export function HomeView({ today, people, journal, generalGoals, events, profile
   const [upcomingTemplatesOpen, setUpcomingTemplatesOpen] = useState(false);
   const [manageEventsOpen, setManageEventsOpen] = useState(false);
 
-  // "Upcoming" lists what's due in the next week, worked out from `today`.
-  // These are in-app reminders: the only desktop notification Layers sends is
-  // the daily check-in nudge (lib/hooks.js).
-  const upcoming = useMemo(() => {
-    const day = startOfDay(now);
-    const items = [];
-    (events || []).forEach(ev => {
-      const evWeekdays = ev.weekdays || (ev.weekday != null ? [ev.weekday] : []);
-      if (ev.kind === 'oneoff' && ev.date) {
-        const d = new Date(ev.date + 'T00:00:00');
-        const diff = Math.round((d - day) / 86400000);
-        if (diff >= 0 && diff <= 7) items.push({ ...ev, sortAt: d.getTime() + (ev.time || 0) * 60000, when: diff === 0 ? 'Today' : diff === 1 ? 'Tomorrow' : formatCalendarDate(d) });
-      } else if (ev.kind === 'recurring' && evWeekdays.includes(day.getDay())) {
-        items.push({ ...ev, sortAt: day.getTime() + (ev.time || 0) * 60000, when: 'Today' });
-      }
-    });
-    return items.sort((a, b) => a.sortAt - b.sortAt).slice(0, 4);
-  }, [events, now]);
+  // "Upcoming" lists each reminder's next time in the coming week (weekly ones
+  // too, not only on the day), skipping anything marked done. Reminders also
+  // notify at their time unless that's turned off in Me (lib/hooks.js).
+  const upcoming = useMemo(() => (events || [])
+    .map(ev => ({ ev, next: nextOccurrence(ev, now) }))
+    .filter(x => x.next)
+    .map(({ ev, next }) => ({ ...ev, occursOn: next.day, when: next.when, sortAt: next.offset * 1440 + (ev.time || 0) }))
+    .sort((a, b) => a.sortAt - b.sortAt)
+    .slice(0, 4), [events, now]);
+  const goalsById = useMemo(() => Object.fromEntries(people.flatMap(p => p.goals.map(g => [g.id, g]))), [people]);
 
   const activeGoals = useMemo(() => people.flatMap(p => p.goals).concat(generalGoals).filter(g => g.progress < 100).length, [people, generalGoals]);
 
@@ -163,7 +163,7 @@ export function HomeView({ today, people, journal, generalGoals, events, profile
                         <div style={{ minWidth: 0 }}>
                           <p className="text-xs font-semibold truncate" style={{ color: COLORS.ink }}>{ev.title}</p>
                           <p className="text-xs mt-0.5" style={{ color: COLORS.inkSoft }}>
-                            {ev.kind === 'recurring' ? formatWeekdays(evWeekdays) : ev.date ? `${formatCalendarDate(new Date(`${ev.date}T00:00:00`))}${ev.date < today ? ' (passed)' : ''}` : 'One-off'}
+                            {ev.kind === 'recurring' ? formatWeekdays(evWeekdays) : ev.date ? `${formatCalendarDate(new Date(`${ev.date}T00:00:00`))}${ev.doneAt ? ' (done)' : isPastOneOff(ev, now) ? ' (passed)' : ''}` : 'One-off'}
                             {ev.time != null ? ` · ${formatTime12(ev.time)}` : ''}
                             {evPeople.length > 0 ? ` · ${evPeople.map(p => p.name).join(', ')}` : ''}
                           </p>
@@ -196,6 +196,7 @@ export function HomeView({ today, people, journal, generalGoals, events, profile
                       {ev.when}{ev.time != null ? ` · ${formatTime12(ev.time)}` : ''}
                       {evPeople.length > 0 ? ` · ${evPeople.map(p => p.name).join(', ')}` : ''}
                     </p>
+                    {ev.goalId && goalsById[ev.goalId] && <p className="text-xs mt-0.5" style={{ color: COLORS.accent }}>Goal: {goalsById[ev.goalId].title}</p>}
                   </button>
                   {isOpen && evPeople.length > 0 && (
                     <div className="mt-3">
@@ -223,11 +224,17 @@ export function HomeView({ today, people, journal, generalGoals, events, profile
                           ))}
                         </div>
                       )}
-                      <button onClick={() => { onLogEvent(ev, upcomingMeaningfulness, upcomingQuickDetailTags.join(', ')); setExpandedUpcoming(null); }} className="w-full text-xs font-semibold rounded-full py-2" style={{ background: COLORS.accent, color: '#fff' }}>Log this now</button>
+                      <div className="flex items-center gap-2">
+                        <button onClick={() => { onLogEvent(ev, upcomingMeaningfulness, upcomingQuickDetailTags.join(', ')); setExpandedUpcoming(null); }} className="flex-1 text-xs font-semibold rounded-full py-2" style={{ background: COLORS.accent, color: '#fff' }}>Log this now</button>
+                        <button onClick={() => { onMarkEventDone(ev.id, ev.occursOn); setExpandedUpcoming(null); }} className="text-xs font-semibold rounded-full px-3 py-2" style={{ background: COLORS.paper, border: `1px solid ${COLORS.line}`, color: COLORS.ink }}>{doneLabel(ev)}</button>
+                      </div>
                     </div>
                   )}
                   {isOpen && evPeople.length === 0 && (
-                    <p className="text-xs mt-2" style={{ color: COLORS.inkSoft }}>Nobody is linked to this reminder, so there's nothing to log. Use Manage, then Edit, to add someone.</p>
+                    <div className="mt-2">
+                      <p className="text-xs" style={{ color: COLORS.inkSoft }}>Nobody is linked to this reminder, so there's nothing to log. Use Manage, then Edit, to add someone.</p>
+                      <button onClick={() => { onMarkEventDone(ev.id, ev.occursOn); setExpandedUpcoming(null); }} className="text-xs font-semibold rounded-full px-3 py-2 mt-2" style={{ background: COLORS.paper, border: `1px solid ${COLORS.line}`, color: COLORS.ink }}>{doneLabel(ev)}</button>
+                    </div>
                   )}
                 </div>
               );

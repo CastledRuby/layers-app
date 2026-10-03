@@ -8,10 +8,11 @@ import { Avatar } from '../components/atoms.jsx';
 import { DateDropdown, TimeDropdown } from '../components/pickers.jsx';
 import { AL_ITEMS, CATEGORIES, categoryMeta, getLayer, NOTE_TEMPLATE_CATEGORY, STANDOUTS, TYPE_META, TYPE_ORDER } from '../data/constants.js';
 import { formatCalendarDate, formatTime12, formatWeekdays, nowToMinutes, toISODate, WEEKDAY_SHORT } from '../lib/dates.js';
+import { nextOccurrence } from '../lib/reminders.js';
 import { TemplatePickerModal } from './TemplatePickerModal.jsx';
 import { COLORS } from '../theme.js';
 
-export function LogInteractionModal({ people, defaultPersonId, events, initialStep, initialEditEvent, onClose, onSubmit, onCreateEvent, onUpdateEvent, onDeleteEvent }) {
+export function LogInteractionModal({ people, defaultPersonId, events, initialStep, initialEditEvent, onClose, onSubmit, onCreateEvent, onUpdateEvent, onDeleteEvent, onMarkEventDone }) {
   const [step, setStep] = useState(initialStep || 'kind'); // kind -> type -> who -> details  |  kind -> eventKind -> eventChoice -> eventForm/eventList
   const [type, setType] = useState(null);
   // Only preselect someone who still exists (Coach can pass a removed person).
@@ -39,6 +40,7 @@ export function LogInteractionModal({ people, defaultPersonId, events, initialSt
   const [eventWeekdays, setEventWeekdays] = useState([new Date().getDay()]);
   const [eventTime, setEventTime] = useState(() => nowToMinutes());
   const [eventDefaultMeaningfulness, setEventDefaultMeaningfulness] = useState(3);
+  const [eventGoalId, setEventGoalId] = useState(null);
   const [editingEventId, setEditingEventId] = useState(null);
   const [selectedExisting, setSelectedExisting] = useState(null);
   const [logMeaningfulness, setLogMeaningfulness] = useState(3);
@@ -74,6 +76,7 @@ export function LogInteractionModal({ people, defaultPersonId, events, initialSt
     setEventWeekdays(ev.weekdays || (ev.weekday != null ? [ev.weekday] : [new Date().getDay()]));
     setEventTime(ev.time != null ? ev.time : nowToMinutes());
     setEventDefaultMeaningfulness(ev.defaultMeaningfulness || 3);
+    setEventGoalId(ev.goalId || null);
     setStep('eventForm');
   }
 
@@ -114,6 +117,9 @@ export function LogInteractionModal({ people, defaultPersonId, events, initialSt
   }
 
   const canSaveEvent = eventTitle.trim().length > 0 && (eventKind !== 'recurring' || eventWeekdays.length > 0);
+  // A reminder can be linked to one active goal of the people it's about;
+  // logging it then moves that goal (and only that one).
+  const eventGoals = people.filter(p => eventPersonIds.includes(p.id)).flatMap(p => p.goals.filter(g => g.progress < 100).map(g => ({ id: g.id, title: g.title, personName: p.name })));
   function handleSaveEvent() {
     if (!canSaveEvent) return;
     const payload = {
@@ -124,6 +130,7 @@ export function LogInteractionModal({ people, defaultPersonId, events, initialSt
       weekdays: eventKind === 'recurring' ? eventWeekdays : null,
       time: eventTime,
       defaultMeaningfulness: eventDefaultMeaningfulness,
+      goalId: eventGoals.some(g => g.id === eventGoalId) ? eventGoalId : null,
     };
     if (editingEventId) onUpdateEvent(editingEventId, payload);
     else onCreateEvent(payload);
@@ -354,7 +361,7 @@ export function LogInteractionModal({ people, defaultPersonId, events, initialSt
         <>
           <button onClick={() => setStep('eventKind')} className="text-xs font-semibold mb-3" style={{ color: COLORS.inkSoft }}>‹ Back</button>
           <div className="grid grid-cols-2 gap-3">
-            <button onClick={() => { setEditingEventId(null); setEventTitle(''); setEventPersonIds(defaultPersonId ? [defaultPersonId] : []); setEventDate(new Date()); setEventWeekdays([new Date().getDay()]); setEventTime(nowToMinutes()); setEventDefaultMeaningfulness(3); setStep('eventForm'); }} className="rounded-2xl py-6 flex flex-col items-center gap-2" style={{ background: COLORS.paperRaised, border: `1.5px solid ${COLORS.line}` }}>
+            <button onClick={() => { setEditingEventId(null); setEventTitle(''); setEventPersonIds(defaultPersonId ? [defaultPersonId] : []); setEventDate(new Date()); setEventWeekdays([new Date().getDay()]); setEventTime(nowToMinutes()); setEventDefaultMeaningfulness(3); setEventGoalId(null); setStep('eventForm'); }} className="rounded-2xl py-6 flex flex-col items-center gap-2" style={{ background: COLORS.paperRaised, border: `1.5px solid ${COLORS.line}` }}>
               <Plus size={24} color={COLORS.accent} />
               <span className="text-sm font-semibold" style={{ color: COLORS.ink }}>Create new</span>
             </button>
@@ -427,6 +434,16 @@ export function LogInteractionModal({ people, defaultPersonId, events, initialSt
               );
             })}
           </div>
+          {eventGoals.length > 0 && (
+            <>
+              <p className="text-sm font-semibold mb-2 mt-5" style={{ color: COLORS.ink }}>Linked goal <span style={{ fontWeight: 500, color: COLORS.inkSoft }}>(optional)</span></p>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                {eventGoals.map(g => (
+                  <button key={g.id} type="button" onClick={() => setEventGoalId(id => id === g.id ? null : g.id)} aria-pressed={eventGoalId === g.id} className="text-xs font-semibold rounded-full px-2.5 py-1" style={{ background: eventGoalId === g.id ? COLORS.accent : COLORS.paperRaised, color: eventGoalId === g.id ? '#fff' : COLORS.inkSoft, border: `1px solid ${eventGoalId === g.id ? COLORS.accent : COLORS.line}` }}>{g.title}{eventPersonIds.length > 1 ? ` (${g.personName})` : ''}</button>
+                ))}
+              </div>
+            </>
+          )}
         </>
       )}
 
@@ -479,7 +496,7 @@ export function LogInteractionModal({ people, defaultPersonId, events, initialSt
                     )}
                     <div className="flex items-center gap-2">
                       {evPeople.length > 0 && (
-                        <button onClick={() => { const detail = logQuickDetailTags.join(', '); onSubmit({ personIds: ev.personIds, type: 'other', meaningfulness: logMeaningfulness, notes: [], activeListening: [], summary: detail ? `${ev.title} — ${detail}` : ev.title, pickedDate: new Date() }); }} className="flex-1 text-xs font-semibold rounded-full py-2" style={{ background: COLORS.accent, color: '#fff' }}>Log this now</button>
+                        <button onClick={() => { const detail = logQuickDetailTags.join(', '); const next = nextOccurrence(ev); if (onMarkEventDone) onMarkEventDone(ev.id, next ? next.day : toISODate(new Date()), { quiet: true }); onSubmit({ personIds: ev.personIds, type: 'other', meaningfulness: logMeaningfulness, notes: [], activeListening: [], summary: detail ? `${ev.title} — ${detail}` : ev.title, pickedDate: new Date(), goalIds: ev.goalId ? [ev.goalId] : undefined }); }} className="flex-1 text-xs font-semibold rounded-full py-2" style={{ background: COLORS.accent, color: '#fff' }}>Log this now</button>
                       )}
                       <button onClick={() => openEditEvent(ev)} className="flex-1 text-xs font-semibold rounded-full py-2" style={{ background: COLORS.paper, border: `1px solid ${COLORS.line}`, color: COLORS.ink }}>Edit</button>
                       <button onClick={() => { onDeleteEvent(ev.id); setSelectedExisting(null); }} className="flex-1 text-xs font-semibold rounded-full py-2" style={{ background: COLORS.paper, border: `1px solid ${COLORS.alert}`, color: COLORS.alert }}>Delete</button>

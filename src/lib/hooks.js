@@ -3,7 +3,8 @@
 // rather than assume the app was launched this morning.
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { toISODate } from './dates.js';
-import { getLastNotifiedDate, setLastNotifiedDate } from './storage.js';
+import { dueReminders } from './reminders.js';
+import { addNotifiedReminder, getLastNotifiedDate, getNotifiedReminders, setLastNotifiedDate } from './storage.js';
 import { checkInReminder } from './text.js';
 
 // The local date as 'YYYY-MM-DD', updated within a minute of midnight (and
@@ -35,7 +36,7 @@ export function useDailyCheckIn(enabled, people, journal, today) {
         const reminder = checkInReminder(latest.current.people, latest.current.journal, getLastNotifiedDate());
         if (!reminder) return;
         const show = () => {
-          new Notification('Layers', { body: reminder.body });
+          notify('Layers', reminder.body);
           setLastNotifiedDate(reminder.day);
         };
         if (Notification.permission === 'granted') show();
@@ -46,4 +47,38 @@ export function useDailyCheckIn(enabled, people, journal, today) {
     }, 4000);
     return () => clearTimeout(timer);
   }, [enabled, today]);
+}
+
+// A desktop notification. Clicking it brings Layers to the front (the
+// window is usually hidden in the tray).
+function notify(title, body) {
+  const n = new Notification(title, { body });
+  n.onclick = () => { if (window.layersSystem && window.layersSystem.showWindow) window.layersSystem.showWindow(); };
+  return n;
+}
+
+// Reminders notify at their time (P6): checked every 30 seconds while Layers
+// runs, including in the tray, and at most once per reminder per day
+// (lib/reminders.js dueReminders). Turned off in Me > Notifications.
+export function useReminderNotifications(enabled, events, people) {
+  const latest = useRef({ events, people });
+  useLayoutEffect(() => { latest.current = { events, people }; });
+  useEffect(() => {
+    if (!enabled || typeof Notification === 'undefined') return undefined;
+    const check = () => {
+      if (Notification.permission !== 'granted') {
+        if (Notification.permission === 'default') Notification.requestPermission();
+        return;
+      }
+      const { events: evs, people: ppl } = latest.current;
+      dueReminders(evs, new Date(), getNotifiedReminders()).forEach(({ ev, key }) => {
+        const names = (ev.personIds || []).map(id => (ppl.find(p => p.id === id) || {}).name).filter(Boolean);
+        try { notify('Layers reminder', names.length ? `${ev.title} (${names.join(', ')})` : ev.title); } catch { return; }
+        addNotifiedReminder(key);
+      });
+    };
+    check();
+    const timer = setInterval(check, 30 * 1000);
+    return () => clearInterval(timer);
+  }, [enabled]);
 }

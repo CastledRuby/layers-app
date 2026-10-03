@@ -1,7 +1,7 @@
 // List rows for goals and saved info items.
 
 import { useState } from 'react';
-import { Archive, Check, Clock, Pencil, Trash2, TrendingUp } from 'lucide-react';
+import { Archive, BellPlus, Check, Clock, Pencil, Trash2, TrendingUp } from 'lucide-react';
 import { ProgressBar } from './atoms.jsx';
 import { presetMeta } from '../data/constants.js';
 import { infoItemDateLabel, parseISODay, startOfDay } from '../lib/dates.js';
@@ -55,7 +55,8 @@ export function GoalRow({ goal, color, today, onBump, onEdit, onDelete }) {
   );
 }
 
-export function InfoItemRow({ item, onSave, onDelete, onToggleTemporary, onToggleArchive }) {
+// `onRemind` (temporary items only) sets a "how did it go?" reminder.
+export function InfoItemRow({ item, onSave, onDelete, onToggleTemporary, onToggleArchive, onRemind }) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(item.text);
   return (
@@ -80,6 +81,7 @@ export function InfoItemRow({ item, onSave, onDelete, onToggleTemporary, onToggl
           <button onClick={() => setEditing(true)} aria-label={`Edit "${item.text}"`} className="p-1"><Pencil size={14} color={COLORS.inkSoft} /></button>
         )}
         <button onClick={onToggleTemporary} aria-pressed={item.temporary} aria-label={item.temporary ? 'Marked temporary, click to unmark' : 'Mark as temporary'} className="p-1"><Clock size={14} color={item.temporary ? COLORS.warn : COLORS.inkSoft} /></button>
+        {item.temporary && onRemind && (<button onClick={onRemind} aria-label={`Remind me to ask about "${item.text}"`} title="Remind me to follow up" className="p-1"><BellPlus size={14} color={COLORS.accent} /></button>)}
         <button onClick={onToggleArchive} aria-label="Archive" className="p-1"><Archive size={14} color={COLORS.inkSoft} /></button>
         <button onClick={onDelete} aria-label={`Delete "${item.text}"`} className="p-1"><Trash2 size={14} color={COLORS.inkSoft} /></button>
       </div>

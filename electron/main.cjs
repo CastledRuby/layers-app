@@ -317,6 +317,8 @@ function createTray() {
 // separate from whether a newer one has been published yet.
 function setupVersionInfo() {
   ipcMain.handle('get-app-version', () => app.getVersion());
+  // Clicking a reminder or check-in notification brings the window back.
+  ipcMain.on('show-window', showWindow);
 }
 
 // --- Launch at login -----------------------------------------------------

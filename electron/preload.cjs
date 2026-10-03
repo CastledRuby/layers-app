@@ -16,5 +16,6 @@ contextBridge.exposeInMainWorld('layersSystem', {
   setAutoLaunch: (enabled) => ipcRenderer.invoke('set-auto-launch', enabled),
   getVersion: () => ipcRenderer.invoke('get-app-version'),
   getShortcutStatus: () => ipcRenderer.invoke('get-shortcut-status'),
+  showWindow: () => ipcRenderer.send('show-window'),
   setTheme: (theme) => ipcRenderer.send('set-theme', theme),
 });

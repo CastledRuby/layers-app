@@ -10,10 +10,11 @@ import { ErrorBoundary } from './components/ErrorBoundary.jsx';
 import { hasOpenSheet, SheetLayerContext, topSheet } from './components/sheetLayer.js';
 import { categoryMeta, getLayer, STANDOUT_BUMP, STANDOUTS } from './data/constants.js';
 import { EMPTY_SKILLS, INITIAL_GENERAL_GOALS, INITIAL_JOURNAL, INITIAL_PEOPLE, INITIAL_SKILLS } from './data/seed.js';
-import { backfillJournalDates, backfillPeopleDates, backfillSkillDates, formatAbsoluteDate, pushHistoryPoint, toISODate } from './lib/dates.js';
+import { backfillJournalDates, backfillPeopleDates, backfillSkillDates, formatAbsoluteDate, formatCalendarDate, pushHistoryPoint, toISODate } from './lib/dates.js';
 import { advanceLayer, bumpSkills, chartDay, computeOverall, dimsEqual, makePerson, movePerson, placeOnLayers } from './lib/progress.js';
 import { MAX_BACKUP_BYTES, createBackup, validateBackup } from './lib/backup.js';
-import { useDailyCheckIn, useToday } from './lib/hooks.js';
+import { useDailyCheckIn, useReminderNotifications, useToday } from './lib/hooks.js';
+import { followUpEvent, markDone } from './lib/reminders.js';
 import { loadSavedState, persistState } from './lib/storage.js';
 import { clamp, uid } from './lib/util.js';
 import { AddInfoModal } from './modals/AddInfoModal.jsx';
@@ -45,6 +46,16 @@ function sampleData() {
     skills: backfillSkillDates(INITIAL_SKILLS),
   };
 }
+
+// The sample people, goals and journal entries keep fixed ids ('alex',
+// 'gen-goal-1', 'j1', ...), which is how "Remove sample people" finds them
+// among your own (whose ids come from uid()).
+const SAMPLE_PERSON_IDS = new Set(INITIAL_PEOPLE.map(p => p.id));
+const SAMPLE_GOAL_IDS = new Set(INITIAL_GENERAL_GOALS.map(g => g.id));
+// Skills loaded with the samples carry month-only chart labels ('Sep').
+const skillsCameWithSamples = (skills) => Object.values(skills).some(s => (s.history || []).some(h => /^[A-Za-z]{3}$/.test(String(h.date || ''))));
+const allSkillsZero = (skills) => Object.values(skills).every(s => !s.current);
+const listNames = (names) => names.length <= 1 ? names.join('') : `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}`;
 
 // Events can only point at people who exist.
 function unlinkMissingPeople(events, people) {
@@ -141,8 +152,10 @@ function LayersApp() {
   }, []);
 
   // "Today" for date-derived labels, and the once-a-day check-in reminder.
+  // Both can be turned off in Me > Notifications (stored on the profile).
   const today = useToday();
-  useDailyCheckIn(onboarded, people, journal, today);
+  useDailyCheckIn(onboarded && profile.checkInNotifications !== false, people, journal, today);
+  useReminderNotifications(onboarded && profile.reminderNotifications !== false, events, people);
 
   useEffect(() => {
     if (!hasUpdater) return;
@@ -358,13 +371,31 @@ function LayersApp() {
     levelUps.forEach(lu => pushToast(`🎉 ${lu.name} moved up to Layer ${lu.layer}: ${getLayer(lu.layer).name}!`));
   }
 
-  function handleCreateEvent({ title, personIds, kind, date, weekdays, time, defaultMeaningfulness }) {
-    setEvents(prev => [{ id: uid(), title, personIds, kind, date, weekdays, time, defaultMeaningfulness, createdAt: toISODate(new Date()) }, ...prev]);
+  function handleCreateEvent({ title, personIds, kind, date, weekdays, time, defaultMeaningfulness, goalId }) {
+    setEvents(prev => [{ id: uid(), title, personIds, kind, date, weekdays, time, defaultMeaningfulness, ...(goalId ? { goalId } : {}), createdAt: toISODate(new Date()) }, ...prev]);
     pushToast(kind === 'recurring' ? 'Recurring event saved' : 'Event saved');
   }
-  function handleUpdateEvent(eventId, { title, personIds, kind, date, weekdays, time, defaultMeaningfulness }) {
-    setEvents(prev => prev.map(e => e.id !== eventId ? e : { ...e, title, personIds, kind, date, weekdays, time, defaultMeaningfulness }));
+  function handleUpdateEvent(eventId, { title, personIds, kind, date, weekdays, time, defaultMeaningfulness, goalId }) {
+    setEvents(prev => prev.map(e => {
+      if (e.id !== eventId) return e;
+      const next = { ...e, title, personIds, kind, date, weekdays, time, defaultMeaningfulness };
+      if (goalId) next.goalId = goalId; else delete next.goalId;
+      return next;
+    }));
     pushToast('Event updated');
+  }
+  // A one-off is done for good; a weekly reminder for that day only.
+  function handleMarkEventDone(eventId, day, { quiet = false } = {}) {
+    setEvents(prev => prev.map(e => e.id === eventId ? markDone(e, day) : e));
+    if (!quiet) pushToast('Marked done');
+  }
+  // Profile > a temporary detail > bell: "Ask <name> how <it> went" in 3 days.
+  function handleRemindFollowUp(personId, item) {
+    const person = people.find(p => p.id === personId);
+    if (!person) return;
+    const ev = followUpEvent(person, item);
+    setEvents(prev => [{ id: uid(), ...ev, createdAt: toISODate(new Date()) }, ...prev]);
+    pushToast(`Reminder set for ${formatCalendarDate(new Date(`${ev.date}T00:00:00`))}, 9:00 AM`);
   }
   function handleDeleteEvent(eventId) {
     const ev = events.find(e => e.id === eventId);
@@ -570,19 +601,47 @@ function LayersApp() {
     });
   }
 
-  function handleRestoreSample() {
+  // Sample people sit alongside your own: they can be added and removed
+  // without touching anyone you added. ("Restore sample data" used to
+  // replace everything, and there was no way to remove only the samples,
+  // though onboarding promised you could clear them.)
+  function handleRemoveSample() {
+    const names = people.filter(p => SAMPLE_PERSON_IDS.has(p.id)).map(p => p.name);
+    const resetSkills = skillsCameWithSamples(skills);
     askConfirm({
-      title: 'Restore sample data?',
-      message: "This replaces your current people, goals, and journal with the built-in example data. Anything you've added will be lost unless you export it first.",
-      confirmLabel: 'Restore samples',
+      title: 'Remove the sample people?',
+      message: `${listNames(names)}, their goals and everything logged with them will be removed. People you added stay.${resetSkills ? ' Your skills started from the example levels, so they go back to 0%.' : ''}`,
+      confirmLabel: 'Remove samples',
       danger: true,
       onConfirm: () => {
-        const sample = sampleData();
-        setPeople(sample.people); setJournal(sample.journal); setGeneralGoals(sample.generalGoals); setSkills(sample.skills);
-        setEvents(prev => unlinkMissingPeople(prev, sample.people));
-        setCoachInit(c => ({ ...c, personId: null }));
+        const remaining = people.filter(p => !SAMPLE_PERSON_IDS.has(p.id));
+        setPeople(remaining);
+        setJournal(prev => prev.filter(j => !SAMPLE_PERSON_IDS.has(j.personId)));
+        setGeneralGoals(prev => prev.filter(g => !SAMPLE_GOAL_IDS.has(g.id)));
+        setEvents(prev => unlinkMissingPeople(prev, remaining));
+        if (resetSkills) setSkills(EMPTY_SKILLS);
+        setCoachInit(c => SAMPLE_PERSON_IDS.has(c.personId) ? { ...c, personId: null } : c);
         setScreen({ name: 'tabs' }); setActiveTab('home');
-        pushToast('Sample data restored');
+        pushToast('Sample people removed');
+      },
+    });
+  }
+
+  function handleAddSample() {
+    askConfirm({
+      title: 'Add the sample people?',
+      message: 'Alex, Jamie, Priya, Noah and Sam are added alongside your own people, with some example goals and journal entries. You can remove them again here.',
+      confirmLabel: 'Add samples',
+      onConfirm: () => {
+        const sample = sampleData();
+        const added = sample.people.filter(sp => !people.some(p => p.id === sp.id));
+        const addedIds = new Set(added.map(p => p.id));
+        setPeople(prev => [...prev, ...added]);
+        setJournal(prev => [...sample.journal.filter(j => addedIds.has(j.personId) && !prev.some(x => x.id === j.id)), ...prev]);
+        setGeneralGoals(prev => [...prev, ...sample.generalGoals.filter(g => !prev.some(x => x.id === g.id))]);
+        // Example skill levels only if you haven't tracked any of your own.
+        if (allSkillsZero(skills)) setSkills(sample.skills);
+        pushToast('Sample people added');
       },
     });
   }
@@ -703,6 +762,7 @@ function LayersApp() {
                         onOpenCoach={(pid) => openCoach(pid, 'prepare')}
                         onEditPerson={openEditPerson}
                         onClearLevelUpFlag={handleClearLevelUpFlag}
+                        onRemindFollowUp={handleRemindFollowUp}
                       />
                     )}
                     {screen.name === 'goals' && (
@@ -710,11 +770,11 @@ function LayersApp() {
                     )}
                     {screen.name === 'tabs' && (
                       <>
-                        {activeTab === 'home' && <HomeView today={today} people={people} journal={journal} generalGoals={generalGoals} events={events} profile={profile} onOpenPerson={openPerson} onSwitchTab={switchTab} onOpenGoals={openGoalsOverview} onOpenCoach={(tab) => openCoach(null, tab)} onLogEvent={(ev, meaningfulness, detail) => handleLogSubmit({ personIds: ev.personIds, type: 'other', meaningfulness, notes: [], activeListening: [], summary: detail ? `${ev.title} — ${detail}` : ev.title, pickedDate: new Date() })} onManageEvents={openEventManager} onEditEvent={openEditRecurringEvent} onDeleteEvent={handleDeleteEvent} />}
+                        {activeTab === 'home' && <HomeView today={today} people={people} journal={journal} generalGoals={generalGoals} events={events} profile={profile} onOpenPerson={openPerson} onSwitchTab={switchTab} onOpenGoals={openGoalsOverview} onOpenCoach={(tab) => openCoach(null, tab)} onLogEvent={(ev, meaningfulness, detail) => { handleMarkEventDone(ev.id, ev.occursOn, { quiet: true }); handleLogSubmit({ personIds: ev.personIds, type: 'other', meaningfulness, notes: [], activeListening: [], summary: detail ? `${ev.title} — ${detail}` : ev.title, pickedDate: new Date(), goalIds: ev.goalId ? [ev.goalId] : undefined }); }} onMarkEventDone={handleMarkEventDone} onManageEvents={openEventManager} onEditEvent={openEditRecurringEvent} onDeleteEvent={handleDeleteEvent} />}
                         {activeTab === 'people' && <PeopleView people={people} journal={journal} onOpenPerson={openPerson} onAddPerson={() => setAddPersonOpen(true)} />}
                         {activeTab === 'coach' && <CoachView people={people} journal={journal} initialPersonId={coachInit.personId} initialTab={coachInit.tab} onOpenLog={openLog} onApproveInfo={handleApproveInfo} onLogFromAnalysis={handleLogFromAnalysis} onOpenPerson={openPerson} />}
                         {activeTab === 'journal' && <JournalView today={today} people={people} journal={journal} onOpenPerson={openPerson} onEditEntry={setEditingEntryId} />}
-                        {activeTab === 'me' && <MeView people={people} journal={journal} skills={skills} generalGoals={generalGoals} profile={profile} onRestoreSample={handleRestoreSample} onStartOver={handleStartOver} onExport={handleExportData} onImportClick={handleImportClick} hasUpdater={hasUpdater} updateStatus={updateStatus} onCheckForUpdates={handleCheckForUpdates} onInstallUpdate={handleInstallUpdate} onOpenDownloadPage={handleOpenDownloadPage} shortcutStatus={shortcutStatus} theme={theme} onSetTheme={setTheme} hasSystemBridge={hasSystemBridge} autoLaunch={autoLaunch} onToggleAutoLaunch={handleToggleAutoLaunch} onOpenShortcuts={() => setShortcutsOpen(true)} appVersion={appVersion} />}
+                        {activeTab === 'me' && <MeView people={people} journal={journal} skills={skills} generalGoals={generalGoals} profile={profile} onAddSample={handleAddSample} onRemoveSample={handleRemoveSample} hasSamplePeople={people.some(p => SAMPLE_PERSON_IDS.has(p.id))} canAddSample={INITIAL_PEOPLE.some(sp => !people.some(p => p.id === sp.id))} onStartOver={handleStartOver} onExport={handleExportData} onImportClick={handleImportClick} hasUpdater={hasUpdater} updateStatus={updateStatus} onCheckForUpdates={handleCheckForUpdates} onInstallUpdate={handleInstallUpdate} onOpenDownloadPage={handleOpenDownloadPage} shortcutStatus={shortcutStatus} theme={theme} onSetTheme={setTheme} onUpdateProfile={(changes) => setProfile(p => ({ ...p, ...changes }))} hasSystemBridge={hasSystemBridge} autoLaunch={autoLaunch} onToggleAutoLaunch={handleToggleAutoLaunch} onOpenShortcuts={() => setShortcutsOpen(true)} appVersion={appVersion} />}
                       </>
                     )}
                   </>
@@ -735,7 +795,7 @@ function LayersApp() {
 
             <input ref={importInputRef} type="file" accept="application/json" onChange={handleImportFile} style={{ display: 'none' }} />
 
-            {logOpen && <LogInteractionModal people={people} defaultPersonId={logDefaultPerson} events={events} initialStep={logInitialStep} initialEditEvent={logEditEvent} onClose={closeLog} onSubmit={handleLogSubmit} onCreateEvent={handleCreateEvent} onUpdateEvent={handleUpdateEvent} onDeleteEvent={handleDeleteEvent} />}
+            {logOpen && <LogInteractionModal people={people} defaultPersonId={logDefaultPerson} events={events} initialStep={logInitialStep} initialEditEvent={logEditEvent} onClose={closeLog} onSubmit={handleLogSubmit} onCreateEvent={handleCreateEvent} onUpdateEvent={handleUpdateEvent} onDeleteEvent={handleDeleteEvent} onMarkEventDone={handleMarkEventDone} />}
             {goalModalOpen && <GoalModal people={people} defaultPersonId={goalModalDefaultPerson} editingGoal={goalEditing ? goalEditing.goal : null} editingPersonId={goalEditing ? goalEditing.personId : null} onClose={closeGoalModal} onSave={handleGoalSave} />}
             {addInfoOpen && addInfoTarget && (
               <AddInfoModal personName={(people.find(p => p.id === addInfoTarget.personId) || {}).name} category={addInfoTarget.category} onClose={closeAddInfo} onSave={handleAddInfoSave} />

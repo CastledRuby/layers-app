@@ -73,3 +73,22 @@ export function getLastNotifiedDate() {
 export function setLastNotifiedDate(d) {
   try { window.localStorage.setItem(LAST_NOTIFIED_KEY, d); } catch { /* ignore */ }
 }
+
+// Reminder notifications already shown, as `${eventId}:${day}` keys, so each
+// reminder notifies once a day even across restarts. Only the latest 200
+// are kept.
+const NOTIFIED_REMINDERS_KEY = 'layers-notified-reminders';
+
+export function getNotifiedReminders() {
+  try {
+    const list = JSON.parse(window.localStorage.getItem(NOTIFIED_REMINDERS_KEY) || '[]');
+    return new Set(Array.isArray(list) ? list : []);
+  } catch { return new Set(); }
+}
+
+export function addNotifiedReminder(key) {
+  try {
+    const list = [...getNotifiedReminders(), key].slice(-200);
+    window.localStorage.setItem(NOTIFIED_REMINDERS_KEY, JSON.stringify(list));
+  } catch { /* ignore */ }
+}
