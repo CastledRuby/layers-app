@@ -87,13 +87,19 @@ function cleanEvent(e, personIds, skipped) {
   const valid = isObject(e) && isText(e.title) && (e.kind === 'recurring' || (e.kind === 'oneoff' && isISODay(e.date)));
   if (!valid) { skipped.events++; return null; }
   const weekdays = Array.isArray(e.weekdays) ? e.weekdays : (typeof e.weekday === 'number' ? [e.weekday] : []);
-  return {
+  const clean = {
     ...e,
     id: isText(e.id) ? e.id : uid(),
     personIds: (Array.isArray(e.personIds) ? e.personIds : []).filter(id => personIds.has(id)),
     weekdays: weekdays.filter(d => Number.isInteger(d) && d >= 0 && d <= 6),
     time: typeof e.time === 'number' && isFinite(e.time) ? clamp(Math.round(e.time), 0, 24 * 60 - 1) : null,
   };
+  // Optional reminder fields: dropped if they're not what they should be.
+  if ('goalId' in clean && !isText(clean.goalId)) delete clean.goalId;
+  if ('doneAt' in clean && !isISODay(clean.doneAt)) delete clean.doneAt;
+  if ('doneOn' in clean && !isISODay(clean.doneOn)) delete clean.doneOn;
+  if ('doneDays' in clean) clean.doneDays = (Array.isArray(clean.doneDays) ? clean.doneDays : []).filter(isISODay);
+  return clean;
 }
 
 function cleanSkills(skills) {

@@ -4,11 +4,22 @@
 // An event is { id, title, kind: 'oneoff' | 'recurring', date (one-off,
 // 'YYYY-MM-DD'), weekdays (recurring, 0 = Sunday), time (minutes after
 // midnight), personIds, goalId?, doneAt? (one-off: the day it was done),
-// doneOn? (recurring: the last day it was done) }.
+// doneDays? (recurring: recent days it was done or skipped; older saves
+// have a single doneOn) }.
 import { formatCalendarDate, parseISODay, startOfDay, toISODate } from './dates.js';
 
 function weekdaysOf(ev) {
   return ev.weekdays || (ev.weekday != null ? [ev.weekday] : []);
+}
+
+function doneOnDay(ev, day) {
+  return (ev.doneDays || []).includes(day) || ev.doneOn === day;
+}
+
+// Does the event come up on this day at all (done or not)?
+function occursOn(ev, d) {
+  if (ev.kind === 'oneoff') return ev.date === toISODate(d);
+  return ev.kind === 'recurring' && weekdaysOf(ev).includes(d.getDay());
 }
 
 // The next time an event comes up within `days` days of `now` (today
@@ -28,16 +39,29 @@ export function nextOccurrence(ev, now = new Date(), days = 7) {
     const wd = weekdaysOf(ev);
     for (let offset = 0; offset < days; offset++) {
       const d = new Date(today.getFullYear(), today.getMonth(), today.getDate() + offset);
-      if (wd.includes(d.getDay()) && ev.doneOn !== toISODate(d)) return label(d, offset);
+      if (wd.includes(d.getDay()) && !doneOnDay(ev, toISODate(d))) return label(d, offset);
     }
   }
   return null;
 }
 
 // What "done" means: a one-off is finished for good; a recurring one is
-// done for that day only.
+// done (or skipped) for that day only. Each day is kept, so skipping next
+// Wednesday doesn't undo today; only the last 14 are kept.
 export function markDone(ev, day) {
-  return ev.kind === 'oneoff' ? { ...ev, doneAt: day } : { ...ev, doneOn: day };
+  if (ev.kind === 'oneoff') return { ...ev, doneAt: day };
+  const days = [...new Set([...(ev.doneDays || []), ...(ev.doneOn ? [ev.doneOn] : []), day])].sort().slice(-14);
+  const next = { ...ev, doneDays: days };
+  delete next.doneOn;
+  return next;
+}
+
+// The day a log of this reminder counts for: today if it comes up today
+// (even if already marked done), otherwise its next time.
+export function occurrenceToLog(ev, now = new Date()) {
+  if (occursOn(ev, startOfDay(now))) return toISODate(now);
+  const next = nextOccurrence(ev, now);
+  return next ? next.day : toISODate(now);
 }
 
 export function isPastOneOff(ev, now = new Date()) {

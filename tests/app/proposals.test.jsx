@@ -1,5 +1,6 @@
 /** @vitest-environment jsdom */
-// The proposals built for 1.0.28 (docs/roadmap.md, P1-P7), driven through
+// The proposals built for 1.0.28 (docs/roadmap.md: P1, P2 and P4-P7; P3 is
+// still a decision), driven through
 // the UI the way a person would use them.
 import { screen, within } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
@@ -309,5 +310,45 @@ describe('P7 skills and Me', () => {
     await user.click(screen.getByRole('button', { name: 'Open Riley' }));
     expect(screen.getByText('Current relationship stage')).toBeTruthy();
     expect(screen.getAllByText('Riley').length).toBeGreaterThan(0);
+  });
+});
+
+describe('follow-up fixes from the 1.0.28 docs review', () => {
+  it("an unticked skill goal stays put even when its skill rises", async () => {
+    const skillGoal = { id: 'sg', personId: null, category: 'skill', type: 'followUpQ', title: 'Ask better follow-up questions', description: '', progress: 0, history: [] };
+    seedState({ people: [person('Morgan', { goals: [skillGoal] })] });
+    const { user } = renderApp();
+    const details = await startLog(user, ['Morgan']);
+    await user.click(within(details).getByRole('button', { name: 'Asked follow-up questions' }));
+    await user.click(within(details).getByRole('button', { name: /More details/ }));
+    await user.click(within(details).getByRole('checkbox', { name: /Ask better follow-up questions/ }));
+    await save(user, details);
+    expect(savedPerson('Morgan').goals[0].progress).toBe(0);
+  });
+
+  it('deleting a goal unlinks reminders from it', async () => {
+    const morgan = person('Morgan', { goals: [goal('g1', 'Learn more')] });
+    seedState({ people: [morgan], events: [{ id: 'o', title: 'Lunch', kind: 'oneoff', date: TODAY, time: 720, personIds: [morgan.id], goalId: 'g1' }] });
+    const { user } = renderApp();
+    await user.click(nav('People'));
+    await user.click(screen.getAllByRole('button', { name: /Morgan/ })[0]);
+    await user.click(screen.getByRole('button', { name: /Delete/ }));
+    await user.click(screen.getByRole('button', { name: 'Delete goal' }));
+    expect(savedState().events[0].goalId).toBeUndefined();
+  });
+
+  it('removing the samples keeps your own achievement dates', async () => {
+    const morgan = person('Morgan');
+    const samples = await import('../../src/data/seed.js');
+    seedState({
+      people: [morgan, ...samples.INITIAL_PEOPLE],
+      journal: [{ id: 'mine', personId: morgan.id, at: '2026-09-01', type: 'talked', meaningfulness: 5, added: [], activeListening: [] }],
+      achievements: { firstMeaningful: '2026-09-01' },
+    });
+    const { user } = renderApp();
+    await user.click(nav('Me'));
+    await user.click(screen.getByRole('button', { name: 'Remove sample people' }));
+    await user.click(screen.getByRole('button', { name: 'Remove samples' }));
+    expect(savedState().achievements).toEqual({ firstMeaningful: '2026-09-01' });
   });
 });

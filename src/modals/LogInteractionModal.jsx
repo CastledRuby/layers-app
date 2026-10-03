@@ -8,11 +8,11 @@ import { Avatar } from '../components/atoms.jsx';
 import { DateDropdown, TimeDropdown } from '../components/pickers.jsx';
 import { AL_ITEMS, CATEGORIES, categoryMeta, getLayer, NOTE_TEMPLATE_CATEGORY, STANDOUTS, TYPE_META, TYPE_ORDER } from '../data/constants.js';
 import { formatCalendarDate, formatTime12, formatWeekdays, nowToMinutes, toISODate, WEEKDAY_SHORT } from '../lib/dates.js';
-import { nextOccurrence } from '../lib/reminders.js';
+import { occurrenceToLog } from '../lib/reminders.js';
 import { TemplatePickerModal } from './TemplatePickerModal.jsx';
 import { COLORS } from '../theme.js';
 
-export function LogInteractionModal({ people, defaultPersonId, events, initialStep, initialEditEvent, onClose, onSubmit, onCreateEvent, onUpdateEvent, onDeleteEvent, onMarkEventDone }) {
+export function LogInteractionModal({ people, defaultPersonId, events, initialStep, initialEditEvent, onClose, onSubmit, onCreateEvent, onUpdateEvent, onDeleteEvent, onMarkEventDone, linkedGoalIds }) {
   const [step, setStep] = useState(initialStep || 'kind'); // kind -> type -> who -> details  |  kind -> eventKind -> eventChoice -> eventForm/eventList
   const [type, setType] = useState(null);
   // Only preselect someone who still exists (Coach can pass a removed person).
@@ -496,7 +496,7 @@ export function LogInteractionModal({ people, defaultPersonId, events, initialSt
                     )}
                     <div className="flex items-center gap-2">
                       {evPeople.length > 0 && (
-                        <button onClick={() => { const detail = logQuickDetailTags.join(', '); const next = nextOccurrence(ev); if (onMarkEventDone) onMarkEventDone(ev.id, next ? next.day : toISODate(new Date()), { quiet: true }); onSubmit({ personIds: ev.personIds, type: 'other', meaningfulness: logMeaningfulness, notes: [], activeListening: [], summary: detail ? `${ev.title} — ${detail}` : ev.title, pickedDate: new Date(), goalIds: ev.goalId ? [ev.goalId] : undefined }); }} className="flex-1 text-xs font-semibold rounded-full py-2" style={{ background: COLORS.accent, color: '#fff' }}>Log this now</button>
+                        <button onClick={() => { const detail = logQuickDetailTags.join(', '); if (onMarkEventDone) onMarkEventDone(ev.id, occurrenceToLog(ev), { quiet: true }); onSubmit({ personIds: ev.personIds, type: 'other', meaningfulness: logMeaningfulness, notes: [], activeListening: [], summary: detail ? `${ev.title} — ${detail}` : ev.title, pickedDate: new Date(), goalIds: linkedGoalIds ? linkedGoalIds(ev) : undefined }); }} className="flex-1 text-xs font-semibold rounded-full py-2" style={{ background: COLORS.accent, color: '#fff' }}>Log this now</button>
                       )}
                       <button onClick={() => openEditEvent(ev)} className="flex-1 text-xs font-semibold rounded-full py-2" style={{ background: COLORS.paper, border: `1px solid ${COLORS.line}`, color: COLORS.ink }}>Edit</button>
                       <button onClick={() => { onDeleteEvent(ev.id); setSelectedExisting(null); }} className="flex-1 text-xs font-semibold rounded-full py-2" style={{ background: COLORS.paper, border: `1px solid ${COLORS.alert}`, color: COLORS.alert }}>Delete</button>

@@ -18,7 +18,7 @@
 //
 // Needs the GitHub CLI logged in to an account that can publish to REPO
 // (gh auth login). Windows only: it builds and installs the NSIS installer.
-import { spawnSync } from 'node:child_process';
+import { spawn, spawnSync } from 'node:child_process';
 import { readFileSync, writeFileSync, existsSync, mkdirSync, copyFileSync, rmSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -160,7 +160,12 @@ async function install(v) {
   }
   log(`Installing Layers ${v} on this computer…`);
   const r = spawnSync(installer, ['/S', '--force-run'], { stdio: 'inherit', timeout: 5 * 60 * 1000 });
-  if (r.status !== 0) fail(`The installer exited with ${r.status}.`);
+  if (r.error || r.status !== 0) {
+    // Windows Smart App Control can refuse an unsigned installer it hasn't
+    // seen before. Don't leave the app closed: start the copy that's installed.
+    if (existsSync(installedExe) && !layersRunning()) spawn(installedExe, [], { detached: true, stdio: 'ignore' }).unref();
+    fail(`The installer ${r.error ? `couldn't start (${r.error.code || r.error.message}); Windows may have blocked it (Smart App Control blocks unsigned apps it doesn't know)` : `exited with ${r.status}`}. The previously installed Layers was restarted.`);
+  }
   const installed = JSON.parse(readAsarFile(join(INSTALL_DIR, 'resources', 'app.asar'), 'package.json')).version;
   if (installed !== v) fail(`Installed app reports ${installed}, expected ${v}.`);
   for (let i = 0; i < 20 && !layersRunning(); i++) await sleep(500);

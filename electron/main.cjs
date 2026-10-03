@@ -70,6 +70,7 @@ if (!gotSingleInstanceLock || quitRequested) {
     setupAutoUpdate();
     setupAutoLaunch();
     setupVersionInfo();
+    setupWindowIpc();
     registerGlobalShortcut();
 
     app.on('activate', () => {
@@ -317,7 +318,11 @@ function createTray() {
 // separate from whether a newer one has been published yet.
 function setupVersionInfo() {
   ipcMain.handle('get-app-version', () => app.getVersion());
-  // Clicking a reminder or check-in notification brings the window back.
+}
+
+// Clicking a reminder or check-in notification (shown by the renderer)
+// brings the window back, since it's usually hidden in the tray.
+function setupWindowIpc() {
   ipcMain.on('show-window', showWindow);
 }
 

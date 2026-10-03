@@ -4,24 +4,24 @@
 > Run `npm run docs:map` after changing anything under `src/`, `electron/*.cjs` or `package.json` scripts.
 > Hand-written explanations live in the other files under [`docs/`](../README.md).
 
-Package: `layers-web` v1.0.27 · `src/`: 42 files, 5707 lines, 40 components, 104 top-level functions, 55 constants.
+Package: `layers-web` v1.0.27 · `src/`: 42 files, 5749 lines, 40 components, 107 top-level functions, 55 constants.
 
 ## Source files
 
 | File | Lines | Declares | Imports from |
 |---|---|---|---|
 | [main.jsx](../../src/main.jsx) | 11 | — | — |
-| [App.jsx](../../src/App.jsx) | 877 | sampleData, SAMPLE_PERSON_IDS, SAMPLE_GOAL_IDS, skillsCameWithSamples, allSkillsZero, listNames, unlinkMissingPeople, addNotes, LayersApp | `components/BottomNav`, `components/ErrorBoundary`, `components/sheetLayer`, `data/constants`, `data/seed`, `lib/dates`, `lib/achievements`, `lib/progress`, `lib/backup`, `lib/hooks`, `lib/reminders`, `lib/storage`, `lib/util`, `modals/AddInfoModal`, `modals/AddPersonModal`, `modals/ConfirmDialog`, `modals/EditEntryModal`, `modals/EditPersonModal`, `modals/EditProfileModal`, `modals/GoalModal`, `modals/LogInteractionModal`, `modals/QuickAddInterestModal`, `modals/ShortcutsModal`, `modals/TemplatePickerModal`, `theme`, `views/CoachView`, `views/GoalsView`, `views/HomeView`, `views/JournalView`, `views/MeView`, `views/OnboardingView`, `views/PeopleView`, `views/PersonProfile` |
+| [App.jsx](../../src/App.jsx) | 888 | sampleData, SAMPLE_PERSON_IDS, SAMPLE_GOAL_IDS, skillsCameWithSamples, allSkillsZero, listNames, unlinkMissingPeople, addNotes, LayersApp | `components/BottomNav`, `components/ErrorBoundary`, `components/sheetLayer`, `data/constants`, `data/seed`, `lib/dates`, `lib/achievements`, `lib/progress`, `lib/backup`, `lib/hooks`, `lib/reminders`, `lib/storage`, `lib/util`, `modals/AddInfoModal`, `modals/AddPersonModal`, `modals/ConfirmDialog`, `modals/EditEntryModal`, `modals/EditPersonModal`, `modals/EditProfileModal`, `modals/GoalModal`, `modals/LogInteractionModal`, `modals/QuickAddInterestModal`, `modals/ShortcutsModal`, `modals/TemplatePickerModal`, `theme`, `views/CoachView`, `views/GoalsView`, `views/HomeView`, `views/JournalView`, `views/MeView`, `views/OnboardingView`, `views/PeopleView`, `views/PersonProfile` |
 | [theme.js](../../src/theme.js) | 129 | THEME_LIGHT, THEME_DARK, COLORS, cssVarBlock, CSS | `fonts` |
 | [data/constants.js](../../src/data/constants.js) | 207 | LAYERS, getLayer, DIM_ORDER, DIM_LABELS, DIM_COLORS, LAYER_BASE_DIMS, CATEGORIES, categoryMeta, SHORTCUTS, EMOJI_CHOICES, … (+21) | `theme` |
 | [data/scenarios.js](../../src/data/scenarios.js) | 115 | SCENARIOS | — |
 | [data/seed.js](../../src/data/seed.js) | 176 | INITIAL_PEOPLE, INITIAL_GENERAL_GOALS, INITIAL_JOURNAL, INITIAL_SKILLS, EMPTY_SKILLS | — |
 | [lib/achievements.js](../../src/lib/achievements.js) | 37 | achievementProgress, newlyUnlocked, progressText | `data/constants` |
-| [lib/backup.js](../../src/lib/backup.js) | 166 | BACKUP_VERSION, MAX_BACKUP_BYTES, createBackup, isObject, isText, isISODay, num, count, cleanHistory, cleanGoal, … (+5) | `data/constants`, `data/seed`, `lib/util` |
+| [lib/backup.js](../../src/lib/backup.js) | 172 | BACKUP_VERSION, MAX_BACKUP_BYTES, createBackup, isObject, isText, isISODay, num, count, cleanHistory, cleanGoal, … (+5) | `data/constants`, `data/seed`, `lib/util` |
 | [lib/dates.js](../../src/lib/dates.js) | 282 | parseDaysAgo, startOfDay, WEEKDAY_SHORT, WEEKDAY_FULL, formatWeekdays, MONTH_NAMES, dateToRelativeLabel, formatCalendarDate, toISODate, formatAbsoluteDate, … (+23) | `data/constants` |
 | [lib/hooks.js](../../src/lib/hooks.js) | 85 | useToday, useDailyCheckIn, notify, useReminderNotifications | `lib/dates`, `lib/reminders`, `lib/storage`, `lib/text` |
-| [lib/progress.js](../../src/lib/progress.js) | 127 | layerForOverall, advanceLayer, computeOverall, dimsEqual, placeOnLayers, progressDelta, chartDay, movePerson, makePerson, generateGoalDescription, … (+3) | `data/constants`, `lib/dates`, `lib/util` |
-| [lib/reminders.js](../../src/lib/reminders.js) | 82 | weekdaysOf, nextOccurrence, markDone, isPastOneOff, NOTIFY_WINDOW_MINUTES, dueReminders, followUpEvent | `lib/dates` |
+| [lib/progress.js](../../src/lib/progress.js) | 128 | layerForOverall, advanceLayer, computeOverall, dimsEqual, placeOnLayers, progressDelta, chartDay, movePerson, makePerson, generateGoalDescription, … (+3) | `data/constants`, `lib/dates`, `lib/util` |
+| [lib/reminders.js](../../src/lib/reminders.js) | 106 | weekdaysOf, doneOnDay, occursOn, nextOccurrence, markDone, occurrenceToLog, isPastOneOff, NOTIFY_WINDOW_MINUTES, dueReminders, followUpEvent | `lib/dates` |
 | [lib/storage.js](../../src/lib/storage.js) | 96 | STORAGE_KEY, UNREADABLE_PREFIX, keepCopy, loadSavedState, persistState, LAST_NOTIFIED_KEY, getLastNotifiedDate, setLastNotifiedDate, NOTIFIED_REMINDERS_KEY, getNotifiedReminders, … (+1) | `lib/backup` |
 | [lib/text.js](../../src/lib/text.js) | 168 | summaryFor, updateStatusText, homeGoalTitle, generateSuggestions, getCheckInSuggestions, checkInReminder, HOOKS, buildPotentialHooks, focusSuggestion | `data/constants`, `lib/dates` |
 | [lib/util.js](../../src/lib/util.js) | 9 | clamp, uidCounter, uid | — |
@@ -81,7 +81,7 @@ Package: `layers-web` v1.0.27 · `src/`: 42 files, 5707 lines, 40 components, 10
 | `EditPersonModal` | [EditPersonModal.jsx:9](../../src/modals/EditPersonModal.jsx#L9) | `person`, `onClose`, `onSave`, `onDelete` | `LayersApp` |
 | `EditProfileModal` | [EditProfileModal.jsx:8](../../src/modals/EditProfileModal.jsx#L8) | `profile`, `onClose`, `onSave` | `LayersApp` |
 | `GoalModal` | [GoalModal.jsx:14](../../src/modals/GoalModal.jsx#L14) | `people`, `defaultPersonId`, `editingGoal`, `editingPersonId`, `onClose`, `onSave` | `LayersApp` |
-| `LogInteractionModal` | [LogInteractionModal.jsx:15](../../src/modals/LogInteractionModal.jsx#L15) | `people`, `defaultPersonId`, `events`, `initialStep`, `initialEditEvent`, `onClose`, `onSubmit`, `onCreateEvent`, `onUpdateEvent`, `onDeleteEvent`, `onMarkEventDone` | `LayersApp` |
+| `LogInteractionModal` | [LogInteractionModal.jsx:15](../../src/modals/LogInteractionModal.jsx#L15) | `people`, `defaultPersonId`, `events`, `initialStep`, `initialEditEvent`, `onClose`, `onSubmit`, `onCreateEvent`, `onUpdateEvent`, `onDeleteEvent`, `onMarkEventDone`, `linkedGoalIds` | `LayersApp` |
 | `QuickAddInterestModal` | [QuickAddInterestModal.jsx:5](../../src/modals/QuickAddInterestModal.jsx#L5) | `personName`, `onClose`, `onSave` | `LayersApp` |
 | `ShortcutKey` | [ShortcutsModal.jsx:7](../../src/modals/ShortcutsModal.jsx#L7) | `label` | `ShortcutsModal` |
 | `ShortcutsModal` | [ShortcutsModal.jsx:11](../../src/modals/ShortcutsModal.jsx#L11) | `onClose` | `LayersApp` |
@@ -126,8 +126,8 @@ Package: `layers-web` v1.0.27 · `src/`: 42 files, 5707 lines, 40 components, 10
 | `cleanPerson` | [backup.js:46](../../src/lib/backup.js#L46) |  |  |
 | `cleanEntry` | [backup.js:70](../../src/lib/backup.js#L70) |  |  |
 | `cleanEvent` | [backup.js:86](../../src/lib/backup.js#L86) |  |  |
-| `cleanSkills` | [backup.js:99](../../src/lib/backup.js#L99) |  |  |
-| `validateBackup` | [backup.js:111](../../src/lib/backup.js#L111) | ✓ | ✓ |
+| `cleanSkills` | [backup.js:105](../../src/lib/backup.js#L105) |  |  |
+| `validateBackup` | [backup.js:117](../../src/lib/backup.js#L117) | ✓ | ✓ |
 | `parseDaysAgo` | [dates.js:6](../../src/lib/dates.js#L6) | ✓ | ✓ |
 | `startOfDay` | [dates.js:23](../../src/lib/dates.js#L23) | ✓ |  |
 | `formatWeekdays` | [dates.js:29](../../src/lib/dates.js#L29) | ✓ |  |
@@ -174,13 +174,16 @@ Package: `layers-web` v1.0.27 · `src/`: 42 files, 5707 lines, 40 components, 10
 | `generateGoalDescription` | [progress.js:91](../../src/lib/progress.js#L91) | ✓ |  |
 | `bumpSkills` | [progress.js:101](../../src/lib/progress.js#L101) | ✓ | ✓ |
 | `raisedSkills` | [progress.js:114](../../src/lib/progress.js#L114) | ✓ |  |
-| `advanceSkillGoals` | [progress.js:119](../../src/lib/progress.js#L119) | ✓ |  |
-| `weekdaysOf` | [reminders.js:10](../../src/lib/reminders.js#L10) |  |  |
-| `nextOccurrence` | [reminders.js:18](../../src/lib/reminders.js#L18) | ✓ | ✓ |
-| `markDone` | [reminders.js:39](../../src/lib/reminders.js#L39) | ✓ | ✓ |
-| `isPastOneOff` | [reminders.js:43](../../src/lib/reminders.js#L43) | ✓ | ✓ |
-| `dueReminders` | [reminders.js:55](../../src/lib/reminders.js#L55) | ✓ | ✓ |
-| `followUpEvent` | [reminders.js:70](../../src/lib/reminders.js#L70) | ✓ | ✓ |
+| `advanceSkillGoals` | [progress.js:120](../../src/lib/progress.js#L120) | ✓ |  |
+| `weekdaysOf` | [reminders.js:11](../../src/lib/reminders.js#L11) |  |  |
+| `doneOnDay` | [reminders.js:15](../../src/lib/reminders.js#L15) |  |  |
+| `occursOn` | [reminders.js:20](../../src/lib/reminders.js#L20) |  |  |
+| `nextOccurrence` | [reminders.js:29](../../src/lib/reminders.js#L29) | ✓ | ✓ |
+| `markDone` | [reminders.js:51](../../src/lib/reminders.js#L51) | ✓ | ✓ |
+| `occurrenceToLog` | [reminders.js:61](../../src/lib/reminders.js#L61) | ✓ | ✓ |
+| `isPastOneOff` | [reminders.js:67](../../src/lib/reminders.js#L67) | ✓ | ✓ |
+| `dueReminders` | [reminders.js:79](../../src/lib/reminders.js#L79) | ✓ | ✓ |
+| `followUpEvent` | [reminders.js:94](../../src/lib/reminders.js#L94) | ✓ | ✓ |
 | `keepCopy` | [storage.js:10](../../src/lib/storage.js#L10) |  |  |
 | `loadSavedState` | [storage.js:33](../../src/lib/storage.js#L33) | ✓ |  |
 | `persistState` | [storage.js:59](../../src/lib/storage.js#L59) | ✓ |  |
@@ -256,7 +259,7 @@ Package: `layers-web` v1.0.27 · `src/`: 42 files, 5707 lines, 40 components, 10
 | `WEEKDAY_SHORT` | [dates.js:25](../../src/lib/dates.js#L25) |
 | `WEEKDAY_FULL` | [dates.js:27](../../src/lib/dates.js#L27) |
 | `MONTH_NAMES` | [dates.js:39](../../src/lib/dates.js#L39) |
-| `NOTIFY_WINDOW_MINUTES` | [reminders.js:50](../../src/lib/reminders.js#L50) |
+| `NOTIFY_WINDOW_MINUTES` | [reminders.js:74](../../src/lib/reminders.js#L74) |
 | `STORAGE_KEY` | [storage.js:5](../../src/lib/storage.js#L5) |
 | `UNREADABLE_PREFIX` | [storage.js:8](../../src/lib/storage.js#L8) |
 | `LAST_NOTIFIED_KEY` | [storage.js:68](../../src/lib/storage.js#L68) |
@@ -273,18 +276,18 @@ Package: `layers-web` v1.0.27 · `src/`: 42 files, 5707 lines, 40 components, 10
 
 | Channel | Direction | Defined |
 |---|---|---|
-| `update-status` | main → renderer push | [main.cjs:102](../../electron/main.cjs#L102) |
-| `open-download-page` | invoke → handle | [main.cjs:128](../../electron/main.cjs#L128) |
-| `check-for-updates` | invoke → handle | [main.cjs:140](../../electron/main.cjs#L140) |
-| `quit-and-install` | send → on | [main.cjs:141](../../electron/main.cjs#L141) |
-| `check-for-updates` | invoke → handle | [main.cjs:165](../../electron/main.cjs#L165) |
-| `quit-and-install` | send → on | [main.cjs:176](../../electron/main.cjs#L176) |
-| `set-theme` | send → on | [main.cjs:205](../../electron/main.cjs#L205) |
-| `get-app-version` | invoke → handle | [main.cjs:319](../../electron/main.cjs#L319) |
-| `show-window` | send → on | [main.cjs:321](../../electron/main.cjs#L321) |
-| `get-auto-launch` | invoke → handle | [main.cjs:334](../../electron/main.cjs#L334) |
-| `set-auto-launch` | invoke → handle | [main.cjs:344](../../electron/main.cjs#L344) |
-| `get-shortcut-status` | invoke → handle | [main.cjs:358](../../electron/main.cjs#L358) |
+| `update-status` | main → renderer push | [main.cjs:103](../../electron/main.cjs#L103) |
+| `open-download-page` | invoke → handle | [main.cjs:129](../../electron/main.cjs#L129) |
+| `check-for-updates` | invoke → handle | [main.cjs:141](../../electron/main.cjs#L141) |
+| `quit-and-install` | send → on | [main.cjs:142](../../electron/main.cjs#L142) |
+| `check-for-updates` | invoke → handle | [main.cjs:166](../../electron/main.cjs#L166) |
+| `quit-and-install` | send → on | [main.cjs:177](../../electron/main.cjs#L177) |
+| `set-theme` | send → on | [main.cjs:206](../../electron/main.cjs#L206) |
+| `get-app-version` | invoke → handle | [main.cjs:320](../../electron/main.cjs#L320) |
+| `show-window` | send → on | [main.cjs:326](../../electron/main.cjs#L326) |
+| `get-auto-launch` | invoke → handle | [main.cjs:339](../../electron/main.cjs#L339) |
+| `set-auto-launch` | invoke → handle | [main.cjs:349](../../electron/main.cjs#L349) |
+| `get-shortcut-status` | invoke → handle | [main.cjs:363](../../electron/main.cjs#L363) |
 
 ### Preload bridges (what the renderer can call)
 

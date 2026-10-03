@@ -10,7 +10,8 @@
 // The tests launch Layers with a temporary data folder, so they never touch
 // your real Layers data, and they can run while Layers is open.
 import { spawnSync } from 'node:child_process';
-import { existsSync } from 'node:fs';
+import { existsSync, mkdtempSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -36,6 +37,15 @@ if (build) {
 if (!existsSync(exe)) {
   console.error(`[e2e] No packaged app at ${exe}. Run without --no-build first.`);
   process.exit(1);
+}
+// Windows Smart App Control blocks unsigned apps it hasn't seen before, and
+// every build is a new file to it. A blocked exe can't even start (spawn
+// fails with UNKNOWN), which Playwright reports only as 'Process failed to
+// launch'. Check first, with --quit (exits at once), and say what happened.
+const probe = spawnSync(exe, ['--quit'], { env: { ...process.env, LAYERS_USER_DATA_DIR: mkdtempSync(join(tmpdir(), 'layers-e2e-probe-')), LAYERS_NO_UPDATES: '1' }, timeout: 30000 });
+if (probe.error) {
+  console.error(`[e2e] Windows wouldn't start ${exe} (${probe.error.code}). Smart App Control is probably blocking this unsigned build; see docs/testing.md ("When Windows blocks the build").`);
+  process.exit(3);
 }
 run('npx', ['playwright', 'test'], { ...process.env, LAYERS_EXE: exe });
 console.log('\n[e2e] All end-to-end tests passed.');

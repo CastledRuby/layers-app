@@ -379,7 +379,7 @@ function LayersApp() {
       STANDOUTS.filter(s => standouts.includes(s.key)).forEach(s => why.push(`You noted: ${s.label.toLowerCase()}`));
       if (why.length === 0) why.push('Logged a new interaction');
       if (leveledUp) levelUps.push({ name: p.name, layer: newLayer });
-      return movePerson(p, { layer: newLayer, overall: newOverall, at: chartAt, why, extra: { dims: newDims, goals: advanceSkillGoals(newGoals, raised), ...addNotes(p, notes, chartAt) } });
+      return movePerson(p, { layer: newLayer, overall: newOverall, at: chartAt, why, extra: { dims: newDims, goals: advanceSkillGoals(newGoals, raised, undefined, goalIds), ...addNotes(p, notes, chartAt) } });
     });
     setPeople(nextPeople);
     setGeneralGoals(prev => advanceSkillGoals(prev, raised));
@@ -406,6 +406,11 @@ function LayersApp() {
       return next;
     }));
     pushToast('Event updated');
+  }
+  // A reminder's linked goal, if it still exists (otherwise every goal moves,
+  // as for any other log).
+  function linkedGoalIds(ev) {
+    return ev.goalId && people.some(p => p.goals.some(g => g.id === ev.goalId)) ? [ev.goalId] : undefined;
   }
   // A one-off is done for good; a weekly reminder for that day only.
   function handleMarkEventDone(eventId, day, { quiet = false } = {}) {
@@ -475,7 +480,11 @@ function LayersApp() {
       message: title ? `"${title}" will be removed for good.` : 'This goal will be removed for good.',
       confirmLabel: 'Delete goal',
       danger: true,
-      onConfirm: () => { updateGoalsFor(personId, goals => goals.filter(g => g.id !== goalId)); pushToast('Goal removed'); },
+      onConfirm: () => {
+        updateGoalsFor(personId, goals => goals.filter(g => g.id !== goalId));
+        setEvents(prev => prev.map(e => { if (e.goalId !== goalId) return e; const next = { ...e }; delete next.goalId; return next; }));
+        pushToast('Goal removed');
+      },
     });
   }
   function handleBumpGoal(personId, goalId) {
@@ -646,9 +655,11 @@ function LayersApp() {
         setGeneralGoals(prev => prev.filter(g => !SAMPLE_GOAL_IDS.has(g.id)));
         setEvents(prev => unlinkMissingPeople(prev, remaining));
         if (resetSkills) setSkills(EMPTY_SKILLS);
-        // Achievements the samples earned weren't yours: work them out again.
+        // Achievements the samples earned weren't yours: keep the ones your
+        // own data still earns, with their original dates.
+        const still = achievementProgress(remaining, journal.filter(j => !SAMPLE_PERSON_IDS.has(j.personId)), resetSkills ? EMPTY_SKILLS : skills);
         quietAchievements.current = true;
-        setAchievements(null);
+        setAchievements(prev => Object.fromEntries(Object.entries(prev || {}).filter(([k]) => still[k] && still[k].done)));
         setCoachInit(c => SAMPLE_PERSON_IDS.has(c.personId) ? { ...c, personId: null } : c);
         setScreen({ name: 'tabs' }); setActiveTab('home');
         pushToast('Sample people removed');
@@ -805,7 +816,7 @@ function LayersApp() {
                     )}
                     {screen.name === 'tabs' && (
                       <>
-                        {activeTab === 'home' && <HomeView today={today} people={people} journal={journal} skills={skills} onAddPerson={() => setAddPersonOpen(true)} onOpenLog={() => openLog(null)} generalGoals={generalGoals} events={events} profile={profile} onOpenPerson={openPerson} onSwitchTab={switchTab} onOpenGoals={openGoalsOverview} onOpenCoach={(tab) => openCoach(null, tab)} onLogEvent={(ev, meaningfulness, detail) => { handleMarkEventDone(ev.id, ev.occursOn, { quiet: true }); handleLogSubmit({ personIds: ev.personIds, type: 'other', meaningfulness, notes: [], activeListening: [], summary: detail ? `${ev.title} — ${detail}` : ev.title, pickedDate: new Date(), goalIds: ev.goalId ? [ev.goalId] : undefined }); }} onMarkEventDone={handleMarkEventDone} onManageEvents={openEventManager} onEditEvent={openEditRecurringEvent} onDeleteEvent={handleDeleteEvent} />}
+                        {activeTab === 'home' && <HomeView today={today} people={people} journal={journal} skills={skills} onAddPerson={() => setAddPersonOpen(true)} onOpenLog={() => openLog(null)} generalGoals={generalGoals} events={events} profile={profile} onOpenPerson={openPerson} onSwitchTab={switchTab} onOpenGoals={openGoalsOverview} onOpenCoach={(tab) => openCoach(null, tab)} onLogEvent={(ev, meaningfulness, detail) => { handleMarkEventDone(ev.id, ev.occursOn, { quiet: true }); handleLogSubmit({ personIds: ev.personIds, type: 'other', meaningfulness, notes: [], activeListening: [], summary: detail ? `${ev.title} — ${detail}` : ev.title, pickedDate: new Date(), goalIds: linkedGoalIds(ev) }); }} onMarkEventDone={handleMarkEventDone} onManageEvents={openEventManager} onEditEvent={openEditRecurringEvent} onDeleteEvent={handleDeleteEvent} />}
                         {activeTab === 'people' && <PeopleView people={people} journal={journal} onOpenPerson={openPerson} onAddPerson={() => setAddPersonOpen(true)} />}
                         {activeTab === 'coach' && <CoachView people={people} journal={journal} initialPersonId={coachInit.personId} initialTab={coachInit.tab} onOpenLog={openLog} onApproveInfo={handleApproveInfo} onLogFromAnalysis={handleLogFromAnalysis} onOpenPerson={openPerson} />}
                         {activeTab === 'journal' && <JournalView today={today} people={people} journal={journal} onOpenPerson={openPerson} onEditEntry={setEditingEntryId} />}
@@ -830,7 +841,7 @@ function LayersApp() {
 
             <input ref={importInputRef} type="file" accept="application/json" onChange={handleImportFile} style={{ display: 'none' }} />
 
-            {logOpen && <LogInteractionModal people={people} defaultPersonId={logDefaultPerson} events={events} initialStep={logInitialStep} initialEditEvent={logEditEvent} onClose={closeLog} onSubmit={handleLogSubmit} onCreateEvent={handleCreateEvent} onUpdateEvent={handleUpdateEvent} onDeleteEvent={handleDeleteEvent} onMarkEventDone={handleMarkEventDone} />}
+            {logOpen && <LogInteractionModal people={people} defaultPersonId={logDefaultPerson} events={events} initialStep={logInitialStep} initialEditEvent={logEditEvent} onClose={closeLog} onSubmit={handleLogSubmit} onCreateEvent={handleCreateEvent} onUpdateEvent={handleUpdateEvent} onDeleteEvent={handleDeleteEvent} onMarkEventDone={handleMarkEventDone} linkedGoalIds={linkedGoalIds} />}
             {goalModalOpen && <GoalModal people={people} defaultPersonId={goalModalDefaultPerson} editingGoal={goalEditing ? goalEditing.goal : null} editingPersonId={goalEditing ? goalEditing.personId : null} onClose={closeGoalModal} onSave={handleGoalSave} />}
             {addInfoOpen && addInfoTarget && (
               <AddInfoModal personName={(people.find(p => p.id === addInfoTarget.personId) || {}).name} category={addInfoTarget.category} onClose={closeAddInfo} onSave={handleAddInfoSave} />

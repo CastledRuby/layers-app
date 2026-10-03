@@ -1,6 +1,6 @@
 // Reminders (P6): next occurrence, done state, notification timing, follow-ups.
 import { describe, expect, it } from 'vitest';
-import { dueReminders, followUpEvent, isPastOneOff, markDone, nextOccurrence } from './lib/reminders.js';
+import { dueReminders, followUpEvent, isPastOneOff, markDone, nextOccurrence, occurrenceToLog } from './lib/reminders.js';
 
 // Sunday 4 Oct 2026 (weekday 0), 9:05 AM local
 const NOW = new Date(2026, 9, 4, 9, 5);
@@ -30,7 +30,20 @@ describe('nextOccurrence', () => {
 describe('markDone / isPastOneOff', () => {
   it('finishes a one-off for good and a recurring one for the day', () => {
     expect(markDone(oneoff('2026-10-04'), '2026-10-04')).toMatchObject({ doneAt: '2026-10-04' });
-    expect(markDone(weekly([6]), '2026-10-04')).toMatchObject({ doneOn: '2026-10-04' });
+    expect(markDone(weekly([0]), '2026-10-04')).toMatchObject({ doneDays: ['2026-10-04'] });
+  });
+  it("skipping a later day doesn't undo today", () => {
+    const ev = markDone(markDone(weekly([0, 3]), '2026-10-04'), '2026-10-07');
+    expect(ev.doneDays).toEqual(['2026-10-04', '2026-10-07']);
+    expect(nextOccurrence(ev, NOW, 14)).toMatchObject({ day: '2026-10-11' }); // 4th and 7th both kept
+  });
+  it('reads the single doneOn of older saves', () => {
+    expect(nextOccurrence(weekly([0], { doneOn: '2026-10-04' }), NOW, 14)).toMatchObject({ day: '2026-10-11' });
+    expect(markDone(weekly([0], { doneOn: '2026-10-04' }), '2026-10-05')).toEqual(expect.objectContaining({ doneDays: ['2026-10-04', '2026-10-05'] }));
+  });
+  it('logs today when the reminder comes up today, even if already done', () => {
+    expect(occurrenceToLog(weekly([0], { doneDays: ['2026-10-04'] }), NOW)).toBe('2026-10-04');
+    expect(occurrenceToLog(weekly([3]), NOW)).toBe('2026-10-07');
   });
   it('flags a one-off whose day has passed without being done', () => {
     expect(isPastOneOff(oneoff('2026-10-03'), NOW)).toBe(true);

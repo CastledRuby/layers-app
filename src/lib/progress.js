@@ -115,11 +115,12 @@ export function raisedSkills(before, after) {
   return Object.keys(after).filter(k => before[k] && after[k].current > before[k].current);
 }
 
-// Skill goals whose skill went up move by SKILL_GOAL_STEP, with a chart point.
-export function advanceSkillGoals(goals, raised, at = toISODate(new Date())) {
+// Skill goals whose skill went up move by SKILL_GOAL_STEP, with a chart
+// point. `only` (goal ids) limits it to goals the log said it moved.
+export function advanceSkillGoals(goals, raised, at = toISODate(new Date()), only) {
   if (!raised.length) return goals;
   return goals.map(g => {
-    if (g.progress >= 100 || !raised.includes(SKILL_GOAL_PRESETS[g.type])) return g;
+    if (g.progress >= 100 || !raised.includes(SKILL_GOAL_PRESETS[g.type]) || (only && !only.includes(g.id))) return g;
     const value = clamp(g.progress + SKILL_GOAL_STEP, 0, 100);
     return { ...g, progress: value, history: pushHistoryPoint(g.history || [], { date: formatAbsoluteDate(new Date(`${at}T00:00:00`)), at, value }) };
   });
