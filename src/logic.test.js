@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { clamp } from './lib/util.js';
 import { computeOverall, layerForOverall, makePerson } from './lib/progress.js';
-import { summaryFor, homeGoalTitle, updateStatusText, getCheckInSuggestions, generateSuggestions } from './lib/text.js';
+import { summaryFor, homeGoalTitle, updateStatusText, getCheckInSuggestions, generateSuggestions, checkInReminder } from './lib/text.js';
 import {
   parseDaysAgo,
   journalDaysAgo,
@@ -390,5 +390,38 @@ describe('generateSuggestions', () => {
     const p = person({ plans: [{ text: 'a trip', at: '2026-10-03', archived: false }] });
     expect(generateSuggestions(p, NOW)).toHaveLength(0);
     expect(generateSuggestions(p, day(2026, 10, 7))).toHaveLength(1);
+  });
+});
+
+describe('checkInReminder', () => {
+  const people = [{ id: 'a', name: 'Alex' }, { id: 'b', name: 'Jamie' }, { id: 'c', name: 'Priya' }, { id: 'd', name: 'Noah' }];
+  const journalAt = (entries) => entries.map(([personId, at]) => ({ personId, at }));
+
+  it('says nothing when nobody is overdue', () => {
+    expect(checkInReminder(people, journalAt([['a', '2026-10-01']]), null, NOW)).toBeNull();
+  });
+  it('names one overdue person', () => {
+    const r = checkInReminder(people, journalAt([['a', '2026-09-10']]), null, NOW);
+    expect(r).toEqual({ day: '2026-10-03', body: "It's been a while since you checked in with Alex." });
+  });
+  it('names two, then counts the rest', () => {
+    const journal = journalAt([['a', '2026-09-01'], ['b', '2026-09-01'], ['c', '2026-09-01'], ['d', '2026-09-01']]);
+    expect(checkInReminder(people, journal, null, NOW).body).toBe("It's been a while since you checked in with Alex and Jamie, and 2 others.");
+    expect(checkInReminder(people.slice(0, 3), journal, null, NOW).body).toBe("It's been a while since you checked in with Alex and Jamie, and 1 other.");
+  });
+  it('fires at most once per day', () => {
+    const journal = journalAt([['a', '2026-09-10']]);
+    expect(checkInReminder(people, journal, '2026-10-03', NOW)).toBeNull();
+    expect(checkInReminder(people, journal, '2026-10-02', NOW)).not.toBeNull();
+  });
+  it('fires again the next day while the app is still running', () => {
+    const journal = journalAt([['a', '2026-09-10']]);
+    const first = checkInReminder(people, journal, null, NOW);
+    expect(checkInReminder(people, journal, first.day, day(2026, 10, 4))).toEqual({ day: '2026-10-04', body: first.body });
+  });
+  it('uses the local date, not UTC (it used to use toISOString)', () => {
+    // 00:30 local on Oct 4 is still Oct 3 in UTC for any timezone ahead of UTC, like New Zealand.
+    const justAfterMidnight = new Date(2026, 9, 4, 0, 30);
+    expect(checkInReminder(people, journalAt([['a', '2026-09-10']]), '2026-10-03', justAfterMidnight).day).toBe('2026-10-04');
   });
 });

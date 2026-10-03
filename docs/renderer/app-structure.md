@@ -31,6 +31,8 @@ and constant are in [../generated/code-map.md](../generated/code-map.md).
 | [`lib/progress.js`](../../src/lib/progress.js) | `computeOverall`, `layerForOverall`, `advanceLayer`, `makePerson`, `generateGoalDescription` |
 | [`lib/text.js`](../../src/lib/text.js) | Sentence builders: `summaryFor`, `homeGoalTitle`, `generateSuggestions`, `getCheckInSuggestions`, `buildPotentialHooks`, `updateStatusText` |
 | [`lib/storage.js`](../../src/lib/storage.js) | `loadSaved` / `persistState` (the `layers-app-state-v1` key) and the last-notified-day bookkeeping |
+| [`lib/backup.js`](../../src/lib/backup.js) | `createBackup` / `validateBackup` for Export and Import. See [state-and-data.md](state-and-data.md#backup-format). |
+| [`lib/hooks.js`](../../src/lib/hooks.js) | `useToday` (the local date, updated at midnight) and `useDailyCheckIn` (the once-a-day reminder). The only React in `lib/`. |
 | [`components/`](../../src/components/) | `Sheet` + `SheetPortal` (and `sheetLayer.js` for the context), `atoms.jsx` (`CircularProgress`, `ProgressBar`, `LabeledBar`, `Avatar`, `LayerBadge`, `ChatBubble`, `Timeline`, `ConvStateBadge`), `rows.jsx` (`GoalRow`, `InfoItemRow`), `BottomNav`, `pickers.jsx` (`DateDropdown`, `TimeDropdown`) |
 | [`modals/`](../../src/modals/) | `ConfirmDialog`, `EditPersonModal`, `LogInteractionModal`, `GoalModal`, `TemplatePickerModal`, `QuickAddInterestModal`, `AddInfoModal`, `AddPersonModal`, `ShortcutsModal` |
 | [`views/`](../../src/views/) | `HomeView`, `PeopleView`, `PersonProfile` (with `AdjustSlider`, `PrepareTipsModal`), `GoalsView`, `JournalView`, `CoachView`, `MeView`, `OnboardingView` |

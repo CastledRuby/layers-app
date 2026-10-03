@@ -7,7 +7,7 @@ import { Sheet } from '../components/Sheet.jsx';
 import { Avatar, CircularProgress, LabeledBar, LayerBadge, Timeline } from '../components/atoms.jsx';
 import { GoalRow, InfoItemRow } from '../components/rows.jsx';
 import { CATEGORIES, DIM_COLORS, DIM_LABELS, DIM_ORDER, getLayer } from '../data/constants.js';
-import { sortHistory } from '../lib/dates.js';
+import { parseISODay, sortHistory } from '../lib/dates.js';
 import { buildPotentialHooks, generateSuggestions } from '../lib/text.js';
 import { COLORS } from '../theme.js';
 
@@ -50,13 +50,14 @@ function PrepareTipsModal({ person, journal, onClose, onOpenFullCoach }) {
   );
 }
 
-export function PersonProfile({ person, journal, onBack, onOpenLog, onOpenGoalCreate, onOpenGoalEdit, onDeleteGoal, onBumpGoal, onOpenAddInfo, onOpenQuickAddInterest, onSaveInfo, onDeleteInfo, onToggleTemporary, onToggleArchive, onAdjust, onOpenCoach, onEditPerson, onClearLevelUpFlag }) {
+export function PersonProfile({ today, person, journal, onBack, onOpenLog, onOpenGoalCreate, onOpenGoalEdit, onDeleteGoal, onBumpGoal, onOpenAddInfo, onOpenQuickAddInterest, onSaveInfo, onDeleteInfo, onToggleTemporary, onToggleArchive, onAdjust, onOpenCoach, onEditPerson, onClearLevelUpFlag }) {
   const [prepareOpen, setPrepareOpen] = useState(false);
   const [showAdjust, setShowAdjust] = useState(false);
   const [draft, setDraft] = useState(person.dims);
   const [showArchived, setShowArchived] = useState({});
   const l = getLayer(person.layer);
-  const suggestions = useMemo(() => generateSuggestions(person), [person]);
+  // `today` changes at midnight, so suggestions age even while the app stays open.
+  const suggestions = useMemo(() => generateSuggestions(person, parseISODay(today) || new Date()), [person, today]);
 
   useEffect(() => {
     if (!person.justLeveledUp) return;

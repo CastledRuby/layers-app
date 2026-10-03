@@ -32,8 +32,15 @@ These keys are saved as one JSON blob under `localStorage['layers-app-state-v1']
 | `onboarded` | `boolean` | `false` |
 | `theme` | `'light' \| 'dark'` | `'light'` |
 
-`localStorage['layers-last-notified-date']` stores the day the "haven't checked in"
-desktop notification last fired, so it fires at most once a day.
+`localStorage['layers-last-notified-date']` stores the local day (`YYYY-MM-DD`) the
+"haven't checked in" desktop notification last fired, so it fires at most once a day.
+`useDailyCheckIn` ([`src/lib/hooks.js`](../../src/lib/hooks.js)) checks 4 s after launch
+and again whenever the local date changes. `useToday` notices the change within a minute
+of midnight, or as soon as the window becomes visible again. `checkInReminder` in
+`lib/text.js` decides whether it's due and words it. `LayersApp` also passes `today` to
+`HomeView` and `PersonProfile`, whose cached date maths ("Upcoming", "haven't caught
+up", weekly counts, profile suggestions) runs from it, so it refreshes at midnight even
+when the app has been in the tray for days.
 
 ### UI-only state (not persisted)
 

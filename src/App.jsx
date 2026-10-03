@@ -12,8 +12,8 @@ import { EMPTY_SKILLS, INITIAL_GENERAL_GOALS, INITIAL_JOURNAL, INITIAL_PEOPLE, I
 import { backfillJournalDates, backfillPeopleDates, formatAbsoluteDate, pushHistoryPoint, toISODate } from './lib/dates.js';
 import { advanceLayer, computeOverall, layerForOverall, makePerson } from './lib/progress.js';
 import { MAX_BACKUP_BYTES, createBackup, validateBackup } from './lib/backup.js';
-import { getLastNotifiedDate, loadSaved, persistState, setLastNotifiedDate } from './lib/storage.js';
-import { getCheckInSuggestions } from './lib/text.js';
+import { useDailyCheckIn, useToday } from './lib/hooks.js';
+import { loadSaved, persistState } from './lib/storage.js';
 import { clamp, uid } from './lib/util.js';
 import { AddInfoModal } from './modals/AddInfoModal.jsx';
 import { AddPersonModal } from './modals/AddPersonModal.jsx';
@@ -81,30 +81,9 @@ function LayersApp() {
     persistState({ people, journal, generalGoals, events, skills, profile, onboarded, theme });
   }, [people, journal, generalGoals, events, skills, profile, onboarded, theme]);
 
-  useEffect(() => {
-    if (!onboarded) return;
-    const t = setTimeout(() => {
-      try {
-        if (typeof Notification === 'undefined') return;
-        const today = new Date().toISOString().slice(0, 10);
-        if (getLastNotifiedDate() === today) return;
-        const names = getCheckInSuggestions(people, journal);
-        if (names.length === 0) return;
-        const fire = () => {
-          const list = names.slice(0, 2).join(' and ');
-          const extra = names.length > 2 ? `, and ${names.length - 2} other${names.length - 2 > 1 ? 's' : ''}` : '';
-          new Notification('Layers', { body: `It's been a while since you checked in with ${list}${extra}.` });
-          setLastNotifiedDate(today);
-        };
-        if (Notification.permission === 'granted') fire();
-        else if (Notification.permission !== 'denied') {
-          Notification.requestPermission().then(p => { if (p === 'granted') fire(); });
-        }
-      } catch (e) { /* Notifications unavailable in this environment; ignore. */ }
-    }, 4000);
-    return () => clearTimeout(t);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [onboarded]);
+  // "Today" for date-derived labels, and the once-a-day check-in reminder.
+  const today = useToday();
+  useDailyCheckIn(onboarded, people, journal, today);
 
   useEffect(() => {
     if (!hasUpdater) return;
@@ -596,6 +575,7 @@ function LayersApp() {
                 <>
                   {screen.name === 'person' && selectedPerson && (
                     <PersonProfile
+                      today={today}
                       person={selectedPerson}
                       journal={journal}
                       onBack={backToTabs}
@@ -621,7 +601,7 @@ function LayersApp() {
                   )}
                   {screen.name === 'tabs' && (
                     <>
-                      {activeTab === 'home' && <HomeView people={people} journal={journal} generalGoals={generalGoals} events={events} profile={profile} onOpenPerson={openPerson} onSwitchTab={switchTab} onOpenGoals={openGoalsOverview} onOpenCoach={(tab) => openCoach(null, tab)} onLogEvent={(ev, meaningfulness, detail) => handleLogSubmit({ personIds: ev.personIds, type: 'other', meaningfulness, notes: [], activeListening: [], summary: detail ? `${ev.title} — ${detail}` : ev.title, pickedDate: new Date() })} onManageEvents={openEventManager} onEditEvent={openEditRecurringEvent} onDeleteEvent={handleDeleteEvent} />}
+                      {activeTab === 'home' && <HomeView today={today} people={people} journal={journal} generalGoals={generalGoals} events={events} profile={profile} onOpenPerson={openPerson} onSwitchTab={switchTab} onOpenGoals={openGoalsOverview} onOpenCoach={(tab) => openCoach(null, tab)} onLogEvent={(ev, meaningfulness, detail) => handleLogSubmit({ personIds: ev.personIds, type: 'other', meaningfulness, notes: [], activeListening: [], summary: detail ? `${ev.title} — ${detail}` : ev.title, pickedDate: new Date() })} onManageEvents={openEventManager} onEditEvent={openEditRecurringEvent} onDeleteEvent={handleDeleteEvent} />}
                       {activeTab === 'people' && <PeopleView people={people} journal={journal} onOpenPerson={openPerson} onAddPerson={() => setAddPersonOpen(true)} />}
                       {activeTab === 'coach' && <CoachView people={people} journal={journal} generalGoals={generalGoals} initialPersonId={coachInit.personId} initialTab={coachInit.tab} onOpenLog={openLog} onApproveInfo={handleApproveInfo} onLogFromAnalysis={handleLogFromAnalysis} onOpenPerson={openPerson} />}
                       {activeTab === 'journal' && <JournalView people={people} journal={journal} onOpenPerson={openPerson} />}

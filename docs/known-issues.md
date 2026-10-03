@@ -23,11 +23,6 @@ Follow the checklist in [build-and-release.md](build-and-release.md). Consider a
 
 ### 2. Smaller items
 
-- **The "daily" check-in notification only runs once per launch.** Its effect in
-  `LayersApp` depends only on `[onboarded]`, and closing the window hides it to the tray,
-  so the page is never reloaded. If the app stays running for days, the check doesn't run
-  again. For the same reason, a label like "Today" doesn't change at midnight. It updates
-  the next time that view re-renders.
 - **Unused files.** The `electron/*-light.png` / `*-dark.png` icon variants aren't
   referenced anywhere. The `src/assets/*` files are Vite template leftovers.
 - **Misleading updater setting.** `autoDownload = false` is set, but the
@@ -39,6 +34,7 @@ Follow the checklist in [build-and-release.md](build-and-release.md). Consider a
 
 | Version | Issue |
 |---|---|
+| 1.0.26 | The "daily" check-in reminder only ran once per launch, using the data from launch time, so an app left in the tray never reminded you again. It also took "today" from the UTC date, which is still yesterday in New Zealand until around midday. `useDailyCheckIn` now re-checks whenever the local day changes (`useToday`), and Home and profile labels refresh at midnight. |
 | 1.0.26 | Imports weren't checked: a wrong or damaged file could replace your data or crash a screen (a person without a `goals` list crashed Home). `validateBackup` now refuses bad files, repairs or skips damaged records, and the confirm dialog says what will be imported ([renderer/state-and-data.md](renderer/state-and-data.md#backup-format)). |
 | 1.0.26 | Dark mode flashed white at startup (the window's background was hard-coded light). The window, the page and React now all paint the saved theme ([renderer/ui-system.md](renderer/ui-system.md#no-flash-at-startup)). |
 | 1.0.26 | A running `npm run dev` made release builds fail with `EPERM` (Vite watched `release/`, so electron-builder couldn't rename `win-unpacked.tmp`). `vite.config.js` now skips the build output folders and `.claude/` with a path-prefix check. Globs don't work here: the folder name's parentheses break them, and `**/.claude/**` matched the whole project inside a worktree. |

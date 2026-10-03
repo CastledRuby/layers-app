@@ -50,7 +50,7 @@ feature is guarded by `hasUpdater` / `hasSystemBridge` checks in `LayersApp`.
 │   ├── theme.js              Design tokens + the global CSS string
 │   ├── fonts.js              Bundled Fraunces/Manrope @font-face rules (works offline)
 │   ├── data/                 Static data (constants, seed, coach scenarios)
-│   ├── lib/                  Pure logic: dates, progress, text, storage
+│   ├── lib/                  Logic: dates, progress, text, storage, backup (+ hooks)
 │   ├── components/           Shared UI: Sheet, atoms, rows, pickers, BottomNav
 │   ├── modals/               One file per sheet/dialog
 │   ├── views/                One file per screen

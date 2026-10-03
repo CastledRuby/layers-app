@@ -4,13 +4,18 @@ import { useMemo, useState } from 'react';
 import { Repeat, X } from 'lucide-react';
 import { Avatar, ProgressBar } from '../components/atoms.jsx';
 import { FOCUS_LABELS, getLayer } from '../data/constants.js';
-import { formatCalendarDate, formatTime12, formatWeekdays, isJournalThisWeek, journalDateLabel, journalDaysAgo, startOfDay } from '../lib/dates.js';
+import { formatCalendarDate, formatTime12, formatWeekdays, isJournalThisWeek, journalDateLabel, journalDaysAgo, parseISODay, startOfDay } from '../lib/dates.js';
 import { homeGoalTitle, summaryFor } from '../lib/text.js';
 import { TemplatePickerModal } from '../modals/TemplatePickerModal.jsx';
 import { COLORS } from '../theme.js';
 
-export function HomeView({ people, journal, generalGoals, events, profile, onOpenPerson, onSwitchTab, onOpenGoals, onOpenCoach, onLogEvent, onManageEvents, onEditEvent, onDeleteEvent }) {
-  const greeting = useMemo(() => { const h = new Date().getHours(); if (h < 12) return 'Good morning'; if (h < 18) return 'Good afternoon'; return 'Good evening'; }, []);
+export function HomeView({ today, people, journal, generalGoals, events, profile, onOpenPerson, onSwitchTab, onOpenGoals, onOpenCoach, onLogEvent, onManageEvents, onEditEvent, onDeleteEvent }) {
+  // `today` (from useToday) changes at midnight. The date maths below runs
+  // from it, so "Upcoming", "haven't caught up" and the weekly counts
+  // refresh then, even if the app has been open in the tray for days.
+  const now = useMemo(() => parseISODay(today) || new Date(), [today]);
+  const hour = new Date().getHours();
+  const greeting = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
   const peopleById = useMemo(() => Object.fromEntries(people.map(p => [p.id, p])), [people]);
   const [expandedUpcoming, setExpandedUpcoming] = useState(null);
   const [upcomingMeaningfulness, setUpcomingMeaningfulness] = useState(3);
@@ -24,20 +29,20 @@ export function HomeView({ people, journal, generalGoals, events, profile, onOpe
   // background/notification permission plumbing in the Electron main
   // process, so nothing fires while the app is closed or minimized.
   const upcoming = useMemo(() => {
-    const today = startOfDay(new Date());
+    const day = startOfDay(now);
     const items = [];
     (events || []).forEach(ev => {
       const evWeekdays = ev.weekdays || (ev.weekday != null ? [ev.weekday] : []);
       if (ev.kind === 'oneoff' && ev.date) {
         const d = new Date(ev.date + 'T00:00:00');
-        const diff = Math.round((d - today) / 86400000);
+        const diff = Math.round((d - day) / 86400000);
         if (diff >= 0 && diff <= 7) items.push({ ...ev, sortAt: d.getTime() + (ev.time || 0) * 60000, when: diff === 0 ? 'Today' : diff === 1 ? 'Tomorrow' : formatCalendarDate(d) });
-      } else if (ev.kind === 'recurring' && evWeekdays.includes(today.getDay())) {
-        items.push({ ...ev, sortAt: today.getTime() + (ev.time || 0) * 60000, when: 'Today' });
+      } else if (ev.kind === 'recurring' && evWeekdays.includes(day.getDay())) {
+        items.push({ ...ev, sortAt: day.getTime() + (ev.time || 0) * 60000, when: 'Today' });
       }
     });
     return items.sort((a, b) => a.sortAt - b.sortAt).slice(0, 4);
-  }, [events]);
+  }, [events, now]);
 
   const activeGoals = useMemo(() => people.flatMap(p => p.goals).concat(generalGoals).filter(g => g.progress < 100).length, [people, generalGoals]);
 
@@ -47,7 +52,7 @@ export function HomeView({ people, journal, generalGoals, events, profile, onOpe
   const quietPeople = useMemo(() => {
     const lastByPerson = new Map();
     journal.forEach(j => {
-      const days = journalDaysAgo(j);
+      const days = journalDaysAgo(j, now);
       const cur = lastByPerson.get(j.personId);
       if (cur === undefined || days < cur) lastByPerson.set(j.personId, days);
     });
@@ -56,15 +61,15 @@ export function HomeView({ people, journal, generalGoals, events, profile, onOpe
       .filter(x => x.daysQuiet === null || x.daysQuiet >= 14)
       .sort((a, b) => (b.daysQuiet === null ? 9999 : b.daysQuiet) - (a.daysQuiet === null ? 9999 : a.daysQuiet))
       .slice(0, 4);
-  }, [people, journal]);
+  }, [people, journal, now]);
   const conversationsLogged = journal.length;
   const meaningfulInteractions = useMemo(() => journal.filter(j => j.meaningfulness >= 4).length, [journal]);
   const relationshipsInProgress = useMemo(() => {
     const s = new Set();
     people.forEach(p => { if (p.goals.some(g => g.progress < 100)) s.add(p.id); });
-    journal.forEach(j => { if (isJournalThisWeek(j)) s.add(j.personId); });
+    journal.forEach(j => { if (isJournalThisWeek(j, now)) s.add(j.personId); });
     return s.size;
-  }, [people, journal]);
+  }, [people, journal, now]);
 
   const topGoals = useMemo(() => {
     const fromPeople = people.flatMap(p => p.goals.filter(g => g.progress < 100).map(g => ({ ...g, personName: p.name, color: getLayer(p.layer).color })));

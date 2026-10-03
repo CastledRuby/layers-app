@@ -136,7 +136,7 @@ export function pushHistoryPoint(history, point) {
 // computed once, so anything saved as 'Today' read 'Today' forever. A record
 // without a usable `at` falls back to its old label — journal `date`, info
 // item `updated`, timeline `date` — read as of `now`.
-function parseISODay(s) {
+export function parseISODay(s) {
   if (typeof s !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(s)) return null;
   const d = new Date(s + 'T00:00:00');
   return isNaN(d.getTime()) ? null : d;

@@ -1,8 +1,8 @@
 // Builds user-facing sentences: journal summaries, goal titles, profile
-// suggestions, check-in names, coach hooks and updater status.
+// suggestions, check-in names and reminder, coach hooks and updater status.
 
 import { TYPE_META } from '../data/constants.js';
-import { infoItemDaysAgo, journalDateLabel, journalDaysAgo } from './dates.js';
+import { infoItemDaysAgo, journalDateLabel, journalDaysAgo, toISODate } from './dates.js';
 
 export function summaryFor(entry) {
   if (entry.summary) return entry.summary;
@@ -56,6 +56,21 @@ export function getCheckInSuggestions(people, journal, now = new Date()) {
     if (lastSeen[j.personId] === undefined || d < lastSeen[j.personId]) lastSeen[j.personId] = d;
   });
   return people.filter(p => lastSeen[p.id] !== undefined && lastSeen[p.id] >= 14).map(p => p.name);
+}
+
+// The daily "haven't checked in" notification: null if it already went out
+// today (`lastNotified` is the local 'YYYY-MM-DD' it last fired) or nobody is
+// overdue; otherwise the day to record and the text to show. Uses the local
+// date, so "today" flips at local midnight, not UTC.
+export function checkInReminder(people, journal, lastNotified, now = new Date()) {
+  const day = toISODate(now);
+  if (lastNotified === day) return null;
+  const names = getCheckInSuggestions(people, journal, now);
+  if (names.length === 0) return null;
+  const list = names.slice(0, 2).join(' and ');
+  const others = names.length - 2;
+  const extra = others > 0 ? `, and ${others} other${others > 1 ? 's' : ''}` : '';
+  return { day, body: `It's been a while since you checked in with ${list}${extra}.` };
 }
 
 export const HOOKS = [
