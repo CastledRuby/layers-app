@@ -18,6 +18,24 @@ back to black. That was the root cause of the "Edit goal" bug (below).
 To add a colour, add the key to both `THEME_LIGHT` and `THEME_DARK`, then use
 `COLORS.yourKey`. `cssVarBlock` emits the variable automatically.
 
+### No flash at startup
+
+Three layers keep a dark-mode launch dark from the first frame. Each one covers the
+moment before the next takes over:
+
+1. **The Electron window** opens with `backgroundColor` set to the saved theme's paper
+   colour. `main.cjs` stores the theme in `theme.json` in the userData folder.
+2. **The page**, before any app code runs: an inline script in `index.html` reads the
+   theme from `localStorage` and paints `<html>` with the paper colour.
+3. **React**: an effect in `LayersApp` keeps `<html>`'s background in sync and calls
+   `layersSystem.setTheme(theme)` whenever the theme changes, so the window colour and
+   `theme.json` are right for the next launch.
+
+The two paper colours (`#F5F6F1`, `#1B1E27`) are therefore written in three places:
+`THEME_*.paper` in `theme.js`, `BACKGROUNDS` in `main.cjs`, and the `index.html` script.
+Change all three together. The first launch after upgrading from 1.0.25 or earlier can
+still flash once, because `theme.json` doesn't exist until the app has reported its theme.
+
 ## Styling layers
 
 1. **Tailwind utilities** in `className` handle layout and spacing (`flex`,

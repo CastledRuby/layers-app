@@ -10,7 +10,7 @@ channel are in [generated/code-map.md](generated/code-map.md#electron-ipc).
 |---|---|---|
 | App identity | `app.setAppUserModelId('com.layers.app')` | Must match `build.appId` so Windows groups taskbar entries, toasts and shortcuts with the installed app. |
 | Single instance | `app.requestSingleInstanceLock()` | A second launch calls `app.exit(0)` immediately. `Layers.exe --quit` makes the running instance quit cleanly (used by `npm run release` before installing), and exits straight away if none is running. Otherwise the first instance receives `second-instance` and restores, shows and focuses its window. |
-| Window | `createWindow()` | 420×860 default, min 360×600. Size and position persist via `electron-window-state` (`window-state.json` in userData). `contextIsolation: true`, `nodeIntegration: false`. Loads `electron/app/index.html` with `loadFile`. |
+| Window | `createWindow()` | 420×860 default, min 360×600. `backgroundColor` is the saved theme's paper colour (`savedTheme()` reads `theme.json` in userData), so dark mode doesn't flash white. Size and position persist via `electron-window-state` (`window-state.json` in userData). `contextIsolation: true`, `nodeIntegration: false`. Loads `electron/app/index.html` with `loadFile`. |
 | Close → tray | `mainWindow.on('close')` | Closing hides the window unless `isQuitting` is set. Quit through the tray menu, the updater or `before-quit`. |
 | Tray | `createTray()` | Menu has **Open Layers** and **Quit**. A click shows or focuses the window. |
 | Global shortcut | `registerGlobalShortcut()` | **Ctrl+Shift+L** restores, shows and focuses the window. Unregistered on `will-quit`. |
@@ -42,6 +42,7 @@ The renderer turns these statuses into toasts and the Me-tab update row
 | `getAutoLaunch()` | `invoke('get-auto-launch')` | `app.getLoginItemSettings().openAtLogin` |
 | `setAutoLaunch(enabled)` | `invoke('set-auto-launch')` | Sets the login item and returns the new value |
 | `getVersion()` | `invoke('get-app-version')` | `app.getVersion()` |
+| `setTheme(theme)` | `send('set-theme')` | Sets the window's background colour and saves `{ theme }` to `theme.json` for the next launch (see [ui-system.md](renderer/ui-system.md#no-flash-at-startup)) |
 
 Ctrl+Shift+L doesn't message the renderer. Up to 1.0.23 it also sent
 `trigger-log-interaction` to open the log sheet. That channel and its

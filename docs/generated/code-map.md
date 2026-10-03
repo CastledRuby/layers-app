@@ -4,14 +4,14 @@
 > Run `npm run docs:map` after changing anything under `src/`, `electron/*.cjs` or `package.json` scripts.
 > Hand-written explanations live in the other files under [`docs/`](../README.md).
 
-Package: `layers-web` v1.0.25 · `src/`: 35 files, 4375 lines, 37 components, 50 top-level functions, 43 constants.
+Package: `layers-web` v1.0.25 · `src/`: 35 files, 4383 lines, 37 components, 50 top-level functions, 43 constants.
 
 ## Source files
 
 | File | Lines | Declares | Imports from |
 |---|---|---|---|
 | [main.jsx](../../src/main.jsx) | 11 | — | — |
-| [App.jsx](../../src/App.jsx) | 673 | LayersApp | `components/BottomNav`, `components/sheetLayer`, `data/constants`, `data/seed`, `lib/dates`, `lib/progress`, `lib/storage`, `lib/text`, `lib/util`, `modals/AddInfoModal`, `modals/AddPersonModal`, `modals/ConfirmDialog`, `modals/EditPersonModal`, `modals/GoalModal`, `modals/LogInteractionModal`, `modals/QuickAddInterestModal`, `modals/ShortcutsModal`, `modals/TemplatePickerModal`, `theme`, `views/CoachView`, `views/GoalsView`, `views/HomeView`, `views/JournalView`, `views/MeView`, `views/OnboardingView`, `views/PeopleView`, `views/PersonProfile` |
+| [App.jsx](../../src/App.jsx) | 681 | LayersApp | `components/BottomNav`, `components/sheetLayer`, `data/constants`, `data/seed`, `lib/dates`, `lib/progress`, `lib/storage`, `lib/text`, `lib/util`, `modals/AddInfoModal`, `modals/AddPersonModal`, `modals/ConfirmDialog`, `modals/EditPersonModal`, `modals/GoalModal`, `modals/LogInteractionModal`, `modals/QuickAddInterestModal`, `modals/ShortcutsModal`, `modals/TemplatePickerModal`, `theme`, `views/CoachView`, `views/GoalsView`, `views/HomeView`, `views/JournalView`, `views/MeView`, `views/OnboardingView`, `views/PeopleView`, `views/PersonProfile` |
 | [theme.js](../../src/theme.js) | 129 | THEME_LIGHT, THEME_DARK, COLORS, cssVarBlock, CSS | `fonts` |
 | [data/constants.js](../../src/data/constants.js) | 167 | LAYERS, getLayer, DIM_ORDER, DIM_LABELS, DIM_COLORS, LAYER_BASE_DIMS, CATEGORIES, categoryMeta, SHORTCUTS, EMOJI_CHOICES, … (+17) | `theme` |
 | [data/scenarios.js](../../src/data/scenarios.js) | 115 | SCENARIOS | — |
@@ -197,12 +197,13 @@ Package: `layers-web` v1.0.25 · `src/`: 35 files, 4375 lines, 37 components, 50
 
 | Channel | Direction | Defined |
 |---|---|---|
-| `update-status` | main → renderer push | [main.cjs:55](../../electron/main.cjs#L55) |
-| `check-for-updates` | invoke → handle | [main.cjs:91](../../electron/main.cjs#L91) |
-| `quit-and-install` | send → on | [main.cjs:102](../../electron/main.cjs#L102) |
-| `get-app-version` | invoke → handle | [main.cjs:171](../../electron/main.cjs#L171) |
-| `get-auto-launch` | invoke → handle | [main.cjs:176](../../electron/main.cjs#L176) |
-| `set-auto-launch` | invoke → handle | [main.cjs:179](../../electron/main.cjs#L179) |
+| `update-status` | main → renderer push | [main.cjs:56](../../electron/main.cjs#L56) |
+| `check-for-updates` | invoke → handle | [main.cjs:92](../../electron/main.cjs#L92) |
+| `quit-and-install` | send → on | [main.cjs:103](../../electron/main.cjs#L103) |
+| `set-theme` | send → on | [main.cjs:132](../../electron/main.cjs#L132) |
+| `get-app-version` | invoke → handle | [main.cjs:203](../../electron/main.cjs#L203) |
+| `get-auto-launch` | invoke → handle | [main.cjs:208](../../electron/main.cjs#L208) |
+| `set-auto-launch` | invoke → handle | [main.cjs:211](../../electron/main.cjs#L211) |
 
 ### Preload bridges (what the renderer can call)
 
@@ -214,6 +215,7 @@ Package: `layers-web` v1.0.25 · `src/`: 35 files, 4375 lines, 37 components, 50
 | `window.layersSystem.getAutoLaunch()` | `get-auto-launch` | [preload.cjs:14](../../electron/preload.cjs#L14) |
 | `window.layersSystem.setAutoLaunch()` | `set-auto-launch` | [preload.cjs:15](../../electron/preload.cjs#L15) |
 | `window.layersSystem.getVersion()` | `get-app-version` | [preload.cjs:16](../../electron/preload.cjs#L16) |
+| `window.layersSystem.setTheme()` | `set-theme` | [preload.cjs:17](../../electron/preload.cjs#L17) |
 
 ### Channel mismatches
 

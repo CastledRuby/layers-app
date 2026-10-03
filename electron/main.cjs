@@ -1,4 +1,5 @@
 const { app, BrowserWindow, Tray, Menu, nativeImage, ipcMain, globalShortcut } = require('electron');
+const fs = require('fs');
 const path = require('path');
 const windowStateKeeper = require('electron-window-state');
 
@@ -109,6 +110,37 @@ function setupAutoUpdate() {
   setTimeout(() => { autoUpdater.checkForUpdates().catch(() => {}); }, 8000);
 }
 
+// --- Theme-aware window background ---------------------------------------
+// The window paints backgroundColor before the page loads. It used to be the
+// light paper colour, so dark mode flashed white on every launch. The
+// renderer reports its theme (layersSystem.setTheme) whenever it changes,
+// and it's saved here so the next launch opens in the right colour.
+// Keep these in sync with THEME_LIGHT.paper / THEME_DARK.paper (src/theme.js)
+// and the early script in index.html.
+const BACKGROUNDS = { light: '#F5F6F1', dark: '#1B1E27' };
+const themeFile = () => path.join(app.getPath('userData'), 'theme.json');
+
+function savedTheme() {
+  try {
+    return JSON.parse(fs.readFileSync(themeFile(), 'utf8')).theme === 'dark' ? 'dark' : 'light';
+  } catch (e) {
+    return 'light';
+  }
+}
+
+function setupThemeSync() {
+  ipcMain.on('set-theme', (_event, theme) => {
+    const next = theme === 'dark' ? 'dark' : 'light';
+    if (mainWindow && !mainWindow.isDestroyed()) mainWindow.setBackgroundColor(BACKGROUNDS[next]);
+    if (next === savedTheme()) return;
+    try {
+      fs.writeFileSync(themeFile(), JSON.stringify({ theme: next }));
+    } catch (e) {
+      // Not fatal: the next launch just opens with the light background.
+    }
+  });
+}
+
 function createWindow() {
   const windowState = windowStateKeeper({
     defaultWidth: 420,
@@ -123,7 +155,7 @@ function createWindow() {
     height: windowState.height,
     minWidth: 360,
     minHeight: 600,
-    backgroundColor: '#F5F6F1',
+    backgroundColor: BACKGROUNDS[savedTheme()],
     title: 'Layers',
     icon: path.join(__dirname, 'icon.png'),
     autoHideMenuBar: true,
@@ -193,6 +225,7 @@ function registerGlobalShortcut() {
 }
 
 app.whenReady().then(() => {
+  setupThemeSync();
   createWindow();
   createTray();
   setupAutoUpdate();

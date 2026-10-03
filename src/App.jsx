@@ -23,7 +23,7 @@ import { LogInteractionModal } from './modals/LogInteractionModal.jsx';
 import { QuickAddInterestModal } from './modals/QuickAddInterestModal.jsx';
 import { ShortcutsModal } from './modals/ShortcutsModal.jsx';
 import { TemplatePickerModal } from './modals/TemplatePickerModal.jsx';
-import { COLORS, CSS } from './theme.js';
+import { COLORS, CSS, THEME_DARK, THEME_LIGHT } from './theme.js';
 import { CoachView } from './views/CoachView.jsx';
 import { GoalsView } from './views/GoalsView.jsx';
 import { HomeView } from './views/HomeView.jsx';
@@ -130,6 +130,14 @@ function LayersApp() {
     window.layersSystem.getAutoLaunch().then(v => setAutoLaunch(!!v)).catch(() => {});
     if (window.layersSystem.getVersion) window.layersSystem.getVersion().then(v => setAppVersion(v)).catch(() => {});
   }, [hasSystemBridge]);
+
+  // Keep the page and the Electron window background on the theme's paper
+  // colour, so nothing flashes white on resize or at the next launch (main.cjs
+  // saves the theme for that; index.html paints it before the app loads).
+  useEffect(() => {
+    document.documentElement.style.background = (theme === 'dark' ? THEME_DARK : THEME_LIGHT).paper;
+    if (hasSystemBridge && window.layersSystem.setTheme) window.layersSystem.setTheme(theme);
+  }, [theme, hasSystemBridge]);
 
   function handleToggleAutoLaunch() {
     if (!hasSystemBridge) return;

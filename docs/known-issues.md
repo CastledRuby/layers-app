@@ -30,8 +30,6 @@ Follow the checklist in [build-and-release.md](build-and-release.md). Consider a
   so the page is never reloaded. If the app stays running for days, the check doesn't run
   again. For the same reason, a label like "Today" doesn't change at midnight. It updates
   the next time that view re-renders.
-- **Startup flash in dark mode.** `BrowserWindow` uses a hard-coded light
-  `backgroundColor` (`#F5F6F1`).
 - **Unused files.** The `electron/*-light.png` / `*-dark.png` icon variants aren't
   referenced anywhere. The `src/assets/*` files are Vite template leftovers.
 - **Misleading updater setting.** `autoDownload = false` is set, but the
@@ -43,6 +41,8 @@ Follow the checklist in [build-and-release.md](build-and-release.md). Consider a
 
 | Version | Issue |
 |---|---|
+| 1.0.26 | Dark mode flashed white at startup (the window's background was hard-coded light). The window, the page and React now all paint the saved theme ([renderer/ui-system.md](renderer/ui-system.md#no-flash-at-startup)). |
+| 1.0.26 | A running `npm run dev` made release builds fail with `EPERM` (Vite watched `release/`, so electron-builder couldn't rename `win-unpacked.tmp`). `vite.config.js` now ignores the build output folders. |
 | 1.0.26 | Fonts were fetched from `fonts.googleapis.com` on every launch, so offline launches fell back to system fonts and the "private" app made a network call. Fraunces and Manrope are now bundled ([renderer/ui-system.md](renderer/ui-system.md#fonts)). |
 | 1.0.26 | `src/App.jsx` was a ~4,000-line monolith. It's now split by role into `data/`, `lib/`, `components/`, `modals/` and `views/` ([renderer/app-structure.md](renderer/app-structure.md)), and Fast Refresh works again. |
 | 1.0.25 | Info-item ("Last mentioned") and timeline dates never aged, so profile suggestions ("Ideas for next time") never appeared for notes you saved. They now store an ISO `at` like journal entries, and `backfillPeopleDates` dates existing data on load. See [renderer/state-and-data.md](renderer/state-and-data.md#dates-store-the-day-derive-the-label). |

@@ -3,7 +3,7 @@
 
 import { FONT_FACES } from './fonts.js';
 
-const THEME_LIGHT = {
+export const THEME_LIGHT = {
   paper: '#F5F6F1',
   paperRaised: '#FFFFFF',
   ink: '#23283A',
@@ -22,7 +22,7 @@ const THEME_LIGHT = {
   alert: '#A8455C',
 };
 
-const THEME_DARK = {
+export const THEME_DARK = {
   paper: '#1B1E27',
   paperRaised: '#242836',
   ink: '#EDEDE6',
