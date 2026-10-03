@@ -2,7 +2,7 @@
 // suggestions, check-in names and reminder, coach hooks and updater status.
 
 import { TYPE_META } from '../data/constants.js';
-import { infoItemDaysAgo, journalDateLabel, journalDaysAgo, toISODate } from './dates.js';
+import { infoItemDateLabel, infoItemDaysAgo, journalDateLabel, journalDaysAgo, toISODate } from './dates.js';
 
 export function summaryFor(entry) {
   if (entry.summary) return entry.summary;
@@ -83,30 +83,55 @@ export const HOOKS = [
   { key: 'opinion', label: 'Opinion', question: "What's the best part about it?" },
 ];
 
-// #4: turns a person's saved interests + recent history into short noticing
-// prompts for Prepare — never a script, always phrased as "worth asking"
-// rather than "say this". Returns [] when there's nothing to draw from yet,
-// so Prepare never invents hooks for a person with no saved information.
-export function buildPotentialHooks(person, journal) {
+// Prepare's personal hooks, from everything saved about the person: their
+// interests, plans, preferences, what's coming up for them, what you last
+// talked about and what you noted afterwards. Social Penetration Theory
+// moves from surface topics to personal ones as a relationship deepens, so
+// experiences (personal history) are only suggested from Layer 3 on.
+// Prompts, never scripts. Returns [] when nothing is saved yet, so Prepare
+// never invents hooks.
+export function buildPotentialHooks(person, journal, now = new Date()) {
   if (!person) return [];
+  const active = (key) => (person[key] || []).filter(i => !i.archived)
+    .slice().sort((a, b) => infoItemDaysAgo(a, now) - infoItemDaysAgo(b, now)); // most recently mentioned first
+  const listOf = (items) => items.length <= 1 ? items.join('') : `${items.slice(0, -1).join(', ')} and ${items[items.length - 1]}`;
   const hooks = [];
-  const activeInterests = person.interests.filter(i => !i.archived);
-  if (activeInterests.length > 0) {
-    const extra = activeInterests.length - 1;
-    hooks.push({ key: 'interest', label: 'Their interests', text: `They're into ${activeInterests[0].text}${extra > 0 ? ` (and ${extra} other thing${extra > 1 ? 's' : ''})` : ''} — worth noticing an opening to bring it up, not scripting exactly what to say.` });
+
+  const important = active('important');
+  if (important.length > 0) {
+    hooks.push({ key: 'followup', label: 'Ask how it went', text: `You noted "${important[0].text}" (${infoItemDateLabel(important[0], now)}). Asking how it went shows you remembered.` });
   }
-  const personJournal = (journal || []).filter(j => j.personId === person.id).slice().sort((a, b) => journalDaysAgo(a) - journalDaysAgo(b));
-  if (personJournal.length > 0) {
-    const last = personJournal[0];
-    hooks.push({ key: 'recent', label: 'Last time you spoke', text: `${summaryFor(last)} (${journalDateLabel(last)}) — a natural thing to circle back to if it comes up again.` });
+
+  const recent = (journal || []).filter(j => j.personId === person.id).slice().sort((a, b) => journalDaysAgo(a, now) - journalDaysAgo(b, now));
+  if (recent.length > 0) {
+    const last = recent[0];
+    const topics = [...new Set(recent.slice(0, 3).flatMap(j => j.added || []))].slice(0, 3);
+    hooks.push({ key: 'recent', label: 'Last time you spoke', text: `${summaryFor(last)} (${journalDateLabel(last, now)})${topics.length ? `. You talked about ${listOf(topics)}` : ''}. A natural thing to circle back to.` });
+    const reflected = recent.find(j => j.reflection);
+    if (reflected) hooks.push({ key: 'reflection', label: 'What you noted afterwards', text: `"${reflected.reflection}"` });
   }
-  const activePlans = person.plans.filter(i => !i.archived);
-  if (activePlans.length > 0) {
-    hooks.push({ key: 'plan', label: 'Something they mentioned', text: `They brought up "${activePlans[0].text}" — worth asking how that went or if it happened.` });
+
+  const interests = active('interests');
+  if (interests.length > 0) {
+    const shown = interests.slice(0, 3).map(i => i.text);
+    const more = interests.length - shown.length;
+    hooks.push({ key: 'interest', label: 'Their interests', text: `They're into ${listOf(shown)}${more > 0 ? ` (and ${more} more)` : ''}. Notice an opening to bring one up rather than planning exactly what to say.` });
   }
-  const activeImportant = person.important.filter(i => !i.archived);
-  if (activeImportant.length > 0) {
-    hooks.push({ key: 'followup', label: 'Follow-up opportunity', text: `You noted "${activeImportant[0].text}" — a good thing to check in on.` });
+
+  const plans = active('plans');
+  if (plans.length > 0) {
+    hooks.push({ key: 'plan', label: 'Something they mentioned', text: `They brought up "${plans[0].text}". Worth asking how it's going, or if it happened.` });
   }
-  return hooks.slice(0, 4);
+
+  const preferences = active('preferences');
+  if (preferences.length > 0) {
+    hooks.push({ key: 'preference', label: 'Worth remembering', text: `${preferences[0].text}. Handy if you're suggesting something to do together.` });
+  }
+
+  const experiences = active('experiences');
+  if (experiences.length > 0 && person.layer >= 3) {
+    hooks.push({ key: 'experience', label: 'A deeper topic, if the moment is right', text: `They've shared "${experiences[0].text}". Only if they bring it up or the conversation is already personal.` });
+  }
+
+  return hooks.slice(0, 6);
 }

@@ -1,31 +1,57 @@
-// Journal tab.
+// Journal tab: every logged interaction, newest first, with filters, and a
+// pencil on each entry to edit or delete it.
 
 import { useMemo, useState } from 'react';
-import { Check, Search } from 'lucide-react';
-import { CONV_STATES, getLayer, TYPE_META } from '../data/constants.js';
-import { journalDateLabel, journalDaysAgo } from '../lib/dates.js';
+import { Check, Pencil, Search } from 'lucide-react';
+import { CONV_STATES, getLayer, LAYERS, STANDOUTS, TYPE_META } from '../data/constants.js';
+import { journalDateLabel, journalDaysAgo, parseISODay } from '../lib/dates.js';
 import { summaryFor } from '../lib/text.js';
 import { COLORS } from '../theme.js';
 
-export function JournalView({ people, journal, onOpenPerson }) {
+// "Past month" is the last 31 days, counted back from today.
+const PERIODS = [
+  { key: 'all', label: 'Any time', days: null },
+  { key: 'week', label: 'Past week', days: 7 },
+  { key: 'month', label: 'Past month', days: 31 },
+  { key: 'quarter', label: 'Past 3 months', days: 92 },
+];
+
+function Chip({ active, onClick, children, color }) {
+  return (
+    <button onClick={onClick} aria-pressed={active} className="text-xs font-medium rounded-full px-2.5 py-1 shrink-0" style={{ background: active ? COLORS.accentSoft : 'transparent', color: active ? COLORS.accent : COLORS.inkSoft, border: color ? `1px solid ${active ? COLORS.accent : 'transparent'}` : 'none' }}>
+      {color && <span style={{ display: 'inline-block', width: 7, height: 7, borderRadius: '50%', background: color, marginRight: 5 }} />}
+      {children}
+    </button>
+  );
+}
+
+export function JournalView({ today, people, journal, onOpenPerson, onEditEntry }) {
   const [filterPerson, setFilterPerson] = useState('all');
   const [filterType, setFilterType] = useState('all');
+  const [period, setPeriod] = useState('all');
+  const [layer, setLayer] = useState('all');
   const [query, setQuery] = useState('');
   const peopleById = useMemo(() => Object.fromEntries(people.map(p => [p.id, p])), [people]);
+  const now = useMemo(() => parseISODay(today) || new Date(), [today]);
 
   const q = query.trim().toLowerCase();
+  const days = PERIODS.find(pd => pd.key === period).days;
   const filtered = journal.filter(j => {
+    const p = peopleById[j.personId];
+    if (!p) return false;
     if (filterPerson !== 'all' && j.personId !== filterPerson) return false;
     if (filterType !== 'all' && j.type !== filterType) return false;
+    if (days !== null && journalDaysAgo(j, now) >= days) return false;
+    if (layer !== 'all' && p.layer !== layer) return false;
     if (q) {
-      const p = peopleById[j.personId];
-      const haystack = [p ? p.name : '', summaryFor(j), ...(j.added || [])].join(' ').toLowerCase();
+      const haystack = [p.name, summaryFor(j), j.reflection || '', ...(j.added || [])].join(' ').toLowerCase();
       if (!haystack.includes(q)) return false;
     }
     return true;
   });
+  const filtering = filterPerson !== 'all' || filterType !== 'all' || period !== 'all' || layer !== 'all' || !!q;
+  function clearFilters() { setFilterPerson('all'); setFilterType('all'); setPeriod('all'); setLayer('all'); setQuery(''); }
 
-  const now = new Date();
   const sorted = [...filtered].sort((a, b) => journalDaysAgo(a, now) - journalDaysAgo(b, now));
   const groups = [];
   sorted.forEach(entry => {
@@ -43,7 +69,7 @@ export function JournalView({ people, journal, onOpenPerson }) {
 
       <div className="flex items-center gap-2 mt-4">
         <Search size={15} color={COLORS.inkSoft} className="shrink-0" />
-        <input id="journal-search-input" value={query} onChange={e => setQuery(e.target.value)} placeholder="Search the journal..." className="flex-1 text-sm rounded-xl px-3 py-2" style={{ border: `1px solid ${COLORS.line}` }} />
+        <input id="journal-search-input" value={query} onChange={e => setQuery(e.target.value)} placeholder="Search the journal..." aria-label="Search the journal" className="flex-1 text-sm rounded-xl px-3 py-2" style={{ border: `1px solid ${COLORS.line}` }} />
       </div>
 
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 12, maxHeight: 78, overflowY: 'auto' }}>
@@ -54,11 +80,22 @@ export function JournalView({ people, journal, onOpenPerson }) {
       </div>
 
       <div className="flex items-center gap-2 mt-2 overflow-x-auto no-scrollbar pb-1">
-        <button onClick={() => setFilterType('all')} className="text-xs font-medium rounded-full px-2.5 py-1 shrink-0" style={{ background: filterType === 'all' ? COLORS.accentSoft : 'transparent', color: filterType === 'all' ? COLORS.accent : COLORS.inkSoft }}>All types</button>
+        <Chip active={filterType === 'all'} onClick={() => setFilterType('all')}>All types</Chip>
         {typeKeys.map(k => (
-          <button key={k} onClick={() => setFilterType(k)} className="text-xs font-medium rounded-full px-2.5 py-1 shrink-0" style={{ background: filterType === k ? COLORS.accentSoft : 'transparent', color: filterType === k ? COLORS.accent : COLORS.inkSoft }}>{TYPE_META[k].emoji} {TYPE_META[k].label}</button>
+          <Chip key={k} active={filterType === k} onClick={() => setFilterType(k)}>{TYPE_META[k].emoji} {TYPE_META[k].label}</Chip>
         ))}
       </div>
+
+      <div className="flex items-center gap-2 mt-1 overflow-x-auto no-scrollbar pb-1">
+        {PERIODS.map(pd => (<Chip key={pd.key} active={period === pd.key} onClick={() => setPeriod(pd.key)}>{pd.label}</Chip>))}
+        <span style={{ width: 1, alignSelf: 'stretch', background: COLORS.line, flexShrink: 0 }} />
+        <Chip active={layer === 'all'} onClick={() => setLayer('all')}>All layers</Chip>
+        {LAYERS.map(l => (<Chip key={l.id} active={layer === l.id} onClick={() => setLayer(l.id)} color={l.color}>Layer {l.id}</Chip>))}
+      </div>
+
+      {filtering && (
+        <button onClick={clearFilters} className="text-xs font-semibold mt-2" style={{ color: COLORS.accent }}>Clear filters ({filtered.length} of {journal.filter(j => peopleById[j.personId]).length} shown)</button>
+      )}
 
       <div className="mt-5">
         {groups.length === 0 ? (
@@ -68,21 +105,26 @@ export function JournalView({ people, journal, onOpenPerson }) {
             <p className="text-xs font-semibold mb-2" style={{ color: COLORS.inkSoft }}>{grp.date}</p>
             {grp.entries.map(entry => {
               const p = peopleById[entry.personId];
-              if (!p) return null;
               const l = getLayer(p.layer);
               const meta = TYPE_META[entry.type] || TYPE_META.other;
+              const stoodOut = STANDOUTS.filter(s => (entry.standouts || []).includes(s.key)).map(s => s.label);
               return (
-                <button key={entry.id} onClick={() => onOpenPerson(p.id)} className="w-full text-left rounded-2xl p-3.5 mb-2" style={{ background: COLORS.paperRaised, border: `1px solid ${COLORS.line}` }}>
-                  <div className="flex items-center gap-2">
-                    <span style={{ width: 9, height: 9, borderRadius: '50%', background: l.color, flexShrink: 0 }} />
-                    <span className="text-sm font-semibold" style={{ color: COLORS.ink }}>{p.name}</span>
-                    <span className="text-xs" style={{ color: COLORS.inkSoft }}>{meta.emoji} {meta.label}</span>
-                  </div>
-                  <p className="text-sm mt-1.5" style={{ color: COLORS.ink }}>{summaryFor(entry)}</p>
-                  {entry.added && entry.added.length > 0 && (<p className="text-xs mt-1" style={{ color: COLORS.inkSoft }}>Added: {entry.added.join(', ')}</p>)}
-                  {entry.activeListening && entry.activeListening.length > 0 && (<p className="text-xs mt-1 flex items-center gap-1" style={{ color: l.deep }}><Check size={11} /> Practised active listening</p>)}
-                  {entry.analysis && (<p className="text-xs mt-1" style={{ color: l.deep }}>{CONV_STATES[entry.analysis.conversationState] ? `${CONV_STATES[entry.analysis.conversationState].emoji} ${CONV_STATES[entry.analysis.conversationState].label}, ` : ''}grading {entry.analysis.grading.overall}%</p>)}
-                </button>
+                <div key={entry.id} className="relative mb-2">
+                  <button onClick={() => onOpenPerson(p.id)} className="w-full text-left rounded-2xl p-3.5 pr-10" style={{ background: COLORS.paperRaised, border: `1px solid ${COLORS.line}` }}>
+                    <div className="flex items-center gap-2">
+                      <span style={{ width: 9, height: 9, borderRadius: '50%', background: l.color, flexShrink: 0 }} />
+                      <span className="text-sm font-semibold" style={{ color: COLORS.ink }}>{p.name}</span>
+                      <span className="text-xs" style={{ color: COLORS.inkSoft }}>{meta.emoji} {meta.label}</span>
+                    </div>
+                    <p className="text-sm mt-1.5" style={{ color: COLORS.ink }}>{summaryFor(entry)}</p>
+                    {entry.reflection && (<p className="text-xs mt-1.5 italic" style={{ color: COLORS.inkSoft }}>“{entry.reflection}”</p>)}
+                    {entry.added && entry.added.length > 0 && (<p className="text-xs mt-1" style={{ color: COLORS.inkSoft }}>Added: {entry.added.join(', ')}</p>)}
+                    {stoodOut.length > 0 && (<p className="text-xs mt-1" style={{ color: COLORS.inkSoft }}>Stood out: {stoodOut.join(', ')}</p>)}
+                    {entry.activeListening && entry.activeListening.length > 0 && (<p className="text-xs mt-1 flex items-center gap-1" style={{ color: l.deep }}><Check size={11} /> Practised active listening</p>)}
+                    {entry.analysis && (<p className="text-xs mt-1" style={{ color: l.deep }}>{CONV_STATES[entry.analysis.conversationState] ? `${CONV_STATES[entry.analysis.conversationState].emoji} ${CONV_STATES[entry.analysis.conversationState].label}, ` : ''}grading {entry.analysis.grading.overall}%</p>)}
+                  </button>
+                  <button onClick={() => onEditEntry(entry.id)} aria-label={`Edit entry: ${p.name}, ${grp.date}`} className="absolute p-1.5" style={{ top: 10, right: 10 }}><Pencil size={14} color={COLORS.inkSoft} /></button>
+                </div>
               );
             })}
           </div>

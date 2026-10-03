@@ -69,7 +69,7 @@ function cleanPerson(p, skipped) {
 
 function cleanEntry(j, personIds, skipped) {
   if (!isObject(j) || !personIds.has(j.personId)) { skipped.entries++; return null; }
-  return {
+  const entry = {
     ...j,
     id: isText(j.id) ? j.id : uid(),
     type: TYPE_META[j.type] ? j.type : 'other',
@@ -77,6 +77,10 @@ function cleanEntry(j, personIds, skipped) {
     added: (Array.isArray(j.added) ? j.added : []).filter(s => typeof s === 'string'),
     activeListening: (Array.isArray(j.activeListening) ? j.activeListening : []).filter(s => typeof s === 'string'),
   };
+  // Optional text fields are rendered as-is, so anything but a string is dropped.
+  ['summary', 'reflection'].forEach(k => { if (k in entry && typeof entry[k] !== 'string') delete entry[k]; });
+  if ('standouts' in entry) entry.standouts = (Array.isArray(entry.standouts) ? entry.standouts : []).filter(s => typeof s === 'string');
+  return entry;
 }
 
 function cleanEvent(e, personIds, skipped) {

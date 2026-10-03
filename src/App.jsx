@@ -8,7 +8,7 @@ import { Plus } from 'lucide-react';
 import { BottomNav } from './components/BottomNav.jsx';
 import { ErrorBoundary } from './components/ErrorBoundary.jsx';
 import { hasOpenSheet, SheetLayerContext, topSheet } from './components/sheetLayer.js';
-import { categoryMeta, getLayer } from './data/constants.js';
+import { categoryMeta, getLayer, STANDOUT_BUMP, STANDOUTS } from './data/constants.js';
 import { EMPTY_SKILLS, INITIAL_GENERAL_GOALS, INITIAL_JOURNAL, INITIAL_PEOPLE, INITIAL_SKILLS } from './data/seed.js';
 import { backfillJournalDates, backfillPeopleDates, backfillSkillDates, formatAbsoluteDate, pushHistoryPoint, toISODate } from './lib/dates.js';
 import { advanceLayer, bumpSkills, chartDay, computeOverall, dimsEqual, makePerson, movePerson, placeOnLayers } from './lib/progress.js';
@@ -19,6 +19,7 @@ import { clamp, uid } from './lib/util.js';
 import { AddInfoModal } from './modals/AddInfoModal.jsx';
 import { AddPersonModal } from './modals/AddPersonModal.jsx';
 import { ConfirmDialog } from './modals/ConfirmDialog.jsx';
+import { EditEntryModal } from './modals/EditEntryModal.jsx';
 import { EditPersonModal } from './modals/EditPersonModal.jsx';
 import { GoalModal } from './modals/GoalModal.jsx';
 import { LogInteractionModal } from './modals/LogInteractionModal.jsx';
@@ -105,6 +106,7 @@ function LayersApp() {
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
   const [standaloneDetailOpen, setStandaloneDetailOpen] = useState(false);
   const [editPersonOpen, setEditPersonOpen] = useState(false);
+  const [editingEntryId, setEditingEntryId] = useState(null);
   const [confirmState, setConfirmState] = useState(null);
   const [sheetLayer, setSheetLayer] = useState(null);
   const [searchFocus, setSearchFocus] = useState(null);
@@ -283,7 +285,10 @@ function LayersApp() {
   }
   function closeLog() { setLogOpen(false); setLogInitialStep(null); setLogEditEvent(null); }
 
-  function handleLogSubmit({ personIds, type, meaningfulness, notes, activeListening, summary, pickedDate }) {
+  // From the log sheet. Its optional More details add: `standouts` (dimension
+  // keys that get STANDOUT_BUMP more), `goalIds` (only these goals move;
+  // undefined means all of each person's active goals) and a `reflection`.
+  function handleLogSubmit({ personIds, type, meaningfulness, notes, activeListening, summary, pickedDate, standouts = [], goalIds, reflection }) {
     const pd = pickedDate || new Date();
     const chartAt = toISODate(pd); // the journal entry's day, and "last mentioned" for any notes
     const loggedNames = personIds.map(id => (people.find(p => p.id === id) || {}).name).filter(Boolean);
@@ -300,13 +305,14 @@ function LayersApp() {
       const interactionBump = Math.round(meaningfulness * 2.2);
       const sharedExpBump = (type === 'activity' || type === 'hangout') ? Math.round(meaningfulness * 2.6) : Math.round(meaningfulness * 0.8);
       const listeningBump = Math.round(activeListening.length * 3.5 + (meaningfulness >= 4 ? 2 : 0));
+      const extra = (key) => standouts.includes(key) ? STANDOUT_BUMP : 0;
       const newDims = {
-        depth: clamp(p.dims.depth + depthBump, 0, 100),
-        trust: clamp(p.dims.trust + trustBump, 0, 100),
-        reciprocity: clamp(p.dims.reciprocity + reciprocityBump, 0, 100),
+        depth: clamp(p.dims.depth + depthBump + extra('depth'), 0, 100),
+        trust: clamp(p.dims.trust + trustBump + extra('trust'), 0, 100),
+        reciprocity: clamp(p.dims.reciprocity + reciprocityBump + extra('reciprocity'), 0, 100),
         interaction: clamp(p.dims.interaction + interactionBump, 0, 100),
-        sharedExperiences: clamp(p.dims.sharedExperiences + sharedExpBump, 0, 100),
-        listening: clamp(p.dims.listening + listeningBump, 0, 100),
+        sharedExperiences: clamp(p.dims.sharedExperiences + sharedExpBump + extra('sharedExperiences'), 0, 100),
+        listening: clamp(p.dims.listening + listeningBump + extra('listening'), 0, 100),
       };
       // Layer progress moves more slowly than before, and only for
       // interactions you rated 4 or 5 — a brief/low-meaningfulness chat
@@ -318,7 +324,7 @@ function LayersApp() {
       const { layer: newLayer, progress: newOverall, leveledUp } = advanceLayer(p.layer, p.overall, progressBump);
       const goalBump = Math.round(meaningfulness * 3.2);
       const newGoals = p.goals.map(g => {
-        if (g.progress >= 100) return g;
+        if (g.progress >= 100 || (goalIds && !goalIds.includes(g.id))) return g;
         const value = clamp(g.progress + goalBump, 0, 100);
         const day = chartDay(g.history, chartAt);
         return { ...g, progress: value, history: pushHistoryPoint(g.history || [], { date: formatAbsoluteDate(new Date(`${day}T00:00:00`)), at: day, value }) };
@@ -330,13 +336,14 @@ function LayersApp() {
       if (newInterest) why.push('Discovered a shared interest');
       if (activeListening.length >= 2) why.push('Good reciprocal conversation');
       if (meaningfulness >= 4) why.push('Personal experience discussed');
+      STANDOUTS.filter(s => standouts.includes(s.key)).forEach(s => why.push(`You noted: ${s.label.toLowerCase()}`));
       if (why.length === 0) why.push('Logged a new interaction');
       if (leveledUp) levelUps.push({ name: p.name, layer: newLayer });
       return movePerson(p, { layer: newLayer, overall: newOverall, at: chartAt, why, extra: { dims: newDims, goals: newGoals, ...addNotes(p, notes, chartAt) } });
     });
     setPeople(nextPeople);
     setJournal(prev => [
-      ...personIds.map(personId => ({ id: uid(), personId, at: chartAt, type, meaningfulness, added: notes.map(n => n.text), activeListening, ...(summary ? { summary } : {}) })),
+      ...personIds.map(personId => ({ id: uid(), personId, at: chartAt, type, meaningfulness, added: notes.map(n => n.text), activeListening, ...(summary ? { summary } : {}), ...(standouts.length ? { standouts } : {}), ...(reflection ? { reflection } : {}) })),
       ...prev,
     ]);
     setSkills(prev => bumpSkills(prev, {
@@ -367,6 +374,30 @@ function LayersApp() {
       confirmLabel: 'Delete event',
       danger: true,
       onConfirm: () => { setEvents(prev => prev.filter(e => e.id !== eventId)); pushToast('Event deleted'); },
+    });
+  }
+
+  // Journal entries can be edited or deleted (Journal tab). The record changes;
+  // progress the entry already added stays (EditEntryModal says so).
+  function handleUpdateEntry(entryId, { at, type, meaningfulness, summary, reflection }) {
+    setJournal(prev => prev.map(j => {
+      if (j.id !== entryId) return j;
+      const next = { ...j, at, type, meaningfulness };
+      delete next.date; // a legacy label would no longer match `at`
+      if (summary) next.summary = summary; else delete next.summary;
+      if (reflection) next.reflection = reflection; else delete next.reflection;
+      return next;
+    }));
+    setEditingEntryId(null);
+    pushToast('Entry updated');
+  }
+  function handleDeleteEntry(entryId) {
+    askConfirm({
+      title: 'Delete this entry?',
+      message: "It's removed from the journal for good. Progress it already added stays.",
+      confirmLabel: 'Delete entry',
+      danger: true,
+      onConfirm: () => { setJournal(prev => prev.filter(j => j.id !== entryId)); setEditingEntryId(null); pushToast('Entry deleted'); },
     });
   }
 
@@ -682,7 +713,7 @@ function LayersApp() {
                         {activeTab === 'home' && <HomeView today={today} people={people} journal={journal} generalGoals={generalGoals} events={events} profile={profile} onOpenPerson={openPerson} onSwitchTab={switchTab} onOpenGoals={openGoalsOverview} onOpenCoach={(tab) => openCoach(null, tab)} onLogEvent={(ev, meaningfulness, detail) => handleLogSubmit({ personIds: ev.personIds, type: 'other', meaningfulness, notes: [], activeListening: [], summary: detail ? `${ev.title} — ${detail}` : ev.title, pickedDate: new Date() })} onManageEvents={openEventManager} onEditEvent={openEditRecurringEvent} onDeleteEvent={handleDeleteEvent} />}
                         {activeTab === 'people' && <PeopleView people={people} journal={journal} onOpenPerson={openPerson} onAddPerson={() => setAddPersonOpen(true)} />}
                         {activeTab === 'coach' && <CoachView people={people} journal={journal} initialPersonId={coachInit.personId} initialTab={coachInit.tab} onOpenLog={openLog} onApproveInfo={handleApproveInfo} onLogFromAnalysis={handleLogFromAnalysis} onOpenPerson={openPerson} />}
-                        {activeTab === 'journal' && <JournalView people={people} journal={journal} onOpenPerson={openPerson} />}
+                        {activeTab === 'journal' && <JournalView today={today} people={people} journal={journal} onOpenPerson={openPerson} onEditEntry={setEditingEntryId} />}
                         {activeTab === 'me' && <MeView people={people} journal={journal} skills={skills} generalGoals={generalGoals} profile={profile} onRestoreSample={handleRestoreSample} onStartOver={handleStartOver} onExport={handleExportData} onImportClick={handleImportClick} hasUpdater={hasUpdater} updateStatus={updateStatus} onCheckForUpdates={handleCheckForUpdates} onInstallUpdate={handleInstallUpdate} onOpenDownloadPage={handleOpenDownloadPage} shortcutStatus={shortcutStatus} theme={theme} onSetTheme={setTheme} hasSystemBridge={hasSystemBridge} autoLaunch={autoLaunch} onToggleAutoLaunch={handleToggleAutoLaunch} onOpenShortcuts={() => setShortcutsOpen(true)} appVersion={appVersion} />}
                       </>
                     )}
@@ -730,6 +761,10 @@ function LayersApp() {
                 onSave={(vals) => handleSavePersonEdit(selectedPerson.id, vals)}
                 onDelete={() => handleDeletePerson(selectedPerson.id, selectedPerson.name)} />
             )}
+            {editingEntryId && journal.some(j => j.id === editingEntryId) && (() => {
+              const entry = journal.find(j => j.id === editingEntryId);
+              return <EditEntryModal entry={entry} personName={(people.find(p => p.id === entry.personId) || {}).name} onClose={() => setEditingEntryId(null)} onSave={(changes) => handleUpdateEntry(entry.id, changes)} onDelete={() => handleDeleteEntry(entry.id)} />;
+            })()}
             {confirmState && (
               <ConfirmDialog title={confirmState.title} message={confirmState.message} confirmLabel={confirmState.confirmLabel} danger={confirmState.danger} hideCancel={confirmState.hideCancel} onConfirm={confirmState.onConfirm} onCancel={confirmState.onCancel} />
             )}

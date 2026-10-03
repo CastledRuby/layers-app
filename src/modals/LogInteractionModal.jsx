@@ -6,7 +6,7 @@ import { Calendar, Check, Clock, MessageCircle, Plus, Repeat, X } from 'lucide-r
 import { Sheet } from '../components/Sheet.jsx';
 import { Avatar } from '../components/atoms.jsx';
 import { DateDropdown, TimeDropdown } from '../components/pickers.jsx';
-import { AL_ITEMS, getLayer, NOTE_TEMPLATE_CATEGORY, TYPE_META, TYPE_ORDER } from '../data/constants.js';
+import { AL_ITEMS, CATEGORIES, categoryMeta, getLayer, NOTE_TEMPLATE_CATEGORY, STANDOUTS, TYPE_META, TYPE_ORDER } from '../data/constants.js';
 import { formatCalendarDate, formatTime12, formatWeekdays, nowToMinutes, toISODate, WEEKDAY_SHORT } from '../lib/dates.js';
 import { TemplatePickerModal } from './TemplatePickerModal.jsx';
 import { COLORS } from '../theme.js';
@@ -23,6 +23,14 @@ export function LogInteractionModal({ people, defaultPersonId, events, initialSt
   const [quickNoteTags, setQuickNoteTags] = useState([]);
   const [noteTemplatesOpen, setNoteTemplatesOpen] = useState(false);
   const [logDate, setLogDate] = useState(() => new Date());
+  // Optional "More details" (closed by default, so the quick log stays quick).
+  const [moreOpen, setMoreOpen] = useState(false);
+  const [newInfo, setNewInfo] = useState([]); // [{ category, text }]
+  const [newInfoCat, setNewInfoCat] = useState('interests');
+  const [newInfoText, setNewInfoText] = useState('');
+  const [standouts, setStandouts] = useState([]);
+  const [untickedGoals, setUntickedGoals] = useState([]);
+  const [reflection, setReflection] = useState('');
 
   const [eventKind, setEventKind] = useState(null); // 'recurring' | 'oneoff'
   const [eventTitle, setEventTitle] = useState('');
@@ -84,7 +92,26 @@ export function LogInteractionModal({ people, defaultPersonId, events, initialSt
     ? quickNoteTags.filter(t => NOTE_TEMPLATE_CATEGORY[t.cat]).map(t => ({ category: NOTE_TEMPLATE_CATEGORY[t.cat], text: t.text, emoji: t.emoji }))
     : [];
   const loggedPerson = personIds.length === 1 ? people.find(p => p.id === personIds[0]) : null;
-  function handleSave() { if (!canSave) return; const combined = [...quickNoteTags.map(t => t.text), quickNote.trim()].filter(Boolean).join(', '); onSubmit({ personIds, type, meaningfulness, notes: profileNotes, activeListening: al, summary: combined || undefined, pickedDate: logDate }); }
+  // Every active goal of the people in this log moves unless you untick it.
+  const goalsInLog = people.filter(p => personIds.includes(p.id)).flatMap(p => p.goals.filter(g => g.progress < 100).map(g => ({ id: g.id, title: g.title, personName: p.name })));
+  function addNewInfo() {
+    const text = newInfoText.trim();
+    if (!text) return;
+    setNewInfo(prev => [...prev, { category: newInfoCat, text }]);
+    setNewInfoText('');
+  }
+  function toggleIn(setter, key) { setter(prev => prev.includes(key) ? prev.filter(k => k !== key) : [...prev, key]); }
+  function handleSave() {
+    if (!canSave) return;
+    const combined = [...quickNoteTags.map(t => t.text), quickNote.trim()].filter(Boolean).join(', ');
+    const notes = [...profileNotes, ...(loggedPerson ? newInfo.map(n => ({ ...n, emoji: categoryMeta(n.category).emoji })) : [])];
+    onSubmit({
+      personIds, type, meaningfulness, notes, activeListening: al, summary: combined || undefined, pickedDate: logDate,
+      standouts,
+      goalIds: untickedGoals.length > 0 ? goalsInLog.map(g => g.id).filter(id => !untickedGoals.includes(id)) : undefined,
+      reflection: reflection.trim() || undefined,
+    });
+  }
 
   const canSaveEvent = eventTitle.trim().length > 0 && (eventKind !== 'recurring' || eventWeekdays.length > 0);
   function handleSaveEvent() {
@@ -240,6 +267,68 @@ export function LogInteractionModal({ people, defaultPersonId, events, initialSt
               );
             })}
           </div>
+
+          {/* P1: the optional, progressive part of logging. */}
+          <button type="button" onClick={() => setMoreOpen(o => !o)} aria-expanded={moreOpen} className="w-full flex items-center justify-between rounded-2xl px-4 py-3 mt-4" style={{ background: COLORS.paperRaised, border: `1px solid ${COLORS.line}` }}>
+            <span className="text-sm font-semibold" style={{ color: COLORS.ink }}>More details <span style={{ fontWeight: 500, color: COLORS.inkSoft }}>(optional)</span></span>
+            <span className="text-xs font-semibold" style={{ color: COLORS.accent }}>{moreOpen ? 'Hide' : 'Add'}</span>
+          </button>
+          {moreOpen && (
+            <div className="mt-4">
+              {loggedPerson && (
+                <div className="mb-5">
+                  <p className="text-sm font-semibold mb-2" style={{ color: COLORS.ink }}>Something new about {loggedPerson.name}?</p>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                    {CATEGORIES.map(c => (
+                      <button key={c.key} type="button" onClick={() => setNewInfoCat(c.key)} aria-pressed={newInfoCat === c.key} className="text-xs font-semibold rounded-full px-2.5 py-1" style={{ background: newInfoCat === c.key ? COLORS.accent : COLORS.paperRaised, color: newInfoCat === c.key ? '#fff' : COLORS.inkSoft, border: `1px solid ${newInfoCat === c.key ? COLORS.accent : COLORS.line}` }}>{c.emoji} {c.label}</button>
+                    ))}
+                  </div>
+                  <div className="flex items-center gap-2 mt-2">
+                    <input value={newInfoText} onChange={e => setNewInfoText(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addNewInfo(); } }} placeholder={categoryMeta(newInfoCat).placeholder} aria-label="Something new" className="flex-1 text-sm rounded-xl px-3 py-2" style={{ border: `1px solid ${COLORS.line}` }} />
+                    <button type="button" onClick={addNewInfo} disabled={!newInfoText.trim()} className="text-xs font-semibold rounded-full px-3 py-2" style={{ background: newInfoText.trim() ? COLORS.accent : COLORS.line, color: newInfoText.trim() ? '#fff' : COLORS.inkSoft }}>Add</button>
+                  </div>
+                  {newInfo.length > 0 && (
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 8 }}>
+                      {newInfo.map((n, i) => (
+                        <span key={i} className="flex items-center gap-1 text-xs rounded-full pl-2.5 pr-1.5 py-1" style={{ background: COLORS.accentSoft, color: COLORS.accent }}>
+                          {categoryMeta(n.category).emoji} {n.text}
+                          <button type="button" onClick={() => setNewInfo(prev => prev.filter((_, idx) => idx !== i))} aria-label={`Remove "${n.text}"`} className="p-0.5"><X size={11} /></button>
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              <p className="text-sm font-semibold mb-2" style={{ color: COLORS.ink }}>What stood out?</p>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }} className="mb-5">
+                {STANDOUTS.map(s => (
+                  <button key={s.key} type="button" onClick={() => toggleIn(setStandouts, s.key)} aria-pressed={standouts.includes(s.key)} className="text-xs font-semibold rounded-full px-2.5 py-1" style={{ background: standouts.includes(s.key) ? COLORS.accent : COLORS.paperRaised, color: standouts.includes(s.key) ? '#fff' : COLORS.inkSoft, border: `1px solid ${standouts.includes(s.key) ? COLORS.accent : COLORS.line}` }}>{s.label}</button>
+                ))}
+              </div>
+
+              {goalsInLog.length > 0 && (
+                <div className="mb-5">
+                  <p className="text-sm font-semibold mb-1" style={{ color: COLORS.ink }}>Goals this moved</p>
+                  <p className="text-xs mb-1.5" style={{ color: COLORS.inkSoft }}>Untick any it didn't help. Unticked goals stay where they are.</p>
+                  {goalsInLog.map(g => {
+                    const checked = !untickedGoals.includes(g.id);
+                    return (
+                      <button key={g.id} type="button" role="checkbox" aria-checked={checked} onClick={() => toggleIn(setUntickedGoals, g.id)} className="w-full flex items-center gap-3 py-1.5 text-left">
+                        <span style={{ width: 18, height: 18, borderRadius: 5, border: `1.5px solid ${checked ? COLORS.accent : COLORS.line}`, background: checked ? COLORS.accent : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                          {checked && <Check size={12} color="#fff" />}
+                        </span>
+                        <span className="text-sm" style={{ color: COLORS.ink }}>{g.title}{personIds.length > 1 ? ` (${g.personName})` : ''}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+
+              <p className="text-sm font-semibold mb-2" style={{ color: COLORS.ink }}>How did it feel?</p>
+              <textarea value={reflection} onChange={e => setReflection(e.target.value)} rows={3} aria-label="Reflection" placeholder="What went well, or what you'd try next time" className="w-full text-sm rounded-xl px-3 py-2.5" style={{ border: `1px solid ${COLORS.line}`, resize: 'vertical' }} />
+            </div>
+          )}
         </>
       )}
 

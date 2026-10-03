@@ -78,6 +78,18 @@ export const NOTE_TEMPLATE_CATEGORY = {
   school: 'important', life: 'important',
 };
 
+// "What stood out?" in the log's optional More details: each one picked adds
+// STANDOUT_BUMP to that relationship dimension, on top of the usual bumps,
+// and shows up in the profile's "Why" and the journal entry.
+export const STANDOUTS = [
+  { key: 'depth', label: 'Went deeper' },
+  { key: 'trust', label: 'Felt trusted' },
+  { key: 'reciprocity', label: 'Good back-and-forth' },
+  { key: 'sharedExperiences', label: 'Did something together' },
+  { key: 'listening', label: 'Really listened' },
+];
+export const STANDOUT_BUMP = 3;
+
 export const PRESETS = [
   { key: 'becomeCloser', category: 'relationship', label: 'Become closer friends', emoji: '🤗', hint: 'Feel more like close friends day-to-day', suggestion: 'Small, low-pressure hangouts often build closeness faster than big conversations.' },
   { key: 'deeper', category: 'relationship', label: 'Have deeper conversations', emoji: '💬', hint: 'Have 3 meaningful conversations', suggestion: 'Try sharing something a little more personal before asking a personal question back.' },
