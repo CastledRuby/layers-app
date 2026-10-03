@@ -23,17 +23,9 @@ it works. **Suggested fix:** store an ISO `at` date on
 each journal entry (as chart history already does). Derive the label and "this week"
 when rendering. Backfill old entries from their label once, on load.
 
-### 2. Dead IPC channel: `trigger-log-interaction`
-
-`preload.cjs` exposes `layersSystem.onTriggerLog`, and `LayersApp` subscribes to it to
-open the log sheet. `main.cjs` stopped sending that channel when Ctrl+Shift+L was
-changed to only focus the window. Either delete the bridge and the subscription, or
-restore the send if "Ctrl+Shift+L → start a log" is still wanted. `npm run docs:map`
-flags this under *Channel mismatches*.
-
 ## Build & release
 
-### 3. The desktop app can silently run old code *(mitigated in 1.0.24)*
+### 2. The desktop app can silently run old code *(mitigated in 1.0.24)*
 
 Electron loads only the committed build artifact `electron/app/index.html`. If you
 change `src/` and package without `npm run build:electron`, or install a build without
@@ -42,30 +34,9 @@ bumping `version`, the app runs stale code that looks current. That happened wit
 Follow the checklist in [build-and-release.md](build-and-release.md). Consider a
 `prepackage` guard that fails when `electron/app/index.html` is older than `src/App.jsx`.
 
-### 4. Renderer libraries are shipped twice in the installer
-
-`react`, `react-dom`, `lucide-react` and `recharts` are in `dependencies`, so
-electron-builder copies them into `app.asar`. The current asar holds about 4,200
-`lucide-react` files and all of `recharts`/d3, roughly 55 MB, even though the single-file
-build has already inlined everything the app uses. Move them to `devDependencies`. Only
-`electron-updater` and `electron-window-state` are needed at runtime.
-
-### 5. Stale duplicate project committed under `Layers/`
-
-`Layers/layers-source-project (2)/` is a full copy of the project from 2026-09-11 (its
-`App.jsx` is about 178 KB versus about 262 KB now), and it's tracked in git. Vitest picks
-up its `logic.test.js`, so `npm test` reports two test files. Searches return
-duplicate hits too. It should probably be deleted. Check that nothing in it is needed first.
-
-### 6. Build output folders aren't ignored
-
-`dist-local/` and `release/` are untracked but not in `.gitignore`. `release/` currently
-holds 46 installers, about 5.5 GB, so an accidental `git add .` would be painful. Add
-both to `.gitignore`.
-
 ## Maintainability
 
-### 7. `src/App.jsx` is a ~4,000-line monolith
+### 3. `src/App.jsx` is a ~4,000-line monolith
 
 Every component, constant and handler is in one file. Fast Refresh can't hot-swap it,
 because it also exports non-components (the `only-export-components` lint warnings),
@@ -86,7 +57,7 @@ The pure maths in `handleLogSubmit` / `handleLogFromAnalysis` / `handleAdjust` i
 currently untestable because it's inlined in the handlers. Extracting it into
 `src/lib/progress.js` would allow unit tests.
 
-### 8. Smaller items
+### 4. Smaller items
 
 - **Unchecked imports.** A backup's `version` field isn't checked, and individual
   entities aren't validated, so a malformed file can crash a view.
@@ -107,3 +78,7 @@ currently untestable because it's inlined in the handlers. Extracting it into
 | Version | Issue |
 |---|---|
 | 1.0.24 | Sheets rendered outside the theme scope. They had transparent panels, black text, didn't line up with the phone frame on tall windows, and used the wrong font. Fixed with `.app-shell`/`.sheet-layer` + `SheetPortal`. See [renderer/ui-system.md](renderer/ui-system.md#history-of-the-edit-goal-bug-fixed-in-1024). |
+| 1.0.24 | Dead IPC channel `trigger-log-interaction`. Removed `layersSystem.onTriggerLog` from `preload.cjs` and its subscription in `LayersApp`. Ctrl+Shift+L only brings the window to the front. |
+| 1.0.24 | Renderer libraries shipped twice. `react`, `react-dom`, `lucide-react` and `recharts` moved to `devDependencies`. `app.asar` went from 55 MB (9,675 entries, 4,197 of them `lucide-react`) to 3 MB (337 entries). See [build-and-release.md](build-and-release.md#dependencies-vs-devdependencies). |
+| 1.0.24 | Stale duplicate project under `Layers/` deleted. Every file in it matched the first commit. `npm test` runs one test file again; `vite.config.js` also keeps Vitest out of `.claude/` worktrees. |
+| 1.0.24 | `dist-local/` and `release/` added to `.gitignore`. |
