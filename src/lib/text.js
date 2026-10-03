@@ -1,7 +1,7 @@
 // Builds user-facing sentences: journal summaries, goal titles, profile
 // suggestions, check-in names and reminder, coach hooks and updater status.
 
-import { TYPE_META } from '../data/constants.js';
+import { getLayer, SKILL_ORDER, SKILL_TIPS, TYPE_META } from '../data/constants.js';
 import { infoItemDateLabel, infoItemDaysAgo, journalDateLabel, journalDaysAgo, toISODate } from './dates.js';
 
 export function summaryFor(entry) {
@@ -134,4 +134,34 @@ export function buildPotentialHooks(person, journal, now = new Date()) {
   }
 
   return hooks.slice(0, 6);
+}
+
+// Home's "Try this next": one suggestion that follows the focus you chose at
+// onboarding (or in Me). 'mix' (a bit of everything), or no focus, takes
+// turns day by day. Returns { text, button, action } where action is
+// { type: 'addPerson' | 'log' | 'person' | 'tab', id?, tab? }.
+export function focusSuggestion(focus, people, journal, skills, now = new Date()) {
+  const dayOfYear = Math.floor((now - new Date(now.getFullYear(), 0, 0)) / 86400000);
+  const kind = ['new', 'deepen', 'skills'].includes(focus) ? focus : ['new', 'deepen', 'skills'][dayOfYear % 3];
+  const lastLog = (id) => {
+    const days = journal.filter(j => j.personId === id).map(j => journalDaysAgo(j, now));
+    return days.length ? Math.min(...days) : Infinity;
+  };
+
+  if (kind === 'skills') {
+    const tracked = skills && SKILL_ORDER.some(k => skills[k] && skills[k].current > 0);
+    if (!tracked) return { text: 'Log your next conversation and tick what you practised, to start tracking your skills.', button: 'Log a conversation', action: { type: 'log' } };
+    const focusKey = SKILL_ORDER.reduce((low, k) => skills[k].current < skills[low].current ? k : low, SKILL_ORDER[0]);
+    return { text: `This week: ${SKILL_TIPS[focusKey].challenge}`, button: 'See your skills', action: { type: 'tab', tab: 'me' } };
+  }
+  if (people.length === 0 || (kind === 'new' && people.length < 3)) {
+    return { text: "Add someone you'd like to get to know better.", button: 'Add a person', action: { type: 'addPerson' } };
+  }
+  if (kind === 'new') {
+    const newer = people.filter(p => p.layer <= 2);
+    const pick = (newer.length ? newer : people).slice().sort((a, b) => lastLog(b.id) - lastLog(a.id))[0];
+    return { text: `${pick.name} is at Layer ${pick.layer}, ${getLayer(pick.layer).name}. Next time you talk, ask about something they've mentioned.`, button: `Open ${pick.name}`, action: { type: 'person', id: pick.id } };
+  }
+  const closest = people.slice().sort((a, b) => (b.layer - a.layer) || (b.overall - a.overall))[0];
+  return { text: `Plan something one-on-one with ${closest.name}. Shared experiences are what deepen a Layer ${closest.layer} relationship.`, button: `Open ${closest.name}`, action: { type: 'person', id: closest.id } };
 }

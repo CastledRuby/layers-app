@@ -1,6 +1,6 @@
 // Relationship progression: the six dimensions, layer progress and new people.
 
-import { DIM_ORDER, getLayer, GOAL_DIM_PHRASES, LAYER_BASE_DIMS } from '../data/constants.js';
+import { DIM_ORDER, getLayer, GOAL_DIM_PHRASES, LAYER_BASE_DIMS, SKILL_GOAL_PRESETS, SKILL_GOAL_STEP } from '../data/constants.js';
 import { formatAbsoluteDate, pushHistoryPoint, sortHistory, toISODate } from './dates.js';
 import { clamp, uid } from './util.js';
 
@@ -108,4 +108,19 @@ export function bumpSkills(skills, bumps, at = toISODate(new Date())) {
     next[key] = { ...skill, current, history: pushHistoryPoint(skill.history || [], { date: formatAbsoluteDate(new Date(`${at}T00:00:00`)), at, value: current }) };
   });
   return next;
+}
+
+// The skills a bump raised (to move skill goals with them).
+export function raisedSkills(before, after) {
+  return Object.keys(after).filter(k => before[k] && after[k].current > before[k].current);
+}
+
+// Skill goals whose skill went up move by SKILL_GOAL_STEP, with a chart point.
+export function advanceSkillGoals(goals, raised, at = toISODate(new Date())) {
+  if (!raised.length) return goals;
+  return goals.map(g => {
+    if (g.progress >= 100 || !raised.includes(SKILL_GOAL_PRESETS[g.type])) return g;
+    const value = clamp(g.progress + SKILL_GOAL_STEP, 0, 100);
+    return { ...g, progress: value, history: pushHistoryPoint(g.history || [], { date: formatAbsoluteDate(new Date(`${at}T00:00:00`)), at, value }) };
+  });
 }

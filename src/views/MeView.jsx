@@ -4,12 +4,13 @@ import { useMemo, useState } from 'react';
 import { Download, Upload } from 'lucide-react';
 import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { LabeledBar } from '../components/atoms.jsx';
-import { ACHIEVEMENTS, CATEGORIES, FOCUS_SKILL_KEY, SKILL_ORDER, SKILL_TIPS } from '../data/constants.js';
-import { sortHistory } from '../lib/dates.js';
+import { ACHIEVEMENTS, FOCUS_LABELS, FOCUS_SKILL_KEY, SKILL_ORDER, SKILL_TIPS } from '../data/constants.js';
+import { achievementProgress, progressText } from '../lib/achievements.js';
+import { formatAbsoluteDate, parseISODay, sortHistory } from '../lib/dates.js';
 import { updateStatusText } from '../lib/text.js';
 import { COLORS } from '../theme.js';
 
-export function MeView({ people, journal, skills, profile, onUpdateProfile, onAddSample, onRemoveSample, hasSamplePeople, canAddSample, onStartOver, onExport, onImportClick, hasUpdater, updateStatus, onCheckForUpdates, onInstallUpdate, onOpenDownloadPage, shortcutStatus, theme, onSetTheme, hasSystemBridge, autoLaunch, onToggleAutoLaunch, onOpenShortcuts, appVersion }) {
+export function MeView({ people, journal, skills, profile, onUpdateProfile, onEditProfile, achievements, onAddSample, onRemoveSample, hasSamplePeople, canAddSample, onStartOver, onExport, onImportClick, hasUpdater, updateStatus, onCheckForUpdates, onInstallUpdate, onOpenDownloadPage, shortcutStatus, theme, onSetTheme, hasSystemBridge, autoLaunch, onToggleAutoLaunch, onOpenShortcuts, appVersion }) {
   const [chartSkill, setChartSkill] = useState(FOCUS_SKILL_KEY);
 
   // Strength is your highest skill and focus your lowest. Until something has
@@ -19,21 +20,19 @@ export function MeView({ people, journal, skills, profile, onUpdateProfile, onAd
   const focusKey = useMemo(() => SKILL_ORDER.reduce((low, k) => skills[k].current < skills[low].current ? k : low, SKILL_ORDER[0]), [skills]);
   const chartData = useMemo(() => sortHistory(skills[chartSkill].history || []), [skills, chartSkill]);
 
-  const unlocked = useMemo(() => {
-    const totalInfo = people.reduce((sum, p) => sum + CATEGORIES.reduce((s2, c) => s2 + p[c.key].length, 0), 0);
-    const totalAL = journal.reduce((sum, j) => sum + (j.activeListening ? j.activeListening.length : 0), 0);
-    const deepLayers = people.filter(p => p.layer >= 3).length;
-    return {
-      firstMeaningful: journal.some(j => j.meaningfulness >= 4),
-      activeListener: totalAL >= 5,
-      remembered10: totalInfo >= 10,
-      reciprocityMaster: skills.reciprocity.current >= 75,
-      relationshipBuilder: deepLayers >= 2,
-    };
-  }, [people, journal, skills]);
+  // Recorded achievements stay unlocked; locked ones show how close you are.
+  const progress = useMemo(() => achievementProgress(people, journal, skills), [people, journal, skills]);
 
   return (
     <div className="fade-anim px-5 pt-6 pb-6">
+      <div className="flex items-center justify-between rounded-2xl p-3.5 mb-6" style={{ background: COLORS.paperRaised, border: `1px solid ${COLORS.line}` }}>
+        <div style={{ minWidth: 0 }}>
+          <p className="text-sm font-semibold truncate" style={{ color: COLORS.ink }}>{(profile && profile.name) || 'You'}</p>
+          <p className="text-xs mt-0.5" style={{ color: COLORS.inkSoft }}>{profile && FOCUS_LABELS[profile.focus] ? `Focusing on ${FOCUS_LABELS[profile.focus]}` : 'No focus chosen yet'}</p>
+        </div>
+        <button onClick={onEditProfile} className="text-xs font-semibold rounded-full px-3 py-1.5 shrink-0" style={{ background: COLORS.accentSoft, color: COLORS.accent }}>Edit</button>
+      </div>
+
       <p className="font-display" style={{ fontSize: 24, color: COLORS.ink }}>Your social skills</p>
       <p className="text-sm mt-1" style={{ color: COLORS.inkSoft }}>Your own development, tracked privately.</p>
 
@@ -88,13 +87,16 @@ export function MeView({ people, journal, skills, profile, onUpdateProfile, onAd
         <p className="font-display" style={{ fontSize: 18, color: COLORS.ink }}>Achievements</p>
         <div className="grid grid-cols-2 gap-2.5 mt-3">
           {ACHIEVEMENTS.map(a => {
-            const isUnlocked = unlocked[a.key];
+            const unlockedOn = achievements[a.key] ? parseISODay(achievements[a.key]) : null;
+            const isUnlocked = !!unlockedOn;
             return (
               <div key={a.key} className="rounded-2xl p-3.5" style={{ background: isUnlocked ? COLORS.accentSoft : COLORS.paperRaised, border: `1px solid ${isUnlocked ? COLORS.accentSoft : COLORS.line}`, opacity: isUnlocked ? 1 : 0.55 }}>
                 <span style={{ fontSize: 22 }}>{a.emoji}</span>
                 <p className="text-xs font-semibold mt-1.5" style={{ color: COLORS.ink }}>{a.title}</p>
                 <p className="text-xs mt-1" style={{ color: COLORS.inkSoft }}>{a.desc}</p>
-                {!isUnlocked && <p className="text-xs mt-1 font-medium" style={{ color: COLORS.inkSoft }}>Locked</p>}
+                {isUnlocked
+                  ? <p className="text-xs mt-1 font-medium" style={{ color: COLORS.accent }}>Unlocked {formatAbsoluteDate(unlockedOn)}</p>
+                  : <p className="text-xs mt-1 font-medium" style={{ color: COLORS.inkSoft }}>Locked · {progressText(progress[a.key])}</p>}
               </div>
             );
           })}

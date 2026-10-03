@@ -241,3 +241,73 @@ describe('P6 smarter reminders', () => {
     expect(savedState().profile.reminderNotifications).toBe(false);
   });
 });
+
+describe('P7 skills and Me', () => {
+  it('edits your name and focus from Me', async () => {
+    seedState();
+    const { user } = renderApp();
+    await user.click(nav('Me'));
+    await user.click(screen.getByRole('button', { name: 'Edit' }));
+    const sheet = dialog('Your profile');
+    await user.clear(within(sheet).getByLabelText('Your name'));
+    await user.type(within(sheet).getByLabelText('Your name'), 'Alexis');
+    await user.click(within(sheet).getByRole('button', { name: 'Deepening close relationships' }));
+    await user.click(screen.getByRole('button', { name: 'Save changes' }));
+    expect(savedState().profile).toMatchObject({ name: 'Alexis', focus: 'deepen' });
+    expect(screen.getByText('Focusing on deepening close relationships')).toBeTruthy();
+  });
+
+  it('records an achievement when you reach it, announces it, and keeps it', async () => {
+    seedState({ people: [person('Morgan')] });
+    const { user } = renderApp();
+    await user.click(nav('Me'));
+    expect(screen.getByText('First Meaningful Conversation').parentElement.textContent).toContain('Locked · 0 of 1 conversation');
+    await user.click(document.querySelector('.fab-btn'));
+    await user.click(within(dialog('What are you logging?')).getByRole('button', { name: /^Interaction/ }));
+    await user.click(within(dialog('What did you do?')).getByRole('button', { name: /Talked/ }));
+    await user.click(within(dialog('Who was this with?')).getByRole('button', { name: /Morgan/ }));
+    await user.click(screen.getByRole('button', { name: /^Confirm/ }));
+    await user.click(within(dialog('Add details')).getByRole('button', { name: '4' }));
+    await user.click(screen.getByRole('button', { name: 'Save interaction' }));
+    expect([...document.querySelectorAll('.toast')].map(t => t.textContent)).toContain('🏅 Achievement unlocked: First Meaningful Conversation');
+    expect(savedState().achievements).toEqual({ firstMeaningful: TODAY });
+    expect(screen.getByText('First Meaningful Conversation').parentElement.textContent).toMatch(/Unlocked \w{3} \d+/);
+  });
+
+  it('records what loaded data already earned without a flood of toasts', () => {
+    const morgan = person('Morgan');
+    seedState({ people: [morgan], journal: [{ id: 'j1', personId: morgan.id, at: TODAY, type: 'talked', meaningfulness: 5, added: [], activeListening: [] }] });
+    renderApp();
+    expect(savedState().achievements).toEqual({ firstMeaningful: TODAY });
+    expect([...document.querySelectorAll('.toast')].map(t => t.textContent).filter(t => t.includes('Achievement'))).toEqual([]);
+  });
+
+  it('moves a skill goal when its skill goes up', async () => {
+    seedState({ people: [person('Morgan')], generalGoals: [{ id: 'sg', personId: null, category: 'skill', type: 'followUpQ', title: 'Ask better follow-up questions', description: '', progress: 0, history: [] }] });
+    const { user } = renderApp();
+    await user.click(document.querySelector('.fab-btn'));
+    await user.click(within(dialog('What are you logging?')).getByRole('button', { name: /^Interaction/ }));
+    await user.click(within(dialog('What did you do?')).getByRole('button', { name: /Talked/ }));
+    await user.click(within(dialog('Who was this with?')).getByRole('button', { name: /Morgan/ }));
+    await user.click(screen.getByRole('button', { name: /^Confirm/ }));
+    await user.click(within(dialog('Add details')).getByRole('button', { name: 'Asked follow-up questions' }));
+    await user.click(screen.getByRole('button', { name: 'Save interaction' }));
+    expect(savedState().generalGoals[0].progress).toBe(20);
+  });
+
+  it('"Try this next" follows your focus', async () => {
+    seedState({ profile: { name: 'T', focus: 'new' } });
+    const { user } = renderApp();
+    expect(screen.getByText('Try this next').parentElement.textContent).toContain("Add someone you'd like to get to know better.");
+    await user.click(screen.getByRole('button', { name: 'Add a person' }));
+    expect(dialog('Add someone new')).toBeTruthy();
+  });
+
+  it('"Try this next" for deepening opens your closest relationship', async () => {
+    seedState({ profile: { name: 'T', focus: 'deepen' }, people: [person('Morgan', { layer: 1 }), person('Riley', { layer: 3 })] });
+    const { user } = renderApp();
+    await user.click(screen.getByRole('button', { name: 'Open Riley' }));
+    expect(screen.getByText('Current relationship stage')).toBeTruthy();
+    expect(screen.getAllByText('Riley').length).toBeGreaterThan(0);
+  });
+});

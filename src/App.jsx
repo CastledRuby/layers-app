@@ -8,10 +8,11 @@ import { Plus } from 'lucide-react';
 import { BottomNav } from './components/BottomNav.jsx';
 import { ErrorBoundary } from './components/ErrorBoundary.jsx';
 import { hasOpenSheet, SheetLayerContext, topSheet } from './components/sheetLayer.js';
-import { categoryMeta, getLayer, STANDOUT_BUMP, STANDOUTS } from './data/constants.js';
+import { ACHIEVEMENTS, categoryMeta, getLayer, STANDOUT_BUMP, STANDOUTS } from './data/constants.js';
 import { EMPTY_SKILLS, INITIAL_GENERAL_GOALS, INITIAL_JOURNAL, INITIAL_PEOPLE, INITIAL_SKILLS } from './data/seed.js';
 import { backfillJournalDates, backfillPeopleDates, backfillSkillDates, formatAbsoluteDate, formatCalendarDate, pushHistoryPoint, toISODate } from './lib/dates.js';
-import { advanceLayer, bumpSkills, chartDay, computeOverall, dimsEqual, makePerson, movePerson, placeOnLayers } from './lib/progress.js';
+import { achievementProgress, newlyUnlocked } from './lib/achievements.js';
+import { advanceLayer, advanceSkillGoals, bumpSkills, chartDay, computeOverall, dimsEqual, makePerson, movePerson, placeOnLayers, raisedSkills } from './lib/progress.js';
 import { MAX_BACKUP_BYTES, createBackup, validateBackup } from './lib/backup.js';
 import { useDailyCheckIn, useReminderNotifications, useToday } from './lib/hooks.js';
 import { followUpEvent, markDone } from './lib/reminders.js';
@@ -22,6 +23,7 @@ import { AddPersonModal } from './modals/AddPersonModal.jsx';
 import { ConfirmDialog } from './modals/ConfirmDialog.jsx';
 import { EditEntryModal } from './modals/EditEntryModal.jsx';
 import { EditPersonModal } from './modals/EditPersonModal.jsx';
+import { EditProfileModal } from './modals/EditProfileModal.jsx';
 import { GoalModal } from './modals/GoalModal.jsx';
 import { LogInteractionModal } from './modals/LogInteractionModal.jsx';
 import { QuickAddInterestModal } from './modals/QuickAddInterestModal.jsx';
@@ -90,6 +92,8 @@ function LayersApp() {
   const [profile, setProfile] = useState(() => (saved && saved.profile) ? saved.profile : { name: '', focus: null });
   const [onboarded, setOnboarded] = useState(() => !!(saved && saved.onboarded));
   const [theme, setTheme] = useState(() => (saved && saved.theme === 'dark') ? 'dark' : 'light');
+  // { key: 'YYYY-MM-DD' } for each achievement reached; null until worked out.
+  const [achievements, setAchievements] = useState(() => (saved && saved.achievements) || null);
   const [screen, setScreen] = useState({ name: 'tabs' });
   const [activeTab, setActiveTab] = useState('home');
   const [toasts, setToasts] = useState([]);
@@ -118,24 +122,40 @@ function LayersApp() {
   const [standaloneDetailOpen, setStandaloneDetailOpen] = useState(false);
   const [editPersonOpen, setEditPersonOpen] = useState(false);
   const [editingEntryId, setEditingEntryId] = useState(null);
+  const [editProfileOpen, setEditProfileOpen] = useState(false);
   const [confirmState, setConfirmState] = useState(null);
   const [sheetLayer, setSheetLayer] = useState(null);
   const [searchFocus, setSearchFocus] = useState(null);
   const importInputRef = useRef(null);
   const saveFailed = useRef(false);
+  // Achievements reached by loading data (startup, samples, an import) are
+  // recorded without a toast; only ones you reach by using the app announce.
+  const quietAchievements = useRef(true);
 
   function askConfirm(opts) {
     setConfirmState({ ...opts, onConfirm: () => { opts.onConfirm(); setConfirmState(null); }, onCancel: () => setConfirmState(null) });
   }
 
   useEffect(() => {
-    const ok = persistState({ people, journal, generalGoals, events, skills, profile, onboarded, theme });
+    const ok = persistState({ people, journal, generalGoals, events, skills, profile, onboarded, theme, achievements: achievements || {} });
     // Say so once if saving fails (storage full), rather than silently losing
     // every change after it.
     if (!ok && !saveFailed.current) pushToast("Layers couldn't save your latest changes: storage may be full. Export a backup from Me to keep a copy.");
     saveFailed.current = !ok;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [people, journal, generalGoals, events, skills, profile, onboarded, theme]);
+  }, [people, journal, generalGoals, events, skills, profile, onboarded, theme, achievements]);
+
+  // Record achievements as they're reached (lib/achievements.js).
+  useEffect(() => {
+    const quiet = achievements === null || quietAchievements.current || !onboarded;
+    quietAchievements.current = false;
+    const fresh = newlyUnlocked(achievementProgress(people, journal, skills), achievements);
+    if (fresh.length === 0) { if (achievements === null) setAchievements({}); return; }
+    const day = toISODate(new Date());
+    setAchievements(prev => ({ ...(prev || {}), ...Object.fromEntries(fresh.map(k => [k, day])) }));
+    if (!quiet) pushToast(fresh.length === 1 ? `🏅 Achievement unlocked: ${ACHIEVEMENTS.find(a => a.key === fresh[0]).title}` : `🏅 ${fresh.length} achievements unlocked`);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [people, journal, skills, achievements, onboarded]);
 
   // Saved data that couldn't be read, or needed repair, is explained once at
   // startup. A copy of the original is kept either way (lib/storage.js).
@@ -306,6 +326,13 @@ function LayersApp() {
     const chartAt = toISODate(pd); // the journal entry's day, and "last mentioned" for any notes
     const loggedNames = personIds.map(id => (people.find(p => p.id === id) || {}).name).filter(Boolean);
     const levelUps = [];
+    const nextSkills = bumpSkills(skills, {
+      activeListening: activeListening.length,
+      followUp: activeListening.includes('followup') ? 2 : 0,
+      reciprocity: activeListening.includes('paraphrase') || activeListening.length >= 2 ? 1 : 0,
+      selfDisclosure: notes.length > 0 ? 1 : 0,
+    });
+    const raised = raisedSkills(skills, nextSkills);
     // Worked out from the current people in one pass, so every level-up is
     // known before the toasts below. (They used to be collected inside
     // setPeople updaters, which React may run later, so only the first
@@ -352,19 +379,15 @@ function LayersApp() {
       STANDOUTS.filter(s => standouts.includes(s.key)).forEach(s => why.push(`You noted: ${s.label.toLowerCase()}`));
       if (why.length === 0) why.push('Logged a new interaction');
       if (leveledUp) levelUps.push({ name: p.name, layer: newLayer });
-      return movePerson(p, { layer: newLayer, overall: newOverall, at: chartAt, why, extra: { dims: newDims, goals: newGoals, ...addNotes(p, notes, chartAt) } });
+      return movePerson(p, { layer: newLayer, overall: newOverall, at: chartAt, why, extra: { dims: newDims, goals: advanceSkillGoals(newGoals, raised), ...addNotes(p, notes, chartAt) } });
     });
     setPeople(nextPeople);
+    setGeneralGoals(prev => advanceSkillGoals(prev, raised));
     setJournal(prev => [
       ...personIds.map(personId => ({ id: uid(), personId, at: chartAt, type, meaningfulness, added: notes.map(n => n.text), activeListening, ...(summary ? { summary } : {}), ...(standouts.length ? { standouts } : {}), ...(reflection ? { reflection } : {}) })),
       ...prev,
     ]);
-    setSkills(prev => bumpSkills(prev, {
-      activeListening: activeListening.length,
-      followUp: activeListening.includes('followup') ? 2 : 0,
-      reciprocity: activeListening.includes('paraphrase') || activeListening.length >= 2 ? 1 : 0,
-      selfDisclosure: notes.length > 0 ? 1 : 0,
-    }));
+    setSkills(nextSkills);
     setLogOpen(false);
     const who = loggedNames.length <= 2 ? loggedNames.join(' and ') : `${loggedNames.slice(0, 2).join(', ')} and ${loggedNames.length - 2} other${loggedNames.length - 2 > 1 ? 's' : ''}`;
     pushToast(who ? `Logged time with ${who}` : 'Interaction logged');
@@ -555,15 +578,18 @@ function LayersApp() {
       return { ...gl, progress: value, history: pushHistoryPoint(gl.history || [], { date: formatAbsoluteDate(new Date()), at: day, value }) };
     });
     const why = leveledUp ? [`Reached Layer ${newLayer}: ${getLayer(newLayer).name}`, ...scenario.wentWell] : scenario.wentWell;
-    setPeople(prev => prev.map(p => p.id !== personId ? p : movePerson(p, { layer: newLayer, overall: newOverall, at: day, why, extra: { dims: newDims, goals: newGoals } })));
-    if (leveledUp) pushToast(`🎉 ${person.name} moved up to Layer ${newLayer}: ${getLayer(newLayer).name}!`);
-    setJournal(prev => [{ id: uid(), personId, at: day, type: 'analysed', meaningfulness: clamp(Math.round(g.overall / 20), 1, 5), added: [], activeListening: [], analysis: { grading: g, conversationState: scenario.conversationState } }, ...prev]);
-    setSkills(prev => bumpSkills(prev, {
+    const nextSkills = bumpSkills(skills, {
       activeListening: Math.round(g.activeListening / 25),
       readingCues: 2,
       reciprocity: Math.round(g.reciprocity / 25),
       knowingWhenToStop: scenario.conversationState === 'windingDown' ? 3 : 0,
-    }));
+    });
+    const raised = raisedSkills(skills, nextSkills);
+    setPeople(prev => prev.map(p => p.id !== personId ? p : movePerson(p, { layer: newLayer, overall: newOverall, at: day, why, extra: { dims: newDims, goals: advanceSkillGoals(newGoals, raised) } })));
+    setGeneralGoals(prev => advanceSkillGoals(prev, raised));
+    if (leveledUp) pushToast(`🎉 ${person.name} moved up to Layer ${newLayer}: ${getLayer(newLayer).name}!`);
+    setJournal(prev => [{ id: uid(), personId, at: day, type: 'analysed', meaningfulness: clamp(Math.round(g.overall / 20), 1, 5), added: [], activeListening: [], analysis: { grading: g, conversationState: scenario.conversationState } }, ...prev]);
+    setSkills(nextSkills);
     pushToast(`Logged and updated ${person.name}'s progress`);
   }
 
@@ -620,6 +646,9 @@ function LayersApp() {
         setGeneralGoals(prev => prev.filter(g => !SAMPLE_GOAL_IDS.has(g.id)));
         setEvents(prev => unlinkMissingPeople(prev, remaining));
         if (resetSkills) setSkills(EMPTY_SKILLS);
+        // Achievements the samples earned weren't yours: work them out again.
+        quietAchievements.current = true;
+        setAchievements(null);
         setCoachInit(c => SAMPLE_PERSON_IDS.has(c.personId) ? { ...c, personId: null } : c);
         setScreen({ name: 'tabs' }); setActiveTab('home');
         pushToast('Sample people removed');
@@ -641,6 +670,7 @@ function LayersApp() {
         setGeneralGoals(prev => [...prev, ...sample.generalGoals.filter(g => !prev.some(x => x.id === g.id))]);
         // Example skill levels only if you haven't tracked any of your own.
         if (allSkillsZero(skills)) setSkills(sample.skills);
+        quietAchievements.current = true;
         pushToast('Sample people added');
       },
     });
@@ -654,6 +684,8 @@ function LayersApp() {
       danger: true,
       onConfirm: () => {
         setPeople([]); setJournal([]); setGeneralGoals([]); setEvents([]); setSkills(EMPTY_SKILLS);
+        quietAchievements.current = true;
+        setAchievements(null);
         setCoachInit(c => ({ ...c, personId: null }));
         setScreen({ name: 'tabs' }); setActiveTab('home');
         setOnboarded(false);
@@ -662,7 +694,7 @@ function LayersApp() {
   }
 
   function handleExportData() {
-    const data = createBackup({ people, journal, generalGoals, events, skills, profile });
+    const data = createBackup({ people, journal, generalGoals, events, skills, profile, achievements });
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -705,6 +737,8 @@ function LayersApp() {
           setEvents(data.events);
           setSkills(backfillSkillDates(data.skills, data.exportedAt));
           setProfile(data.profile);
+          quietAchievements.current = true;
+          setAchievements(data.achievements);
           setCoachInit(c => ({ ...c, personId: null }));
           setOnboarded(true);
           setScreen({ name: 'tabs' }); setActiveTab('home');
@@ -717,6 +751,7 @@ function LayersApp() {
 
   function handleOnboardingComplete({ name, focus, startFresh, newPeople }) {
     setProfile({ name, focus });
+    quietAchievements.current = true;
     if (startFresh) {
       setPeople((newPeople || []).map(p => makePerson({ name: p.name, emoji: p.emoji, layer: 1 })));
       setJournal([]); setGeneralGoals([]); setSkills(EMPTY_SKILLS);
@@ -770,11 +805,11 @@ function LayersApp() {
                     )}
                     {screen.name === 'tabs' && (
                       <>
-                        {activeTab === 'home' && <HomeView today={today} people={people} journal={journal} generalGoals={generalGoals} events={events} profile={profile} onOpenPerson={openPerson} onSwitchTab={switchTab} onOpenGoals={openGoalsOverview} onOpenCoach={(tab) => openCoach(null, tab)} onLogEvent={(ev, meaningfulness, detail) => { handleMarkEventDone(ev.id, ev.occursOn, { quiet: true }); handleLogSubmit({ personIds: ev.personIds, type: 'other', meaningfulness, notes: [], activeListening: [], summary: detail ? `${ev.title} — ${detail}` : ev.title, pickedDate: new Date(), goalIds: ev.goalId ? [ev.goalId] : undefined }); }} onMarkEventDone={handleMarkEventDone} onManageEvents={openEventManager} onEditEvent={openEditRecurringEvent} onDeleteEvent={handleDeleteEvent} />}
+                        {activeTab === 'home' && <HomeView today={today} people={people} journal={journal} skills={skills} onAddPerson={() => setAddPersonOpen(true)} onOpenLog={() => openLog(null)} generalGoals={generalGoals} events={events} profile={profile} onOpenPerson={openPerson} onSwitchTab={switchTab} onOpenGoals={openGoalsOverview} onOpenCoach={(tab) => openCoach(null, tab)} onLogEvent={(ev, meaningfulness, detail) => { handleMarkEventDone(ev.id, ev.occursOn, { quiet: true }); handleLogSubmit({ personIds: ev.personIds, type: 'other', meaningfulness, notes: [], activeListening: [], summary: detail ? `${ev.title} — ${detail}` : ev.title, pickedDate: new Date(), goalIds: ev.goalId ? [ev.goalId] : undefined }); }} onMarkEventDone={handleMarkEventDone} onManageEvents={openEventManager} onEditEvent={openEditRecurringEvent} onDeleteEvent={handleDeleteEvent} />}
                         {activeTab === 'people' && <PeopleView people={people} journal={journal} onOpenPerson={openPerson} onAddPerson={() => setAddPersonOpen(true)} />}
                         {activeTab === 'coach' && <CoachView people={people} journal={journal} initialPersonId={coachInit.personId} initialTab={coachInit.tab} onOpenLog={openLog} onApproveInfo={handleApproveInfo} onLogFromAnalysis={handleLogFromAnalysis} onOpenPerson={openPerson} />}
                         {activeTab === 'journal' && <JournalView today={today} people={people} journal={journal} onOpenPerson={openPerson} onEditEntry={setEditingEntryId} />}
-                        {activeTab === 'me' && <MeView people={people} journal={journal} skills={skills} generalGoals={generalGoals} profile={profile} onAddSample={handleAddSample} onRemoveSample={handleRemoveSample} hasSamplePeople={people.some(p => SAMPLE_PERSON_IDS.has(p.id))} canAddSample={INITIAL_PEOPLE.some(sp => !people.some(p => p.id === sp.id))} onStartOver={handleStartOver} onExport={handleExportData} onImportClick={handleImportClick} hasUpdater={hasUpdater} updateStatus={updateStatus} onCheckForUpdates={handleCheckForUpdates} onInstallUpdate={handleInstallUpdate} onOpenDownloadPage={handleOpenDownloadPage} shortcutStatus={shortcutStatus} theme={theme} onSetTheme={setTheme} onUpdateProfile={(changes) => setProfile(p => ({ ...p, ...changes }))} hasSystemBridge={hasSystemBridge} autoLaunch={autoLaunch} onToggleAutoLaunch={handleToggleAutoLaunch} onOpenShortcuts={() => setShortcutsOpen(true)} appVersion={appVersion} />}
+                        {activeTab === 'me' && <MeView people={people} journal={journal} skills={skills} generalGoals={generalGoals} profile={profile} onAddSample={handleAddSample} onRemoveSample={handleRemoveSample} hasSamplePeople={people.some(p => SAMPLE_PERSON_IDS.has(p.id))} canAddSample={INITIAL_PEOPLE.some(sp => !people.some(p => p.id === sp.id))} onStartOver={handleStartOver} onExport={handleExportData} onImportClick={handleImportClick} hasUpdater={hasUpdater} updateStatus={updateStatus} onCheckForUpdates={handleCheckForUpdates} onInstallUpdate={handleInstallUpdate} onOpenDownloadPage={handleOpenDownloadPage} shortcutStatus={shortcutStatus} theme={theme} onSetTheme={setTheme} onUpdateProfile={(changes) => setProfile(p => ({ ...p, ...changes }))} onEditProfile={() => setEditProfileOpen(true)} achievements={achievements || {}} hasSystemBridge={hasSystemBridge} autoLaunch={autoLaunch} onToggleAutoLaunch={handleToggleAutoLaunch} onOpenShortcuts={() => setShortcutsOpen(true)} appVersion={appVersion} />}
                       </>
                     )}
                   </>
@@ -805,6 +840,7 @@ function LayersApp() {
             )}
             {addPersonOpen && <AddPersonModal onClose={() => setAddPersonOpen(false)} onSave={handleAddPerson} />}
             {shortcutsOpen && <ShortcutsModal onClose={() => setShortcutsOpen(false)} />}
+            {editProfileOpen && <EditProfileModal profile={profile} onClose={() => setEditProfileOpen(false)} onSave={(vals) => { setProfile(p => ({ ...p, ...vals })); setEditProfileOpen(false); pushToast('Profile updated'); }} />}
             {standaloneDetailOpen && (
               <TemplatePickerModal
                 title="Add detail"

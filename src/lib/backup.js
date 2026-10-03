@@ -4,7 +4,7 @@
 // message; individually damaged records are repaired where that's safe (a
 // missing list becomes empty, a number is clamped into range) or skipped and
 // counted, so a bad entry can't crash a screen after import.
-import { CATEGORIES, DIM_ORDER, LAYER_BASE_DIMS, SKILL_ORDER, TYPE_META, categoryMeta } from '../data/constants.js';
+import { ACHIEVEMENTS, CATEGORIES, DIM_ORDER, LAYER_BASE_DIMS, SKILL_ORDER, TYPE_META, categoryMeta } from '../data/constants.js';
 import { EMPTY_SKILLS } from '../data/seed.js';
 import { clamp, uid } from './util.js';
 
@@ -12,8 +12,8 @@ export const BACKUP_VERSION = 1;
 // Far beyond any real backup; stops a wrong file (a video, say) being read into memory.
 export const MAX_BACKUP_BYTES = 20 * 1024 * 1024;
 
-export function createBackup({ people, journal, generalGoals, events, skills, profile }, now = new Date()) {
-  return { version: BACKUP_VERSION, exportedAt: now.toISOString(), people, journal, generalGoals, events, skills, profile };
+export function createBackup({ people, journal, generalGoals, events, skills, profile, achievements }, now = new Date()) {
+  return { version: BACKUP_VERSION, exportedAt: now.toISOString(), people, journal, generalGoals, events, skills, profile, achievements: achievements || {} };
 }
 
 const isObject = (v) => v !== null && typeof v === 'object' && !Array.isArray(v);
@@ -138,6 +138,11 @@ export function validateBackup(raw, { source = 'backup' } = {}) {
     ? { ...raw.profile, name: typeof raw.profile.name === 'string' ? raw.profile.name : '', focus: typeof raw.profile.focus === 'string' ? raw.profile.focus : null }
     : { name: '', focus: null };
   const exportedAt = typeof raw.exportedAt === 'string' && !isNaN(new Date(raw.exportedAt).getTime()) ? raw.exportedAt : null;
+  // Recorded achievements: { key: 'YYYY-MM-DD' }. Older backups have none
+  // (null), and the app works them out again from the data.
+  const achievements = isObject(raw.achievements)
+    ? Object.fromEntries(ACHIEVEMENTS.filter(a => isISODay(raw.achievements[a.key])).map(a => [a.key, raw.achievements[a.key]]))
+    : null;
 
   const warnings = [];
   if (skipped.people) warnings.push(`${count(skipped.people, 'person', 'people')} without a name`);
@@ -156,5 +161,5 @@ export function validateBackup(raw, { source = 'backup' } = {}) {
     events: events.length,
     text: [count(people.length, 'person', 'people'), count(journal.length, 'journal entry', 'journal entries'), count(goalCount, 'goal'), count(events.length, 'event')].join(', '),
   };
-  return { ok: true, data: { people, journal, generalGoals, events, skills, profile, exportedAt }, summary, warnings };
+  return { ok: true, data: { people, journal, generalGoals, events, skills, profile, achievements, exportedAt }, summary, warnings };
 }

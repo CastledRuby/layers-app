@@ -164,6 +164,15 @@ export const CONV_STATES = {
   windingDown: { emoji: '🔴', label: 'Likely wants to finish', desc: 'Repeated short responses or signs they may be tired or busy.' },
 };
 
+// Skill goals (Goals > "My skills" presets) move when their skill does:
+// each log or analysis that raises the skill adds SKILL_GOAL_STEP to them.
+// (They used to move only with "Mark progress".)
+export const SKILL_GOAL_PRESETS = {
+  followUpQ: 'followUp', fewerQuestions: 'reciprocity', selfDisclosureGoal: 'selfDisclosure',
+  activeListeningGoal: 'activeListening', readCues: 'readingCues', reciprocal: 'reciprocity', recognizeSpace: 'knowingWhenToStop',
+};
+export const SKILL_GOAL_STEP = 20;
+
 export const ACHIEVEMENTS = [
   { key: 'firstMeaningful', emoji: '🏅', title: 'First Meaningful Conversation', desc: 'Log a conversation rated Personal or Deep.' },
   { key: 'activeListener', emoji: '🎧', title: 'Active Listener', desc: 'Practise active listening in 5 or more conversations.' },

@@ -47,6 +47,7 @@ export function loadSavedState(now = new Date()) {
   if (!result.ok) {
     return { state: null, problem: { kind: 'unreadable', warnings: [], copyKept: keepCopy(raw, now) } };
   }
+  // achievements: null for saved data from before they were recorded.
   const state = { ...result.data, onboarded: !!parsed.onboarded, theme: parsed.theme === 'dark' ? 'dark' : 'light' };
   delete state.exportedAt;
   if (result.warnings.length === 0) return { state, problem: null };

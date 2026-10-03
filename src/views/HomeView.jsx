@@ -6,7 +6,7 @@ import { Avatar, ProgressBar } from '../components/atoms.jsx';
 import { FOCUS_LABELS, getLayer } from '../data/constants.js';
 import { formatCalendarDate, formatTime12, formatWeekdays, isJournalThisWeek, journalDateLabel, journalDaysAgo, newestFirst, parseISODay } from '../lib/dates.js';
 import { isPastOneOff, nextOccurrence } from '../lib/reminders.js';
-import { homeGoalTitle, summaryFor } from '../lib/text.js';
+import { focusSuggestion, homeGoalTitle, summaryFor } from '../lib/text.js';
 import { TemplatePickerModal } from '../modals/TemplatePickerModal.jsx';
 import { COLORS } from '../theme.js';
 
@@ -17,7 +17,7 @@ function doneLabel(ev) {
   return ev.when === 'Today' ? 'Done for today' : `Skip ${ev.when}`;
 }
 
-export function HomeView({ today, people, journal, generalGoals, events, profile, onOpenPerson, onSwitchTab, onOpenGoals, onOpenCoach, onLogEvent, onMarkEventDone, onManageEvents, onEditEvent, onDeleteEvent }) {
+export function HomeView({ today, people, journal, skills, onAddPerson, onOpenLog, generalGoals, events, profile, onOpenPerson, onSwitchTab, onOpenGoals, onOpenCoach, onLogEvent, onMarkEventDone, onManageEvents, onEditEvent, onDeleteEvent }) {
   // `today` (from useToday) changes at midnight. The date maths below runs
   // from it, so "Upcoming", "haven't caught up" and the weekly counts
   // refresh then, even if the app has been open in the tray for days.
@@ -75,6 +75,15 @@ export function HomeView({ today, people, journal, generalGoals, events, profile
     return [...fromPeople, ...fromGeneral].sort((a, b) => b.progress - a.progress).slice(0, 4);
   }, [people, generalGoals]);
 
+  // One suggestion that follows the focus chosen at onboarding (or in Me).
+  const suggestion = useMemo(() => focusSuggestion(profile && profile.focus, people, journal, skills, now), [profile, people, journal, skills, now]);
+  function runSuggestion() {
+    const a = suggestion.action;
+    if (a.type === 'addPerson') onAddPerson();
+    else if (a.type === 'log') onOpenLog();
+    else if (a.type === 'person') onOpenPerson(a.id);
+    else if (a.type === 'tab') onSwitchTab(a.tab);
+  }
   const recent = useMemo(() => newestFirst(journal, now).filter(j => peopleById[j.personId]).slice(0, 3), [journal, now, peopleById]);
 
   return (
@@ -99,6 +108,12 @@ export function HomeView({ today, people, journal, generalGoals, events, profile
           <p className="font-display" style={{ fontSize: 26, color: COLORS.ink }}>{relationshipsInProgress}</p>
           <p className="text-xs mt-0.5" style={{ color: COLORS.inkSoft }}>being developed</p>
         </div>
+      </div>
+
+      <div className="rounded-2xl p-3.5 mt-6" style={{ background: COLORS.accentSoft }}>
+        <p className="text-xs font-semibold" style={{ color: COLORS.accent }}>Try this next</p>
+        <p className="text-sm mt-1" style={{ color: COLORS.ink }}>{suggestion.text}</p>
+        <button onClick={runSuggestion} className="text-xs font-semibold rounded-full px-3 py-1.5 mt-2.5" style={{ background: COLORS.accent, color: '#fff' }}>{suggestion.button}</button>
       </div>
 
       <div className="grid grid-cols-2 gap-2.5 mt-7">
