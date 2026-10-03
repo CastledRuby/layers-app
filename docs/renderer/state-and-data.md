@@ -126,8 +126,10 @@ Every date in the data is an absolute ISO day. Nothing stores a relative label l
   - info items: `infoItemDateLabel` ("Last mentioned: …" on the profile) and
     `infoItemDaysAgo` (the 3- and 7-day thresholds in `generateSuggestions`, which feeds
     "Ideas for next time").
-  - timeline: `timelineDateLabel`. The "Current: <layer>" step is added at render time
-    with the text `'Now'` and no `at`, and the helper passes such text through unchanged.
+  - timeline: `timelineDateLabel`. **The timeline always shows the calendar date**
+    (`'Sep 26'`, or `'Aug 4, 2025'` for another year) and never a relative label, because
+    it's a record of when things happened. The "Current: <layer>" step is added at render
+    time with the text `'Now'` and no `at`, and the helper passes that text through.
 
   When you write one of these records, set `at: toISODate(day)`. A logged note uses the
   interaction's picked date, and adding or editing an item uses today. Never store a

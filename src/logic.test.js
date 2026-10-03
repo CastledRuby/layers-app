@@ -306,8 +306,16 @@ describe('infoItemDaysAgo / infoItemDateLabel', () => {
 });
 
 describe('timelineDateLabel', () => {
-  it('derives the label from `at`', () => {
-    expect(timelineDateLabel({ label: 'First met', at: '2026-08-04' }, NOW)).toBe('2 months ago');
+  it('always shows the calendar date, never "N weeks ago" or "Yesterday"', () => {
+    expect(timelineDateLabel({ label: 'First met', at: '2026-08-04' }, NOW)).toBe('Aug 4');
+    expect(timelineDateLabel({ label: 'First proper conversation', at: '2026-10-02' }, NOW)).toBe('Oct 2');
+    expect(timelineDateLabel({ label: 'First met', at: '2026-10-03' }, NOW)).toBe('Oct 3');
+  });
+  it('adds the year for a date in another year', () => {
+    expect(timelineDateLabel({ label: 'First met', at: '2025-08-04' }, NOW)).toBe('Aug 4, 2025');
+  });
+  it('turns a legacy relative label into a date too', () => {
+    expect(timelineDateLabel({ label: 'First met', date: '2 weeks ago' }, NOW)).toBe('Sep 19');
   });
   it('keeps undated text such as the current-layer step\'s "Now"', () => {
     expect(timelineDateLabel({ label: 'Current: Close', date: 'Now', current: true }, NOW)).toBe('Now');

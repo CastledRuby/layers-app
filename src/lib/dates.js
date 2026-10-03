@@ -69,10 +69,9 @@ export function toISODate(d) { return `${d.getFullYear()}-${String(d.getMonth() 
 // date (`at`) used purely for sorting, so a backdated entry (picked via the
 // calendar) always lands in its correct chronological position on the
 // chart regardless of when it was actually logged.
-export function formatAbsoluteDate(d) {
-  const today = new Date();
+export function formatAbsoluteDate(d, now = new Date()) {
   const label = `${MONTH_NAMES[d.getMonth()].slice(0, 3)} ${d.getDate()}`;
-  return d.getFullYear() !== today.getFullYear() ? `${label}, ${d.getFullYear()}` : label;
+  return d.getFullYear() !== now.getFullYear() ? `${label}, ${d.getFullYear()}` : label;
 }
 
 function parseAbsoluteLabel(label, now = new Date()) {
@@ -173,8 +172,14 @@ export function infoItemDaysAgo(item, now = new Date()) { return storedDaysAgo(i
 
 export function infoItemDateLabel(item, now = new Date()) { return storedDateLabel(item && item.at, item && item.updated, now); }
 
-// A step with no date at all (the "Current: <layer>" step) keeps its text, e.g. 'Now'.
-export function timelineDateLabel(step, now = new Date()) { return storedDateLabel(step && step.at, step && step.date, now); }
+// The timeline is a record of when things happened, so it always shows the
+// calendar date ('Sep 26', or 'Aug 4, 2025' in another year), never '2 weeks
+// ago'. A step with no date at all (the "Current: <layer>" step) keeps its
+// text, e.g. 'Now'.
+export function timelineDateLabel(step, now = new Date()) {
+  const d = storedDay(step && step.at, step && step.date, now);
+  return d ? formatAbsoluteDate(d, now) : String((step && step.date) || '—');
+}
 
 // Gives legacy records (saved before `at` existed) a fixed `at`, on load and
 // on import. A stored relative label doesn't say *when* it was 'Today', so
