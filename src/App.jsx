@@ -1,5 +1,6 @@
-import React, { useState, useMemo, useEffect, useRef } from 'react';
-import { Home, Users, MessageCircle, BookOpen, User, Plus, X, ChevronLeft, Pencil, Trash2, Check, TrendingUp, UserPlus, Clock, Archive, Search, Download, Upload } from 'lucide-react';
+import React, { useState, useMemo, useEffect, useRef, createContext, useContext } from 'react';
+import { createPortal } from 'react-dom';
+import { Home, Users, MessageCircle, BookOpen, User, Plus, X, ChevronLeft, ChevronRight, Pencil, Trash2, Check, TrendingUp, UserPlus, Clock, Archive, Search, Download, Upload, Calendar, Repeat } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 
 /* ============================== DESIGN TOKENS ============================== */
@@ -57,6 +58,23 @@ const LAYERS = [
 function getLayer(id) { return LAYERS.find(l => l.id === id) || LAYERS[0]; }
 function layerForOverall(overall) { return overall >= 75 ? 4 : overall >= 50 ? 3 : overall >= 25 ? 2 : 1; }
 
+// New progression model: each layer is its own fresh 0-100% meter, rather
+// than the old single dims-average score sliced into four fixed bands.
+// Reaching 100% advances to the next layer (capped at 4) and carries any
+// overflow into the new layer's starting % instead of discarding it.
+function advanceLayer(currentLayer, currentProgress, bump) {
+  let layer = currentLayer;
+  let progress = currentProgress + bump;
+  let leveledUp = false;
+  while (progress >= 100 && layer < 4) {
+    layer += 1;
+    progress -= 100;
+    leveledUp = true;
+  }
+  progress = clamp(progress, 0, 100);
+  return { layer, progress, leveledUp };
+}
+
 const DIM_ORDER = ['depth', 'trust', 'reciprocity', 'interaction', 'sharedExperiences', 'listening'];
 const DIM_LABELS = { depth: 'Depth', trust: 'Trust', reciprocity: 'Reciprocity', interaction: 'Interaction', sharedExperiences: 'Shared experiences', listening: 'Listening / connection' };
 const DIM_COLORS = { depth: COLORS.layer3, trust: COLORS.layer4, reciprocity: COLORS.plum, interaction: COLORS.layer1, sharedExperiences: COLORS.teal, listening: COLORS.layer2 };
@@ -71,7 +89,7 @@ function makePerson({ name, emoji, layer }) {
   const baseVal = LAYER_BASE_DIMS[layer] || 10;
   const dims = { depth: baseVal, trust: baseVal, reciprocity: baseVal, interaction: baseVal, sharedExperiences: baseVal, listening: baseVal };
   const overall = computeOverall(dims);
-  return { id: uid(), name, emoji, layer: layer || 1, dims, overall, interests: [], preferences: [], plans: [], experiences: [], important: [], goals: [], history: [{ date: 'Today', value: overall }], timeline: [{ label: 'First met', date: 'Today' }] };
+  return { id: uid(), name, emoji, layer: layer || 1, dims, overall, interests: [], preferences: [], plans: [], experiences: [], important: [], goals: [], history: [{ date: formatAbsoluteDate(new Date()), at: toISODate(new Date()), value: overall }], timeline: [{ label: 'First met', date: 'Today' }] };
 }
 
 const CATEGORIES = [
@@ -83,8 +101,67 @@ const CATEGORIES = [
 ];
 function categoryMeta(key) { return CATEGORIES.find(c => c.key === key) || CATEGORIES[0]; }
 
+const SHORTCUTS = [
+  { keys: ['Ctrl', '1'], desc: 'Go to Home' },
+  { keys: ['Ctrl', '2'], desc: 'Go to People' },
+  { keys: ['Ctrl', '3'], desc: 'Go to Coach' },
+  { keys: ['Ctrl', '4'], desc: 'Go to Journal' },
+  { keys: ['Ctrl', '5'], desc: 'Go to Me' },
+  { keys: ['N'], desc: 'Quick log an interaction or event' },
+  { keys: ['D'], desc: 'Add detail — browse templates and copy one, no logging needed' },
+  { keys: ['Ctrl', 'Shift', 'A'], desc: 'Add a new person' },
+  { keys: ['/'], desc: 'Jump to search (People or Journal)' },
+  { keys: ['Backspace'], desc: 'Go back from a person or goals screen' },
+  { keys: ['Esc'], desc: 'Close the open sheet/dialog, or leave the search box' },
+  { keys: ['?'], desc: 'Show this shortcuts list' },
+];
+
+function ShortcutKey({ label }) {
+  return <span style={{ display: 'inline-block', minWidth: 22, textAlign: 'center', padding: '3px 7px', borderRadius: 7, background: COLORS.paper, border: `1px solid ${COLORS.line}`, fontSize: 11, fontWeight: 700, color: COLORS.ink, fontFamily: 'monospace' }}>{label}</span>;
+}
+
+function ShortcutsModal({ onClose }) {
+  return (
+    <Sheet title="Keyboard shortcuts" onClose={onClose}>
+      <div className="flex flex-col gap-1">
+        {SHORTCUTS.map((s, i) => (
+          <div key={i} className="flex items-center justify-between py-2.5" style={{ borderBottom: i < SHORTCUTS.length - 1 ? `1px solid ${COLORS.line}` : 'none' }}>
+            <p className="text-sm" style={{ color: COLORS.ink }}>{s.desc}</p>
+            <div className="flex items-center gap-1 shrink-0 ml-3">
+              {s.keys.map((k, ki) => (
+                <span key={ki} className="flex items-center gap-1">
+                  <ShortcutKey label={k} />
+                  {ki < s.keys.length - 1 && <span style={{ color: COLORS.inkSoft, fontSize: 11 }}>+</span>}
+                </span>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+      <p className="text-xs mt-4" style={{ color: COLORS.inkSoft }}>Shortcuts are disabled while you're typing in a text field, and only active once you've finished onboarding.</p>
+    </Sheet>
+  );
+}
+
 const EMOJI_CHOICES = ['⭐', '❤️', '🗓️', '🧭', '🔔', '🎮', '⚽', '🎵', '✈️', '📚', '☕', '🎨', '🎸', '🥾', '💼'];
 const PERSON_EMOJIS = ['🧑', '🧑‍🦱', '🧑‍🦰', '🧑‍🦳', '🧕', '🧔', '👩‍🦱', '👨‍🦲', '🧑‍🎓', '👩‍🦰'];
+
+// Button-only "quick note" template library for logging (requested: tap
+// through a category, then a specific item — no typing). Not a literal
+// 1000 entries, but a genuinely large curated set across nine categories;
+// tapping an item sets the note text directly.
+const NOTE_TEMPLATES = [
+  { key: 'sports', label: 'Sports', emoji: '⚽', items: ['Football', 'Basketball', 'Tennis', 'Badminton', 'Hockey', 'Baseball', 'Cricket', 'Rugby', 'Volleyball', 'Swimming', 'Athletics', 'Golf', 'Table tennis', 'Boxing', 'Martial arts', 'Cycling', 'Running', 'Climbing', 'Skateboarding', 'Surfing', 'Skiing', 'Snowboarding', 'Gymnastics', 'Netball', 'Rowing', 'Wrestling', 'Lacrosse', 'Bowling', 'Darts', 'Fencing'] },
+  { key: 'videogames', label: 'Video games', emoji: '🎮', items: ['Minecraft', 'Fortnite', 'Roblox', 'Call of Duty', 'FIFA', 'Valorant', 'League of Legends', 'Overwatch', 'Apex Legends', 'GTA', 'Zelda', 'Mario Kart', 'Animal Crossing', 'Pokémon', 'Among Us', 'Rocket League', 'The Sims', 'Counter-Strike', 'World of Warcraft', 'Genshin Impact'] },
+  { key: 'boardgames', label: 'Board/tabletop games', emoji: '🎲', items: ['Chess', 'Monopoly', 'Catan', 'Uno', 'Dungeons & Dragons', 'Magic: The Gathering', 'Poker', 'Scrabble', 'Risk', 'Jenga', 'Cards Against Humanity'] },
+  { key: 'music', label: 'Music', emoji: '🎵', items: ['Pop', 'Hip-hop', 'Rock', 'Rap', 'R&B', 'Country', 'EDM', 'Jazz', 'Classical', 'K-pop', 'Indie', 'Metal', 'Folk', 'Playing guitar', 'Playing piano', 'Playing drums', 'Singing', 'Songwriting', 'DJing'] },
+  { key: 'movies', label: 'Movies', emoji: '🎬', items: ['Marvel/superhero films', 'Horror', 'Comedy', 'Sci-fi', 'Romance', 'Action', 'Anime films', 'Studio Ghibli', 'Documentaries', 'Thrillers', 'Classic films', 'Star Wars', 'A24 films'] },
+  { key: 'shows', label: 'TV shows', emoji: '📺', items: ['Anime', 'Reality TV', 'True crime', 'Sitcoms', 'Sci-fi shows', 'K-dramas', 'Cartoons', 'Sports coverage', 'Cooking shows', 'Documentaries'] },
+  { key: 'hobbies', label: 'Hobbies', emoji: '🎨', items: ['Drawing', 'Painting', 'Photography', 'Writing', 'Reading', 'Cooking', 'Baking', 'Gardening', 'Hiking', 'Fishing', 'Camping', 'Knitting/crochet', 'Woodworking', 'Dance', 'Yoga', 'Journaling', 'Collecting things', 'Cars', 'Fashion', 'Makeup'] },
+  { key: 'school', label: 'School/work', emoji: '📚', items: ['Maths', 'Science', 'English', 'History', 'Art', 'Music class', 'PE', 'Computer science', 'Languages', 'Geography', 'Business', 'Psychology', 'A new job', 'A promotion', 'An exam', 'A project deadline'] },
+  { key: 'clubs', label: 'Clubs/activities', emoji: '🧩', items: ['Debate team', 'Drama club', 'Student council', 'Choir/band', 'Scouts', 'Volunteering', 'Part-time job', 'Church/faith group', 'Gym', 'Book club'] },
+  { key: 'life', label: 'Life stuff', emoji: '🌱', items: ['Family', 'A pet', 'Moving house', 'A trip/holiday', 'A relationship', 'Feeling stressed', 'Feeling excited', 'A health thing', 'A celebration', 'A tough week'] },
+];
 
 const PRESETS = [
   { key: 'becomeCloser', category: 'relationship', label: 'Become closer friends', emoji: '🤗', hint: 'Feel more like close friends day-to-day', suggestion: 'Small, low-pressure hangouts often build closeness faster than big conversations.' },
@@ -104,6 +181,39 @@ const PRESETS = [
   { key: 'custom', category: 'custom', label: 'Custom goal', emoji: '✏️', hint: '', suggestion: 'Check back in on this goal after your next few conversations.' },
 ];
 function presetMeta(key) { return PRESETS.find(p => p.key === key); }
+
+// Specific variants for each preset goal, shown when you drill into one via
+// its ">" chevron. Each variant is just a more concrete version of the same
+// goal — picking one sets it as the description directly.
+const PRESET_VARIANTS = {
+  becomeCloser: ['Hang out one-on-one without a specific reason', 'Do something low-pressure together weekly', 'Send a message just because they crossed your mind', 'Invite them somewhere before they invite you', 'Learn one new thing about them each time you talk', 'Make plans further out than "let\u2019s hang out sometime"'],
+  deeper: ['Ask about something they care about, not just events in their life', 'Share something a bit more personal before asking a personal question back', 'Talk through a challenge either of you is facing', 'Ask what\u2019s been on their mind lately', 'Bring up something meaningful instead of just catching up', 'Ask a "why" question instead of just a "what" question'],
+  learn: ['Learn what they\u2019re currently into', 'Learn about their family or background', 'Learn what a hard week looks like for them', 'Learn what they\u2019re proud of right now', 'Learn how they like to spend a free weekend', 'Learn what they\u2019re worried about lately'],
+  shared: ['Find a hobby you could actually do together', 'Find a show, game, or artist you both like', 'Find something you disagree about and talk it through', 'Find a place you\u2019d both want to go', 'Find a food or restaurant you both love', 'Find something you\u2019re both bad at and laugh about it'],
+  together: ['Plan one specific hangout with a real date/time', 'Invite them to something you\u2019re already doing', 'Try a new activity neither of you has done before', 'Go somewhere neither of you has been', 'Cook or make something together', 'Do a small favor for them without being asked'],
+  maintain: ['Check in every 2 weeks, even briefly', 'Remember and follow up on something they mentioned', 'Reach out first at least once this month', 'Send something that reminded you of them', 'Celebrate something good that happened to them', 'Keep a light conversation going, not just big catch-ups'],
+  comfortable1on1: ['Suggest a walk or low-pressure activity, just the two of you', 'Have one call or voice chat, not just text', 'Sit with a silence instead of rushing to fill it', 'Ask them something you\u2019ve been curious about', 'Spend time together with no particular plan', 'Share a small worry and see how it goes'],
+  followUpQ: ['Ask about something they mentioned in passing last time', 'Ask "what was that like?" instead of just "that\u2019s cool"', 'Follow up on something from a previous conversation', 'Ask how something turned out that they were nervous about', 'Ask what happened next, instead of moving on', 'Circle back to something they said mattered to them'],
+  fewerQuestions: ['Share something before asking your next question', 'Let a silence sit instead of filling it with a question', 'Match their pace \u2014 one question per one thing you share', 'Make a statement instead of turning everything into a question', 'Let them lead the topic for a while', 'Notice if you\u2019re interviewing instead of talking'],
+  selfDisclosureGoal: ['Share something you\u2019re genuinely excited about', 'Share something you\u2019re a little nervous or unsure about', 'Share a story, not just a fact about yourself', 'Share an opinion instead of staying neutral', 'Tell them something you haven\u2019t told many people', 'Share how you\u2019re actually doing, not just "fine"'],
+  activeListeningGoal: ['Paraphrase what they said before responding', 'Ask a follow-up before changing the subject', 'Notice and name the emotion behind what they\u2019re saying', 'Put your phone away for the whole conversation', 'Let them finish before you start forming your reply', 'Ask what they mean instead of assuming'],
+  readCues: ['Notice when their energy shifts mid-conversation', 'Notice response length/timing, not just their words', 'Check in if something seems off, instead of pushing on', 'Notice when they change the subject and why', 'Notice their tone, not just what they say', 'Pick up on when a topic feels sensitive'],
+  reciprocal: ['Match their depth \u2014 if they go personal, you go personal too', 'Share something before they have to ask', 'Notice if you\u2019re always the one asking, not sharing', 'Offer support the way you\u2019d want it offered to you', 'Check you\u2019re not always the one reaching out first', 'Give as much as you\u2019re asking for in the conversation'],
+  recognizeSpace: ['Notice short replies as a possible signal to ease off', 'Ask if now\u2019s a good time before diving into something heavy', 'Give them an easy out if they seem tired or distracted', 'Don\u2019t push for details if they change the subject', 'Notice when they need space instead of company', 'Respect a slow reply instead of following up right away'],
+};
+
+// For relationship-category goals, the auto-filled description now reflects
+// where this specific relationship actually stands (current layer, weakest
+// dimension) rather than always showing the same static hint regardless of
+// progress. Skill/custom goals aren't tied to one relationship, so they keep
+// the plain hint.
+const GOAL_DIM_PHRASES = { depth: 'depth', trust: 'trust', reciprocity: 'reciprocity', interaction: 'how often you connect', sharedExperiences: 'shared experiences', listening: 'active listening' };
+function generateGoalDescription(preset, person) {
+  if (!person || preset.category !== 'relationship' || !preset.hint) return preset.hint;
+  const l = getLayer(person.layer);
+  const weakestKey = Object.keys(person.dims).reduce((a, b) => person.dims[a] <= person.dims[b] ? a : b);
+  return `${preset.hint} — you're at Layer ${person.layer} (${l.name}) with ${person.name}, and ${GOAL_DIM_PHRASES[weakestKey] || weakestKey} has the most room to grow right now`;
+}
 
 const TYPE_META = {
   talked: { emoji: '💬', label: 'Talked', verbHigh: 'Had a meaningful conversation', verbLow: 'Talked for a bit' },
@@ -154,6 +264,238 @@ function parseDaysAgo(str) {
   m = s.match(/(\d+)\s*week/); if (m) return parseInt(m[1], 10) * 7;
   m = s.match(/(\d+)\s*month/); if (m) return parseInt(m[1], 10) * 30;
   return 999;
+}
+
+// --- Date helpers for the calendar picker (item request: "timestamp buttons
+// with working calendar"). The rest of the app (Journal sorting, "this
+// week" badges) already runs on relative labels like 'Today' / '2 days ago'
+// rather than real Date objects — so a picked calendar day is converted to
+// that same relative-label format for journal entries, keeping everything
+// else in the app working unchanged. Events (which can be in the future)
+// store a real ISO date instead, since "3 days ago" doesn't make sense for
+// something that hasn't happened yet.
+function startOfDay(d) { const c = new Date(d); c.setHours(0, 0, 0, 0); return c; }
+const WEEKDAY_SHORT = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const WEEKDAY_FULL = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+function formatWeekdays(days) {
+  if (!days || days.length === 0) return '';
+  if (days.length === 7) return 'Every day';
+  const sorted = [...days].sort((a, b) => a - b);
+  let contiguous = true;
+  for (let i = 1; i < sorted.length; i++) { if (sorted[i] !== sorted[i - 1] + 1) { contiguous = false; break; } }
+  if (contiguous && sorted.length > 2) return `Every ${WEEKDAY_FULL[sorted[0]]}\u2013${WEEKDAY_FULL[sorted[sorted.length - 1]]}`;
+  return `Every ${sorted.map(d => WEEKDAY_SHORT[d]).join(', ')}`;
+}
+const MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+
+function dateToRelativeLabel(date) {
+  const today = startOfDay(new Date());
+  const d = startOfDay(date);
+  const diffDays = Math.round((today - d) / 86400000);
+  if (diffDays <= 0) return 'Today';
+  if (diffDays === 1) return 'Yesterday';
+  if (diffDays < 7) return `${diffDays} days ago`;
+  if (diffDays < 30) { const w = Math.round(diffDays / 7); return `${w} week${w > 1 ? 's' : ''} ago`; }
+  const mo = Math.round(diffDays / 30); return `${mo} month${mo > 1 ? 's' : ''} ago`;
+}
+
+function formatCalendarDate(date) {
+  const today = startOfDay(new Date());
+  const d = startOfDay(date);
+  if (d.getTime() === today.getTime()) return 'Today';
+  const yest = startOfDay(new Date(today)); yest.setDate(yest.getDate() - 1);
+  if (d.getTime() === yest.getTime()) return 'Yesterday';
+  const tom = startOfDay(new Date(today)); tom.setDate(tom.getDate() + 1);
+  if (d.getTime() === tom.getTime()) return 'Tomorrow';
+  return `${WEEKDAY_SHORT[d.getDay()]}, ${d.getDate()} ${MONTH_NAMES[d.getMonth()].slice(0, 3)}`;
+}
+
+function toISODate(d) { return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; }
+
+// Chart/timeline history points (person.history, goal.history) need a date
+// that stays correct forever, unlike the app's relative Journal labels
+// ("Today", "3 days ago") which are meant to go stale-looking over time.
+// Each new point gets a short absolute label ("Sep 12") plus a real ISO
+// date (`at`) used purely for sorting, so a backdated entry (picked via the
+// calendar) always lands in its correct chronological position on the
+// chart regardless of when it was actually logged.
+function formatAbsoluteDate(d) {
+  const today = new Date();
+  const label = `${MONTH_NAMES[d.getMonth()].slice(0, 3)} ${d.getDate()}`;
+  return d.getFullYear() !== today.getFullYear() ? `${label}, ${d.getFullYear()}` : label;
+}
+function parseAbsoluteLabel(label) {
+  // Sample data uses labels like "Aug 20" or "Aug 20, 2025" (no `at` field).
+  // Parsed properly here so distinct sample dates get distinct sort keys —
+  // previously any label that didn't match the relative-label scheme fell
+  // into one shared fallback bucket, which could silently merge separate
+  // history points that happened to both be unparseable.
+  const m = String(label).match(/^([A-Za-z]{3,9})\s+(\d{1,2})(?:,\s*(\d{4}))?$/);
+  if (!m) return null;
+  const monthIdx = MONTH_NAMES.findIndex(mn => mn.toLowerCase().startsWith(m[1].toLowerCase()));
+  if (monthIdx === -1) return null;
+  const day = parseInt(m[2], 10);
+  const year = m[3] ? parseInt(m[3], 10) : new Date().getFullYear();
+  let d = new Date(year, monthIdx, day);
+  if (!m[3] && d > new Date()) d = new Date(year - 1, monthIdx, day); // no year given and it'd be in the future -> assume last year
+  return d;
+}
+function historySortKey(h) {
+  if (h.at) return h.at; // 'YYYY-MM-DD' — sorts correctly as a plain string
+  // Legacy entries from before the `at` field existed only ever used the
+  // relative-label scheme ('Today', '3 days ago', ...), so infer a real
+  // date from that label rather than treating "no `at`" as "always first".
+  const daysAgo = parseDaysAgo(h.date);
+  if (daysAgo !== 999) {
+    const d = new Date();
+    d.setDate(d.getDate() - daysAgo);
+    return toISODate(d);
+  }
+  const parsed = parseAbsoluteLabel(h.date);
+  if (parsed) return toISODate(parsed);
+  // Truly unparseable — keep it, just don't let it collide with any other
+  // unparseable entry (append the original label so each stays distinct).
+  return `0000-01-01#${h.date}`;
+}
+function sortHistory(arr) {
+  // Dedupe by day (last occurrence wins) as well as sort — this means any
+  // duplicate points already sitting in saved data from before this fix
+  // existed get cleaned up automatically on display, not just new ones.
+  const byKey = new Map();
+  for (const h of arr) byKey.set(historySortKey(h), h);
+  return [...byKey.values()]
+    .sort((a, b) => historySortKey(a).localeCompare(historySortKey(b)))
+    // Guarantee every plotted point has a real, non-empty label — no
+    // matter how it got here, the chart should never show a blank tick.
+    .map(h => (h.date && String(h.date).trim()) ? h : { ...h, date: h.at ? formatAbsoluteDate(new Date(h.at + 'T00:00:00')) : '—' });
+}
+// Logging twice in the same day used to add a second chart point with the
+// same label ("Sep 12" appearing twice), which just looks like a glitch on
+// a small chart. A day is the chart's real granularity, so a same-day log
+// now updates that day's point in place instead of stacking another one.
+function pushHistoryPoint(history, point) {
+  return sortHistory([...history, point]);
+}
+
+function DateDropdown({ value, onChange, maxDate, minDate }) {
+  const [open, setOpen] = useState(false);
+  const [viewDate, setViewDate] = useState(() => new Date(value.getFullYear(), value.getMonth(), 1));
+
+  const today = startOfDay(new Date());
+  const year = viewDate.getFullYear(); const month = viewDate.getMonth();
+  const firstDow = new Date(year, month, 1).getDay();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const cells = [];
+  for (let i = 0; i < firstDow; i++) cells.push(null);
+  for (let d = 1; d <= daysInMonth; d++) cells.push(d);
+  const maxD = maxDate ? startOfDay(maxDate) : null;
+  const minD = minDate ? startOfDay(minDate) : null;
+  const todayDisabled = (maxD && today > maxD) || (minD && today < minD);
+
+  return (
+    <>
+      <button type="button" onClick={() => { setViewDate(new Date(value.getFullYear(), value.getMonth(), 1)); setOpen(true); }} className="flex items-center gap-2.5 rounded-2xl pl-2 pr-4 py-2" style={{ border: `1.5px solid ${COLORS.line}`, color: COLORS.ink, background: COLORS.paperRaised }}>
+        <span style={{ width: 34, height: 34, borderRadius: 12, background: COLORS.accentSoft, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+          <Calendar size={17} color={COLORS.accent} />
+        </span>
+        <span>
+          <span className="block text-sm font-semibold">{formatCalendarDate(value)}</span>
+          <span className="block" style={{ fontSize: 10, color: COLORS.inkSoft }}>Tap to change date</span>
+        </span>
+      </button>
+      {open && (
+        <Sheet title="Pick a date" onClose={() => setOpen(false)}>
+          <div className="flex items-center justify-between mb-4">
+            <button type="button" onClick={() => setViewDate(v => new Date(v.getFullYear(), v.getMonth() - 1, 1))} style={{ width: 34, height: 34, borderRadius: '50%', background: COLORS.accentSoft, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><ChevronLeft size={18} color={COLORS.accent} /></button>
+            <span className="text-base font-semibold" style={{ color: COLORS.ink }}>{MONTH_NAMES[month]} {year}</span>
+            <button type="button" onClick={() => setViewDate(v => new Date(v.getFullYear(), v.getMonth() + 1, 1))} style={{ width: 34, height: 34, borderRadius: '50%', background: COLORS.accentSoft, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><ChevronRight size={18} color={COLORS.accent} /></button>
+          </div>
+          <div className="grid grid-cols-7 gap-1 mb-2">
+            {WEEKDAY_SHORT.map(w => (<span key={w} className="text-center" style={{ fontSize: 11, fontWeight: 700, letterSpacing: 0.5, color: COLORS.inkSoft }}>{w[0]}</span>))}
+          </div>
+          <div className="grid grid-cols-7 gap-2">
+            {cells.map((d, i) => {
+              if (d === null) return <span key={i} />;
+              const cellDate = startOfDay(new Date(year, month, d));
+              const disabled = (maxD && cellDate > maxD) || (minD && cellDate < minD);
+              const isSelected = cellDate.getTime() === startOfDay(value).getTime();
+              const isToday = cellDate.getTime() === today.getTime();
+              return (
+                <button key={i} type="button" disabled={disabled} onClick={() => { onChange(cellDate); setOpen(false); }}
+                  style={{ width: '100%', aspectRatio: '1', borderRadius: '50%', fontSize: 14, fontWeight: isSelected ? 700 : 500, background: isSelected ? COLORS.accent : 'transparent', color: disabled ? COLORS.line : (isSelected ? '#fff' : COLORS.ink), border: isToday && !isSelected ? `1.5px solid ${COLORS.accent}` : '1.5px solid transparent', opacity: disabled ? 0.35 : 1, cursor: disabled ? 'default' : 'pointer', boxShadow: isSelected ? `0 4px 10px ${COLORS.accentSoft}` : 'none' }}>
+                  {d}
+                </button>
+              );
+            })}
+          </div>
+          <button type="button" disabled={todayDisabled} onClick={() => { onChange(today); setOpen(false); }} className="w-full text-sm font-semibold rounded-xl py-3 mt-5" style={{ background: COLORS.accentSoft, color: COLORS.accent, opacity: todayDisabled ? 0.4 : 1 }}>
+            Jump to today
+          </button>
+        </Sheet>
+      )}
+    </>
+  );
+}
+
+// Minutes-since-midnight is the source of truth for TimeDropdown; formatted
+// as h:mm AM/PM for display and stored on events as a plain integer.
+function formatTime12(totalMinutes) {
+  if (totalMinutes == null) return '';
+  let h = Math.floor(totalMinutes / 60); const m = totalMinutes % 60;
+  const period = h >= 12 ? 'PM' : 'AM';
+  h = h % 12; if (h === 0) h = 12;
+  return `${h}:${String(m).padStart(2, '0')} ${period}`;
+}
+function nowToMinutes() { const d = new Date(); return d.getHours() * 60 + d.getMinutes(); }
+
+function TimeDropdown({ value, onChange }) {
+  const [open, setOpen] = useState(false);
+  const hours12 = Array.from({ length: 12 }, (_, i) => i + 1);
+  const minuteOptions = Array.from({ length: 12 }, (_, i) => i * 5);
+  let currentH = Math.floor(value / 60) % 12; if (currentH === 0) currentH = 12;
+  const currentM = value % 60;
+  const currentPeriod = Math.floor(value / 60) >= 12 ? 'PM' : 'AM';
+
+  function setPart(h12, m, period) {
+    let h = h12 % 12; if (period === 'PM') h += 12;
+    onChange(h * 60 + m);
+  }
+
+  return (
+    <>
+      <button type="button" onClick={() => setOpen(true)} className="flex items-center gap-2.5 rounded-2xl pl-2 pr-4 py-2" style={{ border: `1.5px solid ${COLORS.line}`, color: COLORS.ink, background: COLORS.paperRaised }}>
+        <span style={{ width: 34, height: 34, borderRadius: 12, background: COLORS.accentSoft, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+          <Clock size={17} color={COLORS.accent} />
+        </span>
+        <span>
+          <span className="block text-sm font-semibold">{formatTime12(value)}</span>
+          <span className="block" style={{ fontSize: 10, color: COLORS.inkSoft }}>Tap to set a time</span>
+        </span>
+      </button>
+      {open && (
+        <Sheet title="Pick a time" onClose={() => setOpen(false)}>
+          <div style={{ display: 'flex', gap: 10 }}>
+            <div style={{ flex: 1.1, maxHeight: 280, overflowY: 'auto' }} className="no-scrollbar">
+              {hours12.map(h => (
+                <button key={h} type="button" onClick={() => setPart(h, currentM, currentPeriod)} className="w-full text-center py-3 text-base" style={{ borderRadius: 12, background: h === currentH ? COLORS.accentSoft : 'transparent', color: h === currentH ? COLORS.accent : COLORS.ink, fontWeight: h === currentH ? 700 : 500 }}>{h}</button>
+              ))}
+            </div>
+            <div style={{ flex: 1.1, maxHeight: 280, overflowY: 'auto' }} className="no-scrollbar">
+              {minuteOptions.map(m => (
+                <button key={m} type="button" onClick={() => setPart(currentH, m, currentPeriod)} className="w-full text-center py-3 text-base" style={{ borderRadius: 12, background: m === currentM ? COLORS.accentSoft : 'transparent', color: m === currentM ? COLORS.accent : COLORS.ink, fontWeight: m === currentM ? 700 : 500 }}>{String(m).padStart(2, '0')}</button>
+              ))}
+            </div>
+            <div style={{ flex: 0.8 }}>
+              {['AM', 'PM'].map(p => (
+                <button key={p} type="button" onClick={() => setPart(currentH, currentM, p)} className="w-full text-center py-3 text-base" style={{ borderRadius: 12, background: p === currentPeriod ? COLORS.accentSoft : 'transparent', color: p === currentPeriod ? COLORS.accent : COLORS.ink, fontWeight: p === currentPeriod ? 700 : 500 }}>{p}</button>
+              ))}
+            </div>
+          </div>
+          <button type="button" onClick={() => setOpen(false)} className="w-full text-sm font-semibold rounded-xl py-3 mt-5" style={{ background: COLORS.accent, color: '#fff' }}>Done</button>
+        </Sheet>
+      )}
+    </>
+  );
 }
 
 function summaryFor(entry) {
@@ -555,16 +897,22 @@ input, textarea { font-family: 'Manrope', ui-sans-serif, system-ui, sans-serif; 
   ${cssVarBlock(THEME_DARK)}
 }
 
+/* .app-shell sizes and places the phone; .phone-frame and .sheet-layer both
+   fill it exactly, so sheets always line up with the frame at any window size. */
+.app-shell { position: relative; width: 100%; max-width: 428px; margin: 0 auto; }
 .phone-frame {
-  width: 100%; max-width: 428px; margin: 0 auto;
+  width: 100%;
   background: ${COLORS.paper}; position: relative; overflow: hidden;
   border-radius: 0px; box-shadow: 0 0 0 1px ${COLORS.line};
   height: 100vh; display: flex; flex-direction: column;
   font-family: 'Manrope', ui-sans-serif, system-ui, sans-serif;
   transition: background-color .25s ease;
 }
+.sheet-layer { position: absolute; inset: 0; z-index: 50; overflow: hidden; pointer-events: none; font-family: 'Manrope', ui-sans-serif, system-ui, sans-serif; }
 @media (min-width: 480px) {
-  .phone-frame { height: 860px; max-height: 92vh; margin-top: 20px; margin-bottom: 20px; border-radius: 40px; box-shadow: 0 0 0 1px ${COLORS.line}, 0 24px 60px rgba(35,40,58,0.16); }
+  .app-shell { margin-top: 20px; margin-bottom: 20px; }
+  .phone-frame { height: 860px; max-height: 92vh; border-radius: 40px; box-shadow: 0 0 0 1px ${COLORS.line}, 0 24px 60px rgba(35,40,58,0.16); }
+  .sheet-layer { border-radius: 40px; }
 }
 .scroll-area { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; }
 
@@ -574,9 +922,10 @@ input, textarea { font-family: 'Manrope', ui-sans-serif, system-ui, sans-serif; 
 .fab-btn { position: absolute; right: 18px; bottom: 80px; width: 54px; height: 54px; border-radius: 50%; background: ${COLORS.accent}; display: flex; align-items: center; justify-content: center; box-shadow: 0 10px 24px rgba(51,80,107,0.4); z-index: 20; transition: transform .15s ease; }
 .fab-btn:active { transform: scale(0.92); }
 
-.sheet { position: absolute; inset: 0; z-index: 50; display: flex; align-items: flex-end; justify-content: center; }
+.sheet { position: absolute; inset: 0; display: flex; align-items: flex-end; justify-content: center; pointer-events: auto; }
 .sheet-overlay { position: absolute; inset: 0; background: rgba(35,40,58,0.45); }
 .sheet-panel { position: relative; width: 100%; max-height: 88%; display: flex; flex-direction: column; background: ${COLORS.paperRaised}; border-radius: 26px 26px 0 0; box-shadow: 0 -12px 36px rgba(35,40,58,0.2); overflow: hidden; }
+.sheet-panel--tall { height: 80%; max-height: 80%; }
 .sheet-body { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 4px 20px 10px; }
 
 @keyframes sheetUp { from { transform: translateY(28px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
@@ -585,8 +934,14 @@ input, textarea { font-family: 'Manrope', ui-sans-serif, system-ui, sans-serif; 
 .fade-anim { animation: fadeIn .25s ease-out; }
 @keyframes toastIn { from { transform: translateY(10px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
 
+@keyframes levelUpScale { 0% { transform: scale(0.85); } 35% { transform: scale(1.08); } 60% { transform: scale(0.98); } 100% { transform: scale(1); } }
+@keyframes levelUpGlow { 0%, 100% { filter: drop-shadow(0 0 0 rgba(0,0,0,0)); } 40% { filter: drop-shadow(0 0 18px currentColor); } }
+@keyframes levelUpBannerIn { 0% { opacity: 0; transform: translateX(-50%) translateY(6px) scale(0.9); } 15% { opacity: 1; transform: translateX(-50%) translateY(0) scale(1); } 85% { opacity: 1; } 100% { opacity: 0; transform: translateX(-50%) translateY(-4px) scale(0.95); } }
+.level-up-pulse { animation: levelUpScale 0.7s cubic-bezier(0.34,1.56,0.64,1), levelUpGlow 1.4s ease-out; }
+.level-up-banner { animation: levelUpBannerIn 2.6s ease-in-out forwards; }
+
 .toast-stack { position: absolute; left: 0; right: 0; bottom: 92px; display: flex; flex-direction: column; align-items: center; gap: 8px; z-index: 70; pointer-events: none; padding: 0 20px; }
-.toast { background: ${COLORS.ink}; color: #fff; padding: 10px 16px; border-radius: 999px; font-size: 13px; box-shadow: 0 8px 20px rgba(0,0,0,0.25); text-align: center; animation: toastIn .25s ease-out; }
+.toast { background: #23283A; color: #fff; padding: 10px 16px; border-radius: 999px; font-size: 13px; box-shadow: 0 8px 20px rgba(0,0,0,0.35); text-align: center; animation: toastIn .25s ease-out; }
 
 button:focus-visible, input:focus-visible, textarea:focus-visible { outline: 2px solid ${COLORS.accent}; outline-offset: 2px; }
 input[type="range"] { width: 100%; }
@@ -674,7 +1029,7 @@ function Timeline({ steps }) {
   return (
     <div>
       {steps.map((s, i) => (
-        <div key={i} className="flex items-start gap-3">
+        <div key={i} className="flex items-stretch gap-3">
           <div className="flex flex-col items-center">
             <div style={{ width: 10, height: 10, borderRadius: '50%', background: s.current ? COLORS.accent : COLORS.paperRaised, border: `2px solid ${s.current ? COLORS.accent : COLORS.line}`, flexShrink: 0 }} />
             {i < steps.length - 1 && <div style={{ width: 2, flex: 1, minHeight: 22, background: COLORS.line }} />}
@@ -707,12 +1062,26 @@ function ConvStateBadge({ stateKey }) {
 function GoalRow({ goal, color, personName, onBump, onEdit, onDelete }) {
   const done = goal.progress >= 100;
   const preset = presetMeta(goal.type);
+  const dueInfo = useMemo(() => {
+    if (!goal.dueDate || done) return null;
+    const due = new Date(goal.dueDate + 'T00:00:00');
+    const daysUntil = Math.round((due - startOfDay(new Date())) / 86400000);
+    const dueColor = daysUntil < 0 ? COLORS.alert : daysUntil <= 3 ? COLORS.warn : COLORS.good;
+    const label = daysUntil < 0 ? `${Math.abs(daysUntil)} day${Math.abs(daysUntil) === 1 ? '' : 's'} overdue` : daysUntil === 0 ? 'Due today' : `Due in ${daysUntil} day${daysUntil === 1 ? '' : 's'}`;
+    return { dueColor, label };
+  }, [goal.dueDate, done]);
   return (
     <div className="rounded-2xl p-3 mb-2" style={{ background: COLORS.paperRaised, border: `1px solid ${COLORS.line}`, borderLeft: `4px solid ${color}` }}>
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
           <p className="text-sm font-semibold" style={{ color: COLORS.ink }}>{goal.title}</p>
           <p className="text-xs mt-0.5" style={{ color: COLORS.inkSoft }}>{goal.description}</p>
+          {dueInfo && (
+            <p className="text-xs mt-1 flex items-center gap-1.5" style={{ color: dueInfo.dueColor }}>
+              <span style={{ width: 6, height: 6, borderRadius: '50%', background: dueInfo.dueColor, display: 'inline-block' }} />
+              {dueInfo.label}
+            </p>
+          )}
         </div>
         <span className="font-display shrink-0" style={{ fontSize: 18, color }}>{goal.progress}%</span>
       </div>
@@ -791,29 +1160,90 @@ function BottomNav({ active, onChange }) {
   );
 }
 
-function Sheet({ title, onClose, children, footer }) {
+// The .sheet-layer node rendered by LayersApp: a sibling of .phone-frame
+// inside .app-shell. Sheets portal into it so they escape .phone-frame's
+// overflow:hidden and any parent sheet's scrolling body (nested sheets),
+// while staying inside .layers-root so the theme's --c-* variables — which
+// every COLORS.x resolves through — still apply.
+const SheetLayerContext = createContext(null);
+
+// Never fall back to document.body: content portaled outside .layers-root
+// loses every theme variable and renders transparent with black text (the
+// "Edit goal" bug). The layer is set by a ref callback on mount, so this only
+// returns null for the single commit before it exists.
+function SheetPortal({ children }) {
+  const layer = useContext(SheetLayerContext);
+  return layer ? createPortal(children, layer) : null;
+}
+
+function Sheet({ title, onClose, children, footer, tall }) {
   return (
-    <div className="sheet">
-      <div className="sheet-overlay" onClick={onClose} />
-      <div className="sheet-panel sheet-anim" role="dialog" aria-modal="true" aria-label={title}>
-        <div className="flex items-center justify-between px-5 pt-5 pb-3">
-          <p className="font-display" style={{ fontSize: 19, color: COLORS.ink }}>{title}</p>
-          <button onClick={onClose} aria-label="Close" className="p-1"><X size={20} color={COLORS.inkSoft} /></button>
+    <SheetPortal>
+      <div className="sheet">
+        <div className="sheet-overlay" onClick={onClose} />
+        <div className={`sheet-panel sheet-anim${tall ? ' sheet-panel--tall' : ''}`} role="dialog" aria-modal="true" aria-label={title}>
+          <div className="flex items-center justify-between px-5 pt-5 pb-3">
+            <p className="font-display" style={{ fontSize: 19, color: COLORS.ink }}>{title}</p>
+            <button onClick={onClose} aria-label="Close" className="p-1"><X size={20} color={COLORS.inkSoft} /></button>
+          </div>
+          <div className="sheet-body no-scrollbar">{children}</div>
+          {footer && <div style={{ padding: '14px 20px 22px', borderTop: `1px solid ${COLORS.line}` }}>{footer}</div>}
         </div>
-        <div className="sheet-body no-scrollbar">{children}</div>
-        {footer && <div style={{ padding: '14px 20px 22px', borderTop: `1px solid ${COLORS.line}` }}>{footer}</div>}
       </div>
-    </div>
+    </SheetPortal>
   );
 }
 
 /* ============================== HOME ============================== */
 
-function HomeView({ people, journal, generalGoals, profile, onOpenPerson, onSwitchTab, onOpenGoals, onOpenCoach }) {
+function HomeView({ people, journal, generalGoals, events, profile, onOpenPerson, onSwitchTab, onOpenGoals, onOpenCoach, onLogEvent, onManageEvents, onEditEvent, onDeleteEvent }) {
   const greeting = useMemo(() => { const h = new Date().getHours(); if (h < 12) return 'Good morning'; if (h < 18) return 'Good afternoon'; return 'Good evening'; }, []);
   const peopleById = useMemo(() => Object.fromEntries(people.map(p => [p.id, p])), [people]);
+  const [expandedUpcoming, setExpandedUpcoming] = useState(null);
+  const [upcomingMeaningfulness, setUpcomingMeaningfulness] = useState(3);
+  const [upcomingQuickDetailTags, setUpcomingQuickDetailTags] = useState([]);
+  const [upcomingTemplatesOpen, setUpcomingTemplatesOpen] = useState(false);
+  const [manageEventsOpen, setManageEventsOpen] = useState(false);
+
+  // "Upcoming" is Layers' current, honest take on reminders: a same-session
+  // in-app list of what's due soon, computed fresh each time Home renders.
+  // It is NOT an OS-level push notification — Layers doesn't yet have any
+  // background/notification permission plumbing in the Electron main
+  // process, so nothing fires while the app is closed or minimized.
+  const upcoming = useMemo(() => {
+    const today = startOfDay(new Date());
+    const items = [];
+    (events || []).forEach(ev => {
+      const evWeekdays = ev.weekdays || (ev.weekday != null ? [ev.weekday] : []);
+      if (ev.kind === 'oneoff' && ev.date) {
+        const d = new Date(ev.date + 'T00:00:00');
+        const diff = Math.round((d - today) / 86400000);
+        if (diff >= 0 && diff <= 7) items.push({ ...ev, sortAt: d.getTime() + (ev.time || 0) * 60000, when: diff === 0 ? 'Today' : diff === 1 ? 'Tomorrow' : formatCalendarDate(d) });
+      } else if (ev.kind === 'recurring' && evWeekdays.includes(today.getDay())) {
+        items.push({ ...ev, sortAt: today.getTime() + (ev.time || 0) * 60000, when: 'Today' });
+      }
+    });
+    return items.sort((a, b) => a.sortAt - b.sortAt).slice(0, 4);
+  }, [events]);
 
   const activeGoals = useMemo(() => people.flatMap(p => p.goals).concat(generalGoals).filter(g => g.progress < 100).length, [people, generalGoals]);
+
+  // People you haven't logged anything with in a while — reuses journal
+  // data that already exists, just resurfaced as a nudge rather than
+  // something you'd have to notice yourself by scrolling each profile.
+  const quietPeople = useMemo(() => {
+    const lastByPerson = new Map();
+    journal.forEach(j => {
+      const days = parseDaysAgo(j.date);
+      const cur = lastByPerson.get(j.personId);
+      if (cur === undefined || days < cur) lastByPerson.set(j.personId, days);
+    });
+    return people
+      .map(p => ({ person: p, daysQuiet: lastByPerson.has(p.id) ? lastByPerson.get(p.id) : null }))
+      .filter(x => x.daysQuiet === null || x.daysQuiet >= 14)
+      .sort((a, b) => (b.daysQuiet === null ? 9999 : b.daysQuiet) - (a.daysQuiet === null ? 9999 : a.daysQuiet))
+      .slice(0, 4);
+  }, [people, journal]);
   const conversationsLogged = journal.length;
   const meaningfulInteractions = useMemo(() => journal.filter(j => j.meaningfulness >= 4).length, [journal]);
   const relationshipsInProgress = useMemo(() => {
@@ -889,6 +1319,129 @@ function HomeView({ people, journal, generalGoals, profile, onOpenPerson, onSwit
         </div>
       </div>
 
+      {(upcoming.length > 0 || (events && events.length > 0)) && (
+        <div className="mt-7">
+          <div className="flex items-center justify-between">
+            <p className="font-display" style={{ fontSize: 19, color: COLORS.ink }}>Upcoming</p>
+            <div className="flex items-center gap-3">
+              {events && events.length > 0 && (
+                <button onClick={() => setManageEventsOpen(o => !o)} className="text-xs font-medium" style={{ color: COLORS.accent }}>{manageEventsOpen ? 'Hide manage' : 'Manage'}</button>
+              )}
+              <button onClick={onManageEvents} className="text-xs font-medium" style={{ color: COLORS.accent }}>+ New</button>
+            </div>
+          </div>
+          <p className="text-xs mt-0.5 mb-2.5" style={{ color: COLORS.inkSoft }}>In-app reminders — Layers doesn't send OS notifications yet.</p>
+
+          {manageEventsOpen && (
+            <div className="rounded-2xl p-3.5 mb-3" style={{ background: COLORS.paperRaised, border: `1px solid ${COLORS.line}` }}>
+              <p className="text-xs font-semibold mb-2.5" style={{ color: COLORS.inkSoft }}>All saved events ({events.length})</p>
+              {events.length === 0 ? (
+                <p className="text-xs" style={{ color: COLORS.inkSoft }}>No events saved yet.</p>
+              ) : (
+                <div className="flex flex-col gap-2">
+                  {events.map(ev => {
+                    const evPeople = (ev.personIds || []).map(id => peopleById[id]).filter(Boolean);
+                    const evWeekdays = ev.weekdays || (ev.weekday != null ? [ev.weekday] : []);
+                    return (
+                      <div key={ev.id} className="flex items-center justify-between gap-2 rounded-xl px-3 py-2.5" style={{ background: COLORS.paper }}>
+                        <div style={{ minWidth: 0 }}>
+                          <p className="text-xs font-semibold truncate" style={{ color: COLORS.ink }}>{ev.title}</p>
+                          <p className="text-xs mt-0.5" style={{ color: COLORS.inkSoft }}>
+                            {ev.kind === 'recurring' ? formatWeekdays(evWeekdays) : (ev.date || 'One-off')}
+                            {ev.time != null ? ` · ${formatTime12(ev.time)}` : ''}
+                            {evPeople.length > 0 ? ` · ${evPeople.map(p => p.name).join(', ')}` : ''}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          <button onClick={() => onEditEvent(ev)} className="text-xs font-semibold rounded-full px-2.5 py-1.5" style={{ background: COLORS.accentSoft, color: COLORS.accent }}>Edit</button>
+                          <button onClick={() => onDeleteEvent(ev.id)} className="text-xs font-semibold rounded-full px-2.5 py-1.5" style={{ background: COLORS.paperRaised, border: `1px solid ${COLORS.alert}`, color: COLORS.alert }}>Delete</button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          )}
+
+          {upcoming.length > 0 && (
+          <div className="flex flex-col gap-2">
+            {upcoming.map(ev => {
+              const evPeople = (ev.personIds || []).map(id => peopleById[id]).filter(Boolean);
+              const isOpen = expandedUpcoming === ev.id;
+              return (
+                <div key={ev.id} className="rounded-2xl p-3.5" style={{ background: COLORS.paperRaised, border: `1px solid ${isOpen ? COLORS.accent : COLORS.line}` }}>
+                  <button className="w-full text-left" onClick={() => { const next = isOpen ? null : ev.id; setExpandedUpcoming(next); if (next) { setUpcomingMeaningfulness(ev.defaultMeaningfulness || 3); setUpcomingQuickDetailTags([]); setUpcomingTemplatesOpen(false); } }}>
+                    <div className="flex items-center justify-between">
+                      <p className="text-sm font-semibold" style={{ color: COLORS.ink }}>{ev.title}</p>
+                      {ev.kind === 'recurring' && <Repeat size={13} color={COLORS.inkSoft} />}
+                    </div>
+                    <p className="text-xs mt-0.5" style={{ color: COLORS.inkSoft }}>
+                      {ev.when}{ev.time != null ? ` · ${formatTime12(ev.time)}` : ''}
+                      {evPeople.length > 0 ? ` · ${evPeople.map(p => p.name).join(', ')}` : ''}
+                    </p>
+                  </button>
+                  {isOpen && evPeople.length > 0 && (
+                    <div className="mt-3">
+                      <p className="text-xs font-semibold mb-1.5" style={{ color: COLORS.ink }}>How meaningful was it?</p>
+                      <div className="flex items-center justify-between gap-1.5 mb-3">
+                        {[1, 2, 3, 4, 5].map(n => {
+                          const active = upcomingMeaningfulness === n;
+                          return (<button key={n} type="button" onClick={() => setUpcomingMeaningfulness(n)} style={{ width: 30, height: 30, borderRadius: '50%', background: active ? COLORS.accent : COLORS.paper, border: `1.5px solid ${active ? COLORS.accent : COLORS.line}`, color: active ? '#fff' : COLORS.ink, fontWeight: 700, fontSize: 12 }}>{n}</button>);
+                        })}
+                      </div>
+                      <div className="flex items-center justify-between mb-1.5">
+                        <p className="text-xs font-semibold" style={{ color: COLORS.ink }}>Quick detail <span style={{ fontWeight: 500, color: COLORS.inkSoft }}>(optional)</span></p>
+                        <button type="button" onClick={() => setUpcomingTemplatesOpen(true)} className="text-xs font-semibold" style={{ color: COLORS.accent }}>+ Add detail</button>
+                      </div>
+                      {upcomingTemplatesOpen && (
+                        <TemplatePickerModal title="Add detail" onClose={() => setUpcomingTemplatesOpen(false)} onPick={(item) => setUpcomingQuickDetailTags(prev => [...prev, item])} />
+                      )}
+                      {upcomingQuickDetailTags.length > 0 && (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 12 }}>
+                          {upcomingQuickDetailTags.map((tag, i) => (
+                            <span key={i} className="flex items-center gap-1 text-xs rounded-full pl-2.5 pr-1.5 py-1" style={{ background: COLORS.accentSoft, color: COLORS.accent }}>
+                              {tag}
+                              <button onClick={() => setUpcomingQuickDetailTags(prev => prev.filter((_, idx) => idx !== i))} aria-label={`Remove "${tag}"`} className="p-0.5"><X size={11} /></button>
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                      <button onClick={() => { onLogEvent(ev, upcomingMeaningfulness, upcomingQuickDetailTags.join(', ')); setExpandedUpcoming(null); }} className="w-full text-xs font-semibold rounded-full py-2" style={{ background: COLORS.accent, color: '#fff' }}>Log this now</button>
+                    </div>
+                  )}
+                  {isOpen && evPeople.length === 0 && (
+                    <p className="text-xs mt-2" style={{ color: COLORS.inkSoft }}>This event has no one linked to it, so there's nothing to log — edit it under People to add someone.</p>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+          )}
+        </div>
+      )}
+
+      {quietPeople.length > 0 && (
+        <div className="mt-7">
+          <p className="font-display" style={{ fontSize: 19, color: COLORS.ink }}>Haven't caught up in a while</p>
+          <p className="text-xs mt-0.5 mb-2.5" style={{ color: COLORS.inkSoft }}>Based on your logged interactions.</p>
+          <div className="flex flex-col gap-2">
+            {quietPeople.map(({ person, daysQuiet }) => {
+              const l = getLayer(person.layer);
+              return (
+                <button key={person.id} onClick={() => onOpenPerson(person.id)} className="w-full flex items-center gap-3 rounded-2xl p-3" style={{ background: COLORS.paperRaised, border: `1px solid ${COLORS.line}`, textAlign: 'left' }}>
+                  <Avatar emoji={person.emoji} size={38} ringColor={l.color} />
+                  <div style={{ minWidth: 0, flex: 1 }}>
+                    <p className="text-sm font-semibold truncate" style={{ color: COLORS.ink }}>{person.name}</p>
+                    <p className="text-xs mt-0.5" style={{ color: COLORS.inkSoft }}>{daysQuiet === null ? 'No interactions logged yet' : daysQuiet >= 30 ? `${Math.round(daysQuiet / 30)} month${Math.round(daysQuiet / 30) > 1 ? 's' : ''} since your last log` : `${daysQuiet} days since your last log`}</p>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       {recent.length > 0 && (
         <div className="mt-7">
           <div className="flex items-center justify-between">
@@ -927,7 +1480,7 @@ function PeopleView({ people, journal, onOpenPerson, onAddPerson }) {
     return q ? people.filter(p => p.name.toLowerCase().includes(q)) : people;
   }, [people, query]);
   const layersWithPeople = LAYERS.map(l => ({ ...l, people: filteredPeople.filter(p => p.layer === l.id) }));
-  const radiusByLayer = { 4: 0.20, 3: 0.40, 2: 0.615, 1: 0.835 };
+  const radiusByLayer = { 4: 0.25, 3: 0.44, 2: 0.63, 1: 0.86 };
   const rotationOffset = { 1: 0, 2: 26, 3: 11, 4: 40 };
   const overviewData = useMemo(() => {
     const withTrend = filteredPeople.map(p => {
@@ -938,7 +1491,7 @@ function PeopleView({ people, journal, onOpenPerson, onAddPerson }) {
         trend = last > prev ? 'up' : last < prev ? 'down' : 'flat';
       }
       return { ...p, trend };
-    }).sort((a, b) => b.overall - a.overall);
+    }).sort((a, b) => (b.layer - a.layer) || (b.overall - a.overall));
     const avg = filteredPeople.length ? Math.round(filteredPeople.reduce((s, p) => s + p.overall, 0) / filteredPeople.length) : 0;
     const trendingUp = withTrend.filter(p => p.trend === 'up').length;
     const needsAttention = getCheckInSuggestions(filteredPeople, journal || []);
@@ -968,7 +1521,7 @@ function PeopleView({ people, journal, onOpenPerson, onAddPerson }) {
         <>
           <div className="flex items-center gap-2 mt-4">
             <Search size={15} color={COLORS.inkSoft} className="shrink-0" />
-            <input value={query} onChange={e => setQuery(e.target.value)} placeholder="Search people..." aria-label="Search people" className="flex-1 text-sm rounded-xl px-3 py-2" style={{ border: `1px solid ${COLORS.line}` }} />
+            <input id="people-search-input" value={query} onChange={e => setQuery(e.target.value)} placeholder="Search people..." aria-label="Search people" className="flex-1 text-sm rounded-xl px-3 py-2" style={{ border: `1px solid ${COLORS.line}` }} />
           </div>
           <div className="flex items-center gap-2 mt-3">
             {['map', 'list', 'overview'].map(v => (
@@ -993,22 +1546,31 @@ function PeopleView({ people, journal, onOpenPerson, onAddPerson }) {
                 </svg>
                 {layersWithPeople.flatMap(l => {
                   const n = l.people.length;
+                  // Crowding scales two ways: avatars shrink as a ring fills
+                  // up (more effective clearance at the same angular spread),
+                  // and staggering moves to 3 alternating radii instead of 2
+                  // once a ring is genuinely tight — plain angular spread
+                  // alone runs out of room fast on the inner Layer 3/4 rings.
+                  const avatarSize = n <= 3 ? 40 : n <= 5 ? 32 : n <= 7 ? 27 : 22;
+                  const pillMaxWidth = n <= 3 ? 64 : n <= 5 ? 52 : 44;
                   return l.people.map((p, i) => {
                     const angle = (360 / n) * i + (rotationOffset[l.id] || 0);
                     const rad = angle * Math.PI / 180;
-                    const rPct = radiusByLayer[l.id] * 50;
+                    const staggerSteps = n > 6 ? [-1, 0, 1][i % 3] : n > 3 ? [1, -1][i % 2] : 0;
+                    const stagger = staggerSteps * 0.055;
+                    const rPct = (radiusByLayer[l.id] + stagger) * 50;
                     const left = 50 + rPct * Math.cos(rad);
                     const top = 50 + rPct * Math.sin(rad);
                     return (
-                      <button key={p.id} onClick={() => onOpenPerson(p.id)} className="absolute flex flex-col items-center gap-1" style={{ left: `${left}%`, top: `${top}%`, transform: 'translate(-50%,-50%)' }}>
-                        <Avatar emoji={p.emoji} size={40} ringColor={l.color} />
-                        <span className="text-xs font-medium rounded-full px-1.5" style={{ color: COLORS.ink, background: 'rgba(255,255,255,0.85)' }}>{p.name}</span>
+                      <button key={p.id} onClick={() => onOpenPerson(p.id)} className="absolute flex flex-col items-center gap-1" style={{ left: `${left}%`, top: `${top}%`, transform: 'translate(-50%,-50%)', zIndex: 10 + i }}>
+                        <Avatar emoji={p.emoji} size={avatarSize} ringColor={l.color} />
+                        <span className="text-xs font-medium rounded-full px-1.5 truncate" style={{ color: COLORS.ink, background: COLORS.paperRaised, boxShadow: `0 1px 3px rgba(0,0,0,0.15)`, maxWidth: pillMaxWidth, fontSize: n > 5 ? 10 : 12 }}>{p.name}</span>
                       </button>
                     );
                   });
                 })}
               </div>
-              <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 mt-5">
+              <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'center', columnGap: 16, rowGap: 8, marginTop: 20 }}>
                 {LAYERS.map(l => (
                   <div key={l.id} className="flex items-center gap-1.5">
                     <span style={{ width: 8, height: 8, borderRadius: '50%', background: l.color }} />
@@ -1019,7 +1581,7 @@ function PeopleView({ people, journal, onOpenPerson, onAddPerson }) {
             </>
           ) : view === 'list' ? (
             <div className="mt-5">
-              {filteredPeople.map(p => {
+              {[...filteredPeople].sort((a, b) => (b.layer - a.layer) || (b.overall - a.overall)).map(p => {
                 const l = getLayer(p.layer);
                 return (
                   <button key={p.id} onClick={() => onOpenPerson(p.id)} className="w-full flex items-center gap-3 py-3" style={{ borderBottom: `1px solid ${COLORS.line}` }}>
@@ -1098,12 +1660,46 @@ function AdjustSlider({ label, value, onChange, color }) {
   );
 }
 
-function PersonProfile({ person, onBack, onOpenLog, onOpenGoalCreate, onOpenGoalEdit, onDeleteGoal, onBumpGoal, onOpenAddInfo, onSaveInfo, onDeleteInfo, onToggleTemporary, onToggleArchive, onAdjust, onOpenCoach, onEditPerson }) {
+function PrepareTipsModal({ person, journal, onClose, onOpenFullCoach }) {
+  const hooks = buildPotentialHooks(person, journal);
+  return (
+    <Sheet title={`Prepare to talk to ${person.name}`} onClose={onClose}>
+      <p className="text-xs mb-4" style={{ color: COLORS.inkSoft }}>Prompts, not scripts — things worth noticing an opening for, based on what you've saved.</p>
+      {hooks.length > 0 ? (
+        <div className="flex flex-col gap-2 mb-5">
+          {hooks.map(h => (
+            <div key={h.key} className="rounded-xl px-3.5 py-3" style={{ background: COLORS.accentSoft }}>
+              <p className="text-xs font-semibold" style={{ color: COLORS.accent }}>{h.label}</p>
+              <p className="text-sm mt-0.5" style={{ color: COLORS.ink }}>{h.text}</p>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="rounded-2xl p-4 mb-5" style={{ background: COLORS.paperRaised, border: `1px dashed ${COLORS.line}` }}>
+          <p className="text-sm font-semibold" style={{ color: COLORS.ink }}>No saved information for {person.name} yet</p>
+          <p className="text-xs mt-1" style={{ color: COLORS.inkSoft }}>Quick-add an interest or two on their profile and tips will show up here.</p>
+        </div>
+      )}
+      <p className="text-sm font-semibold mb-2" style={{ color: COLORS.ink }}>Listen → Follow-up → Share</p>
+      <p className="text-xs mb-5" style={{ color: COLORS.inkSoft }}>Listen for what they bring up, ask a genuine follow-up before changing topics, then share something of your own if it fits.</p>
+      <button onClick={onOpenFullCoach} className="w-full text-sm font-semibold rounded-full py-3" style={{ background: COLORS.paperRaised, border: `1px solid ${COLORS.line}`, color: COLORS.accent }}>Open full Conversation Coach</button>
+    </Sheet>
+  );
+}
+
+function PersonProfile({ person, journal, onBack, onOpenLog, onOpenGoalCreate, onOpenGoalEdit, onDeleteGoal, onBumpGoal, onOpenAddInfo, onOpenQuickAddInterest, onSaveInfo, onDeleteInfo, onToggleTemporary, onToggleArchive, onAdjust, onOpenCoach, onEditPerson, onClearLevelUpFlag }) {
+  const [prepareOpen, setPrepareOpen] = useState(false);
   const [showAdjust, setShowAdjust] = useState(false);
   const [draft, setDraft] = useState(person.dims);
   const [showArchived, setShowArchived] = useState({});
   const l = getLayer(person.layer);
   const suggestions = useMemo(() => generateSuggestions(person), [person]);
+
+  useEffect(() => {
+    if (!person.justLeveledUp) return;
+    const t = setTimeout(() => onClearLevelUpFlag(person.id), 2700);
+    return () => clearTimeout(t);
+  }, [person.justLeveledUp, person.id, onClearLevelUpFlag]);
 
   function openAdjust() { setDraft(person.dims); setShowAdjust(true); }
   function saveAdjust() { onAdjust(draft); setShowAdjust(false); }
@@ -1126,13 +1722,24 @@ function PersonProfile({ person, onBack, onOpenLog, onOpenGoalCreate, onOpenGoal
         <div className="mt-1.5"><LayerBadge layerId={person.layer} /></div>
         <div className="flex items-center gap-2 mt-4">
           <button onClick={() => onOpenLog(person.id)} className="text-xs font-semibold rounded-full px-4 py-2" style={{ background: COLORS.accent, color: '#fff' }}>Log an interaction</button>
-          <button onClick={() => onOpenCoach(person.id)} className="text-xs font-semibold rounded-full px-4 py-2" style={{ background: COLORS.paperRaised, color: COLORS.accent, border: `1px solid ${COLORS.accent}` }}>Prepare to talk</button>
+          <button onClick={() => setPrepareOpen(true)} className="text-xs font-semibold rounded-full px-4 py-2" style={{ background: COLORS.paperRaised, color: COLORS.accent, border: `1px solid ${COLORS.accent}` }}>Prepare to talk</button>
         </div>
       </div>
 
       <div className="flex flex-col items-center mt-7">
-        <CircularProgress percent={person.overall} size={160} stroke={13} color={l.color} label="Relationship development" />
-        <p className="text-xs text-center mt-3" style={{ color: COLORS.inkSoft, maxWidth: 280 }}>Based on your logged interactions and current goals. This is an estimate, not an objective measurement of your friendship.</p>
+        <div className={person.justLeveledUp ? 'level-up-pulse' : ''} style={{ position: 'relative' }}>
+          {person.justLeveledUp && (
+            <div className="level-up-banner" style={{ position: 'absolute', top: -38, left: '50%', transform: 'translateX(-50%)', whiteSpace: 'nowrap', background: l.color, color: '#fff', fontSize: 12, fontWeight: 700, padding: '5px 14px', borderRadius: 999, boxShadow: `0 6px 16px ${l.tint}` }}>
+              🎉 Reached Layer {person.layer}!
+            </div>
+          )}
+          <CircularProgress percent={person.overall} size={160} stroke={13} color={l.color} label={`Progress in Layer ${person.layer}`} />
+        </div>
+        <p className="text-xs text-center mt-3" style={{ color: COLORS.inkSoft, maxWidth: 300 }}>
+          {person.layer < 4
+            ? `${person.overall}% toward Layer ${person.layer + 1}: ${getLayer(person.layer + 1).name}. Based on your logged interactions — an estimate, not an objective measurement.`
+            : `${person.overall}% within Layer 4, the deepest layer. Based on your logged interactions — an estimate, not an objective measurement.`}
+        </p>
       </div>
 
       {person.lastChange && (
@@ -1203,7 +1810,12 @@ function PersonProfile({ person, onBack, onOpenLog, onOpenGoalCreate, onOpenGoal
               <div key={cat.key} className="mt-4">
                 <div className="flex items-center justify-between">
                   <p className="text-sm font-semibold" style={{ color: COLORS.ink }}>{cat.label}</p>
-                  <button onClick={() => onOpenAddInfo(person.id, cat.key)} className="p-1"><Plus size={16} color={COLORS.accent} /></button>
+                  <div className="flex items-center gap-2">
+                    {cat.key === 'interests' && (
+                      <button onClick={() => onOpenQuickAddInterest(person.id)} className="text-xs font-semibold rounded-full px-2.5 py-1" style={{ background: COLORS.accentSoft, color: COLORS.accent }}>Quick add</button>
+                    )}
+                    <button onClick={() => onOpenAddInfo(person.id, cat.key)} className="p-1"><Plus size={16} color={COLORS.accent} /></button>
+                  </div>
                 </div>
                 {active.length === 0 ? (
                   <p className="text-xs mt-1.5" style={{ color: COLORS.inkSoft }}>Nothing here yet. Add the first thing you know.</p>
@@ -1249,9 +1861,9 @@ function PersonProfile({ person, onBack, onOpenLog, onOpenGoalCreate, onOpenGoal
         <p className="font-display" style={{ fontSize: 18, color: COLORS.ink }}>Progress</p>
         <div className="mt-3" style={{ width: '100%', height: 170 }}>
           <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={person.history} margin={{ top: 8, right: 8, left: -18, bottom: 0 }}>
+            <LineChart data={sortHistory(person.history)} margin={{ top: 8, right: 14, left: -12, bottom: 0 }}>
               <CartesianGrid stroke={COLORS.line} strokeDasharray="3 3" vertical={false} />
-              <XAxis dataKey="date" tick={{ fontSize: 10, fill: COLORS.inkSoft }} axisLine={{ stroke: COLORS.line }} tickLine={false} />
+              <XAxis dataKey="date" tick={{ fontSize: 10, fill: COLORS.inkSoft }} axisLine={{ stroke: COLORS.line }} tickLine={false} interval={0} padding={{ left: 18, right: 18 }} />
               <YAxis domain={[0, 100]} tick={{ fontSize: 10, fill: COLORS.inkSoft }} axisLine={false} tickLine={false} width={26} />
               <Tooltip formatter={(v) => [`${v}%`, 'Progress']} contentStyle={{ borderRadius: 12, border: `1px solid ${COLORS.line}`, fontSize: 12 }} />
               <Line type="monotone" dataKey="value" stroke={l.color} strokeWidth={2.5} dot={{ r: 3, fill: l.color }} activeDot={{ r: 5 }} />
@@ -1260,6 +1872,8 @@ function PersonProfile({ person, onBack, onOpenLog, onOpenGoalCreate, onOpenGoal
         </div>
         <p className="text-xs mt-3 text-center" style={{ color: COLORS.inkSoft }}>Relationships don't have to move in a straight line. It's normal to move between layers.</p>
       </div>
+
+      {prepareOpen && <PrepareTipsModal person={person} journal={journal} onClose={() => setPrepareOpen(false)} onOpenFullCoach={() => { setPrepareOpen(false); onOpenCoach(person.id); }} />}
     </div>
   );
 }
@@ -1343,8 +1957,9 @@ function JournalView({ people, journal, onOpenPerson }) {
     return true;
   });
 
+  const sorted = [...filtered].sort((a, b) => parseDaysAgo(a.date) - parseDaysAgo(b.date));
   const groups = [];
-  filtered.forEach(entry => {
+  sorted.forEach(entry => {
     const last = groups[groups.length - 1];
     if (last && last.date === entry.date) { last.entries.push(entry); } else { groups.push({ date: entry.date, entries: [entry] }); }
   });
@@ -1358,10 +1973,10 @@ function JournalView({ people, journal, onOpenPerson }) {
 
       <div className="flex items-center gap-2 mt-4">
         <Search size={15} color={COLORS.inkSoft} className="shrink-0" />
-        <input value={query} onChange={e => setQuery(e.target.value)} placeholder="Search the journal..." className="flex-1 text-sm rounded-xl px-3 py-2" style={{ border: `1px solid ${COLORS.line}` }} />
+        <input id="journal-search-input" value={query} onChange={e => setQuery(e.target.value)} placeholder="Search the journal..." className="flex-1 text-sm rounded-xl px-3 py-2" style={{ border: `1px solid ${COLORS.line}` }} />
       </div>
 
-      <div className="flex items-center gap-2 mt-3 overflow-x-auto no-scrollbar pb-1">
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 12, maxHeight: 78, overflowY: 'auto' }}>
         <button onClick={() => setFilterPerson('all')} className="text-xs font-semibold rounded-full px-3 py-1.5 shrink-0" style={{ background: filterPerson === 'all' ? COLORS.accent : COLORS.paperRaised, color: filterPerson === 'all' ? '#fff' : COLORS.inkSoft, border: `1px solid ${filterPerson === 'all' ? COLORS.accent : COLORS.line}` }}>All people</button>
         {people.map(p => (
           <button key={p.id} onClick={() => setFilterPerson(p.id)} className="text-xs font-semibold rounded-full px-3 py-1.5 shrink-0" style={{ background: filterPerson === p.id ? COLORS.accent : COLORS.paperRaised, color: filterPerson === p.id ? '#fff' : COLORS.inkSoft, border: `1px solid ${filterPerson === p.id ? COLORS.accent : COLORS.line}` }}>{p.name}</button>
@@ -1417,7 +2032,35 @@ const HOOKS = [
   { key: 'opinion', label: 'Opinion', question: "What's the best part about it?" },
 ];
 
-function CoachView({ people, generalGoals, initialPersonId, initialTab, onOpenLog, onApproveInfo, onLogFromAnalysis, onOpenPerson }) {
+// #4: turns a person's saved interests + recent history into short noticing
+// prompts for Prepare — never a script, always phrased as "worth asking"
+// rather than "say this". Returns [] when there's nothing to draw from yet,
+// so Prepare never invents hooks for a person with no saved information.
+function buildPotentialHooks(person, journal) {
+  if (!person) return [];
+  const hooks = [];
+  const activeInterests = person.interests.filter(i => !i.archived);
+  if (activeInterests.length > 0) {
+    const extra = activeInterests.length - 1;
+    hooks.push({ key: 'interest', label: 'Their interests', text: `They're into ${activeInterests[0].text}${extra > 0 ? ` (and ${extra} other thing${extra > 1 ? 's' : ''})` : ''} — worth noticing an opening to bring it up, not scripting exactly what to say.` });
+  }
+  const personJournal = (journal || []).filter(j => j.personId === person.id).slice().sort((a, b) => parseDaysAgo(a.date) - parseDaysAgo(b.date));
+  if (personJournal.length > 0) {
+    const last = personJournal[0];
+    hooks.push({ key: 'recent', label: 'Last time you spoke', text: `${summaryFor(last)} (${last.date}) — a natural thing to circle back to if it comes up again.` });
+  }
+  const activePlans = person.plans.filter(i => !i.archived);
+  if (activePlans.length > 0) {
+    hooks.push({ key: 'plan', label: 'Something they mentioned', text: `They brought up "${activePlans[0].text}" — worth asking how that went or if it happened.` });
+  }
+  const activeImportant = person.important.filter(i => !i.archived);
+  if (activeImportant.length > 0) {
+    hooks.push({ key: 'followup', label: 'Follow-up opportunity', text: `You noted "${activeImportant[0].text}" — a good thing to check in on.` });
+  }
+  return hooks.slice(0, 4);
+}
+
+function CoachView({ people, journal, generalGoals, initialPersonId, initialTab, onOpenLog, onApproveInfo, onLogFromAnalysis, onOpenPerson }) {
   const [tab, setTab] = useState(initialTab || 'prepare');
   const [preparePersonId, setPreparePersonId] = useState(initialPersonId || (people[0] && people[0].id) || null);
   const [analysisPersonId, setAnalysisPersonId] = useState(initialTab === 'analyse' ? initialPersonId || null : null);
@@ -1473,13 +2116,13 @@ function CoachView({ people, generalGoals, initialPersonId, initialTab, onOpenLo
       {tab === 'prepare' && (
         <div className="mt-5">
           <p className="text-sm font-semibold mb-2" style={{ color: COLORS.ink }}>Who are you about to talk to?</p>
-          <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1 mb-4">
+          <div style={{ display: 'flex', flexWrap: 'wrap', columnGap: 8, rowGap: 12, paddingBottom: 4, marginBottom: 16, maxHeight: 168, overflowY: 'auto' }}>
             {people.map(p => {
               const active = preparePersonId === p.id; const l = getLayer(p.layer);
               return (
                 <button key={p.id} onClick={() => setPreparePersonId(p.id)} className="flex flex-col items-center gap-1 shrink-0" style={{ width: 56 }}>
                   <Avatar emoji={p.emoji} size={44} ringColor={active ? COLORS.accent : l.color} />
-                  <span className="text-xs" style={{ color: active ? COLORS.accent : COLORS.inkSoft, fontWeight: active ? 700 : 500 }}>{p.name}</span>
+                  <span className="text-xs truncate" style={{ maxWidth: 56, color: active ? COLORS.accent : COLORS.inkSoft, fontWeight: active ? 700 : 500 }}>{p.name}</span>
                 </button>
               );
             })}
@@ -1500,7 +2143,7 @@ function CoachView({ people, generalGoals, initialPersonId, initialTab, onOpenLo
               {preparePerson.interests.filter(i => !i.archived).length > 0 && (
                 <div className="mt-2.5">
                   <p className="text-xs font-semibold" style={{ color: COLORS.ink }}>Known interests</p>
-                  <div className="flex flex-wrap gap-1.5 mt-1">
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 4 }}>
                     {preparePerson.interests.filter(i => !i.archived).map(i => (<span key={i.id} className="text-xs rounded-full px-2 py-0.5" style={{ background: COLORS.paperRaised }}>{i.emoji} {i.text}</span>))}
                   </div>
                 </div>
@@ -1513,6 +2156,30 @@ function CoachView({ people, generalGoals, initialPersonId, initialTab, onOpenLo
               )}
             </div>
           )}
+
+          {preparePerson && (() => {
+            const hooks = buildPotentialHooks(preparePerson, journal);
+            return hooks.length > 0 ? (
+              <div className="rounded-2xl p-4 mb-3" style={{ background: COLORS.paperRaised, border: `1px solid ${COLORS.line}` }}>
+                <p className="text-sm font-semibold" style={{ color: COLORS.ink }}>Potential hooks for {preparePerson.name}</p>
+                <p className="text-xs mt-1" style={{ color: COLORS.inkSoft }}>Prompts, not scripts — things worth noticing an opening for.</p>
+                <div className="grid grid-cols-1 gap-1.5 mt-2.5">
+                  {hooks.map(h => (
+                    <div key={h.key} className="rounded-xl px-3 py-2" style={{ background: COLORS.accentSoft }}>
+                      <span className="text-xs font-semibold" style={{ color: COLORS.accent }}>{h.label}: </span>
+                      <span className="text-xs" style={{ color: COLORS.ink }}>{h.text}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <div className="rounded-2xl p-4 mb-3" style={{ background: COLORS.paperRaised, border: `1px dashed ${COLORS.line}` }}>
+                <p className="text-sm font-semibold" style={{ color: COLORS.ink }}>No saved information for {preparePerson.name} yet</p>
+                <p className="text-xs mt-1 mb-2.5" style={{ color: COLORS.inkSoft }}>Add an interest or two and Prepare can surface hooks here automatically.</p>
+                <button onClick={() => onOpenPerson(preparePerson.id)} className="text-xs font-semibold rounded-full px-3 py-1.5" style={{ background: COLORS.accentSoft, color: COLORS.accent }}>Open {preparePerson.name}'s profile</button>
+              </div>
+            );
+          })()}
 
           <div className="rounded-2xl p-4 mb-3" style={{ background: COLORS.paperRaised, border: `1px solid ${COLORS.line}` }}>
             <p className="text-sm font-semibold" style={{ color: COLORS.ink }}>Spot the hooks</p>
@@ -1569,13 +2236,13 @@ function CoachView({ people, generalGoals, initialPersonId, initialTab, onOpenLo
           ) : !analysisPersonId ? (
             <>
               <p className="text-sm font-semibold mb-2" style={{ color: COLORS.ink }}>Who is this conversation with?</p>
-              <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1">
+              <div style={{ display: 'flex', flexWrap: 'wrap', columnGap: 8, rowGap: 12, paddingBottom: 4, maxHeight: 168, overflowY: 'auto' }}>
                 {people.map(p => {
                   const l = getLayer(p.layer);
                   return (
                     <button key={p.id} onClick={() => setAnalysisPersonId(p.id)} className="flex flex-col items-center gap-1 shrink-0" style={{ width: 56 }}>
                       <Avatar emoji={p.emoji} size={44} ringColor={l.color} />
-                      <span className="text-xs" style={{ color: COLORS.inkSoft }}>{p.name}</span>
+                      <span className="text-xs truncate" style={{ maxWidth: 56, color: COLORS.inkSoft }}>{p.name}</span>
                     </button>
                   );
                 })}
@@ -1747,7 +2414,7 @@ function CoachView({ people, generalGoals, initialPersonId, initialTab, onOpenLo
 
 /* ============================== ME / SOCIAL SKILLS ============================== */
 
-function MeView({ people, journal, skills, generalGoals, profile, onBack, onRestoreSample, onStartOver, onExport, onImportClick, hasUpdater, updateStatus, onCheckForUpdates, onInstallUpdate, theme, onSetTheme, hasSystemBridge, autoLaunch, onToggleAutoLaunch }) {
+function MeView({ people, journal, skills, generalGoals, profile, onBack, onRestoreSample, onStartOver, onExport, onImportClick, hasUpdater, updateStatus, onCheckForUpdates, onInstallUpdate, theme, onSetTheme, hasSystemBridge, autoLaunch, onToggleAutoLaunch, onOpenShortcuts, appVersion }) {
   const [chartSkill, setChartSkill] = useState(FOCUS_SKILL_KEY);
 
   const strengthKey = useMemo(() => SKILL_ORDER.reduce((best, k) => skills[k].current > skills[best].current ? k : best, SKILL_ORDER[0]), [skills]);
@@ -1799,9 +2466,9 @@ function MeView({ people, journal, skills, generalGoals, profile, onBack, onRest
         </div>
         <div className="mt-3" style={{ width: '100%', height: 170 }}>
           <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={skills[chartSkill].history} margin={{ top: 8, right: 8, left: -18, bottom: 0 }}>
+            <LineChart data={skills[chartSkill].history} margin={{ top: 8, right: 14, left: -12, bottom: 0 }}>
               <CartesianGrid stroke={COLORS.line} strokeDasharray="3 3" vertical={false} />
-              <XAxis dataKey="date" tick={{ fontSize: 10, fill: COLORS.inkSoft }} axisLine={{ stroke: COLORS.line }} tickLine={false} />
+              <XAxis dataKey="date" tick={{ fontSize: 10, fill: COLORS.inkSoft }} axisLine={{ stroke: COLORS.line }} tickLine={false} interval={0} padding={{ left: 18, right: 18 }} />
               <YAxis domain={[0, 100]} tick={{ fontSize: 10, fill: COLORS.inkSoft }} axisLine={false} tickLine={false} width={26} />
               <Tooltip formatter={(v) => [`${v}%`, skills[chartSkill].label]} contentStyle={{ borderRadius: 12, border: `1px solid ${COLORS.line}`, fontSize: 12 }} />
               <Line type="monotone" dataKey="value" stroke={COLORS.accent} strokeWidth={2.5} dot={{ r: 3, fill: COLORS.accent }} activeDot={{ r: 5 }} />
@@ -1844,15 +2511,18 @@ function MeView({ people, journal, skills, generalGoals, profile, onBack, onRest
             <span style={{ width: 14, height: 14, borderRadius: '50%', border: `1.5px solid currentColor`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{autoLaunch && <span style={{ width: 7, height: 7, borderRadius: '50%', background: 'currentColor' }} />}</span>
             {autoLaunch ? 'Launching at login' : 'Launch at login'}
           </button>
-          <p className="text-xs mt-2.5" style={{ color: COLORS.inkSoft }}>Global shortcut: <span style={{ fontWeight: 600, color: COLORS.ink }}>Ctrl+Shift+L</span> opens Layers and starts logging an interaction from anywhere. In-app, press <span style={{ fontWeight: 600, color: COLORS.ink }}>N</span> to do the same, and <span style={{ fontWeight: 600, color: COLORS.ink }}>Esc</span> to close any open dialog.</p>
+          <p className="text-xs mt-2.5" style={{ color: COLORS.inkSoft }}>Global shortcut: <span style={{ fontWeight: 600, color: COLORS.ink }}>Ctrl+Shift+L</span> brings Layers to the foreground from anywhere, even while minimized. In-app, press <span style={{ fontWeight: 600, color: COLORS.ink }}>N</span> to quick-log an interaction, and <span style={{ fontWeight: 600, color: COLORS.ink }}>Esc</span> to close any open dialog.</p>
         </div>
       )}
 
       {hasUpdater && (
         <div className="mt-7 rounded-2xl p-4" style={{ background: COLORS.paperRaised, border: `1px solid ${COLORS.line}` }}>
-          <p className="text-sm font-semibold" style={{ color: COLORS.ink }}>App updates</p>
+          <div className="flex items-center justify-between">
+            <p className="text-sm font-semibold" style={{ color: COLORS.ink }}>App updates</p>
+            {appVersion && <span className="text-xs font-semibold rounded-full px-2 py-0.5" style={{ background: COLORS.accentSoft, color: COLORS.accent, fontFamily: 'monospace' }}>v{appVersion}</span>}
+          </div>
           <p className="text-xs mt-1.5" style={{ color: COLORS.inkSoft }}>{updateStatusText(updateStatus)}</p>
-          <div className="flex items-center gap-2 mt-3 flex-wrap">
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 12, flexWrap: 'wrap' }}>
             {updateStatus && updateStatus.state === 'ready' ? (
               <button onClick={onInstallUpdate} className="text-xs font-semibold rounded-full px-3 py-2" style={{ background: COLORS.accent, color: '#fff' }}>Restart &amp; install</button>
             ) : (
@@ -1862,10 +2532,18 @@ function MeView({ people, journal, skills, generalGoals, profile, onBack, onRest
         </div>
       )}
 
-      <div className="mt-7 rounded-2xl p-4" style={{ background: COLORS.paperRaised, border: `1px solid ${COLORS.line}` }}>
+      <div className="mt-7 rounded-2xl p-4 flex items-center justify-between" style={{ background: COLORS.paperRaised, border: `1px solid ${COLORS.line}` }}>
+        <div>
+          <p className="text-sm font-semibold" style={{ color: COLORS.ink }}>Keyboard shortcuts</p>
+          <p className="text-xs mt-1" style={{ color: COLORS.inkSoft }}>Navigate Layers faster on Windows. Press <span style={{ fontFamily: 'monospace', fontWeight: 700 }}>?</span> anytime to see this list.</p>
+        </div>
+        <button onClick={onOpenShortcuts} className="text-xs font-semibold rounded-full px-3 py-2 shrink-0" style={{ background: COLORS.accentSoft, color: COLORS.accent }}>View</button>
+      </div>
+
+      <div className="mt-4 rounded-2xl p-4" style={{ background: COLORS.paperRaised, border: `1px solid ${COLORS.line}` }}>
         <p className="text-sm font-semibold" style={{ color: COLORS.ink }}>Backup</p>
         <p className="text-xs mt-1.5" style={{ color: COLORS.inkSoft }}>Save a copy of everything to a file, or bring one back in. Handy before switching devices or reinstalling.</p>
-        <div className="flex items-center gap-2 mt-3 flex-wrap">
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 12, flexWrap: 'wrap' }}>
           <button onClick={onExport} className="flex items-center gap-1.5 text-xs font-semibold rounded-full px-3 py-2" style={{ background: COLORS.accentSoft, color: COLORS.accent }}><Download size={13} /> Export data</button>
           <button onClick={onImportClick} className="flex items-center gap-1.5 text-xs font-semibold rounded-full px-3 py-2" style={{ background: COLORS.paperRaised, color: COLORS.ink, border: `1px solid ${COLORS.line}` }}><Upload size={13} /> Import data</button>
         </div>
@@ -1874,7 +2552,7 @@ function MeView({ people, journal, skills, generalGoals, profile, onBack, onRest
       <div className="mt-4 rounded-2xl p-4" style={{ background: COLORS.paperRaised, border: `1px solid ${COLORS.line}` }}>
         <p className="text-sm font-semibold" style={{ color: COLORS.ink }}>Privacy</p>
         <p className="text-xs mt-1.5" style={{ color: COLORS.inkSoft }}>Layers is a private personal-development tool. Everything is saved only on this device. Screenshot analysis never happens automatically, and extracted information always waits for your approval before it's saved.</p>
-        <div className="flex items-center gap-2 mt-3 flex-wrap">
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 12, flexWrap: 'wrap' }}>
           <button onClick={onRestoreSample} className="text-xs font-semibold rounded-full px-3 py-2" style={{ background: COLORS.accentSoft, color: COLORS.accent }}>Restore sample data</button>
           <button onClick={onStartOver} className="text-xs font-semibold rounded-full px-3 py-2" style={{ background: COLORS.layer4Tint, color: COLORS.layer4Deep }}>Delete my data and start over</button>
         </div>
@@ -1911,7 +2589,7 @@ function OnboardingView({ initialName, initialFocus, onComplete }) {
         <p className="text-sm mt-2" style={{ color: COLORS.inkSoft }}>Add as many as you'd like now — everyone starts at Orientation, and you can adjust or add more any time.</p>
 
         {draftPeople.length > 0 && (
-          <div className="flex flex-wrap gap-2 mt-5">
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 20 }}>
             {draftPeople.map((p, i) => (
               <span key={i} className="flex items-center gap-1.5 text-sm rounded-full pl-2.5 pr-1.5 py-1.5" style={{ background: COLORS.accentSoft, color: COLORS.accent }}>
                 {p.emoji} {p.name}
@@ -1963,20 +2641,24 @@ function OnboardingView({ initialName, initialFocus, onComplete }) {
 /* ============================== MODALS ============================== */
 
 function ConfirmDialog({ title, message, confirmLabel, danger, onConfirm, onCancel }) {
+  // Portaled like Sheet so it shares its geometry and, opening last, always
+  // stacks above any sheet that is already open.
   return (
-    <div className="sheet">
-      <div className="sheet-overlay" onClick={onCancel} />
-      <div className="sheet-panel sheet-anim" style={{ maxHeight: 'none' }} role="alertdialog" aria-modal="true" aria-label={title}>
-        <div className="px-5 pt-5 pb-5">
-          <p className="font-display" style={{ fontSize: 19, color: COLORS.ink }}>{title}</p>
-          <p className="text-sm mt-2" style={{ color: COLORS.inkSoft }}>{message}</p>
-          <div className="flex items-center gap-2 mt-5">
-            <button onClick={onCancel} className="flex-1 text-sm font-semibold rounded-full py-3" style={{ background: COLORS.paperRaised, color: COLORS.ink, border: `1px solid ${COLORS.line}` }}>Cancel</button>
-            <button onClick={onConfirm} className="flex-1 text-sm font-semibold rounded-full py-3" style={{ background: danger ? COLORS.layer4Deep : COLORS.accent, color: '#fff' }}>{confirmLabel || 'Confirm'}</button>
+    <SheetPortal>
+      <div className="sheet">
+        <div className="sheet-overlay" onClick={onCancel} />
+        <div className="sheet-panel sheet-anim" style={{ maxHeight: 'none' }} role="alertdialog" aria-modal="true" aria-label={title}>
+          <div className="px-5 pt-5 pb-5">
+            <p className="font-display" style={{ fontSize: 19, color: COLORS.ink }}>{title}</p>
+            <p className="text-sm mt-2" style={{ color: COLORS.inkSoft }}>{message}</p>
+            <div className="flex items-center gap-2 mt-5">
+              <button onClick={onCancel} className="flex-1 text-sm font-semibold rounded-full py-3" style={{ background: COLORS.paperRaised, color: COLORS.ink, border: `1px solid ${COLORS.line}` }}>Cancel</button>
+              <button onClick={onConfirm} className="flex-1 text-sm font-semibold rounded-full py-3" style={{ background: danger ? COLORS.layer4Deep : COLORS.accent, color: '#fff' }}>{confirmLabel || 'Confirm'}</button>
+            </div>
           </div>
         </div>
       </div>
-    </div>
+    </SheetPortal>
   );
 }
 
@@ -2001,116 +2683,384 @@ function EditPersonModal({ person, onClose, onSave, onDelete }) {
   );
 }
 
-function LogInteractionModal({ people, defaultPersonId, onClose, onSubmit }) {
-  const [personId, setPersonId] = useState(defaultPersonId || (people[0] && people[0].id) || null);
+function LogInteractionModal({ people, defaultPersonId, events, initialStep, initialEditEvent, onClose, onSubmit, onCreateEvent, onUpdateEvent, onDeleteEvent }) {
+  const [step, setStep] = useState(initialStep || 'kind'); // kind -> type -> who -> details  |  kind -> eventKind -> eventChoice -> eventForm/eventList
   const [type, setType] = useState(null);
+  const [personIds, setPersonIds] = useState(defaultPersonId ? [defaultPersonId] : []);
   const [meaningfulness, setMeaningfulness] = useState(3);
-  const [notes, setNotes] = useState([]);
-  const [draftCat, setDraftCat] = useState(null);
-  const [draftText, setDraftText] = useState('');
   const [al, setAl] = useState([]);
+  const [quickNote, setQuickNote] = useState('');
+  const [quickNoteTags, setQuickNoteTags] = useState([]);
+  const [noteTemplatesOpen, setNoteTemplatesOpen] = useState(false);
+  const [logDate, setLogDate] = useState(() => new Date());
+
+  const [eventKind, setEventKind] = useState(null); // 'recurring' | 'oneoff'
+  const [eventTitle, setEventTitle] = useState('');
+  const [eventPersonIds, setEventPersonIds] = useState(defaultPersonId ? [defaultPersonId] : []);
+  const [eventDate, setEventDate] = useState(() => new Date());
+  const [eventWeekdays, setEventWeekdays] = useState([new Date().getDay()]);
+  const [eventTime, setEventTime] = useState(() => nowToMinutes());
+  const [eventDefaultMeaningfulness, setEventDefaultMeaningfulness] = useState(3);
+  const [editingEventId, setEditingEventId] = useState(null);
+  const [selectedExisting, setSelectedExisting] = useState(null);
+  const [logMeaningfulness, setLogMeaningfulness] = useState(3);
+  const [logQuickDetailTags, setLogQuickDetailTags] = useState([]);
+  const [logTemplatesOpen, setLogTemplatesOpen] = useState(false);
 
   const ML_LABELS = ['Very brief', 'Casual', 'Good conversation', 'Personal', 'Deep conversation'];
-  const NOTE_BUTTONS = [
-    { key: 'interests', label: '+ New interest' },
-    { key: 'plans', label: '+ New plan' },
-    { key: 'important', label: '+ Follow-up' },
-  ];
 
   function toggleAL(key) { setAl(prev => prev.includes(key) ? prev.filter(k => k !== key) : [...prev, key]); }
-  function addNote() {
-    if (!draftText.trim()) return;
-    setNotes(prev => [...prev, { id: uid(), category: draftCat, text: draftText.trim() }]);
-    setDraftText(''); setDraftCat(null);
-  }
-  function removeNote(id) { setNotes(prev => prev.filter(n => n.id !== id)); }
 
-  const canSave = personId && type;
-  function handleSave() { if (!canSave) return; onSubmit({ personId, type, meaningfulness, notes, activeListening: al }); }
+  // 'D' opens Add Detail directly while on the Details step, without having
+  // to click the button — same modal the "+ Add detail" button triggers.
+  useEffect(() => {
+    if (step !== 'details') return;
+    function onKey(e) {
+      if (noteTemplatesOpen) return;
+      const tag = document.activeElement && document.activeElement.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA') return;
+      if (e.key === 'd' || e.key === 'D') { e.preventDefault(); setNoteTemplatesOpen(true); }
+    }
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [step, noteTemplatesOpen]);
+  function togglePerson(id) { setPersonIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]); }
+  function toggleEventPerson(id) { setEventPersonIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]); }
+  function toggleEventWeekday(i) { setEventWeekdays(prev => prev.includes(i) ? prev.filter(x => x !== i) : [...prev, i].sort((a, b) => a - b)); }
+  function openEditEvent(ev) {
+    setEditingEventId(ev.id);
+    setEventKind(ev.kind);
+    setEventTitle(ev.title);
+    setEventPersonIds(ev.personIds || []);
+    setEventDate(ev.date ? new Date(ev.date + 'T00:00:00') : new Date());
+    setEventWeekdays(ev.weekdays || (ev.weekday != null ? [ev.weekday] : [new Date().getDay()]));
+    setEventTime(ev.time != null ? ev.time : nowToMinutes());
+    setEventDefaultMeaningfulness(ev.defaultMeaningfulness || 3);
+    setStep('eventForm');
+  }
+
+  // Lets Home's "Manage recurring" section jump straight into editing a
+  // specific event, bypassing kind/eventKind/eventChoice entirely.
+  useEffect(() => {
+    if (initialEditEvent) openEditEvent(initialEditEvent);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const canSave = personIds.length > 0 && type;
+  function handleSave() { if (!canSave) return; const combined = [...quickNoteTags, quickNote.trim()].filter(Boolean).join(', '); onSubmit({ personIds, type, meaningfulness, notes: [], activeListening: al, summary: combined || undefined, pickedDate: logDate }); }
+
+  const canSaveEvent = eventTitle.trim().length > 0 && (eventKind !== 'recurring' || eventWeekdays.length > 0);
+  function handleSaveEvent() {
+    if (!canSaveEvent) return;
+    const payload = {
+      title: eventTitle.trim(),
+      personIds: eventPersonIds,
+      kind: eventKind,
+      date: eventKind === 'oneoff' ? toISODate(eventDate) : null,
+      weekdays: eventKind === 'recurring' ? eventWeekdays : null,
+      time: eventTime,
+      defaultMeaningfulness: eventDefaultMeaningfulness,
+    };
+    if (editingEventId) onUpdateEvent(editingEventId, payload);
+    else onCreateEvent(payload);
+    onClose();
+  }
+
+  const existingOfKind = (events || []).filter(e => e.kind === eventKind);
+
+  const titles = {
+    kind: 'What are you logging?',
+    type: 'What did you do?',
+    who: 'Who was this with?',
+    details: 'Add details',
+    eventKind: 'Recurring or one-off?',
+    eventChoice: 'Create new or choose existing?',
+    eventForm: editingEventId ? 'Edit event' : (eventKind === 'recurring' ? 'New recurring event' : 'New one-off event'),
+    eventList: 'Your saved events',
+  };
+  const footer =
+    step === 'who' ? (
+      <button onClick={() => personIds.length > 0 && setStep('details')} disabled={personIds.length === 0} className="w-full text-sm font-semibold rounded-full py-3" style={{ background: personIds.length > 0 ? COLORS.accent : COLORS.line, color: personIds.length > 0 ? '#fff' : COLORS.inkSoft }}>
+        Confirm{personIds.length > 0 ? ` (${personIds.length} selected)` : ''}
+      </button>
+    ) : step === 'details' ? (
+      <button onClick={handleSave} disabled={!canSave} className="w-full text-sm font-semibold rounded-full py-3" style={{ background: canSave ? COLORS.accent : COLORS.line, color: canSave ? '#fff' : COLORS.inkSoft }}>Save interaction</button>
+    ) : step === 'eventForm' ? (
+      <button onClick={handleSaveEvent} disabled={!canSaveEvent} className="w-full text-sm font-semibold rounded-full py-3" style={{ background: canSaveEvent ? COLORS.accent : COLORS.line, color: canSaveEvent ? '#fff' : COLORS.inkSoft }}>{editingEventId ? 'Save changes' : `Save ${eventKind === 'recurring' ? 'recurring event' : 'event'}`}</button>
+    ) : null;
 
   return (
-    <Sheet title="Log an interaction" onClose={onClose}
-      footer={
-        <div>
-          <button onClick={handleSave} disabled={!canSave} className="w-full text-sm font-semibold rounded-full py-3" style={{ background: canSave ? COLORS.accent : COLORS.line, color: canSave ? '#fff' : COLORS.inkSoft }}>Save interaction</button>
-          <p className="text-xs text-center mt-2" style={{ color: COLORS.inkSoft }}>Only who and what happened are needed. Everything else is optional.</p>
-        </div>
-      }>
-      <p className="text-sm font-semibold mb-2" style={{ color: COLORS.ink }}>Who was this with?</p>
-      <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1 mb-5">
-        {people.map(p => {
-          const active = personId === p.id; const l = getLayer(p.layer);
-          return (
-            <button key={p.id} onClick={() => setPersonId(p.id)} className="flex flex-col items-center gap-1 shrink-0" style={{ width: 56 }}>
-              <Avatar emoji={p.emoji} size={44} ringColor={active ? COLORS.accent : l.color} />
-              <span className="text-xs" style={{ color: active ? COLORS.accent : COLORS.inkSoft, fontWeight: active ? 700 : 500 }}>{p.name}</span>
-            </button>
-          );
-        })}
-      </div>
-
-      <p className="text-sm font-semibold mb-2" style={{ color: COLORS.ink }}>What happened?</p>
-      <div className="grid grid-cols-3 gap-2 mb-5">
-        {TYPE_ORDER.map(key => {
-          const meta = TYPE_META[key]; const active = type === key;
-          return (
-            <button key={key} onClick={() => setType(key)} className="rounded-2xl py-3 flex flex-col items-center gap-1" style={{ background: active ? COLORS.accentSoft : COLORS.paperRaised, border: `1.5px solid ${active ? COLORS.accent : COLORS.line}` }}>
-              <span style={{ fontSize: 20 }}>{meta.emoji}</span>
-              <span className="text-xs" style={{ color: active ? COLORS.accent : COLORS.ink, fontWeight: active ? 700 : 500 }}>{meta.label}</span>
-            </button>
-          );
-        })}
-      </div>
-
-      <p className="text-sm font-semibold mb-2" style={{ color: COLORS.ink }}>How meaningful was it?</p>
-      <div className="flex items-center justify-between gap-2 mb-1.5">
-        {[1, 2, 3, 4, 5].map(n => {
-          const active = meaningfulness === n;
-          return (<button key={n} onClick={() => setMeaningfulness(n)} style={{ width: 38, height: 38, borderRadius: '50%', background: active ? COLORS.accent : COLORS.paperRaised, border: `1.5px solid ${active ? COLORS.accent : COLORS.line}`, color: active ? '#fff' : COLORS.ink, fontWeight: 700, fontSize: 14 }}>{n}</button>);
-        })}
-      </div>
-      <p className="text-xs mb-5" style={{ color: COLORS.inkSoft }}>{ML_LABELS[meaningfulness - 1]}</p>
-
-      <p className="text-sm font-semibold mb-2" style={{ color: COLORS.ink }}>What did you learn?</p>
-      <div className="flex items-center gap-2 flex-wrap mb-2">
-        {NOTE_BUTTONS.map(nb => (
-          <button key={nb.key} onClick={() => { setDraftCat(nb.key); setDraftText(''); }} className="text-xs font-semibold rounded-full px-3 py-1.5" style={{ background: COLORS.paperRaised, border: `1px solid ${COLORS.line}`, color: COLORS.ink }}>{nb.label}</button>
-        ))}
-      </div>
-      {draftCat && (
-        <div className="flex items-center gap-2 mb-2">
-          <input autoFocus value={draftText} onChange={e => setDraftText(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') addNote(); }} placeholder="Type what you learned..." className="flex-1 text-sm rounded-xl px-3 py-2" style={{ border: `1px solid ${COLORS.accent}` }} />
-          <button onClick={addNote} className="text-xs font-semibold rounded-full px-3 py-2" style={{ background: COLORS.accent, color: '#fff' }}>Add</button>
+    <Sheet title={titles[step]} onClose={onClose} footer={footer} tall>
+      {step === 'kind' && (
+        <div className="grid grid-cols-2 gap-3">
+          <button onClick={() => setStep('type')} className="rounded-2xl py-6 flex flex-col items-center gap-2" style={{ background: COLORS.paperRaised, border: `1.5px solid ${COLORS.line}` }}>
+            <MessageCircle size={26} color={COLORS.accent} />
+            <span className="text-sm font-semibold" style={{ color: COLORS.ink }}>Interaction</span>
+            <span className="text-xs text-center" style={{ color: COLORS.inkSoft }}>Something that already happened</span>
+          </button>
+          <button onClick={() => setStep('eventKind')} className="rounded-2xl py-6 flex flex-col items-center gap-2" style={{ background: COLORS.paperRaised, border: `1.5px solid ${COLORS.line}` }}>
+            <Calendar size={26} color={COLORS.accent} />
+            <span className="text-sm font-semibold" style={{ color: COLORS.ink }}>Event</span>
+            <span className="text-xs text-center" style={{ color: COLORS.inkSoft }}>Something upcoming or recurring</span>
+          </button>
         </div>
       )}
-      {notes.length > 0 && (
-        <div className="flex items-center gap-2 flex-wrap mb-5">
-          {notes.map(n => {
-            const cat = categoryMeta(n.category);
+
+      {step === 'type' && (
+        <>
+          <button onClick={() => setStep('kind')} className="text-xs font-semibold mb-3" style={{ color: COLORS.inkSoft }}>‹ Back</button>
+          <div className="grid grid-cols-3 gap-2">
+            {TYPE_ORDER.map(key => {
+              const meta = TYPE_META[key];
+              return (
+                <button key={key} onClick={() => { setType(key); setStep('who'); }} className="rounded-2xl py-4 flex flex-col items-center gap-1.5" style={{ background: COLORS.paperRaised, border: `1.5px solid ${COLORS.line}` }}>
+                  <span style={{ fontSize: 24 }}>{meta.emoji}</span>
+                  <span className="text-xs" style={{ color: COLORS.ink, fontWeight: 500 }}>{meta.label}</span>
+                </button>
+              );
+            })}
+          </div>
+        </>
+      )}
+
+      {step === 'who' && (
+        <>
+          <button onClick={() => setStep('type')} className="text-xs font-semibold mb-3" style={{ color: COLORS.inkSoft }}>‹ Back</button>
+          <p className="text-xs mb-3" style={{ color: COLORS.inkSoft }}>Tap everyone who was involved — you can pick more than one.</p>
+          <div style={{ display: 'flex', flexWrap: 'wrap', columnGap: 8, rowGap: 12, paddingBottom: 4, maxHeight: 320, overflowY: 'auto' }}>
+            {people.map(p => {
+              const active = personIds.includes(p.id); const l = getLayer(p.layer);
+              return (
+                <button key={p.id} onClick={() => togglePerson(p.id)} className="flex flex-col items-center gap-1 shrink-0" style={{ width: 56 }}>
+                  <span style={{ position: 'relative', display: 'inline-block' }}>
+                    <Avatar emoji={p.emoji} size={44} ringColor={active ? COLORS.accent : l.color} />
+                    {active && (
+                      <span style={{ position: 'absolute', bottom: -2, right: -2, width: 16, height: 16, borderRadius: '50%', background: COLORS.accent, display: 'flex', alignItems: 'center', justifyContent: 'center', border: `2px solid ${COLORS.paper}` }}>
+                        <Check size={9} color="#fff" />
+                      </span>
+                    )}
+                  </span>
+                  <span className="text-xs truncate" style={{ maxWidth: 56, color: active ? COLORS.accent : COLORS.inkSoft, fontWeight: active ? 700 : 500 }}>{p.name}</span>
+                </button>
+              );
+            })}
+          </div>
+        </>
+      )}
+
+      {step === 'details' && (
+        <>
+          <button onClick={() => setStep('who')} className="text-xs font-semibold mb-3" style={{ color: COLORS.inkSoft }}>‹ Back</button>
+
+          <p className="text-sm font-semibold mb-2" style={{ color: COLORS.ink }}>When was this?</p>
+          <div className="mb-5" style={{ position: 'relative', zIndex: 20 }}>
+            <DateDropdown value={logDate} onChange={setLogDate} maxDate={new Date()} />
+          </div>
+
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-sm font-semibold" style={{ color: COLORS.ink }}>Quick note <span style={{ fontWeight: 500, color: COLORS.inkSoft }}>(optional)</span></p>
+            <button type="button" onClick={() => setNoteTemplatesOpen(true)} className="text-xs font-semibold" style={{ color: COLORS.accent }}>+ Add detail <span style={{ fontFamily: 'monospace', opacity: 0.7 }}>(D)</span></button>
+          </div>
+          {noteTemplatesOpen && (
+            <TemplatePickerModal title="Add detail" onClose={() => setNoteTemplatesOpen(false)} onPick={(item) => setQuickNoteTags(prev => [...prev, item])} />
+          )}
+          {quickNoteTags.length > 0 && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 10 }}>
+              {quickNoteTags.map((tag, i) => (
+                <span key={i} className="flex items-center gap-1 text-xs rounded-full pl-2.5 pr-1.5 py-1" style={{ background: COLORS.accentSoft, color: COLORS.accent }}>
+                  {tag}
+                  <button onClick={() => setQuickNoteTags(prev => prev.filter((_, idx) => idx !== i))} aria-label={`Remove "${tag}"`} className="p-0.5"><X size={11} /></button>
+                </span>
+              ))}
+            </div>
+          )}
+          <input value={quickNote} onChange={e => setQuickNote(e.target.value)} placeholder="e.g. Caught up after school, good chat" className="w-full text-sm rounded-xl px-3 py-2.5 mb-5" style={{ border: `1px solid ${COLORS.line}` }} />
+
+          <p className="text-sm font-semibold mb-2" style={{ color: COLORS.ink }}>How meaningful was it?</p>
+          <div className="flex items-center justify-between gap-2 mb-1.5">
+            {[1, 2, 3, 4, 5].map(n => {
+              const active = meaningfulness === n;
+              return (<button key={n} onClick={() => setMeaningfulness(n)} style={{ width: 38, height: 38, borderRadius: '50%', background: active ? COLORS.accent : COLORS.paperRaised, border: `1.5px solid ${active ? COLORS.accent : COLORS.line}`, color: active ? '#fff' : COLORS.ink, fontWeight: 700, fontSize: 14 }}>{n}</button>);
+            })}
+          </div>
+          <p className="text-xs mb-5" style={{ color: COLORS.inkSoft }}>{ML_LABELS[meaningfulness - 1]}</p>
+
+          <p className="text-sm font-semibold mb-2 mt-1" style={{ color: COLORS.ink }}>Did you practise active listening?</p>
+          <div>
+            {AL_ITEMS.map(item => {
+              const checked = al.includes(item.key);
+              return (
+                <button key={item.key} type="button" onClick={() => toggleAL(item.key)} className="w-full flex items-center gap-3 py-2 text-left">
+                  <span style={{ width: 20, height: 20, borderRadius: 6, border: `1.5px solid ${checked ? COLORS.accent : COLORS.line}`, background: checked ? COLORS.accent : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    {checked && <Check size={13} color="#fff" />}
+                  </span>
+                  <span className="text-sm" style={{ color: COLORS.ink }}>{item.label}</span>
+                </button>
+              );
+            })}
+          </div>
+        </>
+      )}
+
+      {step === 'eventKind' && (
+        <>
+          <button onClick={() => setStep('kind')} className="text-xs font-semibold mb-3" style={{ color: COLORS.inkSoft }}>‹ Back</button>
+          <div className="grid grid-cols-2 gap-3">
+            <button onClick={() => { setEventKind('oneoff'); setStep('eventChoice'); }} className="rounded-2xl py-6 flex flex-col items-center gap-2" style={{ background: COLORS.paperRaised, border: `1.5px solid ${COLORS.line}` }}>
+              <Calendar size={24} color={COLORS.accent} />
+              <span className="text-sm font-semibold" style={{ color: COLORS.ink }}>One-off</span>
+              <span className="text-xs text-center" style={{ color: COLORS.inkSoft }}>A single upcoming thing</span>
+            </button>
+            <button onClick={() => { setEventKind('recurring'); setStep('eventChoice'); }} className="rounded-2xl py-6 flex flex-col items-center gap-2" style={{ background: COLORS.paperRaised, border: `1.5px solid ${COLORS.line}` }}>
+              <Repeat size={24} color={COLORS.accent} />
+              <span className="text-sm font-semibold" style={{ color: COLORS.ink }}>Recurring</span>
+              <span className="text-xs text-center" style={{ color: COLORS.inkSoft }}>Repeats weekly</span>
+            </button>
+          </div>
+        </>
+      )}
+
+      {step === 'eventChoice' && (
+        <>
+          <button onClick={() => setStep('eventKind')} className="text-xs font-semibold mb-3" style={{ color: COLORS.inkSoft }}>‹ Back</button>
+          <div className="grid grid-cols-2 gap-3">
+            <button onClick={() => { setEditingEventId(null); setEventTitle(''); setEventPersonIds(defaultPersonId ? [defaultPersonId] : []); setEventDate(new Date()); setEventWeekdays([new Date().getDay()]); setEventTime(nowToMinutes()); setEventDefaultMeaningfulness(3); setStep('eventForm'); }} className="rounded-2xl py-6 flex flex-col items-center gap-2" style={{ background: COLORS.paperRaised, border: `1.5px solid ${COLORS.line}` }}>
+              <Plus size={24} color={COLORS.accent} />
+              <span className="text-sm font-semibold" style={{ color: COLORS.ink }}>Create new</span>
+            </button>
+            <button onClick={() => existingOfKind.length > 0 && setStep('eventList')} disabled={existingOfKind.length === 0} className="rounded-2xl py-6 flex flex-col items-center gap-2" style={{ background: COLORS.paperRaised, border: `1.5px solid ${COLORS.line}`, opacity: existingOfKind.length === 0 ? 0.5 : 1 }}>
+              <Clock size={24} color={COLORS.accent} />
+              <span className="text-sm font-semibold" style={{ color: COLORS.ink }}>Choose saved</span>
+              <span className="text-xs text-center" style={{ color: COLORS.inkSoft }}>{existingOfKind.length > 0 ? `${existingOfKind.length} saved` : 'None saved yet'}</span>
+            </button>
+          </div>
+        </>
+      )}
+
+      {step === 'eventForm' && (
+        <>
+          <button onClick={() => setStep(editingEventId ? 'eventList' : 'eventChoice')} className="text-xs font-semibold mb-3" style={{ color: COLORS.inkSoft }}>‹ Back</button>
+
+          <p className="text-sm font-semibold mb-2" style={{ color: COLORS.ink }}>What is it?</p>
+          <input autoFocus value={eventTitle} onChange={e => setEventTitle(e.target.value)} placeholder={eventKind === 'recurring' ? 'e.g. Check in with Grandma' : 'e.g. Ask Sam about their football game'} className="w-full text-sm rounded-xl px-3 py-2.5 mb-5" style={{ border: `1px solid ${COLORS.line}` }} />
+
+          {eventKind === 'oneoff' ? (
+            <>
+              <p className="text-sm font-semibold mb-2" style={{ color: COLORS.ink }}>When?</p>
+              <div className="mb-5" style={{ position: 'relative', zIndex: 21 }}>
+                <DateDropdown value={eventDate} onChange={setEventDate} minDate={new Date()} />
+              </div>
+            </>
+          ) : (
+            <>
+              <p className="text-sm font-semibold mb-2" style={{ color: COLORS.ink }}>Which day(s) of the week?</p>
+              <p className="text-xs mb-2" style={{ color: COLORS.inkSoft }}>Tap as many as apply — e.g. Monday through Friday.</p>
+              <div className="grid grid-cols-7 gap-1 mb-1.5">
+                {WEEKDAY_SHORT.map((w, i) => (
+                  <button key={w} type="button" onClick={() => toggleEventWeekday(i)} className="rounded-xl py-2 flex items-center justify-center" style={{ background: eventWeekdays.includes(i) ? COLORS.accent : COLORS.paperRaised, border: `1.5px solid ${eventWeekdays.includes(i) ? COLORS.accent : COLORS.line}`, color: eventWeekdays.includes(i) ? '#fff' : COLORS.ink, fontSize: 11, fontWeight: 600 }}>{w[0]}</button>
+                ))}
+              </div>
+              {eventWeekdays.length > 0 && <p className="text-xs mb-5" style={{ color: COLORS.accent, fontWeight: 600 }}>{formatWeekdays(eventWeekdays)}</p>}
+            </>
+          )}
+
+          <p className="text-sm font-semibold mb-2 mt-1" style={{ color: COLORS.ink }}>What time?</p>
+          <div className="mb-5" style={{ position: 'relative', zIndex: 20 }}>
+            <TimeDropdown value={eventTime} onChange={setEventTime} />
+          </div>
+
+          <p className="text-sm font-semibold mb-2" style={{ color: COLORS.ink }}>Usual meaningfulness</p>
+          <p className="text-xs mb-2" style={{ color: COLORS.inkSoft }}>Pre-fills this each time you log it — you can still change it in the moment.</p>
+          <div className="flex items-center justify-between gap-2 mb-5">
+            {[1, 2, 3, 4, 5].map(n => {
+              const active = eventDefaultMeaningfulness === n;
+              return (<button key={n} type="button" onClick={() => setEventDefaultMeaningfulness(n)} style={{ width: 36, height: 36, borderRadius: '50%', background: active ? COLORS.accent : COLORS.paperRaised, border: `1.5px solid ${active ? COLORS.accent : COLORS.line}`, color: active ? '#fff' : COLORS.ink, fontWeight: 700, fontSize: 13 }}>{n}</button>);
+            })}
+          </div>
+
+          <p className="text-sm font-semibold mb-2" style={{ color: COLORS.ink }}>Who's this about? <span style={{ fontWeight: 500, color: COLORS.inkSoft }}>(optional)</span></p>
+          <div style={{ display: 'flex', flexWrap: 'wrap', columnGap: 8, rowGap: 12, paddingBottom: 4, maxHeight: 168, overflowY: 'auto' }}>
+            {people.map(p => {
+              const active = eventPersonIds.includes(p.id); const l = getLayer(p.layer);
+              return (
+                <button key={p.id} onClick={() => toggleEventPerson(p.id)} className="flex flex-col items-center gap-1 shrink-0" style={{ width: 56 }}>
+                  <span style={{ position: 'relative', display: 'inline-block' }}>
+                    <Avatar emoji={p.emoji} size={40} ringColor={active ? COLORS.accent : l.color} />
+                    {active && (
+                      <span style={{ position: 'absolute', bottom: -2, right: -2, width: 16, height: 16, borderRadius: '50%', background: COLORS.accent, display: 'flex', alignItems: 'center', justifyContent: 'center', border: `2px solid ${COLORS.paper}` }}>
+                        <Check size={9} color="#fff" />
+                      </span>
+                    )}
+                  </span>
+                  <span className="text-xs truncate" style={{ maxWidth: 56, color: active ? COLORS.accent : COLORS.inkSoft, fontWeight: active ? 700 : 500 }}>{p.name}</span>
+                </button>
+              );
+            })}
+          </div>
+        </>
+      )}
+
+      {step === 'eventList' && (
+        <>
+          <button onClick={() => { setStep('eventChoice'); setSelectedExisting(null); }} className="text-xs font-semibold mb-3" style={{ color: COLORS.inkSoft }}>‹ Back</button>
+          {existingOfKind.map(ev => {
+            const evPeople = ev.personIds.map(id => people.find(p => p.id === id)).filter(Boolean);
+            const isSel = selectedExisting === ev.id;
+            const evWeekdays = ev.weekdays || (ev.weekday != null ? [ev.weekday] : []);
             return (
-              <span key={n.id} className="flex items-center gap-1 text-xs rounded-full pl-2.5 pr-1.5 py-1" style={{ background: COLORS.accentSoft, color: COLORS.accent }}>
-                {cat.emoji} {n.text}
-                <button onClick={() => removeNote(n.id)} aria-label={`Remove note "${n.text}"`} className="p-0.5"><X size={11} /></button>
-              </span>
+              <div key={ev.id} className="rounded-2xl p-3.5 mb-2.5" style={{ background: COLORS.paperRaised, border: `1.5px solid ${isSel ? COLORS.accent : COLORS.line}` }}>
+                <button onClick={() => { const next = isSel ? null : ev.id; setSelectedExisting(next); if (next) { setLogMeaningfulness(ev.defaultMeaningfulness || 3); setLogQuickDetailTags([]); setLogTemplatesOpen(false); } }} className="w-full text-left">
+                  <p className="text-sm font-semibold" style={{ color: COLORS.ink }}>{ev.title}</p>
+                  <p className="text-xs mt-0.5" style={{ color: COLORS.inkSoft }}>
+                    {ev.kind === 'recurring' ? formatWeekdays(evWeekdays) : ev.date}
+                    {ev.time != null ? ` · ${formatTime12(ev.time)}` : ''}
+                    {evPeople.length > 0 ? ` · ${evPeople.map(p => p.name).join(', ')}` : ''}
+                  </p>
+                </button>
+                {isSel && (
+                  <div className="mt-3">
+                    {evPeople.length > 0 && (
+                      <>
+                        <p className="text-xs font-semibold mb-1.5" style={{ color: COLORS.ink }}>How meaningful was it?</p>
+                        <div className="flex items-center justify-between gap-1.5 mb-3">
+                          {[1, 2, 3, 4, 5].map(n => {
+                            const active = logMeaningfulness === n;
+                            return (<button key={n} type="button" onClick={() => setLogMeaningfulness(n)} style={{ width: 32, height: 32, borderRadius: '50%', background: active ? COLORS.accent : COLORS.paper, border: `1.5px solid ${active ? COLORS.accent : COLORS.line}`, color: active ? '#fff' : COLORS.ink, fontWeight: 700, fontSize: 12 }}>{n}</button>);
+                          })}
+                        </div>
+                        <div className="flex items-center justify-between mb-1.5">
+                          <p className="text-xs font-semibold" style={{ color: COLORS.ink }}>Quick detail <span style={{ fontWeight: 500, color: COLORS.inkSoft }}>(optional)</span></p>
+                          <button type="button" onClick={() => setLogTemplatesOpen(true)} className="text-xs font-semibold" style={{ color: COLORS.accent }}>+ Add detail</button>
+                        </div>
+                        {logTemplatesOpen && (
+                          <TemplatePickerModal title="Add detail" onClose={() => setLogTemplatesOpen(false)} onPick={(item) => setLogQuickDetailTags(prev => [...prev, item])} />
+                        )}
+                        {logQuickDetailTags.length > 0 && (
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 12 }}>
+                            {logQuickDetailTags.map((tag, i) => (
+                              <span key={i} className="flex items-center gap-1 text-xs rounded-full pl-2.5 pr-1.5 py-1" style={{ background: COLORS.accentSoft, color: COLORS.accent }}>
+                                {tag}
+                                <button onClick={() => setLogQuickDetailTags(prev => prev.filter((_, idx) => idx !== i))} aria-label={`Remove "${tag}"`} className="p-0.5"><X size={11} /></button>
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                      </>
+                    )}
+                    <div className="flex items-center gap-2">
+                      {evPeople.length > 0 && (
+                        <button onClick={() => { const detail = logQuickDetailTags.join(', '); onSubmit({ personIds: ev.personIds, type: 'other', meaningfulness: logMeaningfulness, notes: [], activeListening: [], summary: detail ? `${ev.title} — ${detail}` : ev.title, pickedDate: new Date() }); }} className="flex-1 text-xs font-semibold rounded-full py-2" style={{ background: COLORS.accent, color: '#fff' }}>Log this now</button>
+                      )}
+                      <button onClick={() => openEditEvent(ev)} className="flex-1 text-xs font-semibold rounded-full py-2" style={{ background: COLORS.paper, border: `1px solid ${COLORS.line}`, color: COLORS.ink }}>Edit</button>
+                      <button onClick={() => { onDeleteEvent(ev.id); setSelectedExisting(null); }} className="flex-1 text-xs font-semibold rounded-full py-2" style={{ background: COLORS.paper, border: `1px solid ${COLORS.alert}`, color: COLORS.alert }}>Delete</button>
+                    </div>
+                  </div>
+                )}
+              </div>
             );
           })}
-        </div>
+        </>
       )}
-
-      <p className="text-sm font-semibold mb-2 mt-1" style={{ color: COLORS.ink }}>Did you practise active listening?</p>
-      <div>
-        {AL_ITEMS.map(item => {
-          const checked = al.includes(item.key);
-          return (
-            <button key={item.key} type="button" onClick={() => toggleAL(item.key)} className="w-full flex items-center gap-3 py-2 text-left">
-              <span style={{ width: 20, height: 20, borderRadius: 6, border: `1.5px solid ${checked ? COLORS.accent : COLORS.line}`, background: checked ? COLORS.accent : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                {checked && <Check size={13} color="#fff" />}
-              </span>
-              <span className="text-sm" style={{ color: COLORS.ink }}>{item.label}</span>
-            </button>
-          );
-        })}
-      </div>
     </Sheet>
   );
 }
@@ -2122,12 +3072,15 @@ function GoalModal({ people, defaultPersonId, editingGoal, editingPersonId, onCl
   const [customTitle, setCustomTitle] = useState(isEdit && editingGoal.type === 'custom' ? editingGoal.title : '');
   const [description, setDescription] = useState(editingGoal ? editingGoal.description : '');
   const [descTouched, setDescTouched] = useState(isEdit);
+  const [dueDate, setDueDate] = useState(isEdit && editingGoal.dueDate ? new Date(editingGoal.dueDate + 'T00:00:00') : null);
+  const [variantPickerFor, setVariantPickerFor] = useState(null);
 
   function pickPreset(key) {
     setPresetKey(key);
     if (key !== 'custom' && !descTouched) {
       const preset = presetMeta(key);
-      setDescription(preset ? preset.hint : '');
+      const person = people.find(p => p.id === personId);
+      setDescription(preset ? generateGoalDescription(preset, person) : '');
     }
   }
 
@@ -2138,7 +3091,7 @@ function GoalModal({ people, defaultPersonId, editingGoal, editingPersonId, onCl
     if (!canSave) return;
     const preset = presetMeta(presetKey);
     const title = presetKey === 'custom' ? customTitle.trim() : preset.label;
-    const goalData = { id: isEdit ? editingGoal.id : uid(), personId: personId || null, category: preset.category, type: presetKey, title, description: description.trim(), progress: isEdit ? editingGoal.progress : 0, history: isEdit ? editingGoal.history : [{ date: 'Today', value: 0 }] };
+    const goalData = { id: isEdit ? editingGoal.id : uid(), personId: personId || null, category: preset.category, type: presetKey, title, description: description.trim(), dueDate: dueDate ? toISODate(dueDate) : null, progress: isEdit ? editingGoal.progress : 0, history: isEdit ? editingGoal.history : [{ date: formatAbsoluteDate(new Date()), at: toISODate(new Date()), value: 0 }] };
     onSave(personId || null, goalData, isEdit);
   }
 
@@ -2156,7 +3109,7 @@ function GoalModal({ people, defaultPersonId, editingGoal, editingPersonId, onCl
           {editingPerson ? (<><Avatar emoji={editingPerson.emoji} size={36} ringColor={COLORS.accent} /><span className="text-sm font-semibold" style={{ color: COLORS.ink }}>{editingPerson.name}</span></>) : (<><Avatar emoji="🎯" size={36} ringColor={COLORS.accent} /><span className="text-sm font-semibold" style={{ color: COLORS.ink }}>My skills (general)</span></>)}
         </div>
       ) : (
-        <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1 mb-5">
+        <div style={{ display: 'flex', flexWrap: 'wrap', columnGap: 8, rowGap: 12, paddingBottom: 4, marginBottom: 20, maxHeight: 168, overflowY: 'auto' }}>
           <button onClick={() => setPersonId(null)} className="flex flex-col items-center gap-1 shrink-0" style={{ width: 60 }}>
             <Avatar emoji="🎯" size={44} ringColor={personId === null ? COLORS.accent : COLORS.line} />
             <span className="text-xs" style={{ color: personId === null ? COLORS.accent : COLORS.inkSoft, fontWeight: personId === null ? 700 : 500 }}>General</span>
@@ -2166,7 +3119,7 @@ function GoalModal({ people, defaultPersonId, editingGoal, editingPersonId, onCl
             return (
               <button key={p.id} onClick={() => setPersonId(p.id)} className="flex flex-col items-center gap-1 shrink-0" style={{ width: 56 }}>
                 <Avatar emoji={p.emoji} size={44} ringColor={active ? COLORS.accent : l.color} />
-                <span className="text-xs" style={{ color: active ? COLORS.accent : COLORS.inkSoft, fontWeight: active ? 700 : 500 }}>{p.name}</span>
+                <span className="text-xs truncate" style={{ maxWidth: 56, color: active ? COLORS.accent : COLORS.inkSoft, fontWeight: active ? 700 : 500 }}>{p.name}</span>
               </button>
             );
           })}
@@ -2177,10 +3130,16 @@ function GoalModal({ people, defaultPersonId, editingGoal, editingPersonId, onCl
       <div className="grid grid-cols-2 gap-2 mb-4">
         {relPresets.map(preset => {
           const active = presetKey === preset.key;
+          const hasVariants = active && PRESET_VARIANTS[preset.key];
           return (
-            <button key={preset.key} onClick={() => pickPreset(preset.key)} className="rounded-2xl p-3 text-left" style={{ background: active ? COLORS.accentSoft : COLORS.paperRaised, border: `1.5px solid ${active ? COLORS.accent : COLORS.line}` }}>
+            <button key={preset.key} onClick={() => pickPreset(preset.key)} className="rounded-2xl p-3 text-left relative" style={{ background: active ? COLORS.accentSoft : COLORS.paperRaised, border: `1.5px solid ${active ? COLORS.accent : COLORS.line}` }}>
               <span style={{ fontSize: 18 }}>{preset.emoji}</span>
-              <p className="text-xs font-semibold mt-1" style={{ color: active ? COLORS.accent : COLORS.ink }}>{preset.label}</p>
+              <p className="text-xs font-semibold mt-1" style={{ color: active ? COLORS.accent : COLORS.ink, paddingRight: hasVariants ? 26 : 0 }}>{preset.label}</p>
+              {hasVariants && (
+                <span onClick={(e) => { e.stopPropagation(); setVariantPickerFor(preset.key); }} style={{ position: 'absolute', top: '50%', right: 10, transform: 'translateY(-50%)', width: 26, height: 26, borderRadius: '50%', background: COLORS.accent, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 6px rgba(0,0,0,0.25)' }}>
+                  <ChevronRight size={16} color="#fff" />
+                </span>
+              )}
             </button>
           );
         })}
@@ -2190,10 +3149,16 @@ function GoalModal({ people, defaultPersonId, editingGoal, editingPersonId, onCl
       <div className="grid grid-cols-2 gap-2 mb-4">
         {skillPresets.map(preset => {
           const active = presetKey === preset.key;
+          const hasVariants = active && PRESET_VARIANTS[preset.key];
           return (
-            <button key={preset.key} onClick={() => pickPreset(preset.key)} className="rounded-2xl p-3 text-left" style={{ background: active ? COLORS.accentSoft : COLORS.paperRaised, border: `1.5px solid ${active ? COLORS.accent : COLORS.line}` }}>
+            <button key={preset.key} onClick={() => pickPreset(preset.key)} className="rounded-2xl p-3 text-left relative" style={{ background: active ? COLORS.accentSoft : COLORS.paperRaised, border: `1.5px solid ${active ? COLORS.accent : COLORS.line}` }}>
               <span style={{ fontSize: 18 }}>{preset.emoji}</span>
-              <p className="text-xs font-semibold mt-1" style={{ color: active ? COLORS.accent : COLORS.ink }}>{preset.label}</p>
+              <p className="text-xs font-semibold mt-1" style={{ color: active ? COLORS.accent : COLORS.ink, paddingRight: hasVariants ? 26 : 0 }}>{preset.label}</p>
+              {hasVariants && (
+                <span onClick={(e) => { e.stopPropagation(); setVariantPickerFor(preset.key); }} style={{ position: 'absolute', top: '50%', right: 10, transform: 'translateY(-50%)', width: 26, height: 26, borderRadius: '50%', background: COLORS.accent, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 6px rgba(0,0,0,0.25)' }}>
+                  <ChevronRight size={16} color="#fff" />
+                </span>
+              )}
             </button>
           );
         })}
@@ -2212,8 +3177,111 @@ function GoalModal({ people, defaultPersonId, editingGoal, editingPersonId, onCl
       )}
 
       <p className="text-sm font-semibold mb-2" style={{ color: COLORS.ink }}>Description</p>
-      <input value={description} onChange={e => { setDescription(e.target.value); setDescTouched(true); }} placeholder="Describe a measurable target" className="w-full text-sm rounded-xl px-3 py-2.5" style={{ border: `1px solid ${COLORS.line}` }} />
+      <input value={description} onChange={e => { setDescription(e.target.value); setDescTouched(true); }} placeholder="Describe a measurable target" className="w-full text-sm rounded-xl px-3 py-2.5 mb-5" style={{ border: `1px solid ${COLORS.line}` }} />
+
+      <div className="flex items-center justify-between mb-2">
+        <p className="text-sm font-semibold" style={{ color: COLORS.ink }}>Due date <span style={{ fontWeight: 500, color: COLORS.inkSoft }}>(optional)</span></p>
+        <button type="button" onClick={() => setDueDate(dueDate ? null : new Date())} aria-label={dueDate ? 'Turn off due date' : 'Turn on due date'} style={{ width: 42, height: 24, borderRadius: 999, background: dueDate ? COLORS.accent : COLORS.line, position: 'relative', flexShrink: 0, border: 'none', padding: 0, cursor: 'pointer' }}>
+          <span style={{ position: 'absolute', top: 2, left: dueDate ? 20 : 2, width: 20, height: 20, borderRadius: '50%', background: '#fff', transition: 'left 0.15s ease', boxShadow: '0 1px 3px rgba(0,0,0,0.25)' }} />
+        </button>
+      </div>
+      {dueDate && (
+        <div style={{ position: 'relative', zIndex: 20 }}>
+          <DateDropdown value={dueDate} onChange={setDueDate} />
+        </div>
+      )}
+
+      {variantPickerFor && PRESET_VARIANTS[variantPickerFor] && (
+        <Sheet title={presetMeta(variantPickerFor).label} onClose={() => setVariantPickerFor(null)}>
+          <p className="text-xs mb-4" style={{ color: COLORS.inkSoft }}>Pick the version that's closest to what you actually want right now.</p>
+          <div className="flex flex-col gap-2">
+            {PRESET_VARIANTS[variantPickerFor].map((variant, i) => (
+              <button key={i} onClick={() => { setDescription(variant); setDescTouched(true); setVariantPickerFor(null); }} className="w-full text-left text-sm rounded-2xl px-4 py-3" style={{ background: COLORS.paperRaised, border: `1px solid ${COLORS.line}`, color: COLORS.ink }}>{variant}</button>
+            ))}
+          </div>
+        </Sheet>
+      )}
     </Sheet>
+  );
+}
+
+// Button-only category -> specific-item picker for quick notes (used when
+// logging an interaction or a saved event). Tapping an item calls onPick;
+// this component doesn't manage its own visibility — the parent toggles it.
+// Full-screen category -> item template picker, used for both "Add detail"
+// when logging and "Quick add interest" on a person's profile. Big buttons
+// filling the sheet rather than a small scrolling strip. onPick receives
+// (text, emoji) so callers that need an icon (interests) have one, and
+// callers that just want text (notes) can ignore the second argument.
+function TemplatePickerModal({ title, subtitle, onClose, onPick, allowMultiple }) {
+  const [cat, setCat] = useState(null); // null = category grid | 'custom' | a NOTE_TEMPLATES key
+  const [customText, setCustomText] = useState('');
+  const [pickedCount, setPickedCount] = useState(0);
+  const catData = cat && cat !== 'custom' ? NOTE_TEMPLATES.find(c => c.key === cat) : null;
+
+  function pickItem(text, emoji) {
+    onPick(text, emoji);
+    if (!allowMultiple) { onClose(); return; }
+    setPickedCount(c => c + 1);
+    setCat(null);
+  }
+  function saveCustom() {
+    if (!customText.trim()) return;
+    pickItem(customText.trim(), '✏️');
+    setCustomText('');
+  }
+
+  const screenTitle = cat === 'custom' ? 'Custom' : catData ? catData.label : title;
+
+  return (
+    <Sheet title={screenTitle} onClose={onClose} tall>
+      {!cat && (
+        <>
+          {subtitle && <p className="text-xs mb-4" style={{ color: COLORS.inkSoft }}>{subtitle}{allowMultiple && pickedCount > 0 ? ` — ${pickedCount} added so far` : ''}</p>}
+          <div className="grid grid-cols-3 gap-2.5">
+            {NOTE_TEMPLATES.map(c => (
+              <button key={c.key} onClick={() => setCat(c.key)} className="rounded-2xl py-5 flex flex-col items-center gap-1.5" style={{ background: COLORS.paperRaised, border: `1.5px solid ${COLORS.line}` }}>
+                <span style={{ fontSize: 22 }}>{c.emoji}</span>
+                <span className="text-xs font-semibold text-center" style={{ color: COLORS.ink }}>{c.label}</span>
+              </button>
+            ))}
+            <button onClick={() => setCat('custom')} className="rounded-2xl py-5 flex flex-col items-center gap-1.5" style={{ background: COLORS.accentSoft, border: `1.5px solid ${COLORS.accent}` }}>
+              <span style={{ fontSize: 22 }}>✏️</span>
+              <span className="text-xs font-semibold text-center" style={{ color: COLORS.accent }}>Custom</span>
+            </button>
+          </div>
+        </>
+      )}
+      {cat === 'custom' && (
+        <>
+          <button onClick={() => setCat(null)} className="text-xs font-semibold mb-3" style={{ color: COLORS.inkSoft }}>‹ Back</button>
+          <input autoFocus value={customText} onChange={e => setCustomText(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') saveCustom(); }} placeholder="Type your own..." className="w-full text-sm rounded-xl px-3 py-2.5 mb-3" style={{ border: `1px solid ${COLORS.accent}` }} />
+          <button onClick={saveCustom} disabled={!customText.trim()} className="w-full text-sm font-semibold rounded-full py-3" style={{ background: customText.trim() ? COLORS.accent : COLORS.line, color: customText.trim() ? '#fff' : COLORS.inkSoft }}>Add</button>
+        </>
+      )}
+      {catData && (
+        <>
+          <button onClick={() => setCat(null)} className="text-xs font-semibold mb-3" style={{ color: COLORS.inkSoft }}>‹ Back</button>
+          <div className="grid grid-cols-2 gap-2.5">
+            {catData.items.map(item => (
+              <button key={item} onClick={() => pickItem(item, catData.emoji)} className="text-sm font-medium rounded-xl py-3.5 px-2 text-center" style={{ background: COLORS.accentSoft, color: COLORS.accent }}>{item}</button>
+            ))}
+          </div>
+        </>
+      )}
+    </Sheet>
+  );
+}
+
+function QuickAddInterestModal({ personName, onClose, onSave }) {
+  return (
+    <TemplatePickerModal
+      title="Quick add interest"
+      subtitle={`Adding to ${personName}'s interests`}
+      onClose={onClose}
+      onPick={(text, emoji) => onSave({ emoji: emoji || '⭐', text })}
+      allowMultiple
+    />
   );
 }
 
@@ -2283,6 +3351,7 @@ function LayersApp() {
   const [people, setPeople] = useState(() => (saved && Array.isArray(saved.people)) ? saved.people : INITIAL_PEOPLE);
   const [journal, setJournal] = useState(() => (saved && Array.isArray(saved.journal)) ? saved.journal : INITIAL_JOURNAL);
   const [generalGoals, setGeneralGoals] = useState(() => (saved && Array.isArray(saved.generalGoals)) ? saved.generalGoals : INITIAL_GENERAL_GOALS);
+  const [events, setEvents] = useState(() => (saved && Array.isArray(saved.events)) ? saved.events : []);
   const [skills, setSkills] = useState(() => (saved && saved.skills) ? saved.skills : INITIAL_SKILLS);
   const [profile, setProfile] = useState(() => (saved && saved.profile) ? saved.profile : { name: '', focus: null });
   const [onboarded, setOnboarded] = useState(() => !!(saved && saved.onboarded));
@@ -2295,17 +3364,25 @@ function LayersApp() {
   const hasUpdater = typeof window !== 'undefined' && !!window.layersUpdater;
   const hasSystemBridge = typeof window !== 'undefined' && !!window.layersSystem;
   const [autoLaunch, setAutoLaunch] = useState(false);
+  const [appVersion, setAppVersion] = useState(null);
 
   const [logOpen, setLogOpen] = useState(false);
   const [logDefaultPerson, setLogDefaultPerson] = useState(null);
+  const [logInitialStep, setLogInitialStep] = useState(null);
+  const [logEditEvent, setLogEditEvent] = useState(null);
   const [goalModalOpen, setGoalModalOpen] = useState(false);
   const [goalModalDefaultPerson, setGoalModalDefaultPerson] = useState(null);
   const [goalEditing, setGoalEditing] = useState(null);
   const [addInfoOpen, setAddInfoOpen] = useState(false);
   const [addInfoTarget, setAddInfoTarget] = useState(null);
+  const [quickInterestOpen, setQuickInterestOpen] = useState(false);
+  const [quickInterestPersonId, setQuickInterestPersonId] = useState(null);
   const [addPersonOpen, setAddPersonOpen] = useState(false);
+  const [shortcutsOpen, setShortcutsOpen] = useState(false);
+  const [standaloneDetailOpen, setStandaloneDetailOpen] = useState(false);
   const [editPersonOpen, setEditPersonOpen] = useState(false);
   const [confirmState, setConfirmState] = useState(null);
+  const [sheetLayer, setSheetLayer] = useState(null);
   const importInputRef = useRef(null);
 
   function askConfirm(opts) {
@@ -2313,8 +3390,8 @@ function LayersApp() {
   }
 
   useEffect(() => {
-    persistState({ people, journal, generalGoals, skills, profile, onboarded, theme });
-  }, [people, journal, generalGoals, skills, profile, onboarded, theme]);
+    persistState({ people, journal, generalGoals, events, skills, profile, onboarded, theme });
+  }, [people, journal, generalGoals, events, skills, profile, onboarded, theme]);
 
   useEffect(() => {
     if (!onboarded) return;
@@ -2364,6 +3441,7 @@ function LayersApp() {
   useEffect(() => {
     if (!hasSystemBridge) return;
     window.layersSystem.getAutoLaunch().then(v => setAutoLaunch(!!v)).catch(() => {});
+    if (window.layersSystem.getVersion) window.layersSystem.getVersion().then(v => setAppVersion(v)).catch(() => {});
     const unsubscribe = window.layersSystem.onTriggerLog(() => { openLog(null); });
     return unsubscribe;
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -2379,26 +3457,73 @@ function LayersApp() {
   useEffect(() => {
     function onKeyDown(e) {
       if (e.key === 'Escape') {
+        const activeEl = document.activeElement;
+        if (activeEl && (activeEl.id === 'people-search-input' || activeEl.id === 'journal-search-input')) { activeEl.blur(); return; }
+        if (standaloneDetailOpen) { setStandaloneDetailOpen(false); return; }
+        if (shortcutsOpen) { setShortcutsOpen(false); return; }
         if (confirmState) { confirmState.onCancel(); return; }
         if (editPersonOpen) { closeEditPerson(); return; }
         if (addPersonOpen) { setAddPersonOpen(false); return; }
         if (addInfoOpen) { closeAddInfo(); return; }
+        if (quickInterestOpen) { closeQuickAddInterest(); return; }
         if (goalModalOpen) { closeGoalModal(); return; }
         if (logOpen) { closeLog(); return; }
         return;
       }
       const tag = document.activeElement && document.activeElement.tagName;
       const typing = tag === 'INPUT' || tag === 'TEXTAREA';
-      const anyModalOpen = !!confirmState || editPersonOpen || addPersonOpen || addInfoOpen || goalModalOpen || logOpen;
-      if (!typing && onboarded && !anyModalOpen && (e.key === 'n' || e.key === 'N')) {
+      const anyModalOpen = !!confirmState || editPersonOpen || addPersonOpen || addInfoOpen || quickInterestOpen || goalModalOpen || logOpen || shortcutsOpen || standaloneDetailOpen;
+
+      // '?' opens the shortcuts reference even while a modal isn't open;
+      // still blocked while typing so it doesn't fire mid-sentence.
+      if (!typing && onboarded && !anyModalOpen && e.key === '?') {
+        e.preventDefault();
+        setShortcutsOpen(true);
+        return;
+      }
+      // 'D' opens Add Detail as a standalone lookup — no log screen needed.
+      // A pick here copies straight to clipboard since there's no note field
+      // to append into outside an active logging session.
+      if (!typing && onboarded && !anyModalOpen && (e.key === 'd' || e.key === 'D')) {
+        e.preventDefault();
+        setStandaloneDetailOpen(true);
+        return;
+      }
+      if (typing || !onboarded || anyModalOpen) return;
+
+      if (e.key === 'n' || e.key === 'N') {
         e.preventDefault();
         openLog(null);
+        return;
+      }
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'a' || e.key === 'A')) {
+        e.preventDefault();
+        setActiveTab('people'); setScreen({ name: 'tabs' }); setAddPersonOpen(true);
+        return;
+      }
+      if ((e.ctrlKey || e.metaKey) && ['1', '2', '3', '4', '5'].includes(e.key)) {
+        e.preventDefault();
+        const tabs = ['home', 'people', 'coach', 'journal', 'me'];
+        switchTab(tabs[Number(e.key) - 1]);
+        return;
+      }
+      if (e.key === '/') {
+        e.preventDefault();
+        const id = activeTab === 'journal' ? 'journal-search-input' : 'people-search-input';
+        const el = document.getElementById(id);
+        if (el) { if (activeTab !== 'journal' && activeTab !== 'people') switchTab('people'); el.focus(); }
+        return;
+      }
+      if (e.key === 'Backspace' && screen.name !== 'tabs') {
+        e.preventDefault();
+        backToTabs();
+        return;
       }
     }
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [confirmState, editPersonOpen, addPersonOpen, addInfoOpen, goalModalOpen, logOpen, onboarded]);
+  }, [confirmState, editPersonOpen, addPersonOpen, addInfoOpen, quickInterestOpen, goalModalOpen, logOpen, shortcutsOpen, standaloneDetailOpen, onboarded, activeTab, screen.name]);
 
   function pushToast(text) {
     const id = uid();
@@ -2416,47 +3541,71 @@ function LayersApp() {
 
   function openLog(personId) {
     if (people.length === 0) { pushToast('Add someone in People first'); return; }
-    setLogDefaultPerson(personId || null); setLogOpen(true);
+    setLogDefaultPerson(personId || null); setLogInitialStep(null); setLogEditEvent(null); setLogOpen(true);
   }
-  function closeLog() { setLogOpen(false); }
+  function openEventManager() {
+    setLogDefaultPerson(null); setLogInitialStep('eventKind'); setLogEditEvent(null); setLogOpen(true);
+  }
+  function openEditRecurringEvent(ev) {
+    setLogDefaultPerson(null); setLogInitialStep('eventForm'); setLogEditEvent(ev); setLogOpen(true);
+  }
+  function closeLog() { setLogOpen(false); setLogInitialStep(null); setLogEditEvent(null); }
 
-  function handleLogSubmit({ personId, type, meaningfulness, notes, activeListening }) {
-    const person = people.find(p => p.id === personId);
-    setPeople(prev => prev.map(p => {
-      if (p.id !== personId) return p;
-      const depthBump = meaningfulness >= 4 ? Math.round(meaningfulness * 2.6) : Math.round(meaningfulness * 1.3);
-      const trustBump = Math.round(meaningfulness * 2.2);
-      const reciprocityBump = Math.round(meaningfulness * 1.6 + activeListening.length * 1.5);
-      const interactionBump = Math.round(meaningfulness * 2.2);
-      const sharedExpBump = (type === 'activity' || type === 'hangout') ? Math.round(meaningfulness * 2.6) : Math.round(meaningfulness * 0.8);
-      const listeningBump = Math.round(activeListening.length * 3.5 + (meaningfulness >= 4 ? 2 : 0));
-      const newDims = {
-        depth: clamp(p.dims.depth + depthBump, 0, 100),
-        trust: clamp(p.dims.trust + trustBump, 0, 100),
-        reciprocity: clamp(p.dims.reciprocity + reciprocityBump, 0, 100),
-        interaction: clamp(p.dims.interaction + interactionBump, 0, 100),
-        sharedExperiences: clamp(p.dims.sharedExperiences + sharedExpBump, 0, 100),
-        listening: clamp(p.dims.listening + listeningBump, 0, 100),
-      };
-      const newOverall = computeOverall(newDims);
-      const newLayer = layerForOverall(newOverall);
-      const goalBump = Math.round(meaningfulness * 3.2);
-      const newGoals = p.goals.map(g => g.progress >= 100 ? g : { ...g, progress: clamp(g.progress + goalBump, 0, 100), history: [...g.history, { date: 'Today', value: clamp(g.progress + goalBump, 0, 100) }] });
-      const newCats = {};
-      CATEGORIES.forEach(c => { newCats[c.key] = p[c.key]; });
-      notes.forEach(n => {
-        const item = { id: uid(), emoji: categoryMeta(n.category).emoji, text: n.text, updated: 'Today', temporary: false, archived: false };
-        newCats[n.category] = [item, ...newCats[n.category]];
-      });
-      const why = [];
-      if (type === 'activity' || type === 'hangout') why.push('Shared an experience together');
-      if (notes.some(n => n.category === 'interests')) why.push('Discovered a shared interest');
-      if (activeListening.length >= 2) why.push('Good reciprocal conversation');
-      if (meaningfulness >= 4) why.push('Personal experience discussed');
-      if (why.length === 0) why.push('Logged a new interaction');
-      return { ...p, dims: newDims, overall: newOverall, layer: newLayer, goals: newGoals, ...newCats, lastChange: { before: p.overall, after: newOverall, why }, history: [...p.history, { date: 'Today', value: newOverall }] };
-    }));
-    setJournal(prev => [{ id: uid(), personId, date: 'Today', isThisWeek: true, type, meaningfulness, added: notes.map(n => n.text), activeListening }, ...prev]);
+  function handleLogSubmit({ personIds, type, meaningfulness, notes, activeListening, summary, pickedDate }) {
+    const pd = pickedDate || new Date();
+    const dLabel = dateToRelativeLabel(pd); // for the journal feed — meant to read as "3 days ago" etc.
+    const chartDate = formatAbsoluteDate(pd); // for history/goal charts — stays correct forever
+    const chartAt = toISODate(pd);
+    const loggedNames = personIds.map(id => (people.find(p => p.id === id) || {}).name).filter(Boolean);
+    const levelUps = [];
+    personIds.forEach(personId => {
+      setPeople(prev => prev.map(p => {
+        if (p.id !== personId) return p;
+        const depthBump = meaningfulness >= 4 ? Math.round(meaningfulness * 2.6) : Math.round(meaningfulness * 1.3);
+        const trustBump = Math.round(meaningfulness * 2.2);
+        const reciprocityBump = Math.round(meaningfulness * 1.6 + activeListening.length * 1.5);
+        const interactionBump = Math.round(meaningfulness * 2.2);
+        const sharedExpBump = (type === 'activity' || type === 'hangout') ? Math.round(meaningfulness * 2.6) : Math.round(meaningfulness * 0.8);
+        const listeningBump = Math.round(activeListening.length * 3.5 + (meaningfulness >= 4 ? 2 : 0));
+        const newDims = {
+          depth: clamp(p.dims.depth + depthBump, 0, 100),
+          trust: clamp(p.dims.trust + trustBump, 0, 100),
+          reciprocity: clamp(p.dims.reciprocity + reciprocityBump, 0, 100),
+          interaction: clamp(p.dims.interaction + interactionBump, 0, 100),
+          sharedExperiences: clamp(p.dims.sharedExperiences + sharedExpBump, 0, 100),
+          listening: clamp(p.dims.listening + listeningBump, 0, 100),
+        };
+        // Layer progress moves more slowly than before, and only for
+        // interactions you rated 4 or 5 — a brief/low-meaningfulness chat
+        // still updates the six quality dimensions above (so specific
+        // things you did well are still reflected there), but doesn't
+        // nudge the big layer-progress meter on its own.
+        const dimBumpAvg = (depthBump + trustBump + reciprocityBump + interactionBump + sharedExpBump + listeningBump) / 6;
+        const progressBump = meaningfulness >= 4 ? Math.round(dimBumpAvg * 0.55) : 0;
+        const { layer: newLayer, progress: newOverall, leveledUp } = advanceLayer(p.layer, p.overall, progressBump);
+        const goalBump = Math.round(meaningfulness * 3.2);
+        const newGoals = p.goals.map(g => g.progress >= 100 ? g : { ...g, progress: clamp(g.progress + goalBump, 0, 100), history: pushHistoryPoint(g.history, { date: chartDate, at: chartAt, value: clamp(g.progress + goalBump, 0, 100) }) });
+        const newCats = {};
+        CATEGORIES.forEach(c => { newCats[c.key] = p[c.key]; });
+        notes.forEach(n => {
+          const item = { id: uid(), emoji: categoryMeta(n.category).emoji, text: n.text, updated: dLabel, temporary: false, archived: false };
+          newCats[n.category] = [item, ...newCats[n.category]];
+        });
+        const why = [];
+        if (leveledUp) why.push(`Reached Layer ${newLayer}: ${getLayer(newLayer).name}`);
+        if (type === 'activity' || type === 'hangout') why.push('Shared an experience together');
+        if (notes.some(n => n.category === 'interests')) why.push('Discovered a shared interest');
+        if (activeListening.length >= 2) why.push('Good reciprocal conversation');
+        if (meaningfulness >= 4) why.push('Personal experience discussed');
+        if (why.length === 0) why.push('Logged a new interaction');
+        if (leveledUp) levelUps.push({ name: p.name, layer: newLayer });
+        return { ...p, dims: newDims, overall: newOverall, layer: newLayer, goals: newGoals, ...newCats, justLeveledUp: leveledUp || p.justLeveledUp, lastChange: { before: p.overall, after: newOverall, why }, history: pushHistoryPoint(p.history, { date: chartDate, at: chartAt, value: newOverall }) };
+      }));
+    });
+    setJournal(prev => [
+      ...personIds.map(personId => ({ id: uid(), personId, date: dLabel, isThisWeek: parseDaysAgo(dLabel) < 7, type, meaningfulness, added: notes.map(n => n.text), activeListening, ...(summary ? { summary } : {}) })),
+      ...prev,
+    ]);
     setSkills(prev => {
       const next = { ...prev };
       const bump = (key, amt) => { if (amt <= 0) return; next[key] = { ...next[key], current: clamp(next[key].current + amt, 0, 100) }; };
@@ -2467,7 +3616,22 @@ function LayersApp() {
       return next;
     });
     setLogOpen(false);
-    pushToast(person ? `Logged time with ${person.name}` : 'Interaction logged');
+    const who = loggedNames.length <= 2 ? loggedNames.join(' and ') : `${loggedNames.slice(0, 2).join(', ')} and ${loggedNames.length - 2} other${loggedNames.length - 2 > 1 ? 's' : ''}`;
+    pushToast(who ? `Logged time with ${who}` : 'Interaction logged');
+    levelUps.forEach(lu => pushToast(`🎉 ${lu.name} moved up to Layer ${lu.layer}: ${getLayer(lu.layer).name}!`));
+  }
+
+  function handleCreateEvent({ title, personIds, kind, date, weekdays, time, defaultMeaningfulness }) {
+    setEvents(prev => [{ id: uid(), title, personIds, kind, date, weekdays, time, defaultMeaningfulness, createdAt: 'Today' }, ...prev]);
+    pushToast(kind === 'recurring' ? 'Recurring event saved' : 'Event saved');
+  }
+  function handleUpdateEvent(eventId, { title, personIds, kind, date, weekdays, time, defaultMeaningfulness }) {
+    setEvents(prev => prev.map(e => e.id !== eventId ? e : { ...e, title, personIds, kind, date, weekdays, time, defaultMeaningfulness }));
+    pushToast('Event updated');
+  }
+  function handleDeleteEvent(eventId) {
+    setEvents(prev => prev.filter(e => e.id !== eventId));
+    pushToast('Event deleted');
   }
 
   function updateGoalsFor(personId, updater) {
@@ -2499,13 +3663,18 @@ function LayersApp() {
       if (g.id !== goalId) return g;
       const next = clamp(g.progress + 20, 0, 100);
       if (next >= 100 && g.progress < 100) completed = true;
-      return { ...g, progress: next, history: [...g.history, { date: 'Today', value: next }] };
+      return { ...g, progress: next, history: pushHistoryPoint(g.history, { date: formatAbsoluteDate(new Date()), at: toISODate(new Date()), value: next }) };
     }));
     pushToast(completed ? 'Goal complete! 🎉' : 'Progress updated');
   }
 
   function openAddInfo(personId, category) { setAddInfoTarget({ personId, category }); setAddInfoOpen(true); }
   function closeAddInfo() { setAddInfoOpen(false); setAddInfoTarget(null); }
+  function openQuickAddInterest(personId) { setQuickInterestPersonId(personId); setQuickInterestOpen(true); }
+  function closeQuickAddInterest() { setQuickInterestOpen(false); setQuickInterestPersonId(null); }
+  function handleQuickAddInterestSave({ emoji, text }) {
+    setPeople(prev => prev.map(p => p.id !== quickInterestPersonId ? p : { ...p, interests: [{ id: uid(), emoji, text, updated: 'Today', temporary: false, archived: false }, ...p.interests] }));
+  }
   function handleAddInfoSave({ emoji, text, temporary }) {
     const { personId, category } = addInfoTarget;
     setPeople(prev => prev.map(p => p.id !== personId ? p : { ...p, [category]: [{ id: uid(), emoji, text, updated: 'Today', temporary: !!temporary, archived: false }, ...p[category]] }));
@@ -2536,33 +3705,54 @@ function LayersApp() {
   }
 
   function handleAdjust(personId, dims) {
+    let leveledUpInfo = null;
     setPeople(prev => prev.map(p => {
       if (p.id !== personId) return p;
-      const overall = computeOverall(dims);
-      const layer = layerForOverall(overall);
-      return { ...p, dims, overall, layer, lastChange: { before: p.overall, after: overall, why: ['You manually adjusted these values'] }, history: [...p.history, { date: 'Today', value: overall }] };
+      const avg = computeOverall(dims);
+      const newLayer = layerForOverall(avg); // same 0-25/25-50/50-75/75-100 bands as before, spanning all 4 layers
+      const bandStart = (newLayer - 1) * 25;
+      const newOverall = newLayer >= 4 && avg >= 100 ? 100 : clamp(Math.round(((avg - bandStart) / 25) * 100), 0, 100);
+      const leveledUp = newLayer > p.layer;
+      if (leveledUp) leveledUpInfo = { name: p.name, layer: newLayer };
+      const why = leveledUp ? [`Reached Layer ${newLayer}: ${getLayer(newLayer).name}`, 'You manually adjusted these values'] : ['You manually adjusted these values'];
+      return { ...p, dims, overall: newOverall, layer: newLayer, justLeveledUp: leveledUp || p.justLeveledUp, lastChange: { before: p.overall, after: newOverall, why }, history: pushHistoryPoint(p.history, { date: formatAbsoluteDate(new Date()), at: toISODate(new Date()), value: newOverall }) };
     }));
-    pushToast('Progress updated');
+    if (leveledUpInfo) pushToast(`🎉 ${leveledUpInfo.name} moved up to Layer ${leveledUpInfo.layer}: ${getLayer(leveledUpInfo.layer).name}!`);
+    else pushToast('Progress updated');
+  }
+  function handleClearLevelUpFlag(personId) {
+    setPeople(prev => prev.map(p => p.id !== personId ? p : { ...p, justLeveledUp: false }));
   }
 
   function handleLogFromAnalysis(personId, scenario) {
     const g = scenario.grading;
+    let leveledUpInfo = null;
     setPeople(prev => prev.map(p => {
       if (p.id !== personId) return p;
+      const depthBump = Math.round(g.depth / 14);
+      const trustBump = Math.round(g.overall / 16);
+      const reciprocityBump = Math.round(g.reciprocity / 14);
+      const interactionBump = 4;
+      const sharedExpBump = 2;
+      const listeningBump = Math.round(g.activeListening / 14);
       const newDims = {
-        depth: clamp(p.dims.depth + Math.round(g.depth / 14), 0, 100),
-        trust: clamp(p.dims.trust + Math.round(g.overall / 16), 0, 100),
-        reciprocity: clamp(p.dims.reciprocity + Math.round(g.reciprocity / 14), 0, 100),
-        interaction: clamp(p.dims.interaction + 4, 0, 100),
-        sharedExperiences: clamp(p.dims.sharedExperiences + 2, 0, 100),
-        listening: clamp(p.dims.listening + Math.round(g.activeListening / 14), 0, 100),
+        depth: clamp(p.dims.depth + depthBump, 0, 100),
+        trust: clamp(p.dims.trust + trustBump, 0, 100),
+        reciprocity: clamp(p.dims.reciprocity + reciprocityBump, 0, 100),
+        interaction: clamp(p.dims.interaction + interactionBump, 0, 100),
+        sharedExperiences: clamp(p.dims.sharedExperiences + sharedExpBump, 0, 100),
+        listening: clamp(p.dims.listening + listeningBump, 0, 100),
       };
-      const newOverall = computeOverall(newDims);
-      const newLayer = layerForOverall(newOverall);
+      const dimBumpAvg = (depthBump + trustBump + reciprocityBump + interactionBump + sharedExpBump + listeningBump) / 6;
+      const progressBump = g.overall >= 70 ? Math.round(dimBumpAvg * 0.55) : 0;
+      const { layer: newLayer, progress: newOverall, leveledUp } = advanceLayer(p.layer, p.overall, progressBump);
       const goalBump = Math.round(g.overall / 10);
-      const newGoals = p.goals.map(gl => gl.progress >= 100 ? gl : { ...gl, progress: clamp(gl.progress + goalBump, 0, 100), history: [...gl.history, { date: 'Today', value: clamp(gl.progress + goalBump, 0, 100) }] });
-      return { ...p, dims: newDims, overall: newOverall, layer: newLayer, goals: newGoals, lastChange: { before: p.overall, after: newOverall, why: scenario.wentWell }, history: [...p.history, { date: 'Today', value: newOverall }] };
+      const newGoals = p.goals.map(gl => gl.progress >= 100 ? gl : { ...gl, progress: clamp(gl.progress + goalBump, 0, 100), history: pushHistoryPoint(gl.history, { date: formatAbsoluteDate(new Date()), at: toISODate(new Date()), value: clamp(gl.progress + goalBump, 0, 100) }) });
+      if (leveledUp) leveledUpInfo = { name: p.name, layer: newLayer };
+      const why = leveledUp ? [`Reached Layer ${newLayer}: ${getLayer(newLayer).name}`, ...scenario.wentWell] : scenario.wentWell;
+      return { ...p, dims: newDims, overall: newOverall, layer: newLayer, goals: newGoals, justLeveledUp: leveledUp || p.justLeveledUp, lastChange: { before: p.overall, after: newOverall, why }, history: pushHistoryPoint(p.history, { date: formatAbsoluteDate(new Date()), at: toISODate(new Date()), value: newOverall }) };
     }));
+    if (leveledUpInfo) pushToast(`🎉 ${leveledUpInfo.name} moved up to Layer ${leveledUpInfo.layer}: ${getLayer(leveledUpInfo.layer).name}!`);
     setJournal(prev => [{ id: uid(), personId, date: 'Today', isThisWeek: true, type: 'analysed', meaningfulness: clamp(Math.round(g.overall / 20), 1, 5), added: [], activeListening: [], analysis: { grading: g, conversationState: scenario.conversationState } }, ...prev]);
     setSkills(prev => {
       const next = { ...prev };
@@ -2628,7 +3818,7 @@ function LayersApp() {
       confirmLabel: 'Delete everything',
       danger: true,
       onConfirm: () => {
-        setPeople([]); setJournal([]); setGeneralGoals([]); setSkills(EMPTY_SKILLS);
+        setPeople([]); setJournal([]); setGeneralGoals([]); setEvents([]); setSkills(EMPTY_SKILLS);
         setScreen({ name: 'tabs' }); setActiveTab('home');
         setOnboarded(false);
       },
@@ -2636,7 +3826,7 @@ function LayersApp() {
   }
 
   function handleExportData() {
-    const data = { version: 1, exportedAt: new Date().toISOString(), people, journal, generalGoals, skills, profile };
+    const data = { version: 1, exportedAt: new Date().toISOString(), people, journal, generalGoals, events, skills, profile };
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -2667,6 +3857,7 @@ function LayersApp() {
             setPeople(Array.isArray(data.people) ? data.people : []);
             setJournal(Array.isArray(data.journal) ? data.journal : []);
             setGeneralGoals(Array.isArray(data.generalGoals) ? data.generalGoals : []);
+            setEvents(Array.isArray(data.events) ? data.events : []);
             setSkills(data.skills && typeof data.skills === 'object' ? data.skills : EMPTY_SKILLS);
             setProfile(data.profile && typeof data.profile === 'object' ? data.profile : { name: '', focus: null });
             setOnboarded(true);
@@ -2695,78 +3886,102 @@ function LayersApp() {
   }
 
   return (
-    <div className={`layers-root${theme === 'dark' ? ' dark' : ''}`} style={{ background: COLORS.paper, minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <style>{CSS}</style>
-      <div className="phone-frame">
-        <div className="scroll-area no-scrollbar" style={{ paddingBottom: (!onboarded || screen.name !== 'tabs') ? 30 : 110 }}>
-          {!onboarded ? (
-            <OnboardingView initialName={profile.name} initialFocus={profile.focus} onComplete={handleOnboardingComplete} />
-          ) : (
-            <>
-              {screen.name === 'person' && selectedPerson && (
-                <PersonProfile
-                  person={selectedPerson}
-                  onBack={backToTabs}
-                  onOpenLog={openLog}
-                  onOpenGoalCreate={openGoalCreate}
-                  onOpenGoalEdit={openGoalEdit}
-                  onDeleteGoal={handleDeleteGoal}
-                  onBumpGoal={handleBumpGoal}
-                  onOpenAddInfo={openAddInfo}
-                  onSaveInfo={handleSaveInfoItem}
-                  onDeleteInfo={handleDeleteInfoItem}
-                  onToggleTemporary={handleToggleTemporary}
-                  onToggleArchive={handleToggleArchive}
-                  onAdjust={(dims) => handleAdjust(selectedPerson.id, dims)}
-                  onOpenCoach={(pid) => openCoach(pid, 'prepare')}
-                  onEditPerson={openEditPerson}
-                />
-              )}
-              {screen.name === 'goals' && (
-                <GoalsView people={people} generalGoals={generalGoals} onBack={backToTabs} onOpenPerson={openPerson} onOpenGoalCreate={openGoalCreate} onOpenGoalEdit={openGoalEdit} onDeleteGoal={handleDeleteGoal} onBumpGoal={handleBumpGoal} />
-              )}
-              {screen.name === 'tabs' && (
+    <SheetLayerContext.Provider value={sheetLayer}>
+      <div className={`layers-root${theme === 'dark' ? ' dark' : ''}`} style={{ background: COLORS.paper, minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <style>{CSS}</style>
+        <div className="app-shell">
+          <div className="phone-frame">
+            <div className="scroll-area no-scrollbar" style={{ paddingBottom: (!onboarded || screen.name !== 'tabs') ? 30 : 110 }}>
+              {!onboarded ? (
+                <OnboardingView initialName={profile.name} initialFocus={profile.focus} onComplete={handleOnboardingComplete} />
+              ) : (
                 <>
-                  {activeTab === 'home' && <HomeView people={people} journal={journal} generalGoals={generalGoals} profile={profile} onOpenPerson={openPerson} onSwitchTab={switchTab} onOpenGoals={openGoalsOverview} onOpenCoach={(tab) => openCoach(null, tab)} />}
-                  {activeTab === 'people' && <PeopleView people={people} journal={journal} onOpenPerson={openPerson} onAddPerson={() => setAddPersonOpen(true)} />}
-                  {activeTab === 'coach' && <CoachView people={people} generalGoals={generalGoals} initialPersonId={coachInit.personId} initialTab={coachInit.tab} onOpenLog={openLog} onApproveInfo={handleApproveInfo} onLogFromAnalysis={handleLogFromAnalysis} onOpenPerson={openPerson} />}
-                  {activeTab === 'journal' && <JournalView people={people} journal={journal} onOpenPerson={openPerson} />}
-                  {activeTab === 'me' && <MeView people={people} journal={journal} skills={skills} generalGoals={generalGoals} profile={profile} onRestoreSample={handleRestoreSample} onStartOver={handleStartOver} onExport={handleExportData} onImportClick={handleImportClick} hasUpdater={hasUpdater} updateStatus={updateStatus} onCheckForUpdates={handleCheckForUpdates} onInstallUpdate={handleInstallUpdate} theme={theme} onSetTheme={setTheme} hasSystemBridge={hasSystemBridge} autoLaunch={autoLaunch} onToggleAutoLaunch={handleToggleAutoLaunch} />}
+                  {screen.name === 'person' && selectedPerson && (
+                    <PersonProfile
+                      person={selectedPerson}
+                      journal={journal}
+                      onBack={backToTabs}
+                      onOpenLog={openLog}
+                      onOpenGoalCreate={openGoalCreate}
+                      onOpenGoalEdit={openGoalEdit}
+                      onDeleteGoal={handleDeleteGoal}
+                      onBumpGoal={handleBumpGoal}
+                      onOpenAddInfo={openAddInfo}
+                      onOpenQuickAddInterest={openQuickAddInterest}
+                      onSaveInfo={handleSaveInfoItem}
+                      onDeleteInfo={handleDeleteInfoItem}
+                      onToggleTemporary={handleToggleTemporary}
+                      onToggleArchive={handleToggleArchive}
+                      onAdjust={(dims) => handleAdjust(selectedPerson.id, dims)}
+                      onOpenCoach={(pid) => openCoach(pid, 'prepare')}
+                      onEditPerson={openEditPerson}
+                      onClearLevelUpFlag={handleClearLevelUpFlag}
+                    />
+                  )}
+                  {screen.name === 'goals' && (
+                    <GoalsView people={people} generalGoals={generalGoals} onBack={backToTabs} onOpenPerson={openPerson} onOpenGoalCreate={openGoalCreate} onOpenGoalEdit={openGoalEdit} onDeleteGoal={handleDeleteGoal} onBumpGoal={handleBumpGoal} />
+                  )}
+                  {screen.name === 'tabs' && (
+                    <>
+                      {activeTab === 'home' && <HomeView people={people} journal={journal} generalGoals={generalGoals} events={events} profile={profile} onOpenPerson={openPerson} onSwitchTab={switchTab} onOpenGoals={openGoalsOverview} onOpenCoach={(tab) => openCoach(null, tab)} onLogEvent={(ev, meaningfulness, detail) => handleLogSubmit({ personIds: ev.personIds, type: 'other', meaningfulness, notes: [], activeListening: [], summary: detail ? `${ev.title} — ${detail}` : ev.title, pickedDate: new Date() })} onManageEvents={openEventManager} onEditEvent={openEditRecurringEvent} onDeleteEvent={handleDeleteEvent} />}
+                      {activeTab === 'people' && <PeopleView people={people} journal={journal} onOpenPerson={openPerson} onAddPerson={() => setAddPersonOpen(true)} />}
+                      {activeTab === 'coach' && <CoachView people={people} journal={journal} generalGoals={generalGoals} initialPersonId={coachInit.personId} initialTab={coachInit.tab} onOpenLog={openLog} onApproveInfo={handleApproveInfo} onLogFromAnalysis={handleLogFromAnalysis} onOpenPerson={openPerson} />}
+                      {activeTab === 'journal' && <JournalView people={people} journal={journal} onOpenPerson={openPerson} />}
+                      {activeTab === 'me' && <MeView people={people} journal={journal} skills={skills} generalGoals={generalGoals} profile={profile} onRestoreSample={handleRestoreSample} onStartOver={handleStartOver} onExport={handleExportData} onImportClick={handleImportClick} hasUpdater={hasUpdater} updateStatus={updateStatus} onCheckForUpdates={handleCheckForUpdates} onInstallUpdate={handleInstallUpdate} theme={theme} onSetTheme={setTheme} hasSystemBridge={hasSystemBridge} autoLaunch={autoLaunch} onToggleAutoLaunch={handleToggleAutoLaunch} onOpenShortcuts={() => setShortcutsOpen(true)} appVersion={appVersion} />}
+                    </>
+                  )}
                 </>
               )}
-            </>
-          )}
+            </div>
+
+            {onboarded && screen.name === 'tabs' && (
+              <>
+                <button className="fab-btn" onClick={() => openLog(null)} aria-label="Log an interaction"><Plus size={26} color="#fff" /></button>
+                <BottomNav active={activeTab} onChange={switchTab} />
+              </>
+            )}
+
+            <div className="toast-stack">
+              {toasts.map(t => (<div key={t.id} className="toast">{t.text}</div>))}
+            </div>
+
+            <input ref={importInputRef} type="file" accept="application/json" onChange={handleImportFile} style={{ display: 'none' }} />
+
+            {logOpen && <LogInteractionModal people={people} defaultPersonId={logDefaultPerson} events={events} initialStep={logInitialStep} initialEditEvent={logEditEvent} onClose={closeLog} onSubmit={handleLogSubmit} onCreateEvent={handleCreateEvent} onUpdateEvent={handleUpdateEvent} onDeleteEvent={handleDeleteEvent} />}
+            {goalModalOpen && <GoalModal people={people} defaultPersonId={goalModalDefaultPerson} editingGoal={goalEditing ? goalEditing.goal : null} editingPersonId={goalEditing ? goalEditing.personId : null} onClose={closeGoalModal} onSave={handleGoalSave} />}
+            {addInfoOpen && addInfoTarget && (
+              <AddInfoModal personName={(people.find(p => p.id === addInfoTarget.personId) || {}).name} category={addInfoTarget.category} onClose={closeAddInfo} onSave={handleAddInfoSave} />
+            )}
+            {quickInterestOpen && quickInterestPersonId && (
+              <QuickAddInterestModal personName={(people.find(p => p.id === quickInterestPersonId) || {}).name} onClose={closeQuickAddInterest} onSave={handleQuickAddInterestSave} />
+            )}
+            {addPersonOpen && <AddPersonModal onClose={() => setAddPersonOpen(false)} onSave={handleAddPerson} />}
+            {shortcutsOpen && <ShortcutsModal onClose={() => setShortcutsOpen(false)} />}
+            {standaloneDetailOpen && (
+              <TemplatePickerModal
+                title="Add detail"
+                subtitle="Not currently logging anything — picking an item here copies it to your clipboard."
+                onClose={() => setStandaloneDetailOpen(false)}
+                onPick={(item) => {
+                  if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(item).catch(() => {});
+                  pushToast(`Copied "${item}"`);
+                }}
+              />
+            )}
+            {editPersonOpen && selectedPerson && (
+              <EditPersonModal person={selectedPerson} onClose={closeEditPerson}
+                onSave={(vals) => handleSavePersonEdit(selectedPerson.id, vals)}
+                onDelete={() => handleDeletePerson(selectedPerson.id, selectedPerson.name)} />
+            )}
+            {confirmState && (
+              <ConfirmDialog title={confirmState.title} message={confirmState.message} confirmLabel={confirmState.confirmLabel} danger={confirmState.danger} onConfirm={confirmState.onConfirm} onCancel={confirmState.onCancel} />
+            )}
+          </div>
+          {/* Where every Sheet/ConfirmDialog portals to — see SheetPortal. */}
+          <div className="sheet-layer" ref={setSheetLayer} />
         </div>
-
-        {onboarded && screen.name === 'tabs' && (
-          <>
-            <button className="fab-btn" onClick={() => openLog(null)} aria-label="Log an interaction"><Plus size={26} color="#fff" /></button>
-            <BottomNav active={activeTab} onChange={switchTab} />
-          </>
-        )}
-
-        <div className="toast-stack">
-          {toasts.map(t => (<div key={t.id} className="toast">{t.text}</div>))}
-        </div>
-
-        <input ref={importInputRef} type="file" accept="application/json" onChange={handleImportFile} style={{ display: 'none' }} />
-
-        {logOpen && <LogInteractionModal people={people} defaultPersonId={logDefaultPerson} onClose={closeLog} onSubmit={handleLogSubmit} />}
-        {goalModalOpen && <GoalModal people={people} defaultPersonId={goalModalDefaultPerson} editingGoal={goalEditing ? goalEditing.goal : null} editingPersonId={goalEditing ? goalEditing.personId : null} onClose={closeGoalModal} onSave={handleGoalSave} />}
-        {addInfoOpen && addInfoTarget && (
-          <AddInfoModal personName={(people.find(p => p.id === addInfoTarget.personId) || {}).name} category={addInfoTarget.category} onClose={closeAddInfo} onSave={handleAddInfoSave} />
-        )}
-        {addPersonOpen && <AddPersonModal onClose={() => setAddPersonOpen(false)} onSave={handleAddPerson} />}
-        {editPersonOpen && selectedPerson && (
-          <EditPersonModal person={selectedPerson} onClose={closeEditPerson}
-            onSave={(vals) => handleSavePersonEdit(selectedPerson.id, vals)}
-            onDelete={() => handleDeletePerson(selectedPerson.id, selectedPerson.name)} />
-        )}
-        {confirmState && (
-          <ConfirmDialog title={confirmState.title} message={confirmState.message} confirmLabel={confirmState.confirmLabel} danger={confirmState.danger} onConfirm={confirmState.onConfirm} onCancel={confirmState.onCancel} />
-        )}
       </div>
-    </div>
+    </SheetLayerContext.Provider>
   );
 }
 

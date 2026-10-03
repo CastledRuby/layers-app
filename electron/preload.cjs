@@ -13,6 +13,7 @@ contextBridge.exposeInMainWorld('layersUpdater', {
 contextBridge.exposeInMainWorld('layersSystem', {
   getAutoLaunch: () => ipcRenderer.invoke('get-auto-launch'),
   setAutoLaunch: (enabled) => ipcRenderer.invoke('set-auto-launch', enabled),
+  getVersion: () => ipcRenderer.invoke('get-app-version'),
   onTriggerLog: (callback) => {
     const listener = () => callback();
     ipcRenderer.on('trigger-log-interaction', listener);

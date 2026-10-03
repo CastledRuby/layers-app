@@ -2,9 +2,41 @@ const { app, BrowserWindow, Tray, Menu, nativeImage, ipcMain, globalShortcut } =
 const path = require('path');
 const windowStateKeeper = require('electron-window-state');
 
+// Windows groups taskbar entries, toast notifications, and jump lists by
+// this identity string. It must be set before the app is ready, and it
+// should match the appId electron-builder uses to build the installer so
+// the packaged app and the installed shortcut are recognised as the same
+// application. Without this, Windows can treat separate launches (or the
+// dev run vs. the installed run) as unrelated apps.
+app.setAppUserModelId('com.layers.app');
+
 let mainWindow = null;
 let tray = null;
 let isQuitting = false;
+
+// --- Single instance lock -------------------------------------------------
+// Without this, every double-click on the exe (or every login-item launch)
+// spins up an entirely separate Electron process, each with its own
+// taskbar entry and its own tray icon. requestSingleInstanceLock() makes
+// the *first* launch the sole owner of the app; any later launch attempt
+// immediately quits itself and instead fires 'second-instance' on the
+// original process, which is where we bring the existing window forward.
+const gotSingleInstanceLock = app.requestSingleInstanceLock();
+
+if (!gotSingleInstanceLock) {
+  // Another instance already owns the lock — this process has no reason
+  // to exist. app.exit() terminates immediately (unlike app.quit(), which
+  // is a graceful async request), so we're certain nothing below this
+  // block — window creation, tray creation, whenReady — ever runs.
+  app.exit(0);
+} else {
+  app.on('second-instance', () => {
+    if (!mainWindow) return;
+    if (mainWindow.isMinimized()) mainWindow.restore();
+    if (!mainWindow.isVisible()) mainWindow.show();
+    mainWindow.focus();
+  });
+}
 
 function sendStatus(status) {
   if (mainWindow && !mainWindow.isDestroyed()) {
@@ -118,6 +150,15 @@ function createTray() {
   tray.on('click', () => { if (mainWindow) { mainWindow.isVisible() ? mainWindow.focus() : mainWindow.show(); } });
 }
 
+// --- App version -----------------------------------------------------
+// app.getVersion() reads the version electron-builder baked into this
+// specific packaged build (from package.json at build time) — showing this
+// in the UI lets you confirm exactly which build you're actually running,
+// separate from whether a newer one has been published yet.
+function setupVersionInfo() {
+  ipcMain.handle('get-app-version', () => app.getVersion());
+}
+
 // --- Launch at login -----------------------------------------------------
 function setupAutoLaunch() {
   ipcMain.handle('get-auto-launch', () => {
@@ -129,13 +170,13 @@ function setupAutoLaunch() {
   });
 }
 
-// --- Global shortcut: Ctrl+Shift+L opens Layers and starts a log entry ---
+// --- Global shortcut: Ctrl+Shift+L brings Layers to the foreground ---
 function registerGlobalShortcut() {
   globalShortcut.register('CommandOrControl+Shift+L', () => {
     if (!mainWindow) return;
+    if (mainWindow.isMinimized()) mainWindow.restore();
     mainWindow.show();
     mainWindow.focus();
-    mainWindow.webContents.send('trigger-log-interaction');
   });
 }
 
@@ -144,6 +185,7 @@ app.whenReady().then(() => {
   createTray();
   setupAutoUpdate();
   setupAutoLaunch();
+  setupVersionInfo();
   registerGlobalShortcut();
 
   app.on('activate', () => {
