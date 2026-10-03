@@ -42,7 +42,10 @@ The renderer turns these statuses into toasts and the Me-tab update row
 | `getAutoLaunch()` | `invoke('get-auto-launch')` | `app.getLoginItemSettings().openAtLogin` |
 | `setAutoLaunch(enabled)` | `invoke('set-auto-launch')` | Sets the login item and returns the new value |
 | `getVersion()` | `invoke('get-app-version')` | `app.getVersion()` |
-| `onTriggerLog(cb)` → `unsubscribe` | `on('trigger-log-interaction')` | ⚠️ **Nothing sends this any more.** Ctrl+Shift+L used to open the log sheet and now only focuses the window. See [known-issues.md](known-issues.md). |
+
+Ctrl+Shift+L doesn't message the renderer. Up to 1.0.23 it also sent
+`trigger-log-interaction` to open the log sheet. That channel and its
+`onTriggerLog` bridge were removed in 1.0.24.
 
 ## Adding a new IPC capability
 
@@ -62,8 +65,10 @@ The renderer turns these statuses into toasts and the Me-tab update row
 The electron-builder config is the `"build"` key in [`package.json`](../package.json). It
 packages `electron/main.cjs`, `electron/preload.cjs`, `electron/*.png` and
 `electron/app/**` into an asar (`compression: "store"`). electron-builder also bundles
-every package listed under `dependencies`. That covers `react`, `react-dom`, `recharts`
-and `lucide-react`, even though they're already inlined into `index.html` and never
-`require`d at runtime (see [known-issues.md](known-issues.md)). Targets: Windows NSIS
-installer + portable exe (x64), Linux AppImage. Code signing is disabled
-(`signAndEditExecutable: false`).
+every package listed under `dependencies`, with its own dependencies. So `dependencies`
+holds only what `main.cjs` `require`s: `electron-updater` and `electron-window-state`.
+Renderer libraries (`react`, `react-dom`, `recharts`, `lucide-react`) are
+`devDependencies`, because the single-file build already inlines them into `index.html`.
+See [build-and-release.md](build-and-release.md#dependencies-vs-devdependencies).
+Targets: Windows NSIS installer + portable exe (x64), Linux AppImage. Code signing is
+disabled (`signAndEditExecutable: false`).

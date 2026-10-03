@@ -65,9 +65,8 @@ feature is guarded by `hasUpdater` / `hasSystemBridge` checks in `LayersApp`.
 ├── vite.config.local.js      Single-file build (vite-plugin-singlefile) → dist-local/
 ├── tailwind.config.js        Scans index.html + src/**/*.{js,jsx}
 ├── package.json              Scripts + electron-builder config ("build" key)
-├── dist-local/               BUILD OUTPUT (untracked)
-├── release/                  electron-builder output: installers, win-unpacked/ (untracked)
-└── Layers/                   ⚠️ Stale duplicate of the whole project — see known-issues.md
+├── dist-local/               BUILD OUTPUT (git-ignored)
+└── release/                  electron-builder output: installers, win-unpacked/ (git-ignored)
 ```
 
 ## Build pipeline

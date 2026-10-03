@@ -9,8 +9,12 @@ lerna-debug.log*
 
 node_modules
 dist
+dist-local/
 dist-ssr
 *.local
+
+# electron-builder output (installers, win-unpacked/, latest.yml)
+release/
 
 # Editor directories and files
 .vscode/*

@@ -4,7 +4,7 @@
 > Run `npm run docs:map` after changing `src/App.jsx`, `electron/*.cjs` or `package.json` scripts.
 > Hand-written explanations live in the other files under [`docs/`](../README.md).
 
-Package: `layers-web` v1.0.24 · `src/App.jsx`: 4047 lines, 37 components, 41 top-level functions, 40 constants.
+Package: `layers-web` v1.0.24 · `src/App.jsx`: 4044 lines, 37 components, 41 top-level functions, 40 constants.
 
 ## App.jsx sections
 
@@ -185,11 +185,10 @@ Package: `layers-web` v1.0.24 · `src/App.jsx`: 4047 lines, 37 components, 41 to
 | `window.layersSystem.getAutoLaunch()` | `get-auto-launch` | [preload.cjs:14](../../electron/preload.cjs#L14) |
 | `window.layersSystem.setAutoLaunch()` | `set-auto-launch` | [preload.cjs:15](../../electron/preload.cjs#L15) |
 | `window.layersSystem.getVersion()` | `get-app-version` | [preload.cjs:16](../../electron/preload.cjs#L16) |
-| `window.layersSystem.onTriggerLog()` | `trigger-log-interaction` | [preload.cjs:17](../../electron/preload.cjs#L17) |
 
 ### Channel mismatches
 
-- ⚠️ `trigger-log-interaction` is used in preload.cjs but never handled or sent by main.cjs
+None — every channel is wired on both sides.
 
 ## npm scripts
 

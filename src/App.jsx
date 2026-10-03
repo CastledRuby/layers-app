@@ -3495,9 +3495,6 @@ function LayersApp() {
     if (!hasSystemBridge) return;
     window.layersSystem.getAutoLaunch().then(v => setAutoLaunch(!!v)).catch(() => {});
     if (window.layersSystem.getVersion) window.layersSystem.getVersion().then(v => setAppVersion(v)).catch(() => {});
-    const unsubscribe = window.layersSystem.onTriggerLog(() => { openLog(null); });
-    return unsubscribe;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hasSystemBridge]);
 
   function handleToggleAutoLaunch() {
