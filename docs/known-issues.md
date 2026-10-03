@@ -5,8 +5,10 @@ When you fix an item, delete it here, or move it to *Resolved* with the version.
 
 ## Correctness
 
-No open correctness issues are known. Item and timeline dates were the last stored
-labels; see *Resolved*.
+The 2026-10-03 audit against [vision.md](vision.md) found a set of bugs, including a Coach
+crash, the exe's "Electron" identity and icon, and Adjust moving people to another layer.
+They're listed, with how each was confirmed, in [roadmap.md](roadmap.md#batch-1-fixes).
+Move each one to *Resolved* when it ships.
 
 ## Build & release
 

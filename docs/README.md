@@ -11,6 +11,8 @@ is split across `src/` by role (data, logic, components, modals, views).
 
 | If you want to… | Read |
 |---|---|
+| Know what Layers is for, what "done" means, and the rules for changing it | [vision.md](vision.md) |
+| See where each goal stands and what's next (fixes, then proposals) | [roadmap.md](roadmap.md) |
 | Get the big picture: processes, folders, how a build becomes an `.exe` | [architecture.md](architecture.md) |
 | Run, build, version and ship a release (and avoid running a stale build) | [build-and-release.md](build-and-release.md) |
 | Change the desktop shell: window, tray, shortcuts, auto-update, IPC | [electron.md](electron.md) |
