@@ -30,7 +30,7 @@ describe('P1 progressive "More details" when logging', () => {
     expect(within(details).queryByText('What stood out?')).toBeNull();
   });
 
-  it('saves something new, what stood out, which goals moved and a reflection', async () => {
+  it('saves something new, a dimension rating, which goals moved and a reflection', async () => {
     const before = person('Morgan', { goals: [goal('g1', 'Learn more'), goal('g2', 'Spend time together')] });
     seedState({ people: [before] });
     const { user } = renderApp();
@@ -38,19 +38,20 @@ describe('P1 progressive "More details" when logging', () => {
     await user.click(within(details).getByRole('button', { name: /More details/ }));
     await user.click(within(details).getByRole('button', { name: /Plans/ }));
     await user.type(within(details).getByLabelText('Something new'), 'Running a marathon in May{Enter}');
-    await user.click(within(details).getByRole('button', { name: 'Went deeper' }));
+    await user.click(within(details).getByText('How did each part go?'));
+    await user.keyboard('5'); // the first row, depth
     await user.click(within(details).getByRole('checkbox', { name: /Spend time together/ }));
     await user.type(within(details).getByLabelText('Reflection'), 'Felt easy today');
     await save(user, details);
 
     const morgan = savedPerson('Morgan');
     expect(morgan.plans.map(p => p.text)).toEqual(['Running a marathon in May']);
-    expect(morgan.dims.depth - before.dims.depth).toBe(Math.round(3 * 1.3) + 3); // the usual bump + "Went deeper"
+    expect(morgan.dims.depth - before.dims.depth).toBe(Math.round(5 * 2.2)); // grows by its rating, not "How meaningful"
     expect(morgan.goals.find(g => g.id === 'g1').progress).toBeGreaterThan(10);
     expect(morgan.goals.find(g => g.id === 'g2').progress).toBe(10); // unticked: didn't move
-    expect(morgan.lastChange.why).toContain('You noted: went deeper');
+    expect(morgan.lastChange.why).toContain('You rated it: Depth 5');
     const entry = savedState().journal[0];
-    expect(entry).toMatchObject({ reflection: 'Felt easy today', standouts: ['depth'], added: ['Running a marathon in May'] });
+    expect(entry).toMatchObject({ reflection: 'Felt easy today', ratings: { depth: 5 }, added: ['Running a marathon in May'] });
   });
 
   it('shows the reflection in the journal, and finds it by search', async () => {
@@ -350,5 +351,98 @@ describe('follow-up fixes from the 1.0.28 docs review', () => {
     await user.click(screen.getByRole('button', { name: 'Remove sample people' }));
     await user.click(screen.getByRole('button', { name: 'Remove samples' }));
     expect(savedState().achievements).toEqual({ firstMeaningful: '2026-09-01' });
+  });
+});
+
+describe('Rating the six dimensions while logging', () => {
+  const rows = () => ['How deep did it go?', 'How much trust was there?', 'How reciprocal was it?', 'How engaged were you both?', 'How much of an experience did you share?', 'How well did you listen to each other?'];
+  const picked = (question) => {
+    const checked = within(screen.getByRole('radiogroup', { name: question })).queryAllByRole('radio').find(r => r.getAttribute('aria-checked') === 'true');
+    return checked ? Number(checked.textContent) : null;
+  };
+
+  it('fills one row per number typed, top to bottom', async () => {
+    seedState({ people: [person('Morgan')] });
+    const { user } = renderApp();
+    const details = await startLog(user, ['Morgan']);
+    await user.click(within(details).getByRole('button', { name: /More details/ }));
+    await user.keyboard('435245');
+    expect(rows().map(picked)).toEqual([4, 3, 5, 2, 4, 5]);
+  });
+
+  it('Backspace steps back and clears; arrows move without changing', async () => {
+    seedState({ people: [person('Morgan')] });
+    const { user } = renderApp();
+    const details = await startLog(user, ['Morgan']);
+    await user.click(within(details).getByRole('button', { name: /More details/ }));
+    await user.keyboard('43');
+    await user.keyboard('{Backspace}');
+    expect(rows().slice(0, 3).map(picked)).toEqual([4, null, null]);
+    await user.keyboard('2');
+    expect(picked('How much trust was there?')).toBe(2);
+    await user.keyboard('{ArrowUp}{ArrowUp}5');
+    expect(picked('How deep did it go?')).toBe(5);
+    expect(picked('How much trust was there?')).toBe(2);
+  });
+
+  it('clicking works too, and the next row is highlighted', async () => {
+    seedState({ people: [person('Morgan')] });
+    const { user } = renderApp();
+    const details = await startLog(user, ['Morgan']);
+    await user.click(within(details).getByRole('button', { name: /More details/ }));
+    await user.click(within(screen.getByRole('radiogroup', { name: 'How reciprocal was it?' })).getByRole('radio', { name: '3' }));
+    expect(picked('How reciprocal was it?')).toBe(3);
+    await user.keyboard('1');
+    expect(picked('How engaged were you both?')).toBe(1);
+  });
+
+  it('saves the ratings, shows them in the journal, and moves a goal by its dimension', async () => {
+    const deeper = { id: 'gd', personId: null, category: 'relationship', type: 'deeper', title: 'Have deeper conversations', description: '', progress: 0, history: [] };
+    seedState({ people: [person('Morgan', { goals: [deeper] })] });
+    const { user } = renderApp();
+    const details = await startLog(user, ['Morgan']);
+    await user.click(within(details).getByRole('button', { name: '2' })); // How meaningful: 2
+    await user.click(within(details).getByRole('button', { name: /More details/ }));
+    await user.keyboard('5');
+    await save(user, details);
+    expect(savedState().journal[0].ratings).toEqual({ depth: 5 });
+    expect(savedPerson('Morgan').goals[0].progress).toBe(Math.round(5 * 3.2)); // by depth 5, not meaningfulness 2
+    await user.click(nav('Journal'));
+    expect(screen.getByText('Rated: Depth 5')).toBeTruthy();
+  });
+});
+
+describe('P3 option C: dimensions stay inside the layer', () => {
+  it("logging can't push the dimension average past the top of the layer's band", async () => {
+    const dims = { depth: 24, trust: 24, reciprocity: 24, interaction: 24, sharedExperiences: 24, listening: 24 };
+    seedState({ people: [person('Morgan', { layer: 1, overall: 10, dims })] });
+    const { user } = renderApp();
+    const details = await startLog(user, ['Morgan']);
+    await save(user, details);
+    const m = savedPerson('Morgan');
+    const avg = Object.values(m.dims).reduce((a, b) => a + b, 0) / 6;
+    expect(m.layer).toBe(1);
+    expect(Math.round(avg)).toBeLessThanOrEqual(24);
+  });
+
+  it('saved data from before is migrated once: dimensions moved into the band, layer and progress kept, with a notice', async () => {
+    const legacy = person('Morgan', { layer: 3, overall: 72, dims: { depth: 70, trust: 72, reciprocity: 78, interaction: 84, sharedExperiences: 61, listening: 86 } });
+    window.localStorage.setItem('layers-app-state-v1', JSON.stringify({ onboarded: true, profile: { name: 'T', focus: 'mix' }, people: [legacy], journal: [], generalGoals: [], events: [], skills: (await import('../../src/data/seed.js')).EMPTY_SKILLS, theme: 'light' }));
+    renderApp();
+    const notice = await screen.findByRole('alertdialog', { name: 'Dimensions updated' });
+    expect(notice.textContent).toContain('Morgan was adjusted to fit');
+    const m = savedPerson('Morgan');
+    expect(m).toMatchObject({ layer: 3, overall: 72 });
+    const avg = Object.values(m.dims).reduce((a, b) => a + b, 0) / 6;
+    expect(Math.round(avg)).toBe(68); // where its 72% sits in Layer 3's band
+    expect(savedState().dataVersion).toBe(2);
+  });
+
+  it("doesn't migrate twice", () => {
+    const legacy = person('Morgan', { layer: 1, overall: 10, dims: { depth: 90, trust: 90, reciprocity: 90, interaction: 90, sharedExperiences: 90, listening: 90 } });
+    seedState({ people: [legacy], dataVersion: 2 });
+    renderApp();
+    expect(screen.queryByRole('alertdialog', { name: 'Dimensions updated' })).toBeNull();
+    expect(savedPerson('Morgan').dims.depth).toBe(90);
   });
 });

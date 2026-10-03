@@ -1,6 +1,6 @@
 // Relationship progression: the six dimensions, layer progress and new people.
 
-import { DIM_ORDER, getLayer, GOAL_DIM_PHRASES, LAYER_BASE_DIMS, SKILL_GOAL_PRESETS, SKILL_GOAL_STEP } from '../data/constants.js';
+import { DIM_ORDER, getLayer, GOAL_DIM_PHRASES, GOAL_PRESET_DIM, LAYER_BASE_DIMS, SKILL_GOAL_PRESETS, SKILL_GOAL_STEP } from '../data/constants.js';
 import { formatAbsoluteDate, pushHistoryPoint, sortHistory, toISODate } from './dates.js';
 import { clamp, uid } from './util.js';
 
@@ -124,4 +124,89 @@ export function advanceSkillGoals(goals, raised, at = toISODate(new Date()), onl
     const value = clamp(g.progress + SKILL_GOAL_STEP, 0, 100);
     return { ...g, progress: value, history: pushHistoryPoint(g.history || [], { date: formatAbsoluteDate(new Date(`${at}T00:00:00`)), at, value }) };
   });
+}
+
+// --- Logging: how much each dimension grows -------------------------------
+// A dimension rated 1-5 in the log's More details grows by its rating
+// (1 -> +2, 3 -> +7, 5 -> +11, plus the active-listening bonus for
+// reciprocity and listening). An unrated one uses the original formula with
+// the overall "How meaningful" score.
+export function dimBumps({ meaningfulness, ratings = {}, activeListening = [], type }) {
+  const m = meaningfulness;
+  const al = activeListening.length;
+  const shared = type === 'activity' || type === 'hangout';
+  const rated = (k, bonus = 0) => Math.round(ratings[k] * 2.2 + bonus);
+  return {
+    depth: ratings.depth ? rated('depth') : (m >= 4 ? Math.round(m * 2.6) : Math.round(m * 1.3)),
+    trust: ratings.trust ? rated('trust') : Math.round(m * 2.2),
+    reciprocity: ratings.reciprocity ? rated('reciprocity', al * 1.5) : Math.round(m * 1.6 + al * 1.5),
+    interaction: ratings.interaction ? rated('interaction') : Math.round(m * 2.2),
+    sharedExperiences: ratings.sharedExperiences ? rated('sharedExperiences') : (shared ? Math.round(m * 2.6) : Math.round(m * 0.8)),
+    listening: ratings.listening ? rated('listening', al * 3.5) : Math.round(al * 3.5 + (m >= 4 ? 2 : 0)),
+  };
+}
+
+// A goal about one dimension moves with that dimension's rating, if given.
+export function goalBumpFor(goal, meaningfulness, ratings = {}) {
+  const dim = GOAL_PRESET_DIM[goal.type];
+  return Math.round((dim && ratings[dim] ? ratings[dim] : meaningfulness) * 3.2);
+}
+
+// --- Keeping the dimensions in step with the layer (P3, option C) ---------
+// A person's dimension average stays inside their layer's 25-point band, so
+// Adjust (which places people by that average) agrees with the layer shown.
+// Sums rather than averages, since the average is rounded: Layer 3's band is
+// an average that rounds to 50-74, a sum of 297-446.
+const dimSum = (d) => DIM_ORDER.reduce((s, k) => s + d[k], 0);
+export function layerDimBounds(layer) {
+  return { min: layer <= 1 ? 0 : (layer - 1) * 150 - 3, max: layer >= 4 ? 600 : layer * 150 - 4 };
+}
+
+// Scale dimensions proportionally to a total, keeping their shape, as whole
+// numbers between 0 and 100.
+export function scaleDimsToSum(dims, target) {
+  const total = dimSum(dims);
+  const raw = DIM_ORDER.map(k => (total > 0 ? dims[k] * target / total : target / 6));
+  const out = raw.map(v => clamp(Math.floor(v), 0, 100));
+  let left = target - out.reduce((a, b) => a + b, 0);
+  const order = DIM_ORDER.map((_, i) => i).sort((a, b) => (raw[b] - Math.floor(raw[b])) - (raw[a] - Math.floor(raw[a])));
+  for (let pass = 0; left > 0 && pass < 6; pass++) {
+    for (const i of order) { if (left > 0 && out[i] < 100) { out[i] += 1; left -= 1; } }
+  }
+  return Object.fromEntries(DIM_ORDER.map((k, i) => [k, out[i]]));
+}
+
+// After a log: growth that would push the average past the top of the layer's
+// band is scaled down (until the meter levels up), and entering a new layer
+// lifts the dimensions to at least the bottom of its band.
+export function keepDimsInLayer(oldDims, newDims, layer) {
+  const { min, max } = layerDimBounds(layer);
+  let out = { ...newDims };
+  if (dimSum(out) > max) {
+    const room = Math.max(0, max - dimSum(oldDims));
+    const inc = DIM_ORDER.map(k => Math.max(0, newDims[k] - oldDims[k]));
+    const total = inc.reduce((a, b) => a + b, 0);
+    out = Object.fromEntries(DIM_ORDER.map((k, i) => [k, oldDims[k] + (total > 0 ? Math.floor(inc[i] * room / total) : 0)]));
+    if (dimSum(out) > max) out = scaleDimsToSum(out, max); // already past it (older data)
+  }
+  if (dimSum(out) < min) out = scaleDimsToSum(out, min);
+  return out;
+}
+
+// One-off migration (saved data version 2): people whose dimensions drifted
+// outside their layer's band are scaled into it, to where their progress
+// meter is, so Adjust shows the layer and percentage they already have.
+// People already inside their band are left alone. Returns the changed names.
+export function migrateDimsToLayers(people) {
+  const changed = [];
+  const next = people.map(p => {
+    if (!p || !p.dims) return p;
+    const { min, max } = layerDimBounds(p.layer);
+    const sum = dimSum(p.dims);
+    if (sum >= min && sum <= max) return p;
+    const target = clamp(Math.round(((p.layer - 1) * 25 + (p.overall || 0) / 4) * 6), min, max);
+    changed.push(p.name);
+    return { ...p, dims: scaleDimsToSum(p.dims, target) };
+  });
+  return { people: next, changed };
 }

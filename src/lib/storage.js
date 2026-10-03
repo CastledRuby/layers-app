@@ -1,8 +1,12 @@
 // localStorage persistence for the whole app state.
 
 import { validateBackup } from './backup.js';
+import { migrateDimsToLayers } from './progress.js';
 
 export const STORAGE_KEY = 'layers-app-state-v1';
+// The shape of the saved state. 2: dimensions kept inside their layer's band
+// (P3); saves without a dataVersion are 1 and get migrateDimsToLayers once.
+export const DATA_VERSION = 2;
 // Copies of saved data that couldn't be read as-is, kept so nothing is lost
 // for good: `layers-app-state-v1-unreadable-<ISO time>`.
 export const UNREADABLE_PREFIX = `${STORAGE_KEY}-unreadable-`;
@@ -28,6 +32,7 @@ function keepCopy(raw, now) {
 // Returns { state, problem }:
 //   state    the saved state, repaired if needed, or null if there is none
 //   problem  null, or { kind: 'unreadable' | 'repaired', warnings, copyKept }
+//   migrated names of people whose dimensions the version-2 migration moved
 // It used to return null for unreadable data, which loaded the sample people
 // and onboarding, and the next save overwrote the original for good.
 export function loadSavedState(now = new Date()) {
@@ -50,15 +55,21 @@ export function loadSavedState(now = new Date()) {
   // achievements: null for saved data from before they were recorded.
   const state = { ...result.data, onboarded: !!parsed.onboarded, theme: parsed.theme === 'dark' ? 'dark' : 'light' };
   delete state.exportedAt;
-  if (result.warnings.length === 0) return { state, problem: null };
-  return { state, problem: { kind: 'repaired', warnings: result.warnings, copyKept: keepCopy(raw, now) } };
+  let migrated = [];
+  if (!(parsed.dataVersion >= 2)) {
+    const m = migrateDimsToLayers(state.people);
+    state.people = m.people;
+    migrated = m.changed;
+  }
+  if (result.warnings.length === 0) return { state, problem: null, migrated };
+  return { state, problem: { kind: 'repaired', warnings: result.warnings, copyKept: keepCopy(raw, now) }, migrated };
 }
 
 // Returns false when the write failed (storage full or disabled), so the app
 // can say so instead of silently losing every change after it.
 export function persistState(state) {
   try {
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...state, dataVersion: DATA_VERSION }));
     return true;
   } catch {
     return false;

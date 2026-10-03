@@ -11,13 +11,14 @@ import { makePerson } from '../../src/lib/progress.js';
 export const STATE_KEY = 'layers-app-state-v1';
 
 // Seed a saved state, as if the app had been used before. Defaults to an
-// onboarded user with nobody in their circle.
+// onboarded user with nobody in their circle, saved by the current version
+// (pass { dataVersion: undefined } to test the migration of older saves).
 export function seedState(partial = {}) {
   const state = {
     onboarded: true,
     profile: { name: 'Tester', focus: 'mix' },
     people: [], journal: [], generalGoals: [], events: [],
-    skills: EMPTY_SKILLS, theme: 'light',
+    skills: EMPTY_SKILLS, theme: 'light', dataVersion: 2,
     ...partial,
   };
   window.localStorage.setItem(STATE_KEY, JSON.stringify(state));

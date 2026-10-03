@@ -146,7 +146,7 @@ describe('#4 Adjust', () => {
     // Drag every slider to 80: average 80 is Layer 4, 20%.
     const { fireEvent } = await import('@testing-library/react');
     sliders.forEach(s => fireEvent.change(s, { target: { value: '80' } }));
-    expect(screen.getByRole('status').textContent).toBe('Saving puts Ana at Layer 4: Close, 20% (now Layer 2).');
+    expect(screen.getByRole('status').textContent).toBe('Saving puts Ana at Layer 4: Close, 20% (now Layer 2, 20%).');
     await user.click(screen.getByRole('button', { name: 'Save changes' }));
     expect(savedPerson('Ana')).toMatchObject({ layer: 4, overall: 20 });
     expect(savedPerson('Ana').timeline.map(t => t.label)).toContain('Reached Layer 4: Close');

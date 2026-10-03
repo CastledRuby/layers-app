@@ -147,7 +147,7 @@ export function PersonProfile({ today, person, journal, onBack, onOpenLog, onOpe
           <p className="text-xs mt-1" role="status" style={{ color: preview && preview.layer !== person.layer ? COLORS.accent : COLORS.inkSoft, fontWeight: preview && preview.layer !== person.layer ? 600 : 400 }}>
             {dimsEqual(draft, person.dims)
               ? 'Move a slider to change these. Saving now changes nothing.'
-              : `Saving puts ${person.name} at Layer ${preview.layer}: ${getLayer(preview.layer).name}, ${preview.overall}%${preview.layer !== person.layer ? ` (now Layer ${person.layer})` : ''}.`}
+              : `Saving puts ${person.name} at Layer ${preview.layer}: ${getLayer(preview.layer).name}, ${preview.overall}% (now ${preview.layer !== person.layer ? `Layer ${person.layer}, ` : ''}${person.overall}%).`}
           </p>
         </div>
       )}

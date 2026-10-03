@@ -3,7 +3,7 @@
 import { describe, expect, it } from 'vitest';
 import { INITIAL_PEOPLE, INITIAL_SKILLS } from './data/seed.js';
 import { backfillSkillDates, newestFirst, sortByDay, sortHistory } from './lib/dates.js';
-import { bumpSkills, chartDay, computeOverall, dimsEqual, makePerson, movePerson, placeOnLayers, progressDelta } from './lib/progress.js';
+import { bumpSkills, chartDay, computeOverall, dimBumps, dimsEqual, goalBumpFor, keepDimsInLayer, layerDimBounds, makePerson, migrateDimsToLayers, movePerson, placeOnLayers, progressDelta, scaleDimsToSum } from './lib/progress.js';
 
 const NOW = new Date(2026, 9, 3, 12); // Oct 3 2026, local noon
 
@@ -130,5 +130,72 @@ describe('sortByDay', () => {
   it('sorts timeline steps by date, undated ones last', () => {
     const steps = [{ label: 'b', at: '2026-10-02' }, { label: 'none' }, { label: 'a', at: '2026-09-01' }];
     expect(sortByDay(steps, NOW).map(s => s.label)).toEqual(['a', 'b', 'none']);
+  });
+});
+
+describe('dimBumps (per-dimension ratings)', () => {
+  it('uses each rating for its own dimension and the overall score for the rest', () => {
+    const plain = dimBumps({ meaningfulness: 3, activeListening: [], type: 'talked' });
+    const rated = dimBumps({ meaningfulness: 3, ratings: { trust: 5, reciprocity: 1 }, activeListening: [], type: 'talked' });
+    expect(rated.trust).toBe(11);
+    expect(rated.reciprocity).toBe(2);
+    expect(rated.depth).toBe(plain.depth);
+    expect(rated.interaction).toBe(plain.interaction);
+  });
+  it('keeps the active-listening bonus on reciprocity and listening', () => {
+    expect(dimBumps({ meaningfulness: 3, ratings: { listening: 4 }, activeListening: ['followup', 'listened'], type: 'talked' }).listening).toBe(Math.round(4 * 2.2 + 2 * 3.5));
+  });
+});
+
+describe('goalBumpFor', () => {
+  it('moves a dimension goal by that rating, others by meaningfulness', () => {
+    expect(goalBumpFor({ type: 'deeper' }, 2, { depth: 5 })).toBe(16);
+    expect(goalBumpFor({ type: 'deeper' }, 2, {})).toBe(6);
+    expect(goalBumpFor({ type: 'custom' }, 2, { depth: 5 })).toBe(6);
+  });
+});
+
+describe('keeping dimensions inside the layer (P3 option C)', () => {
+  const flat = (v) => ({ depth: v, trust: v, reciprocity: v, interaction: v, sharedExperiences: v, listening: v });
+  const avg = (d) => Math.round(Object.values(d).reduce((a, b) => a + b, 0) / 6);
+
+  it('bands match placeOnLayers at every edge', () => {
+    [1, 2, 3, 4].forEach(layer => {
+      const { min, max } = layerDimBounds(layer);
+      expect(placeOnLayers(Math.round(min / 6)).layer).toBe(layer);
+      expect(placeOnLayers(Math.round(max / 6)).layer).toBe(layer);
+    });
+  });
+
+  it('scales growth down at the top of the band, keeping the dimensions that grew most ahead', () => {
+    const out = keepDimsInLayer(flat(20), { ...flat(30), trust: 40 }, 1);
+    expect(placeOnLayers(avg(out)).layer).toBe(1);
+    expect(out.trust).toBeGreaterThan(out.depth);
+    expect(out.depth).toBeGreaterThanOrEqual(20);
+  });
+
+  it('lifts the dimensions into a new layer on level-up', () => {
+    const out = keepDimsInLayer(flat(20), flat(22), 2);
+    expect(placeOnLayers(avg(out)).layer).toBe(2);
+  });
+
+  it('leaves growth that stays in the band alone', () => {
+    expect(keepDimsInLayer(flat(30), { ...flat(30), trust: 40 }, 2)).toEqual({ ...flat(30), trust: 40 });
+  });
+
+  it('scaleDimsToSum keeps whole numbers, the shape and the exact total', () => {
+    const out = scaleDimsToSum({ depth: 10, trust: 20, reciprocity: 30, interaction: 40, sharedExperiences: 50, listening: 60 }, 105);
+    expect(Object.values(out).reduce((a, b) => a + b, 0)).toBe(105);
+    expect(out.listening).toBeGreaterThan(out.depth);
+    expect(Object.values(out).every(Number.isInteger)).toBe(true);
+  });
+
+  it('migrates only people outside their band, to where their meter is', () => {
+    const inBand = { name: 'In', layer: 2, overall: 50, dims: flat(35) };
+    const ahead = { name: 'Ahead', layer: 3, overall: 72, dims: flat(80) };
+    const { people, changed } = migrateDimsToLayers([inBand, ahead]);
+    expect(changed).toEqual(['Ahead']);
+    expect(people[0]).toBe(inBand);
+    expect(avg(people[1].dims)).toBe(68);
   });
 });

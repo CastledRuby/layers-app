@@ -3,7 +3,7 @@
 
 import { useMemo, useState } from 'react';
 import { Check, Pencil, Search } from 'lucide-react';
-import { CONV_STATES, getLayer, LAYERS, STANDOUTS, TYPE_META } from '../data/constants.js';
+import { CONV_STATES, DIM_LABELS, DIM_ORDER, getLayer, LAYERS, STANDOUTS, TYPE_META } from '../data/constants.js';
 import { journalDateLabel, journalDaysAgo, parseISODay } from '../lib/dates.js';
 import { summaryFor } from '../lib/text.js';
 import { COLORS } from '../theme.js';
@@ -108,6 +108,7 @@ export function JournalView({ today, people, journal, onOpenPerson, onEditEntry 
               const l = getLayer(p.layer);
               const meta = TYPE_META[entry.type] || TYPE_META.other;
               const stoodOut = STANDOUTS.filter(s => (entry.standouts || []).includes(s.key)).map(s => s.label);
+              const ratings = DIM_ORDER.filter(k => entry.ratings && entry.ratings[k]).map(k => `${DIM_LABELS[k]} ${entry.ratings[k]}`);
               return (
                 <div key={entry.id} className="relative mb-2">
                   <button onClick={() => onOpenPerson(p.id)} className="w-full text-left rounded-2xl p-3.5 pr-10" style={{ background: COLORS.paperRaised, border: `1px solid ${COLORS.line}` }}>
@@ -119,6 +120,7 @@ export function JournalView({ today, people, journal, onOpenPerson, onEditEntry 
                     <p className="text-sm mt-1.5" style={{ color: COLORS.ink }}>{summaryFor(entry)}</p>
                     {entry.reflection && (<p className="text-xs mt-1.5 italic" style={{ color: COLORS.inkSoft }}>“{entry.reflection}”</p>)}
                     {entry.added && entry.added.length > 0 && (<p className="text-xs mt-1" style={{ color: COLORS.inkSoft }}>Added: {entry.added.join(', ')}</p>)}
+                    {ratings.length > 0 && (<p className="text-xs mt-1" style={{ color: COLORS.inkSoft }}>Rated: {ratings.join(' · ')}</p>)}
                     {stoodOut.length > 0 && (<p className="text-xs mt-1" style={{ color: COLORS.inkSoft }}>Stood out: {stoodOut.join(', ')}</p>)}
                     {entry.activeListening && entry.activeListening.length > 0 && (<p className="text-xs mt-1 flex items-center gap-1" style={{ color: l.deep }}><Check size={11} /> Practised active listening</p>)}
                     {entry.analysis && (<p className="text-xs mt-1" style={{ color: l.deep }}>{CONV_STATES[entry.analysis.conversationState] ? `${CONV_STATES[entry.analysis.conversationState].emoji} ${CONV_STATES[entry.analysis.conversationState].label}, ` : ''}grading {entry.analysis.grading.overall}%</p>)}

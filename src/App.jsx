@@ -8,11 +8,11 @@ import { Plus } from 'lucide-react';
 import { BottomNav } from './components/BottomNav.jsx';
 import { ErrorBoundary } from './components/ErrorBoundary.jsx';
 import { hasOpenSheet, SheetLayerContext, topSheet } from './components/sheetLayer.js';
-import { ACHIEVEMENTS, categoryMeta, getLayer, STANDOUT_BUMP, STANDOUTS } from './data/constants.js';
+import { ACHIEVEMENTS, categoryMeta, DIM_LABELS, DIM_ORDER, getLayer } from './data/constants.js';
 import { EMPTY_SKILLS, INITIAL_GENERAL_GOALS, INITIAL_JOURNAL, INITIAL_PEOPLE, INITIAL_SKILLS } from './data/seed.js';
 import { backfillJournalDates, backfillPeopleDates, backfillSkillDates, formatAbsoluteDate, formatCalendarDate, pushHistoryPoint, toISODate } from './lib/dates.js';
 import { achievementProgress, newlyUnlocked } from './lib/achievements.js';
-import { advanceLayer, advanceSkillGoals, bumpSkills, chartDay, computeOverall, dimsEqual, makePerson, movePerson, placeOnLayers, raisedSkills } from './lib/progress.js';
+import { advanceLayer, advanceSkillGoals, bumpSkills, chartDay, computeOverall, dimBumps, dimsEqual, goalBumpFor, keepDimsInLayer, makePerson, migrateDimsToLayers, movePerson, placeOnLayers, raisedSkills } from './lib/progress.js';
 import { MAX_BACKUP_BYTES, createBackup, validateBackup } from './lib/backup.js';
 import { useDailyCheckIn, useReminderNotifications, useToday } from './lib/hooks.js';
 import { followUpEvent, markDone } from './lib/reminders.js';
@@ -161,13 +161,20 @@ function LayersApp() {
   // startup. A copy of the original is kept either way (lib/storage.js).
   useEffect(() => {
     const problem = loaded.problem;
-    if (!problem) return;
+    const moved = loaded.migrated || [];
+    const migrationNote = moved.length
+      ? `Layers now keeps each person's six dimensions in step with their layer, so Adjust shows where they already are. ${listNames(moved)} ${moved.length === 1 ? 'was' : 'were'} adjusted to fit; layers and progress didn't change.`
+      : '';
+    if (!problem) {
+      if (migrationNote) askConfirm({ title: 'Dimensions updated', message: migrationNote, confirmLabel: 'OK', hideCancel: true, onConfirm: () => {} });
+      return;
+    }
     const copy = problem.copyKept
       ? ' A copy of the original was kept on this computer, so nothing is lost for good.'
       : " The original couldn't be copied because storage is full.";
     askConfirm(problem.kind === 'unreadable'
       ? { title: "Your saved data couldn't be read", message: `Layers is starting fresh.${copy} If you have a backup, restore it from Me, Import data.`, confirmLabel: 'OK', hideCancel: true, onConfirm: () => {} }
-      : { title: 'Some saved data was repaired', message: `Layers skipped ${problem.warnings.join('; ')}, which couldn't be read.${copy}`, confirmLabel: 'OK', hideCancel: true, onConfirm: () => {} });
+      : { title: 'Some saved data was repaired', message: `Layers skipped ${problem.warnings.join('; ')}, which couldn't be read.${copy}${migrationNote ? ` ${migrationNote}` : ''}`, confirmLabel: 'OK', hideCancel: true, onConfirm: () => {} });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -318,10 +325,12 @@ function LayersApp() {
   }
   function closeLog() { setLogOpen(false); setLogInitialStep(null); setLogEditEvent(null); }
 
-  // From the log sheet. Its optional More details add: `standouts` (dimension
-  // keys that get STANDOUT_BUMP more), `goalIds` (only these goals move;
-  // undefined means all of each person's active goals) and a `reflection`.
-  function handleLogSubmit({ personIds, type, meaningfulness, notes, activeListening, summary, pickedDate, standouts = [], goalIds, reflection }) {
+  // From the log sheet. Its optional More details add: `ratings` (a 1-5
+  // rating per dimension, each driving that dimension's growth), `goalIds`
+  // (only these goals move; undefined means all of each person's active
+  // goals) and a `reflection`.
+  function handleLogSubmit({ personIds, type, meaningfulness, notes, activeListening, summary, pickedDate, ratings = {}, goalIds, reflection }) {
+    const rated = DIM_ORDER.filter(k => ratings[k]);
     const pd = pickedDate || new Date();
     const chartAt = toISODate(pd); // the journal entry's day, and "last mentioned" for any notes
     const loggedNames = personIds.map(id => (people.find(p => p.id === id) || {}).name).filter(Boolean);
@@ -339,33 +348,21 @@ function LayersApp() {
     // person's level-up was announced.)
     const nextPeople = people.map(p => {
       if (!personIds.includes(p.id)) return p;
-      const depthBump = meaningfulness >= 4 ? Math.round(meaningfulness * 2.6) : Math.round(meaningfulness * 1.3);
-      const trustBump = Math.round(meaningfulness * 2.2);
-      const reciprocityBump = Math.round(meaningfulness * 1.6 + activeListening.length * 1.5);
-      const interactionBump = Math.round(meaningfulness * 2.2);
-      const sharedExpBump = (type === 'activity' || type === 'hangout') ? Math.round(meaningfulness * 2.6) : Math.round(meaningfulness * 0.8);
-      const listeningBump = Math.round(activeListening.length * 3.5 + (meaningfulness >= 4 ? 2 : 0));
-      const extra = (key) => standouts.includes(key) ? STANDOUT_BUMP : 0;
-      const newDims = {
-        depth: clamp(p.dims.depth + depthBump + extra('depth'), 0, 100),
-        trust: clamp(p.dims.trust + trustBump + extra('trust'), 0, 100),
-        reciprocity: clamp(p.dims.reciprocity + reciprocityBump + extra('reciprocity'), 0, 100),
-        interaction: clamp(p.dims.interaction + interactionBump, 0, 100),
-        sharedExperiences: clamp(p.dims.sharedExperiences + sharedExpBump + extra('sharedExperiences'), 0, 100),
-        listening: clamp(p.dims.listening + listeningBump + extra('listening'), 0, 100),
-      };
+      const bumps = dimBumps({ meaningfulness, ratings, activeListening, type });
+      const grown = Object.fromEntries(DIM_ORDER.map(k => [k, clamp(p.dims[k] + bumps[k], 0, 100)]));
       // Layer progress moves more slowly than before, and only for
       // interactions you rated 4 or 5 — a brief/low-meaningfulness chat
       // still updates the six quality dimensions above (so specific
       // things you did well are still reflected there), but doesn't
       // nudge the big layer-progress meter on its own.
-      const dimBumpAvg = (depthBump + trustBump + reciprocityBump + interactionBump + sharedExpBump + listeningBump) / 6;
+      const dimBumpAvg = DIM_ORDER.reduce((s, k) => s + bumps[k], 0) / 6;
       const progressBump = meaningfulness >= 4 ? Math.round(dimBumpAvg * 0.55) : 0;
       const { layer: newLayer, progress: newOverall, leveledUp } = advanceLayer(p.layer, p.overall, progressBump);
-      const goalBump = Math.round(meaningfulness * 3.2);
+      // The dimensions stay inside the (new) layer's band (P3, option C).
+      const newDims = keepDimsInLayer(p.dims, grown, newLayer);
       const newGoals = p.goals.map(g => {
         if (g.progress >= 100 || (goalIds && !goalIds.includes(g.id))) return g;
-        const value = clamp(g.progress + goalBump, 0, 100);
+        const value = clamp(g.progress + goalBumpFor(g, meaningfulness, ratings), 0, 100);
         const day = chartDay(g.history, chartAt);
         return { ...g, progress: value, history: pushHistoryPoint(g.history || [], { date: formatAbsoluteDate(new Date(`${day}T00:00:00`)), at: day, value }) };
       });
@@ -376,7 +373,7 @@ function LayersApp() {
       if (newInterest) why.push('Discovered a shared interest');
       if (activeListening.length >= 2) why.push('Good reciprocal conversation');
       if (meaningfulness >= 4) why.push('Personal experience discussed');
-      STANDOUTS.filter(s => standouts.includes(s.key)).forEach(s => why.push(`You noted: ${s.label.toLowerCase()}`));
+      if (rated.length) why.push(`You rated it: ${rated.map(k => `${DIM_LABELS[k]} ${ratings[k]}`).join(', ')}`);
       if (why.length === 0) why.push('Logged a new interaction');
       if (leveledUp) levelUps.push({ name: p.name, layer: newLayer });
       return movePerson(p, { layer: newLayer, overall: newOverall, at: chartAt, why, extra: { dims: newDims, goals: advanceSkillGoals(newGoals, raised, undefined, goalIds), ...addNotes(p, notes, chartAt) } });
@@ -384,7 +381,7 @@ function LayersApp() {
     setPeople(nextPeople);
     setGeneralGoals(prev => advanceSkillGoals(prev, raised));
     setJournal(prev => [
-      ...personIds.map(personId => ({ id: uid(), personId, at: chartAt, type, meaningfulness, added: notes.map(n => n.text), activeListening, ...(summary ? { summary } : {}), ...(standouts.length ? { standouts } : {}), ...(reflection ? { reflection } : {}) })),
+      ...personIds.map(personId => ({ id: uid(), personId, at: chartAt, type, meaningfulness, added: notes.map(n => n.text), activeListening, ...(summary ? { summary } : {}), ...(rated.length ? { ratings: Object.fromEntries(rated.map(k => [k, ratings[k]])) } : {}), ...(reflection ? { reflection } : {}) })),
       ...prev,
     ]);
     setSkills(nextSkills);
@@ -578,6 +575,7 @@ function LayersApp() {
     const dimBumpAvg = (depthBump + trustBump + reciprocityBump + interactionBump + sharedExpBump + listeningBump) / 6;
     const progressBump = g.overall >= 70 ? Math.round(dimBumpAvg * 0.55) : 0;
     const { layer: newLayer, progress: newOverall, leveledUp } = advanceLayer(person.layer, person.overall, progressBump);
+    const keptDims = keepDimsInLayer(person.dims, newDims, newLayer);
     // The review's "Goal progress: +N%" is exactly what's applied (it used to
     // apply a tenth of the overall grade instead).
     const goalBump = typeof g.goalImpact === 'number' ? g.goalImpact : Math.round(g.overall / 10);
@@ -594,7 +592,7 @@ function LayersApp() {
       knowingWhenToStop: scenario.conversationState === 'windingDown' ? 3 : 0,
     });
     const raised = raisedSkills(skills, nextSkills);
-    setPeople(prev => prev.map(p => p.id !== personId ? p : movePerson(p, { layer: newLayer, overall: newOverall, at: day, why, extra: { dims: newDims, goals: advanceSkillGoals(newGoals, raised) } })));
+    setPeople(prev => prev.map(p => p.id !== personId ? p : movePerson(p, { layer: newLayer, overall: newOverall, at: day, why, extra: { dims: keptDims, goals: advanceSkillGoals(newGoals, raised) } })));
     setGeneralGoals(prev => advanceSkillGoals(prev, raised));
     if (leveledUp) pushToast(`🎉 ${person.name} moved up to Layer ${newLayer}: ${getLayer(newLayer).name}!`);
     setJournal(prev => [{ id: uid(), personId, at: day, type: 'analysed', meaningfulness: clamp(Math.round(g.overall / 20), 1, 5), added: [], activeListening: [], analysis: { grading: g, conversationState: scenario.conversationState } }, ...prev]);
@@ -742,7 +740,7 @@ function LayersApp() {
         danger: true,
         onConfirm: () => {
           // Backups from before `at` existed: read their labels as of the export.
-          setPeople(backfillPeopleDates(data.people, data.exportedAt));
+          setPeople(migrateDimsToLayers(backfillPeopleDates(data.people, data.exportedAt)).people);
           setJournal(backfillJournalDates(data.journal, data.exportedAt));
           setGeneralGoals(data.generalGoals);
           setEvents(data.events);

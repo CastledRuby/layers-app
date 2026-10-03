@@ -80,6 +80,11 @@ function cleanEntry(j, personIds, skipped) {
   // Optional text fields are rendered as-is, so anything but a string is dropped.
   ['summary', 'reflection'].forEach(k => { if (k in entry && typeof entry[k] !== 'string') delete entry[k]; });
   if ('standouts' in entry) entry.standouts = (Array.isArray(entry.standouts) ? entry.standouts : []).filter(s => typeof s === 'string');
+  // Per-dimension ratings: whole numbers 1-5 for known dimensions only.
+  if ('ratings' in entry) {
+    const r = isObject(entry.ratings) ? entry.ratings : {};
+    entry.ratings = Object.fromEntries(DIM_ORDER.filter(k => Number.isInteger(r[k]) && r[k] >= 1 && r[k] <= 5).map(k => [k, r[k]]));
+  }
   return entry;
 }
 

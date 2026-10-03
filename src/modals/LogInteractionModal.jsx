@@ -6,7 +6,7 @@ import { Calendar, Check, Clock, MessageCircle, Plus, Repeat, X } from 'lucide-r
 import { Sheet } from '../components/Sheet.jsx';
 import { Avatar } from '../components/atoms.jsx';
 import { DateDropdown, TimeDropdown } from '../components/pickers.jsx';
-import { AL_ITEMS, CATEGORIES, categoryMeta, getLayer, NOTE_TEMPLATE_CATEGORY, STANDOUTS, TYPE_META, TYPE_ORDER } from '../data/constants.js';
+import { AL_ITEMS, CATEGORIES, categoryMeta, DIM_COLORS, DIM_ORDER, DIM_QUESTIONS, getLayer, NOTE_TEMPLATE_CATEGORY, TYPE_META, TYPE_ORDER } from '../data/constants.js';
 import { formatCalendarDate, formatTime12, formatWeekdays, nowToMinutes, toISODate, WEEKDAY_SHORT } from '../lib/dates.js';
 import { occurrenceToLog } from '../lib/reminders.js';
 import { TemplatePickerModal } from './TemplatePickerModal.jsx';
@@ -29,7 +29,10 @@ export function LogInteractionModal({ people, defaultPersonId, events, initialSt
   const [newInfo, setNewInfo] = useState([]); // [{ category, text }]
   const [newInfoCat, setNewInfoCat] = useState('interests');
   const [newInfoText, setNewInfoText] = useState('');
-  const [standouts, setStandouts] = useState([]);
+  // A 1-5 rating per dimension (keys of DIM_ORDER), and the row that typing
+  // a number fills next (DIM_ORDER.length = past the last row).
+  const [ratings, setRatings] = useState({});
+  const [ratingCursor, setRatingCursor] = useState(0);
   const [untickedGoals, setUntickedGoals] = useState([]);
   const [reflection, setReflection] = useState('');
 
@@ -51,19 +54,45 @@ export function LogInteractionModal({ people, defaultPersonId, events, initialSt
 
   function toggleAL(key) { setAl(prev => prev.includes(key) ? prev.filter(k => k !== key) : [...prev, key]); }
 
-  // 'D' opens Add Detail directly while on the Details step, without having
-  // to click the button — same modal the "+ Add detail" button triggers.
+  // Details step keys (not while typing in a text box):
+  // - 'D' opens Add Detail, like the "+ Add detail" button.
+  // - With More details open, 1-5 rates the highlighted dimension and moves
+  //   down to the next; Backspace steps back up and clears that row; the up
+  //   and down arrows move the highlight without changing anything.
   useEffect(() => {
     if (step !== 'details') return;
     function onKey(e) {
       if (noteTemplatesOpen || e.ctrlKey || e.metaKey || e.altKey) return;
       const tag = document.activeElement && document.activeElement.tagName;
       if (tag === 'INPUT' || tag === 'TEXTAREA') return;
-      if (e.key === 'd' || e.key === 'D') { e.preventDefault(); setNoteTemplatesOpen(true); }
+      if (e.key === 'd' || e.key === 'D') { e.preventDefault(); setNoteTemplatesOpen(true); return; }
+      if (!moreOpen) return;
+      if (/^[1-5]$/.test(e.key) && ratingCursor < DIM_ORDER.length) { e.preventDefault(); rate(ratingCursor, Number(e.key)); return; }
+      if (e.key === 'Backspace') { e.preventDefault(); stepBack(); return; }
+      if (e.key === 'ArrowDown') { e.preventDefault(); setRatingCursor(c => Math.min(c + 1, DIM_ORDER.length - 1)); return; }
+      if (e.key === 'ArrowUp') { e.preventDefault(); setRatingCursor(c => Math.max(Math.min(c, DIM_ORDER.length) - 1, 0)); }
     }
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [step, noteTemplatesOpen]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [step, noteTemplatesOpen, moreOpen, ratingCursor]);
+
+  // Keep the highlighted row in view as typing moves it down the list.
+  useEffect(() => {
+    if (!moreOpen) return;
+    const row = document.getElementById(`rate-row-${Math.min(ratingCursor, DIM_ORDER.length - 1)}`);
+    if (row) row.scrollIntoView({ block: 'nearest' });
+  }, [moreOpen, ratingCursor]);
+
+  function rate(index, value) {
+    setRatings(r => ({ ...r, [DIM_ORDER[index]]: value }));
+    setRatingCursor(index + 1);
+  }
+  function stepBack() {
+    const prev = Math.max(ratingCursor - 1, 0);
+    setRatingCursor(prev);
+    setRatings(r => { const next = { ...r }; delete next[DIM_ORDER[prev]]; return next; });
+  }
   function togglePerson(id) { setPersonIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]); }
   function toggleEventPerson(id) { setEventPersonIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]); }
   function toggleEventWeekday(i) { setEventWeekdays(prev => prev.includes(i) ? prev.filter(x => x !== i) : [...prev, i].sort((a, b) => a - b)); }
@@ -110,7 +139,7 @@ export function LogInteractionModal({ people, defaultPersonId, events, initialSt
     const notes = [...profileNotes, ...(loggedPerson ? newInfo.map(n => ({ ...n, emoji: categoryMeta(n.category).emoji })) : [])];
     onSubmit({
       personIds, type, meaningfulness, notes, activeListening: al, summary: combined || undefined, pickedDate: logDate,
-      standouts,
+      ratings,
       goalIds: untickedGoals.length > 0 ? goalsInLog.map(g => g.id).filter(id => !untickedGoals.includes(id)) : undefined,
       reflection: reflection.trim() || undefined,
     });
@@ -307,11 +336,31 @@ export function LogInteractionModal({ people, defaultPersonId, events, initialSt
                 </div>
               )}
 
-              <p className="text-sm font-semibold mb-2" style={{ color: COLORS.ink }}>What stood out?</p>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }} className="mb-5">
-                {STANDOUTS.map(s => (
-                  <button key={s.key} type="button" onClick={() => toggleIn(setStandouts, s.key)} aria-pressed={standouts.includes(s.key)} className="text-xs font-semibold rounded-full px-2.5 py-1" style={{ background: standouts.includes(s.key) ? COLORS.accent : COLORS.paperRaised, color: standouts.includes(s.key) ? '#fff' : COLORS.inkSoft, border: `1px solid ${standouts.includes(s.key) ? COLORS.accent : COLORS.line}` }}>{s.label}</button>
-                ))}
+              <div role="group" aria-labelledby="rate-dims-title" className="mb-5">
+                <div className="flex items-baseline justify-between mb-1">
+                  <p id="rate-dims-title" className="text-sm font-semibold" style={{ color: COLORS.ink }}>How did each part go?</p>
+                  <span className="text-xs font-semibold" style={{ color: COLORS.accent, fontFamily: 'monospace' }}>type 1–5</span>
+                </div>
+                <p className="text-xs mb-2" style={{ color: COLORS.inkSoft }}>Type a number for each in turn, top to bottom; Backspace goes back. Any you skip use "How meaningful" above.</p>
+                {DIM_ORDER.map((k, i) => {
+                  const active = ratingCursor === i;
+                  return (
+                    <div key={k} id={`rate-row-${i}`} onClick={() => setRatingCursor(i)} className="flex items-center justify-between gap-2 rounded-xl px-2.5 py-1.5" style={{ background: active ? COLORS.accentSoft : 'transparent', borderLeft: `3px solid ${active ? COLORS.accent : 'transparent'}`, cursor: 'pointer' }}>
+                      <span className="text-xs" style={{ color: COLORS.ink, fontWeight: active ? 700 : 500 }}>{DIM_QUESTIONS[k]}</span>
+                      <div role="radiogroup" aria-label={DIM_QUESTIONS[k]} className="flex items-center gap-1 shrink-0">
+                        {[1, 2, 3, 4, 5].map(n => {
+                          const on = ratings[k] === n;
+                          // The scale fills up to the rating, so each row shows where it sat at a glance.
+                          const filled = ratings[k] >= n;
+                          return (
+                            <button key={n} type="button" role="radio" aria-checked={on} aria-label={String(n)} onClick={(e) => { e.stopPropagation(); rate(i, n); }}
+                              style={{ width: 24, height: 24, borderRadius: '50%', fontSize: 11, fontWeight: 700, background: on ? DIM_COLORS[k] : filled ? `color-mix(in srgb, ${DIM_COLORS[k]} 28%, transparent)` : COLORS.paper, color: on ? '#fff' : COLORS.ink, border: `1.5px solid ${filled ? DIM_COLORS[k] : COLORS.line}` }}>{n}</button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
 
               {goalsInLog.length > 0 && (

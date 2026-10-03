@@ -78,9 +78,27 @@ export const NOTE_TEMPLATE_CATEGORY = {
   school: 'important', life: 'important',
 };
 
-// "What stood out?" in the log's optional More details: each one picked adds
-// STANDOUT_BUMP to that relationship dimension, on top of the usual bumps,
-// and shows up in the profile's "Why" and the journal entry.
+// The log's More details rates each dimension 1-5 with these questions
+// (keyboard: type a number per row). A rating drives that dimension's growth
+// instead of the overall "How meaningful" score (lib/progress.js dimBumps).
+export const DIM_QUESTIONS = {
+  depth: 'How deep did it go?',
+  trust: 'How much trust was there?',
+  reciprocity: 'How reciprocal was it?',
+  interaction: 'How engaged were you both?',
+  sharedExperiences: 'How much of an experience did you share?',
+  listening: 'How well did you listen to each other?',
+};
+
+// Relationship goals that are about one dimension move with that
+// dimension's rating when it's given (otherwise with "How meaningful").
+export const GOAL_PRESET_DIM = {
+  becomeCloser: 'trust', deeper: 'depth', learn: 'listening', shared: 'sharedExperiences',
+  together: 'sharedExperiences', maintain: 'interaction', comfortable1on1: 'interaction',
+};
+
+// Journal entries logged with 1.0.28 builds before the ratings carry
+// "What stood out?" picks; kept so those entries still show them.
 export const STANDOUTS = [
   { key: 'depth', label: 'Went deeper' },
   { key: 'trust', label: 'Felt trusted' },
@@ -88,7 +106,6 @@ export const STANDOUTS = [
   { key: 'sharedExperiences', label: 'Did something together' },
   { key: 'listening', label: 'Really listened' },
 ];
-export const STANDOUT_BUMP = 3;
 
 export const PRESETS = [
   { key: 'becomeCloser', category: 'relationship', label: 'Become closer friends', emoji: '🤗', hint: 'Feel more like close friends day-to-day', suggestion: 'Small, low-pressure hangouts often build closeness faster than big conversations.' },
