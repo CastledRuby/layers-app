@@ -93,6 +93,7 @@ export function LogInteractionModal({ people, defaultPersonId, events, initialSt
   const [ratingCursor, setRatingCursor] = useState(0);
   const [untickedGoals, setUntickedGoals] = useState([]);
   const [reflection, setReflection] = useState('');
+  const [reflectionTags, setReflectionTags] = useState([]); // phrases picked in "How did it feel?"
 
   const [eventKind, setEventKind] = useState(null); // 'recurring' | 'oneoff'
   const [eventTitle, setEventTitle] = useState('');
@@ -163,12 +164,13 @@ export function LogInteractionModal({ people, defaultPersonId, events, initialSt
   function handleSave() {
     if (!canSave) return;
     const combined = [...quickNoteTags.map(t => t.text), quickNote.trim()].filter(Boolean).join(', ');
-    const notes = [...profileNotes, ...(loggedPerson ? newInfo.map(n => ({ ...n, emoji: categoryMeta(n.category).emoji })) : [])];
+    const notes = [...profileNotes, ...(loggedPerson ? newInfo.map(n => ({ ...n, emoji: n.emoji || categoryMeta(n.category).emoji })) : [])];
+    const reflectionText = [...reflectionTags, reflection.trim()].filter(Boolean).join('. ');
     onSubmit({
       personIds, type, meaningfulness, notes, activeListening: al, summary: combined || undefined, pickedDate: logDate,
       ratings,
       goalIds: untickedGoals.length > 0 ? goalsInLog.map(g => g.id).filter(id => !untickedGoals.includes(id)) : undefined,
-      reflection: reflection.trim() || undefined,
+      reflection: reflectionText || undefined,
     });
   }
 
@@ -180,7 +182,7 @@ export function LogInteractionModal({ people, defaultPersonId, events, initialSt
     { key: 'listening', letter: 'L', Icon: Ear, label: 'Active listening', summary: al.length ? `${al.length} ticked` : null },
     loggedPerson && { key: 'new', letter: 'I', Icon: Sparkles, label: 'Something new', summary: newInfo.length ? `${newInfo.length} added` : null },
     goalsInLog.length > 0 && { key: 'goals', letter: 'G', Icon: Target, label: 'Goals moved', summary: untickedGoals.length ? `${goalsInLog.length - untickedGoals.length} of ${goalsInLog.length}` : null },
-    { key: 'reflect', letter: 'F', Icon: PenLine, label: 'How it felt', summary: reflection.trim() ? 'written' : null },
+    { key: 'reflect', letter: 'F', Icon: PenLine, label: 'How it felt', summary: reflectionTags.length ? `${reflectionTags.length} picked${reflection.trim() ? ', written' : ''}` : reflection.trim() ? 'written' : null },
   ].filter(Boolean);
 
   const canSaveEvent = eventTitle.trim().length > 0 && (eventKind !== 'recurring' || eventWeekdays.length > 0);
@@ -372,7 +374,7 @@ export function LogInteractionModal({ people, defaultPersonId, events, initialSt
             {extra === 'listening' && <ListeningSheet al={al} toggle={(k) => toggleIn(setAl, k)} onClose={() => setExtra(null)} />}
             {extra === 'new' && loggedPerson && <NewInfoSheet personName={loggedPerson.name} items={newInfo} setItems={setNewInfo} category={newInfoCat} setCategory={setNewInfoCat} text={newInfoText} setText={setNewInfoText} onClose={() => setExtra(null)} />}
             {extra === 'goals' && <GoalsSheet goals={goalsInLog} unticked={untickedGoals} toggle={(id) => toggleIn(setUntickedGoals, id)} showNames={personIds.length > 1} onClose={() => setExtra(null)} />}
-            {extra === 'reflect' && <ReflectionSheet value={reflection} setValue={setReflection} onClose={() => setExtra(null)} />}
+            {extra === 'reflect' && <ReflectionSheet tags={reflectionTags} toggleTag={(t) => toggleIn(setReflectionTags, t)} value={reflection} setValue={setReflection} onClose={() => setExtra(null)} />}
           </>
         )}
 

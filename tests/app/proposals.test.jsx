@@ -117,7 +117,7 @@ describe('P2 journal editing and filters', () => {
     expect(screen.queryByText('Walk with Riley')).toBeNull();
   });
 
-  it('filters by period and by layer, and clears them', async () => {
+  it('filters by period and by type, and clears them', async () => {
     seedJournal();
     const { user } = renderApp();
     await user.click(nav('Journal'));
@@ -125,9 +125,11 @@ describe('P2 journal editing and filters', () => {
     expect(screen.getByText('Coffee with Morgan')).toBeTruthy();
     expect(screen.queryByText('Walk with Riley')).toBeNull();
     await user.click(screen.getByRole('button', { name: 'Any time' }));
-    await user.click(screen.getByRole('button', { name: 'Layer 3' }));
+    await user.click(screen.getByRole('button', { name: 'Hung out' }));
     expect(screen.queryByText('Coffee with Morgan')).toBeNull();
-    expect(screen.getByText('Walk with Riley')).toBeTruthy();
+    expect(screen.queryByText('Walk with Riley')).toBeNull();
+    await user.click(screen.getByRole('button', { name: 'Talked' }));
+    expect(screen.getByText('Coffee with Morgan')).toBeTruthy();
     await user.click(screen.getByRole('button', { name: /Clear filters/ }));
     expect(screen.getByText('Coffee with Morgan')).toBeTruthy();
     expect(screen.getByText('Walk with Riley')).toBeTruthy();

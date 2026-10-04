@@ -1,11 +1,10 @@
-# Branding drafts
+# Branding
 
-Four logo directions for Layers. Each one has a logo mark, app icon and tray icon, all
-drawn as SVG by [`draw-drafts.cjs`](draw-drafts.cjs) into [`drafts/`](drafts/). None of
-them is in the app yet: the owner picks one first
-([roadmap.md](../docs/roadmap.md#branding-pick-a-direction)). You can see them all on the
-design canvas "Layers branding drafts" (claude.ai/artifact/QMY1ApR3RVaqsqsZp2DUtH), at
-real sizes and in the app.
+**Direction A, Rings, is the Layers brand** (chosen 2026-10-04, in the app from 1.0.29).
+The four directions that were drafted are kept here. Each has a logo mark, app icon and
+tray icon, all drawn as SVG by [`draw-drafts.cjs`](draw-drafts.cjs) into
+[`drafts/`](drafts/). You can see them all on the design canvas "Layers branding drafts"
+(claude.ai/artifact/QMY1ApR3RVaqsqsZp2DUtH), at real sizes and in the app.
 
 | | Direction | The idea |
 |---|---|---|
@@ -35,13 +34,17 @@ There are also illustrations for direction A:
 - `onboarding-hero.svg`: the welcome screen
 - `installer-sidebar.svg`: the installer's 164 × 314 side panel
 
-## When a direction is chosen
+## How it reaches the app
 
-1. Render the icon to `electron/icon.png` (256 px). electron-builder makes the `.ico`
-   from it, for the exe and installer.
-2. Render the tray icons to `electron/tray-icon-light.png` and `tray-icon-dark.png` at
-   32 px. `main.cjs` resizes them to 16, so use the 16 px drawing for a 16 px file if
-   it's sharper.
-3. Replace `public/icon.svg`, the web favicon.
-4. Optionally add the illustrations to the empty People view, onboarding and the
-   installer (`nsis.installerSidebar`, a 164 × 314 BMP).
+- `npm run brand:render` ([`scripts/render-brand.cjs`](../scripts/render-brand.cjs)) draws
+  the `rings-*` files and `installer-sidebar.svg` into:
+  - `electron/icon.ico` and `icon.png`
+  - the tray icons, at 16 px and `@2x`
+  - `electron/installer-sidebar.bmp`
+  - `public/icon.svg`
+
+  See [electron.md](../docs/electron.md#icons). To change the brand, edit
+  `draw-drafts.cjs`, then run `node branding/draw-drafts.cjs` and `npm run brand:render`.
+- The in-app illustrations (the empty People view, onboarding) are drawn in React with the
+  theme's colours, in [`src/components/illustrations.jsx`](../src/components/illustrations.jsx),
+  so they follow dark mode.

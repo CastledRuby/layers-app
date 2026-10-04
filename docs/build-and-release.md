@@ -15,6 +15,7 @@
 | Windows installer + portable exe | `npm run electron:build:win` | `release/Layers Setup x.y.z.exe`, `release/Layers x.y.z.exe`, `release/win-unpacked/` |
 | **Release a new version** | `npm run release` | Bumps the version, verifies, builds, runs the end-to-end tests on that build, pushes to `main`, publishes the GitHub release, then installs it on this computer. See [Releasing](#releasing). |
 | Install the current code on this computer | `npm run install:local` | The post-commit hook runs it after every commit. Builds the installer and runs it silently; nothing is published. See [Every commit is installed on this computer](#every-commit-is-installed-on-this-computer). |
+| Redraw the icons after changing the brand | `npm run brand:render` | `electron/icon.ico`, `icon.png`, the tray icons, the installer sidebar and `public/icon.svg`; see [electron.md](electron.md#icons) |
 | Reinstall the current version here | `npm run release -- --install-only` | Silently installs `release/x.y.z/Layers Setup x.y.z.exe` and relaunches Layers |
 | Linux AppImage | `npm run build:electron && npm run electron:build:linux` | `electron:build:linux` does **not** rebuild the renderer on its own |
 

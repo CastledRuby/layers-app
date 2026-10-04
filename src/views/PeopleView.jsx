@@ -3,6 +3,7 @@
 import { useMemo, useState } from 'react';
 import { Search, UserPlus } from 'lucide-react';
 import { Avatar, LayerBadge, ProgressBar } from '../components/atoms.jsx';
+import { RingsEmpty } from '../components/illustrations.jsx';
 import { getLayer, LAYERS } from '../data/constants.js';
 import { sortHistory } from '../lib/dates.js';
 import { getCheckInSuggestions } from '../lib/text.js';
@@ -52,8 +53,8 @@ export function PeopleView({ people, journal, onOpenPerson, onAddPerson }) {
 
       {people.length === 0 ? (
         <div className="rounded-2xl p-5 mt-6 text-center" style={{ background: COLORS.paperRaised, border: `1px dashed ${COLORS.line}` }}>
-          <span style={{ fontSize: 26 }}>🧭</span>
-          <p className="text-sm font-semibold mt-2" style={{ color: COLORS.ink }}>Your circle is empty</p>
+          <RingsEmpty width={200} />
+          <p className="text-sm font-semibold mt-3" style={{ color: COLORS.ink }}>Your circle is empty</p>
           <p className="text-xs mt-1.5" style={{ color: COLORS.inkSoft }}>Add the first person you'd like to be more intentional about, and place them wherever your relationship is today.</p>
           <button onClick={onAddPerson} className="text-xs font-semibold rounded-full px-4 py-2 mt-3.5" style={{ background: COLORS.accent, color: COLORS.onAccent }}>Add your first person</button>
         </div>

@@ -78,6 +78,23 @@ export const NOTE_TEMPLATE_CATEGORY = {
   school: 'important', life: 'important',
 };
 
+// Tap-to-add suggestions for "Something new about …?" while logging, so most
+// things need no typing. Interests use the topic lists above (NOTE_TEMPLATES
+// groups filed as interests); the other categories use these.
+export const INFO_TEMPLATES = {
+  preferences: ['Prefers texting', 'Prefers calls', 'Prefers one-on-one', 'Likes groups', 'Likes quiet places', 'Likes busy places', 'Night owl', 'Not a morning person', 'Loves coffee', 'Prefers tea', 'Vegetarian', "Doesn't drink", 'Likes being active', 'Likes staying in', 'Likes plans made ahead', 'Likes spontaneous plans'],
+  plans: ['Going on holiday', 'Planning a trip', 'Starting a new job', 'Looking for work', 'Moving house', 'Exams coming up', 'Learning to drive', 'Saving up for something', 'Starting a course', 'Training for an event', 'Birthday coming up', 'Going to a concert', 'Wants to learn something new'],
+  experiences: ['Travelled overseas', 'Changed schools', 'Moved cities', 'Changed jobs', 'Got a new pet', 'Lost a pet', 'Went through a breakup', 'Started a relationship', 'Had a tough time lately', 'Achieved something big', 'Recovered from being ill', 'Family changes', 'Tried something new'],
+  important: ['Exam soon', 'Job interview soon', 'Feeling unwell', 'Stressed lately', 'Family going through something', 'Busy week', 'Birthday soon', 'Going away soon', 'Big game or performance soon', 'Waiting on news', 'Celebrating something'],
+};
+
+// Tap-to-add phrases for "How did it feel?": how it went, and what to try
+// next time. The picked ones become the reflection, with anything typed after.
+export const REFLECTION_TEMPLATES = {
+  went: ['Easy and natural', 'We laughed a lot', 'Went deeper than usual', 'They opened up', 'I opened up', 'Felt energising', 'A bit awkward at first', 'Felt rushed', 'Ran out of things to say', 'Felt draining'],
+  next: ['Ask more questions', 'Listen more, talk less', 'Share more about me', 'Follow up on what they said', 'Plan something together', 'Check in sooner', 'Keep it lighter'],
+};
+
 // The log's More details rates each dimension 1-5 with these questions
 // (keyboard: type a number per row). A rating drives that dimension's growth
 // instead of the overall "How meaningful" score (lib/progress.js dimBumps).

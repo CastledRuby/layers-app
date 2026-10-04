@@ -14,7 +14,7 @@ is split across `src/` by role (data, logic, components, modals, views).
 | Know what Layers is for, what "done" means, and the rules for changing it | [vision.md](vision.md) |
 | See where each goal stands and what's next (fixes, then proposals) | [roadmap.md](roadmap.md) |
 | Get the big picture: processes, folders, how a build becomes an `.exe` | [architecture.md](architecture.md) |
-| See the logo, icon and tray-icon drafts, and how to adopt one | [../branding/README.md](../branding/README.md) |
+| See the brand (Rings): logo, app and tray icons, how they are drawn, and the drafts | [../branding/README.md](../branding/README.md) |
 | Run, build, version and ship a release, and how every commit gets installed on this computer | [build-and-release.md](build-and-release.md) |
 | Run the tests, or add one: unit, app and end-to-end tests, and the pre-commit hook | [testing.md](testing.md) |
 | Change the desktop shell: window, tray, shortcuts, auto-update, IPC | [electron.md](electron.md) |

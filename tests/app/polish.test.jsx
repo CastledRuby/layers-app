@@ -139,3 +139,37 @@ describe('Colours', () => {
     expect(contrast(THEME_DARK.onAccent, THEME_DARK.accent)).toBeGreaterThanOrEqual(4.5);
   });
 });
+
+describe('Less typing: tap-to-add templates', () => {
+  it('"Something new" adds interests and plans by tapping', async () => {
+    seedState({ people: [person('Morgan')] });
+    const { user } = renderApp();
+    await toDetails(user);
+    await user.keyboard('i');
+    const sheet = dialog('Something new about Morgan?');
+    await user.click(within(sheet).getByRole('button', { name: /Sports/ }));
+    await user.click(within(sheet).getByRole('button', { name: 'Football' }));
+    await user.keyboard('3'); // Plans
+    await user.click(within(sheet).getByRole('button', { name: 'Moving house' }));
+    await user.click(within(sheet).getByRole('button', { name: 'Done' }));
+    await user.keyboard('{Enter}');
+    const morgan = savedState().people[0];
+    expect(morgan.interests.map(i => [i.text, i.emoji])).toEqual([['Football', '⚽']]);
+    expect(morgan.plans.map(p => p.text)).toEqual(['Moving house']);
+  });
+
+  it('"How did it feel?" builds the reflection from tapped phrases, then any typing', async () => {
+    seedState({ people: [person('Morgan')] });
+    const { user } = renderApp();
+    await toDetails(user);
+    await user.keyboard('f');
+    const sheet = dialog('How did it feel?');
+    await user.click(within(sheet).getByRole('button', { name: 'Easy and natural' }));
+    await user.click(within(sheet).getByRole('button', { name: 'Ask more questions' }));
+    await user.type(within(sheet).getByLabelText('Reflection'), 'Good chat');
+    await user.click(within(sheet).getByRole('button', { name: 'Done' }));
+    expect(within(logDetails()).getByRole('button', { name: 'How it felt, 2 picked, written' })).toBeTruthy();
+    await user.keyboard('{Enter}');
+    expect(savedState().journal[0].reflection).toBe('Easy and natural. Ask more questions. Good chat');
+  });
+});

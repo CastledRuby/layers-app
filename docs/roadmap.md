@@ -34,7 +34,7 @@ how the app behaves for you is listed with the default chosen, so it can be chan
 | Coach, Prepare | ✅ Done (1.0.28) | Hooks come from all saved interests, plans, preferences, things to ask about, recent topics and reflections. Personal experiences are kept for Layer 3 and closer. |
 | Coach, Analyse | ✅ Works (sample conversations) | It's still a prototype on four sample chats. Real screenshot analysis is a later idea. |
 | Social skills | ✅ Done | The chart records points, and achievements are stored with dates. Strength and focus come from your real levels. |
-| Journal | ✅ Done (1.0.28) | Edit or delete an entry. Filters by person, type, period and layer, plus search, which includes reflections. |
+| Journal | ✅ Done (1.0.28) | Edit or delete an entry. Filters by person, type and period, plus search, which includes reflections. Every filter row fits on screen (1.0.29). |
 | Logging flow | ✅ Done | The quick log asks only for the date, how meaningful it was and a note. Each extra (ratings, active listening, something new, goals, reflection) opens in its own small sheet from a chip. Every step works from the keyboard. |
 | Events / reminders | ✅ Done (1.0.28) | One-off and weekly, with a done state, goal links and "remind me to follow up". Desktop notifications fire at the reminder's time, and can be switched off in Me. |
 | Me / Settings | ✅ Done | Profile, notifications, backup, privacy and sample controls. |
@@ -64,8 +64,12 @@ and how.
 **Journal (P2)**
 - Editing or deleting an entry changes the record, **not progress already added**. Taking
   progress back out would mean replaying everything since.
-- The filters are: past week, past month, past 3 months, and each layer. A goal filter was
-  skipped because entries don't record goals yet.
+- The filters are: past week, past month and 3 months. A goal filter was skipped because
+  entries don't record goals yet.
+- *(Changed at your request, 1.0.29.)* Every filter row fits on screen, with nothing to scroll
+  sideways. So types show only their emoji (the name is the tooltip), and **the layer filter
+  was removed**; each person chip shows their layer's colour instead. It's easy to bring
+  back, perhaps in place of something else.
 
 **Sample people (P4)**
 - Removing the samples **resets your skills to 0%** if they came with the samples. It also
@@ -108,24 +112,6 @@ and how.
   storage, and a notice explains it.
 
 ## Needs your decision
-
-### Branding: pick a direction
-
-Four directions are drafted, each with a logo mark, app icon, small icon and tray icons
-([branding/README.md](../branding/README.md)). They're on the design canvas "Layers
-branding drafts", with all four compared at real Windows sizes and direction A shown in
-the app (empty state, onboarding, installer, notification, startup).
-
-| | Direction | Strengths | Watch out for |
-|---|---|---|---|
-| **A** | **Rings** (recommended) | The same rings as the People view, and today's icon redrawn, so it stays recognisable. Reads well at 16 px. | The least surprising of the four. |
-| B | Arches | Warm, distinctive, a doorway into closer layers. | Can read as a rainbow. |
-| C | Onion | Literally the onion model. | Can read as a water drop or a flame. |
-| D | Overlap | Clearest "two people" meaning; the boldest at 16 px. | Close to well-known overlapping-circle logos. |
-
-Once you pick one, it goes into the exe and installer icon, the taskbar and tray icons,
-and the favicon. The illustrations can follow in the empty People view, onboarding and
-the installer.
 
 ### Smart App Control (resolved 2026-10-04)
 
@@ -229,6 +215,20 @@ start.
   privacy principle comes first.
 
 ## History
+
+### Rings brand, fewer keystrokes, tidier Journal (1.0.29)
+
+- **Brand: direction A, Rings**, chosen from four drafts ([branding/README.md](../branding/README.md)).
+  - `npm run brand:render` draws it into the exe and installer icon (`icon.ico`, with
+    simplified 16–32 px images), the tray icons (16 px and `@2x`), the installer's side
+    panel and the favicon.
+  - The empty People view and onboarding have Rings illustrations in the theme's colours.
+- **Less typing**:
+  - "Something new" offers tap-to-add suggestions for every category. Interests use the
+    topic lists; the others use `INFO_TEMPLATES`.
+  - "How did it feel?" builds the reflection from tapped phrases (`REFLECTION_TEMPLATES`),
+    with typing optional.
+- **Journal**: the time and type filters fit on one line each; see Decisions to review.
 
 ### Quick log redesign and polish (1.0.28)
 

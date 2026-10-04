@@ -53,11 +53,21 @@ forward from the tray.
 
 ### Icons
 
-`electron/` holds three icons, listed one by one in the packaging config:
+The brand is direction A, Rings ([branding/README.md](../branding/README.md)).
+`npm run brand:render` ([`scripts/render-brand.cjs`](../scripts/render-brand.cjs)) draws
+these files from its SVGs. Run it inside Electron, so Chromium does the drawing:
 
-- `icon.png`: the window icon, and the exe and installer icon (`build.win.icon`)
-- `tray-icon-light.png`: the tray icon on a dark taskbar
-- `tray-icon-dark.png`: the tray icon on a light taskbar
+- `icon.ico`: the exe and installer icon (`build.win.icon`) and, on Windows, the window
+  icon. It holds 16–256 px images; 16, 24 and 32 px use the simplified drawing, which stays
+  clear in the taskbar and title bar.
+- `icon.png`: 256 px, the window icon elsewhere and the Linux icon
+- `tray-icon-light.png` and `tray-icon-light@2x.png`: the tray icon on a dark taskbar, at
+  16 and 32 px. `trayImage()` loads the 16 px file and Electron picks the `@2x` one on
+  high-DPI displays.
+- `tray-icon-dark.png` and `@2x`: the same on a light taskbar
+- `installer-sidebar.bmp`: the installer's 164 × 314 side panel (`nsis.installerSidebar`)
+
+All but the sidebar are listed one by one in `build.files`.
 
 ### Auto-update
 

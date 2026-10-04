@@ -67,8 +67,9 @@ feature is guarded by `hasUpdater` / `hasSystemBridge` checks in `LayersApp`.
 │   ├── main.cjs              Main process
 │   ├── preload.cjs           contextBridge APIs exposed to the renderer
 │   ├── app/index.html        BUILD OUTPUT — the renderer Electron actually loads (committed)
-│   ├── icon.png              Window, exe and installer icon
-│   └── tray-icon-*.png       Tray icons for a light (-dark) or dark (-light) taskbar
+│   ├── icon.ico, icon.png    Exe, installer and window icon (made by npm run brand:render)
+│   ├── tray-icon-*.png       Tray icons for a light (-dark) or dark (-light) taskbar, with @2x
+│   └── installer-sidebar.bmp The installer's side panel
 ├── scripts/
 │   ├── sync-app.mjs          Copies dist-local/index.html → electron/app/index.html
 │   ├── gen-code-map.mjs      Generates docs/generated/code-map.md
@@ -76,6 +77,7 @@ feature is guarded by `hasUpdater` / `hasSystemBridge` checks in `LayersApp`.
 │   ├── e2e.mjs               npm run test:e2e: packages the app, runs Playwright
 │   ├── install-hooks.mjs     npm install's "prepare": points git at .githooks/
 │   ├── install-local.mjs     npm run install:local: installs the current code on this computer
+│   ├── render-brand.cjs      npm run brand:render: draws the icons from branding/
 │   └── release.mjs           npm run release
 ├── .githooks/
 │   ├── pre-commit            Regenerates the code map and runs npm run verify

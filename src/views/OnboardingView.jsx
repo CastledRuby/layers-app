@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { ChevronLeft, X } from 'lucide-react';
+import { RingsWelcome } from '../components/illustrations.jsx';
 import { FOCUS_OPTIONS, PERSON_EMOJIS } from '../data/constants.js';
 import { COLORS } from '../theme.js';
 
@@ -53,7 +54,8 @@ export function OnboardingView({ initialName, initialFocus, onComplete }) {
   }
 
   return (
-    <div className="fade-anim px-6 pt-10 pb-8">
+    <div className="fade-anim px-6 pt-8 pb-8">
+      <div className="mb-4" style={{ display: 'flex', justifyContent: 'center' }}><RingsWelcome width={230} /></div>
       <p className="font-display" style={{ fontSize: 28, color: COLORS.ink }}>Welcome to Layers</p>
       <p className="text-sm mt-2" style={{ color: COLORS.inkSoft }}>A private space to be more intentional about your relationships and your own social skills. Everything here stays on this device, only for you.</p>
 

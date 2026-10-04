@@ -13,6 +13,7 @@
     "docs:map": "node scripts/gen-code-map.mjs",
     "release": "node scripts/release.mjs",
     "install:local": "node scripts/install-local.mjs",
+    "brand:render": "electron scripts/render-brand.cjs",
     "build:electron": "npm run build:local && npm run sync:app",
     "lint": "oxlint",
     "test": "vitest run",
@@ -66,8 +67,11 @@
       "electron/main.cjs",
       "electron/preload.cjs",
       "electron/icon.png",
+      "electron/icon.ico",
       "electron/tray-icon-dark.png",
+      "electron/tray-icon-dark@2x.png",
       "electron/tray-icon-light.png",
+      "electron/tray-icon-light@2x.png",
       "electron/app/**"
     ],
     "win": {
@@ -75,7 +79,7 @@
         "nsis",
         "portable"
       ],
-      "icon": "electron/icon.png",
+      "icon": "electron/icon.ico",
       "signtoolOptions": {
         "sign": null
       }
@@ -86,6 +90,7 @@
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
+      "installerSidebar": "electron/installer-sidebar.bmp",
       "shortcutName": "Layers"
     },
     "linux": {

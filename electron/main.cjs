@@ -232,7 +232,8 @@ function createWindow() {
     show: !START_HIDDEN,
     backgroundColor: BACKGROUNDS[savedTheme()],
     title: 'Layers',
-    icon: path.join(__dirname, 'icon.png'),
+    // The .ico has hand-simplified 16-32 px images for the taskbar and title bar.
+    icon: path.join(__dirname, process.platform === 'win32' ? 'icon.ico' : 'icon.png'),
     autoHideMenuBar: true,
     webPreferences: {
       contextIsolation: true,
@@ -289,9 +290,10 @@ function taskbarIsDark() {
   }
 }
 
+// 16 px images, each with an @2x file beside it (drawn separately at 32 px)
+// that Electron picks on high-DPI displays.
 function trayImage() {
-  const icon = nativeImage.createFromPath(path.join(__dirname, taskbarIsDark() ? 'tray-icon-light.png' : 'tray-icon-dark.png'));
-  return icon.isEmpty() ? icon : icon.resize({ width: 16, height: 16 });
+  return nativeImage.createFromPath(path.join(__dirname, taskbarIsDark() ? 'tray-icon-light.png' : 'tray-icon-dark.png'));
 }
 
 function createTray() {

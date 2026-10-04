@@ -3,12 +3,12 @@
 // as you go: Done (or Enter, or Esc) just closes them. See
 // docs/renderer/app-structure.md (LogInteractionModal).
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useState } from 'react';
 import { Check, X } from 'lucide-react';
 import { Sheet } from '../components/Sheet.jsx';
 import { isTabbedToButton, isTyping } from '../components/sheetLayer.js';
 import { Kbd } from '../components/atoms.jsx';
-import { AL_ITEMS, CATEGORIES, categoryMeta, DIM_COLORS, DIM_ORDER, DIM_QUESTIONS } from '../data/constants.js';
+import { AL_ITEMS, CATEGORIES, categoryMeta, DIM_COLORS, DIM_ORDER, DIM_QUESTIONS, INFO_TEMPLATES, NOTE_TEMPLATE_CATEGORY, NOTE_TEMPLATES, REFLECTION_TEMPLATES } from '../data/constants.js';
 import { COLORS } from '../theme.js';
 
 function DoneButton({ onClick }) {
@@ -22,6 +22,20 @@ function enterCloses(e, onClose) {
   onClose();
   return true;
 }
+
+// A tap-to-add suggestion: ticked once it's in.
+function Pick({ on, onClick, children }) {
+  return (
+    <button type="button" onClick={onClick} aria-pressed={on} className={`chip${on ? ' chip--on' : ''}`} style={{ fontWeight: 600 }}>
+      {on && <Check size={12} color={COLORS.accent} strokeWidth={3} />}{children}
+    </button>
+  );
+}
+
+const sectionLabel = (text) => <p className="text-xs font-bold mb-2 mt-1" style={{ color: COLORS.inkSoft, letterSpacing: '0.06em', textTransform: 'uppercase' }}>{text}</p>;
+
+// The topic groups that are filed as interests ("Sports", "Music", ...).
+const INTEREST_GROUPS = NOTE_TEMPLATES.filter(g => NOTE_TEMPLATE_CATEGORY[g.key] === 'interests');
 
 function CheckRow({ checked, onClick, label, hint }) {
   return (
@@ -114,39 +128,72 @@ export function ListeningSheet({ al, toggle, onClose }) {
 }
 
 // "Something new about <name>?": saved to their profile in the category picked.
+// Mostly tapping: each category offers common things to add (interests use the
+// topic lists), and typing is there for anything else. Number keys 1-5 pick
+// the category.
 export function NewInfoSheet({ personName, items, setItems, category, setCategory, text, setText, onClose }) {
-  const inputRef = useRef(null);
+  const [group, setGroup] = useState(null); // an interest topic group, opened to show its items
+  const has = (cat, t) => items.some(n => n.category === cat && n.text === t);
+  function toggle(cat, t, emoji) {
+    setItems(prev => has(cat, t) ? prev.filter(n => !(n.category === cat && n.text === t)) : [...prev, emoji ? { category: cat, text: t, emoji } : { category: cat, text: t }]);
+  }
   function add() {
     const t = text.trim();
     if (!t) return false;
-    setItems(prev => [...prev, { category, text: t }]);
+    if (!has(category, t)) setItems(prev => [...prev, { category, text: t }]);
     setText('');
     return true;
   }
   function onKey(e) {
     if (e.ctrlKey || e.metaKey || e.altKey) return;
-    enterCloses(e, onClose);
+    if (enterCloses(e, onClose)) return;
+    const i = Number(e.key) - 1;
+    if (!isTyping() && i >= 0 && i < CATEGORIES.length) { e.preventDefault(); setCategory(CATEGORIES[i].key); }
   }
+  const openGroup = INTEREST_GROUPS.find(g => g.key === group);
   return (
     <Sheet title={`Something new about ${personName}?`} onClose={onClose} onKey={onKey} footer={<DoneButton onClick={() => { add(); onClose(); }} />}>
-      <p className="text-xs mb-3" style={{ color: COLORS.inkSoft }}>It's added to their profile when you save the log.</p>
-      <div className="flex flex-wrap gap-1.5 mb-3">
-        {CATEGORIES.map(c => (
-          <button key={c.key} type="button" onClick={() => { setCategory(c.key); if (inputRef.current) inputRef.current.focus(); }} aria-pressed={category === c.key} className={`chip${category === c.key ? ' chip--on' : ''}`}>{c.emoji} {c.label}</button>
+      <p className="text-xs mb-3" style={{ color: COLORS.inkSoft }}>Tap what's new. It's added to their profile when you save the log.</p>
+      <div className="flex flex-wrap gap-1.5 mb-4">
+        {CATEGORIES.map((c, i) => (
+          <button key={c.key} type="button" onClick={() => setCategory(c.key)} aria-pressed={category === c.key} className={`chip${category === c.key ? ' chip--on' : ''}`}>{c.emoji} {c.label}<Kbd>{i + 1}</Kbd></button>
         ))}
       </div>
-      <div className="flex items-center gap-2">
-        <input ref={inputRef} autoFocus value={text} onChange={e => setText(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); if (!add()) onClose(); } }} placeholder={categoryMeta(category).placeholder} aria-label="Something new" className="flex-1 text-sm rounded-xl px-3 py-2.5" style={{ border: `1px solid ${COLORS.line}` }} />
+
+      {category === 'interests' ? (
+        <>
+          <div className="flex flex-wrap gap-1.5 mb-3">
+            {INTEREST_GROUPS.map(g => (
+              <button key={g.key} type="button" onClick={() => setGroup(k => k === g.key ? null : g.key)} aria-pressed={group === g.key} className={`chip${group === g.key ? ' chip--on' : ''}`}>{g.emoji} {g.label}</button>
+            ))}
+          </div>
+          {openGroup && (
+            <div key={openGroup.key} className="flex flex-wrap gap-1.5 mb-3 fade-anim">
+              {openGroup.items.map(t => <Pick key={t} on={has('interests', t)} onClick={() => toggle('interests', t, openGroup.emoji)}>{t}</Pick>)}
+            </div>
+          )}
+        </>
+      ) : (
+        <div key={category} className="flex flex-wrap gap-1.5 mb-3 fade-anim">
+          {(INFO_TEMPLATES[category] || []).map(t => <Pick key={t} on={has(category, t)} onClick={() => toggle(category, t)}>{t}</Pick>)}
+        </div>
+      )}
+
+      <div className="flex items-center gap-2 mt-1">
+        <input value={text} onChange={e => setText(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); if (!add()) onClose(); } }} placeholder={`Or type your own: ${categoryMeta(category).placeholder.replace(/^e\.g\. /, '')}`} aria-label="Something new" className="flex-1 text-sm rounded-xl px-3 py-2.5" style={{ border: `1px solid ${COLORS.line}` }} />
         <button type="button" onClick={add} disabled={!text.trim()} className="chip" style={{ opacity: text.trim() ? 1 : 0.5 }}>Add</button>
       </div>
       {items.length > 0 && (
-        <div className="flex flex-wrap gap-1.5 mt-3">
-          {items.map((n, i) => (
-            <span key={i} className="chip chip--on chip-in" style={{ paddingRight: 6 }}>
-              {categoryMeta(n.category).emoji} {n.text}
-              <button type="button" onClick={() => setItems(prev => prev.filter((_, idx) => idx !== i))} aria-label={`Remove "${n.text}"`} className="p-0.5"><X size={12} /></button>
-            </span>
-          ))}
+        <div className="mt-4">
+          {sectionLabel(`Adding (${items.length})`)}
+          <div className="flex flex-wrap gap-1.5">
+            {items.map((n, i) => (
+              <span key={i} className="chip chip--on chip-in" style={{ paddingRight: 6 }}>
+                {n.emoji || categoryMeta(n.category).emoji} {n.text}
+                <button type="button" onClick={() => setItems(prev => prev.filter((_, idx) => idx !== i))} aria-label={`Remove "${n.text}"`} className="p-0.5"><X size={12} /></button>
+              </span>
+            ))}
+          </div>
         </div>
       )}
     </Sheet>
@@ -170,9 +217,10 @@ export function GoalsSheet({ goals, unticked, toggle, showNames, onClose }) {
     </Sheet>
   );
 }
-
-// "How did it feel?": a reflection for the journal. Ctrl+Enter closes.
-export function ReflectionSheet({ value, setValue, onClose }) {
+// "How did it feel?": a reflection for the journal, mostly by tapping. The
+// picked phrases come first in the saved reflection, then anything typed.
+// Ctrl+Enter closes.
+export function ReflectionSheet({ tags, toggleTag, value, setValue, onClose }) {
   function onKey(e) {
     if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); onClose(); return; }
     if (e.ctrlKey || e.metaKey || e.altKey) return;
@@ -180,8 +228,15 @@ export function ReflectionSheet({ value, setValue, onClose }) {
   }
   return (
     <Sheet title="How did it feel?" onClose={onClose} onKey={onKey} footer={<DoneButton onClick={onClose} />}>
-      <textarea autoFocus value={value} onChange={e => setValue(e.target.value)} rows={5} aria-label="Reflection" placeholder="What went well, or what you'd try next time" className="w-full text-sm rounded-xl px-3 py-2.5" style={{ border: `1px solid ${COLORS.line}`, resize: 'vertical' }} />
-      <p className="text-xs mt-2 flex items-center gap-1.5" style={{ color: COLORS.inkSoft }}><Kbd>Ctrl</Kbd>+<Kbd>↵</Kbd> when you're done</p>
+      {sectionLabel('How it went')}
+      <div className="flex flex-wrap gap-1.5 mb-4">
+        {REFLECTION_TEMPLATES.went.map(t => <Pick key={t} on={tags.includes(t)} onClick={() => toggleTag(t)}>{t}</Pick>)}
+      </div>
+      {sectionLabel('Next time')}
+      <div className="flex flex-wrap gap-1.5 mb-4">
+        {REFLECTION_TEMPLATES.next.map(t => <Pick key={t} on={tags.includes(t)} onClick={() => toggleTag(t)}>{t}</Pick>)}
+      </div>
+      <textarea value={value} onChange={e => setValue(e.target.value)} rows={2} aria-label="Reflection" placeholder="Anything else? (optional)" className="w-full text-sm rounded-xl px-3 py-2.5" style={{ border: `1px solid ${COLORS.line}`, resize: 'vertical' }} />
     </Sheet>
   );
 }

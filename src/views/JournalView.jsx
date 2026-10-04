@@ -3,7 +3,7 @@
 
 import { useMemo, useState } from 'react';
 import { Check, Pencil, Search } from 'lucide-react';
-import { CONV_STATES, DIM_LABELS, DIM_ORDER, getLayer, LAYERS, STANDOUTS, TYPE_META } from '../data/constants.js';
+import { CONV_STATES, DIM_LABELS, DIM_ORDER, getLayer, STANDOUTS, TYPE_META } from '../data/constants.js';
 import { journalDateLabel, journalDaysAgo, parseISODay } from '../lib/dates.js';
 import { summaryFor } from '../lib/text.js';
 import { COLORS } from '../theme.js';
@@ -13,13 +13,12 @@ const PERIODS = [
   { key: 'all', label: 'Any time', days: null },
   { key: 'week', label: 'Past week', days: 7 },
   { key: 'month', label: 'Past month', days: 31 },
-  { key: 'quarter', label: 'Past 3 months', days: 92 },
+  { key: 'quarter', label: '3 months', days: 92 },
 ];
 
-function Chip({ active, onClick, children, color }) {
+function Chip({ active, onClick, children, label, slim }) {
   return (
-    <button onClick={onClick} aria-pressed={active} className="text-xs font-medium rounded-full px-2.5 py-1 shrink-0" style={{ background: active ? COLORS.accentSoft : 'transparent', color: active ? COLORS.accent : COLORS.inkSoft, border: color ? `1px solid ${active ? COLORS.accent : 'transparent'}` : 'none' }}>
-      {color && <span style={{ display: 'inline-block', width: 7, height: 7, borderRadius: '50%', background: color, marginRight: 5 }} />}
+    <button onClick={onClick} aria-pressed={active} aria-label={label} title={label} className={`text-xs font-medium rounded-full py-1 shrink-0 ${slim ? 'px-2' : 'px-2.5'}`} style={{ background: active ? COLORS.accentSoft : 'transparent', color: active ? COLORS.accent : COLORS.inkSoft }}>
       {children}
     </button>
   );
@@ -29,7 +28,6 @@ export function JournalView({ today, people, journal, onOpenPerson, onEditEntry 
   const [filterPerson, setFilterPerson] = useState('all');
   const [filterType, setFilterType] = useState('all');
   const [period, setPeriod] = useState('all');
-  const [layer, setLayer] = useState('all');
   const [query, setQuery] = useState('');
   const peopleById = useMemo(() => Object.fromEntries(people.map(p => [p.id, p])), [people]);
   const now = useMemo(() => parseISODay(today) || new Date(), [today]);
@@ -42,15 +40,14 @@ export function JournalView({ today, people, journal, onOpenPerson, onEditEntry 
     if (filterPerson !== 'all' && j.personId !== filterPerson) return false;
     if (filterType !== 'all' && j.type !== filterType) return false;
     if (days !== null && journalDaysAgo(j, now) >= days) return false;
-    if (layer !== 'all' && p.layer !== layer) return false;
     if (q) {
       const haystack = [p.name, summaryFor(j), j.reflection || '', ...(j.added || [])].join(' ').toLowerCase();
       if (!haystack.includes(q)) return false;
     }
     return true;
   });
-  const filtering = filterPerson !== 'all' || filterType !== 'all' || period !== 'all' || layer !== 'all' || !!q;
-  function clearFilters() { setFilterPerson('all'); setFilterType('all'); setPeriod('all'); setLayer('all'); setQuery(''); }
+  const filtering = filterPerson !== 'all' || filterType !== 'all' || period !== 'all' || !!q;
+  function clearFilters() { setFilterPerson('all'); setFilterType('all'); setPeriod('all'); setQuery(''); }
 
   const sorted = [...filtered].sort((a, b) => journalDaysAgo(a, now) - journalDaysAgo(b, now));
   const groups = [];
@@ -75,22 +72,22 @@ export function JournalView({ today, people, journal, onOpenPerson, onEditEntry 
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 12, maxHeight: 78, overflowY: 'auto' }}>
         <button onClick={() => setFilterPerson('all')} className="text-xs font-semibold rounded-full px-3 py-1.5 shrink-0" style={{ background: filterPerson === 'all' ? COLORS.accent : COLORS.paperRaised, color: filterPerson === 'all' ? COLORS.onAccent : COLORS.inkSoft, border: `1px solid ${filterPerson === 'all' ? COLORS.accent : COLORS.line}` }}>All people</button>
         {people.map(p => (
-          <button key={p.id} onClick={() => setFilterPerson(p.id)} className="text-xs font-semibold rounded-full px-3 py-1.5 shrink-0" style={{ background: filterPerson === p.id ? COLORS.accent : COLORS.paperRaised, color: filterPerson === p.id ? COLORS.onAccent : COLORS.inkSoft, border: `1px solid ${filterPerson === p.id ? COLORS.accent : COLORS.line}` }}>{p.name}</button>
+          <button key={p.id} onClick={() => setFilterPerson(p.id)} className="text-xs font-semibold rounded-full px-3 py-1.5 shrink-0" style={{ background: filterPerson === p.id ? COLORS.accent : COLORS.paperRaised, color: filterPerson === p.id ? COLORS.onAccent : COLORS.inkSoft, border: `1px solid ${filterPerson === p.id ? COLORS.accent : COLORS.line}` }}><span aria-hidden="true" style={{ display: 'inline-block', width: 7, height: 7, borderRadius: '50%', background: getLayer(p.layer).color, marginRight: 6, verticalAlign: 1 }} />{p.name}</button>
         ))}
       </div>
 
-      <div className="flex items-center gap-2 mt-2 overflow-x-auto no-scrollbar pb-1">
-        <Chip active={filterType === 'all'} onClick={() => setFilterType('all')}>All types</Chip>
+      {/* Types and periods each fit on one line down to the window's minimum
+          width, with nothing to scroll sideways. Types show just their emoji;
+          the name is the button's label and tooltip. */}
+      <div className="flex items-center gap-1 mt-2">
+        <Chip active={filterType === 'all'} onClick={() => setFilterType('all')} label="All types">All</Chip>
         {typeKeys.map(k => (
-          <Chip key={k} active={filterType === k} onClick={() => setFilterType(k)}>{TYPE_META[k].emoji} {TYPE_META[k].label}</Chip>
+          <Chip key={k} slim active={filterType === k} onClick={() => setFilterType(k)} label={TYPE_META[k].label}>{TYPE_META[k].emoji}</Chip>
         ))}
       </div>
 
-      <div className="flex items-center gap-2 mt-1 overflow-x-auto no-scrollbar pb-1">
+      <div className="flex items-center gap-1 mt-1">
         {PERIODS.map(pd => (<Chip key={pd.key} active={period === pd.key} onClick={() => setPeriod(pd.key)}>{pd.label}</Chip>))}
-        <span style={{ width: 1, alignSelf: 'stretch', background: COLORS.line, flexShrink: 0 }} />
-        <Chip active={layer === 'all'} onClick={() => setLayer('all')}>All layers</Chip>
-        {LAYERS.map(l => (<Chip key={l.id} active={layer === l.id} onClick={() => setLayer(l.id)} color={l.color}>Layer {l.id}</Chip>))}
       </div>
 
       {filtering && (
