@@ -31,15 +31,34 @@ renderer's `show-window` message all use it.
 
 ### Notifications
 
-Layers' desktop notifications come from the page, not the main process. `src/lib/hooks.js`
-sends reminder notifications and the daily check-in nudge with the web `Notification` API
-([state-and-data.md](renderer/state-and-data.md#desktop-notifications)), and Electron
-shows them as Windows notifications under the app's identity (`setAppUserModelId`).
-They need the page to be running. It is while the window is hidden in the tray, because
-closing only hides it, but a Layers that has quit sends none. Chromium may slow a hidden
-page's timers, but the 30-second check and the 15-minute window leave plenty of room.
-Clicking a notification calls `layersSystem.showWindow()`, which brings the window
-forward from the tray.
+The calendar's notifications are **scheduled with Windows**, so they arrive on time even
+when Layers is closed:
+
+1. The renderer works out the next 14 days of them (`plannedNotifications`,
+   [state-and-data.md](renderer/state-and-data.md#notifications)). It sends them with
+   `layersSystem.scheduleNotifications` whenever they change, and every hour.
+2. [`electron/toasts.cjs`](../electron/toasts.cjs) turns each into toast XML
+   (`toastXml`).
+   - Reminders use the `reminder` scenario, so they stay on screen, with **Done**,
+     **Log it**, **10 min**, **1 hour** and **Tomorrow**.
+   - "How did it go?" has **Log it** and **Just tick it**.
+   - Every button and the toast body are `layers://` links.
+3. It replaces Layers' scheduled toasts (group `layers`) through Windows PowerShell and
+   the WinRT `ToastNotificationManager`, so no native module is needed. One run happens
+   at a time; a newer list waiting replaces an older one.
+
+**A button press**:
+1. Windows starts `Layers.exe` with the `layers://` link. The installer registers the
+   protocol (`build.protocols`), and `setupCalendar()` re-registers it if the app moved.
+   It never does this for test runs or the portable build.
+2. If Layers is already running, the link reaches it through `second-instance`.
+   Otherwise it starts with the link, in the tray for Done and Snooze, or with its
+   window for Log it and the body.
+3. Links wait in `pendingActions` until the page asks for them (`calendar-ready`), then
+   go out as `calendar-action`.
+
+The page also shows the daily check-in nudge itself, with the web `Notification` API,
+while Layers runs. Clicking it calls `layersSystem.showWindow()`.
 
 ### Command-line flags and environment variables
 
@@ -50,6 +69,9 @@ forward from the tray.
 | `PORTABLE_EXECUTABLE_FILE` | Set by electron-builder's portable launcher to the `.exe` itself. Layers uses it for the login item and to tell the portable build from the installed one. |
 | `LAYERS_USER_DATA_DIR` | Use this folder for userData (`localStorage`, `theme.json`, `window-state.json` and the single-instance lock). It's applied before the lock, so a test copy can run beside your own Layers. The end-to-end tests give every launch a new temporary folder ([testing.md](testing.md#3-end-to-end-tests-testse2especjs)). |
 | `LAYERS_NO_UPDATES` | Don't load `electron-updater`. `check-for-updates` answers `not-configured`. The end-to-end tests set it so they never contact GitHub. |
+| `LAYERS_NO_SCHEDULE` | Don't schedule Windows notifications. The end-to-end tests set it, so they never put toasts on your computer. |
+| `LAYERS_SCHEDULE_DUMP` | Write the toasts that would be scheduled (tag, time, XML) to this file instead. One end-to-end test uses it. |
+| `layers://…` | A notification button's link ([Notifications](#notifications)). |
 
 ### Icons
 
@@ -116,6 +138,9 @@ The renderer turns these statuses into toasts and the Me-tab update row
 | `getVersion()` | `invoke('get-app-version')` | `app.getVersion()` |
 | `getShortcutStatus()` | `invoke('get-shortcut-status')` | `{ accelerator: 'Ctrl+Shift+L', registered }`. Me shows a warning when `registered` is false. |
 | `showWindow()` | `send('show-window')` | `showWindow()`: restores, shows and focuses the window. Clicking a desktop notification calls it ([below](#notifications)). |
+| `scheduleNotifications(list)` | `invoke('schedule-notifications')` | Replaces Layers' scheduled Windows toasts with `list` (`toasts.cjs`); resolves `{ scheduled }` or `{ error }` |
+| `calendarReady()` | `invoke('calendar-ready')` | Marks the page ready and returns the `layers://` links that arrived before it was |
+| `onCalendarAction(cb)` | `on('calendar-action')` | Calls `cb(link)` for each later button press; returns an unsubscribe function |
 | `setTheme(theme)` | `send('set-theme')` | Sets the window's background colour and saves `{ theme }` to `theme.json` for the next launch (see [ui-system.md](renderer/ui-system.md#no-flash-at-startup)) |
 
 Ctrl+Shift+L doesn't message the renderer. Up to 1.0.23 it also sent

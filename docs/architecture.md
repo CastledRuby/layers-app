@@ -66,6 +66,7 @@ feature is guarded by `hasUpdater` / `hasSystemBridge` checks in `LayersApp`.
 ├── electron/
 │   ├── main.cjs              Main process
 │   ├── preload.cjs           contextBridge APIs exposed to the renderer
+│   ├── toasts.cjs            Schedules the calendar's Windows notifications (toast XML, PowerShell)
 │   ├── app/index.html        BUILD OUTPUT — the renderer Electron actually loads (committed)
 │   ├── icon.ico, icon.png    Exe, installer and window icon (made by npm run brand:render)
 │   ├── tray-icon-*.png       Tray icons for a light (-dark) or dark (-light) taskbar, with @2x
@@ -129,7 +130,7 @@ flowchart TD
   PF --> NAV[BottomNav + FAB]
   PF --> TO[toast stack]
   SA --> TABS{screen.name}
-  TABS -->|tabs| T5[HomeView · PeopleView · CoachView · JournalView · MeView]
+  TABS -->|tabs| T5[TodayView · PeopleView · CoachView · JournalView · MeView]
   TABS -->|person| PP[PersonProfile]
   TABS -->|goals| GV[GoalsView]
   LA -. open flags .-> MODALS[LogInteractionModal · GoalModal · AddInfoModal · …]

@@ -14,9 +14,10 @@ import { backfillJournalDates, backfillPeopleDates, backfillSkillDates, formatAb
 import { achievementProgress, newlyUnlocked } from './lib/achievements.js';
 import { advanceLayer, advanceSkillGoals, bumpSkills, chartDay, computeOverall, dimBumps, dimsEqual, goalBumpFor, keepDimsInLayer, makePerson, migrateDimsToLayers, movePerson, placeOnLayers, raisedSkills } from './lib/progress.js';
 import { MAX_BACKUP_BYTES, createBackup, validateBackup } from './lib/backup.js';
-import { useDailyCheckIn, useReminderNotifications, useToday } from './lib/hooks.js';
+import { notifySettings, parseActionUrl, snoozeUntil, templateFor } from './lib/calendar.js';
+import { useCalendarNotifications, useDailyCheckIn, useToday } from './lib/hooks.js';
 import { followUpEvent, markDone } from './lib/reminders.js';
-import { loadSavedState, persistState } from './lib/storage.js';
+import { getSnoozes, loadSavedState, persistState, setSnoozes } from './lib/storage.js';
 import { clamp, uid } from './lib/util.js';
 import { AddInfoModal } from './modals/AddInfoModal.jsx';
 import { AddPersonModal } from './modals/AddPersonModal.jsx';
@@ -24,20 +25,23 @@ import { ConfirmDialog } from './modals/ConfirmDialog.jsx';
 import { EditEntryModal } from './modals/EditEntryModal.jsx';
 import { EditPersonModal } from './modals/EditPersonModal.jsx';
 import { EditProfileModal } from './modals/EditProfileModal.jsx';
+import { EventSheet } from './modals/EventSheet.jsx';
 import { GoalModal } from './modals/GoalModal.jsx';
+import { KeyDateSheet } from './modals/KeyDateSheet.jsx';
 import { LogInteractionModal } from './modals/LogInteractionModal.jsx';
+import { PlanSheet } from './modals/PlanSheet.jsx';
 import { QuickAddInterestModal } from './modals/QuickAddInterestModal.jsx';
 import { ShortcutsModal } from './modals/ShortcutsModal.jsx';
 import { TemplatePickerModal } from './modals/TemplatePickerModal.jsx';
 import { COLORS, CSS, THEME_DARK, THEME_LIGHT } from './theme.js';
 import { CoachView } from './views/CoachView.jsx';
 import { GoalsView } from './views/GoalsView.jsx';
-import { HomeView } from './views/HomeView.jsx';
 import { JournalView } from './views/JournalView.jsx';
 import { MeView } from './views/MeView.jsx';
 import { OnboardingView } from './views/OnboardingView.jsx';
 import { PeopleView } from './views/PeopleView.jsx';
 import { PersonProfile } from './views/PersonProfile.jsx';
+import { TodayView } from './views/TodayView.jsx';
 
 // The sample people, goals, journal and skills, dated as of today.
 function sampleData() {
@@ -95,7 +99,14 @@ function LayersApp() {
   // { key: 'YYYY-MM-DD' } for each achievement reached; null until worked out.
   const [achievements, setAchievements] = useState(() => (saved && saved.achievements) || null);
   const [screen, setScreen] = useState({ name: 'tabs' });
-  const [activeTab, setActiveTab] = useState('home');
+  const [activeTab, setActiveTab] = useState('today');
+  // The calendar: the day it shows (null = today) and Day or Month.
+  const [selectedDay, setSelectedDay] = useState(null);
+  const [calendarMode, setCalendarMode] = useState('day');
+  const [planState, setPlanState] = useState(null); // PlanSheet's prefill while it's open
+  const [eventView, setEventView] = useState(null); // { eventId, day } in EventSheet
+  const [keyDateFor, setKeyDateFor] = useState(null); // person id, KeyDateSheet
+  const [snoozes, setSnoozeList] = useState(() => getSnoozes());
   const [toasts, setToasts] = useState([]);
   const [coachInit, setCoachInit] = useState({ personId: null, tab: 'prepare' });
   const [updateStatus, setUpdateStatus] = useState(null);
@@ -108,8 +119,7 @@ function LayersApp() {
 
   const [logOpen, setLogOpen] = useState(false);
   const [logDefaultPerson, setLogDefaultPerson] = useState(null);
-  const [logInitialStep, setLogInitialStep] = useState(null);
-  const [logEditEvent, setLogEditEvent] = useState(null);
+  const [logPrefill, setLogPrefill] = useState(null); // logging a plan: see LogInteractionModal
   const [goalModalOpen, setGoalModalOpen] = useState(false);
   const [goalModalDefaultPerson, setGoalModalDefaultPerson] = useState(null);
   const [goalEditing, setGoalEditing] = useState(null);
@@ -182,7 +192,7 @@ function LayersApp() {
   // Both can be turned off in Me > Notifications (stored on the profile).
   const today = useToday();
   useDailyCheckIn(onboarded && profile.checkInNotifications !== false, people, journal, today);
-  useReminderNotifications(onboarded && profile.reminderNotifications !== false, events, people);
+  useCalendarNotifications({ enabled: onboarded, state: { events, people, generalGoals, journal }, settings: notifySettings(profile), snoozes });
 
   useEffect(() => {
     if (!hasUpdater) return;
@@ -268,6 +278,7 @@ function LayersApp() {
       // clipboard, since there's no note to add it to outside a log.
       if (plain && (e.key === 'd' || e.key === 'D')) { e.preventDefault(); setStandaloneDetailOpen(true); return; }
       if (plain && (e.key === 'n' || e.key === 'N')) { e.preventDefault(); openLog(null); return; }
+      if (plain && (e.key === 'p' || e.key === 'P')) { e.preventDefault(); openPlan({ day: activeTab === 'today' && screen.name === 'tabs' ? selectedDay || today : today }); return; }
       if (ctrlOnly && e.shiftKey && (e.key === 'a' || e.key === 'A')) {
         e.preventDefault();
         setActiveTab('people'); setScreen({ name: 'tabs' }); setAddPersonOpen(true);
@@ -275,7 +286,7 @@ function LayersApp() {
       }
       if (ctrlOnly && !e.shiftKey && ['1', '2', '3', '4', '5'].includes(e.key)) {
         e.preventDefault();
-        const tabs = ['home', 'people', 'coach', 'journal', 'me'];
+        const tabs = ['today', 'people', 'coach', 'journal', 'me'];
         switchTab(tabs[Number(e.key) - 1]);
         return;
       }
@@ -295,7 +306,7 @@ function LayersApp() {
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [onboarded, activeTab, screen.name]);
+  }, [onboarded, activeTab, screen.name, selectedDay, today]);
 
   function pushToast(text) {
     const id = uid();
@@ -315,15 +326,20 @@ function LayersApp() {
   // With nobody in your circle the log still opens: "Event" works without
   // people, and "Interaction" explains that it needs someone first.
   function openLog(personId) {
-    setLogDefaultPerson(personId || null); setLogInitialStep(null); setLogEditEvent(null); setLogOpen(true);
+    setLogDefaultPerson(personId || null); setLogPrefill(null); setLogOpen(true);
   }
-  function openEventManager() {
-    setLogDefaultPerson(null); setLogInitialStep('eventKind'); setLogEditEvent(null); setLogOpen(true);
+  function closeLog() { setLogOpen(false); setLogPrefill(null); }
+  // Log a plan: the quick log opens on its details, filled in, and saving it
+  // ticks the plan off for that day.
+  function openLogFromEvent(ev, day) {
+    const template = templateFor(ev.template);
+    setLogDefaultPerson(null);
+    setLogPrefill({ eventId: ev.id, day, personIds: ev.personIds || [], type: template ? template.type : 'other', note: ev.title, goalIds: linkedGoalIds(ev) });
+    setEventView(null);
+    setLogOpen(true);
   }
-  function openEditRecurringEvent(ev) {
-    setLogDefaultPerson(null); setLogInitialStep('eventForm'); setLogEditEvent(ev); setLogOpen(true);
-  }
-  function closeLog() { setLogOpen(false); setLogInitialStep(null); setLogEditEvent(null); }
+  // prefill: { day, personIds, template } or { event } to edit one.
+  function openPlan(prefill = {}) { setLogOpen(false); setEventView(null); setPlanState(prefill); }
 
   // From the log sheet. Its optional More details add: `ratings` (a 1-5
   // rating per dimension, each driving that dimension's growth), `goalIds`
@@ -391,18 +407,30 @@ function LayersApp() {
     levelUps.forEach(lu => pushToast(`🎉 ${lu.name} moved up to Layer ${lu.layer}: ${getLayer(lu.layer).name}!`));
   }
 
-  function handleCreateEvent({ title, personIds, kind, date, weekdays, time, defaultMeaningfulness, goalId }) {
-    setEvents(prev => [{ id: uid(), title, personIds, kind, date, weekdays, time, defaultMeaningfulness, ...(goalId ? { goalId } : {}), createdAt: toISODate(new Date()) }, ...prev]);
-    pushToast(kind === 'recurring' ? 'Recurring event saved' : 'Event saved');
+  // From PlanSheet: a new plan, or changes to one (editingId). Clearing a
+  // field removes it, so an edited plan never keeps a stale goal or start day.
+  function handleSavePlan(fields, editingId) {
+    const now = new Date().toISOString();
+    const tidy = (ev) => { Object.keys(ev).forEach(k => { if (ev[k] === null || ev[k] === undefined) delete ev[k]; }); return ev; };
+    if (editingId) {
+      setEvents(prev => prev.map(e => e.id !== editingId ? e : tidy({ ...e, goalId: null, from: null, date: null, weekdays: null, allDay: null, ...fields, updatedAt: now })));
+      pushToast('Plan updated');
+    } else {
+      setEvents(prev => [tidy({ id: uid(), defaultMeaningfulness: 3, ...fields, createdAt: toISODate(new Date()), updatedAt: now }), ...prev]);
+      pushToast(fields.kind === 'recurring' ? 'Repeating plan saved' : 'Plan saved');
+    }
+    setPlanState(null);
+    if (fields.kind === 'oneoff' && fields.date) setSelectedDay(fields.date === today ? null : fields.date);
   }
-  function handleUpdateEvent(eventId, { title, personIds, kind, date, weekdays, time, defaultMeaningfulness, goalId }) {
-    setEvents(prev => prev.map(e => {
-      if (e.id !== eventId) return e;
-      const next = { ...e, title, personIds, kind, date, weekdays, time, defaultMeaningfulness };
-      if (goalId) next.goalId = goalId; else delete next.goalId;
-      return next;
-    }));
-    pushToast('Event updated');
+  // A notification's Snooze: remind again in 10 or 60 minutes, or tomorrow.
+  function handleSnooze(eventId, day, minutes) {
+    const ev = events.find(e => e.id === eventId);
+    if (!ev) return;
+    const at = snoozeUntil(minutes === 'tomorrow' ? 'tomorrow' : Number(minutes) || 10);
+    const next = [...getSnoozes().filter(s => !(s.eventId === eventId && s.day === day)), { id: uid(), eventId, day, at }];
+    setSnoozes(next);
+    setSnoozeList(next);
+    pushToast(minutes === 'tomorrow' ? `"${ev.title}" snoozed until tomorrow` : `"${ev.title}" snoozed for ${Number(minutes) >= 60 ? '1 hour' : `${Number(minutes) || 10} minutes`}`);
   }
   // A reminder's linked goal, if it still exists (otherwise every goal moves,
   // as for any other log).
@@ -414,6 +442,40 @@ function LayersApp() {
     setEvents(prev => prev.map(e => e.id === eventId ? markDone(e, day) : e));
     if (!quiet) pushToast('Marked done');
   }
+  function handleSaveKeyDate(personId, kd) {
+    setPeople(prev => prev.map(p => p.id !== personId ? p : { ...p, dates: [...(p.dates || []), { id: uid(), ...kd }] }));
+    setKeyDateFor(null);
+    pushToast('Date saved to the calendar');
+  }
+  function handleDeleteKeyDate(personId, dateId) {
+    setPeople(prev => prev.map(p => p.id !== personId ? p : { ...p, dates: (p.dates || []).filter(d => d.id !== dateId) }));
+  }
+
+  // A notification button, as a layers:// link from main.cjs: mark done,
+  // log it, snooze, or open that day (and plan).
+  function handleCalendarAction(link) {
+    const a = parseActionUrl(link);
+    if (!a) return;
+    const ev = a.eventId ? events.find(e => e.id === a.eventId) : null;
+    const day = a.day || today;
+    if (a.action === 'done' && ev) handleMarkEventDone(ev.id, day);
+    else if (a.action === 'snooze' && ev) handleSnooze(ev.id, day, a.minutes);
+    else if (a.action === 'log' && ev) { switchTab('today'); setSelectedDay(day === today ? null : day); openLogFromEvent(ev, day); }
+    else {
+      switchTab('today');
+      setSelectedDay(day === today ? null : day);
+      if (ev) setEventView({ eventId: ev.id, day });
+    }
+  }
+  const calendarActionRef = useRef(handleCalendarAction);
+  useEffect(() => { calendarActionRef.current = handleCalendarAction; });
+  useEffect(() => {
+    if (!hasSystemBridge || !window.layersSystem.calendarReady) return undefined;
+    const off = window.layersSystem.onCalendarAction(link => calendarActionRef.current(link));
+    window.layersSystem.calendarReady().then(links => (links || []).forEach(link => calendarActionRef.current(link))).catch(() => {});
+    return off;
+  }, [hasSystemBridge]);
+
   // Profile > a temporary detail > bell: "Ask <name> how <it> went" in 3 days.
   function handleRemindFollowUp(personId, item) {
     const person = people.find(p => p.id === personId);
@@ -425,11 +487,11 @@ function LayersApp() {
   function handleDeleteEvent(eventId) {
     const ev = events.find(e => e.id === eventId);
     askConfirm({
-      title: 'Delete this event?',
-      message: ev ? `"${ev.title}" will be removed for good.` : 'This event will be removed for good.',
-      confirmLabel: 'Delete event',
+      title: 'Delete this plan?',
+      message: ev ? `"${ev.title}" will be removed for good${ev.kind === 'recurring' ? ', every time it repeats' : ''}.` : 'This plan will be removed for good.',
+      confirmLabel: 'Delete plan',
       danger: true,
-      onConfirm: () => { setEvents(prev => prev.filter(e => e.id !== eventId)); pushToast('Event deleted'); },
+      onConfirm: () => { setEvents(prev => prev.filter(e => e.id !== eventId)); setEventView(null); setPlanState(null); pushToast('Plan deleted'); },
     });
   }
 
@@ -659,7 +721,7 @@ function LayersApp() {
         quietAchievements.current = true;
         setAchievements(prev => Object.fromEntries(Object.entries(prev || {}).filter(([k]) => still[k] && still[k].done)));
         setCoachInit(c => SAMPLE_PERSON_IDS.has(c.personId) ? { ...c, personId: null } : c);
-        setScreen({ name: 'tabs' }); setActiveTab('home');
+        setScreen({ name: 'tabs' }); setActiveTab('today');
         pushToast('Sample people removed');
       },
     });
@@ -696,7 +758,7 @@ function LayersApp() {
         quietAchievements.current = true;
         setAchievements(null);
         setCoachInit(c => ({ ...c, personId: null }));
-        setScreen({ name: 'tabs' }); setActiveTab('home');
+        setScreen({ name: 'tabs' }); setActiveTab('today');
         setOnboarded(false);
       },
     });
@@ -750,7 +812,7 @@ function LayersApp() {
           setAchievements(data.achievements);
           setCoachInit(c => ({ ...c, personId: null }));
           setOnboarded(true);
-          setScreen({ name: 'tabs' }); setActiveTab('home');
+          setScreen({ name: 'tabs' }); setActiveTab('today');
           pushToast('Backup imported');
         },
       });
@@ -769,7 +831,7 @@ function LayersApp() {
       setPeople(sample.people); setJournal(sample.journal); setGeneralGoals(sample.generalGoals); setSkills(sample.skills);
     }
     setOnboarded(true);
-    setScreen({ name: 'tabs' }); setActiveTab('home');
+    setScreen({ name: 'tabs' }); setActiveTab('today');
   }
 
   return (
@@ -780,7 +842,7 @@ function LayersApp() {
           <div className="phone-frame">
             <div className="scroll-area no-scrollbar" style={{ paddingBottom: (!onboarded || screen.name !== 'tabs') ? 30 : 110 }}>
               {/* A crash while rendering a screen shows a way out instead of a blank window. */}
-              <ErrorBoundary key={`${onboarded}-${screen.name}-${screen.personId || ''}-${activeTab}`} onHome={() => switchTab('home')}>
+              <ErrorBoundary key={`${onboarded}-${screen.name}-${screen.personId || ''}-${activeTab}`} onHome={() => switchTab('today')}>
                 {!onboarded ? (
                   <OnboardingView initialName={profile.name} initialFocus={profile.focus} onComplete={handleOnboardingComplete} />
                 ) : (
@@ -807,6 +869,9 @@ function LayersApp() {
                         onEditPerson={openEditPerson}
                         onClearLevelUpFlag={handleClearLevelUpFlag}
                         onRemindFollowUp={handleRemindFollowUp}
+                        onPlan={(personId) => openPlan({ personIds: [personId] })}
+                        onAddKeyDate={setKeyDateFor}
+                        onDeleteKeyDate={handleDeleteKeyDate}
                       />
                     )}
                     {screen.name === 'goals' && (
@@ -814,7 +879,7 @@ function LayersApp() {
                     )}
                     {screen.name === 'tabs' && (
                       <>
-                        {activeTab === 'home' && <HomeView today={today} people={people} journal={journal} skills={skills} onAddPerson={() => setAddPersonOpen(true)} onOpenLog={() => openLog(null)} generalGoals={generalGoals} events={events} profile={profile} onOpenPerson={openPerson} onSwitchTab={switchTab} onOpenGoals={openGoalsOverview} onOpenCoach={(tab) => openCoach(null, tab)} onLogEvent={(ev, meaningfulness, detail) => { handleMarkEventDone(ev.id, ev.occursOn, { quiet: true }); handleLogSubmit({ personIds: ev.personIds, type: 'other', meaningfulness, notes: [], activeListening: [], summary: detail ? `${ev.title} — ${detail}` : ev.title, pickedDate: new Date(), goalIds: linkedGoalIds(ev) }); }} onMarkEventDone={handleMarkEventDone} onManageEvents={openEventManager} onEditEvent={openEditRecurringEvent} onDeleteEvent={handleDeleteEvent} />}
+                        {activeTab === 'today' && <TodayView today={today} selectedDay={selectedDay || today} onSelectDay={(d) => setSelectedDay(d === today ? null : d)} mode={calendarMode} onSetMode={setCalendarMode} people={people} journal={journal} events={events} generalGoals={generalGoals} skills={skills} profile={profile} onPlan={openPlan} onOpenEvent={(eventId, day) => setEventView({ eventId, day })} onLogEvent={openLogFromEvent} onTickEvent={(ev, day) => handleMarkEventDone(ev.id, day)} onOpenPerson={openPerson} onAddPerson={() => setAddPersonOpen(true)} onOpenLog={() => openLog(null)} onSwitchTab={switchTab} onOpenGoals={openGoalsOverview} />}
                         {activeTab === 'people' && <PeopleView people={people} journal={journal} onOpenPerson={openPerson} onAddPerson={() => setAddPersonOpen(true)} />}
                         {activeTab === 'coach' && <CoachView people={people} journal={journal} initialPersonId={coachInit.personId} initialTab={coachInit.tab} onOpenLog={openLog} onApproveInfo={handleApproveInfo} onLogFromAnalysis={handleLogFromAnalysis} onOpenPerson={openPerson} />}
                         {activeTab === 'journal' && <JournalView today={today} people={people} journal={journal} onOpenPerson={openPerson} onEditEntry={setEditingEntryId} />}
@@ -839,7 +904,13 @@ function LayersApp() {
 
             <input ref={importInputRef} type="file" accept="application/json" onChange={handleImportFile} style={{ display: 'none' }} />
 
-            {logOpen && <LogInteractionModal people={people} defaultPersonId={logDefaultPerson} events={events} initialStep={logInitialStep} initialEditEvent={logEditEvent} onClose={closeLog} onSubmit={handleLogSubmit} onCreateEvent={handleCreateEvent} onUpdateEvent={handleUpdateEvent} onDeleteEvent={handleDeleteEvent} onMarkEventDone={handleMarkEventDone} linkedGoalIds={linkedGoalIds} />}
+            {logOpen && <LogInteractionModal people={people} defaultPersonId={logDefaultPerson} prefill={logPrefill} onClose={closeLog} onPlan={() => openPlan({ day: selectedDay || today })} onSubmit={(payload) => { handleLogSubmit(payload); if (logPrefill && logPrefill.eventId) handleMarkEventDone(logPrefill.eventId, logPrefill.day, { quiet: true }); setLogPrefill(null); }} />}
+            {planState && <PlanSheet people={people} today={today} prefill={planState} defaultAlert={notifySettings(profile).defaultAlert} onClose={() => setPlanState(null)} onSave={handleSavePlan} onDelete={handleDeleteEvent} />}
+            {eventView && events.some(e => e.id === eventView.eventId) && (() => {
+              const ev = events.find(e => e.id === eventView.eventId);
+              return <EventSheet ev={ev} day={eventView.day} people={people} goals={[...people.flatMap(p => p.goals), ...generalGoals]} onClose={() => setEventView(null)} onLog={() => openLogFromEvent(ev, eventView.day)} onDone={() => { handleMarkEventDone(ev.id, eventView.day); setEventView(null); }} onEdit={() => openPlan({ event: ev, day: eventView.day })} onDelete={() => handleDeleteEvent(ev.id)} />;
+            })()}
+            {keyDateFor && people.some(p => p.id === keyDateFor) && <KeyDateSheet personName={people.find(p => p.id === keyDateFor).name} onClose={() => setKeyDateFor(null)} onSave={(kd) => handleSaveKeyDate(keyDateFor, kd)} />}
             {goalModalOpen && <GoalModal people={people} defaultPersonId={goalModalDefaultPerson} editingGoal={goalEditing ? goalEditing.goal : null} editingPersonId={goalEditing ? goalEditing.personId : null} onClose={closeGoalModal} onSave={handleGoalSave} />}
             {addInfoOpen && addInfoTarget && (
               <AddInfoModal personName={(people.find(p => p.id === addInfoTarget.personId) || {}).name} category={addInfoTarget.category} onClose={closeAddInfo} onSave={handleAddInfoSave} />

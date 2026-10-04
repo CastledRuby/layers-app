@@ -55,3 +55,14 @@ that fails when `electron/app/index.html` is older than the files in `src/`.
 | 1.0.24 | Renderer libraries shipped twice. `react`, `react-dom`, `lucide-react` and `recharts` moved to `devDependencies`. `app.asar` went from 55 MB (9,675 entries, 4,197 of them `lucide-react`) to 3 MB (337 entries). See [build-and-release.md](build-and-release.md#dependencies-vs-devdependencies). |
 | 1.0.24 | Stale duplicate project under `Layers/` deleted. Every file in it matched the first commit. `npm test` runs one test file again; `vite.config.js` also keeps Vitest out of `.claude/` worktrees. |
 | 1.0.24 | `dist-local/` and `release/` added to `.gitignore`. |
+
+## Calendar notifications
+
+- Windows gets the next 14 days of notifications each time Layers runs. If Layers isn't
+  opened for two weeks, they stop until it is. It usually runs at login, so this is
+  unlikely.
+- Notification buttons need the installed app, because the installer registers
+  `layers://`. The portable build's notifications show, but their buttons don't reach it.
+- Scheduling uses Windows PowerShell. If PowerShell is blocked by policy,
+  `scheduleNotifications` reports an error and nothing is scheduled. There's no fallback
+  in the Windows app yet.

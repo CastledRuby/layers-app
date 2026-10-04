@@ -3,6 +3,7 @@ const { execFileSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 const windowStateKeeper = require('electron-window-state');
+const { createScheduler } = require('./toasts.cjs');
 
 // Windows groups taskbar entries, toast notifications, and jump lists by
 // this identity string. It must be set before the app is ready, and it
@@ -10,7 +11,8 @@ const windowStateKeeper = require('electron-window-state');
 // the packaged app and the installed shortcut are recognised as the same
 // application. Without this, Windows can treat separate launches (or the
 // dev run vs. the installed run) as unrelated apps.
-app.setAppUserModelId('com.layers.app');
+const AUMID = 'com.layers.app';
+app.setAppUserModelId(AUMID);
 
 // LAYERS_USER_DATA_DIR runs Layers against a separate data folder. The
 // end-to-end tests (tests/e2e) use a temporary one, so they never touch real
@@ -21,8 +23,14 @@ if (process.env.LAYERS_USER_DATA_DIR) app.setPath('userData', process.env.LAYERS
 // electron-builder's portable .exe unpacks the app to a temporary folder and
 // runs it from there, setting PORTABLE_EXECUTABLE_FILE to the .exe itself.
 const PORTABLE_EXE = process.env.PORTABLE_EXECUTABLE_FILE || null;
+// A notification's button opens Layers with a layers:// link (toasts.cjs),
+// as a new launch or, when Layers is running, through 'second-instance'.
+const actionLink = (argv) => (argv || []).find(a => typeof a === 'string' && a.startsWith('layers://') && a.length < 500) || null;
+const STARTUP_ACTION = actionLink(process.argv);
+// Done and snooze need no window, so Layers does them from the tray.
+const quietLink = (link) => /^layers:\/\/(done|snooze)\b/.test(link || '');
 // "Launch at login" starts Layers with --hidden, straight into the tray.
-const START_HIDDEN = process.argv.includes('--hidden');
+const START_HIDDEN = process.argv.includes('--hidden') || quietLink(STARTUP_ACTION);
 const RELEASES_URL = 'https://github.com/CastledRuby/layers-app/releases/latest';
 
 let mainWindow = null;
@@ -59,6 +67,12 @@ if (!gotSingleInstanceLock || quitRequested) {
       app.quit();
       return;
     }
+    const link = actionLink(argv);
+    if (link) {
+      queueAction(link);
+      if (!quietLink(link)) showWindow();
+      return;
+    }
     if (argv.includes('--hidden')) return; // a login launch while already running
     showWindow();
   });
@@ -71,6 +85,7 @@ if (!gotSingleInstanceLock || quitRequested) {
     setupAutoLaunch();
     setupVersionInfo();
     setupWindowIpc();
+    setupCalendar();
     registerGlobalShortcut();
 
     app.on('activate', () => {
@@ -245,6 +260,8 @@ function createWindow() {
   windowState.manage(mainWindow);
 
   mainWindow.loadFile(path.join(__dirname, 'app', 'index.html'));
+  // A reload starts a new page, which asks for waiting actions again.
+  mainWindow.webContents.on('did-start-loading', () => { rendererReady = false; });
 
   // Closing the window hides it to the tray instead of quitting, so
   // reminder checks and the app itself stay available in the background.
@@ -363,4 +380,37 @@ function setupAutoLaunch() {
 function registerGlobalShortcut() {
   shortcutRegistered = globalShortcut.register('CommandOrControl+Shift+L', showWindow);
   ipcMain.handle('get-shortcut-status', () => ({ accelerator: 'Ctrl+Shift+L', registered: shortcutRegistered }));
+}
+
+// --- Calendar: scheduled notifications and their buttons -----------------
+// The renderer works out which notifications are due over the next two
+// weeks and sends them here whenever they change (schedule-notifications);
+// toasts.cjs hands them to Windows, which shows them on time even when
+// Layers is closed. A button press comes back as a layers:// link: it's
+// queued until the page is ready (calendar-ready), then sent to it
+// (calendar-action), which marks done, logs, snoozes or opens the day.
+const scheduler = createScheduler({ aumid: AUMID });
+const pendingActions = [];
+let rendererReady = false;
+
+function queueAction(link) {
+  pendingActions.push(link);
+  deliverActions();
+}
+
+function deliverActions() {
+  if (!rendererReady || !mainWindow || mainWindow.isDestroyed()) return;
+  while (pendingActions.length) mainWindow.webContents.send('calendar-action', pendingActions.shift());
+}
+
+function setupCalendar() {
+  if (STARTUP_ACTION) pendingActions.push(STARTUP_ACTION);
+  ipcMain.handle('schedule-notifications', (_event, list) => scheduler.run(list));
+  ipcMain.handle('calendar-ready', () => { rendererReady = true; return pendingActions.splice(0); });
+  // The installer registers layers:// for this copy; this keeps it pointing
+  // here if Layers was moved. Never from a test run (it would take over the
+  // installed app's links) or the portable build.
+  if (app.isPackaged && !PORTABLE_EXE && !process.env.LAYERS_USER_DATA_DIR && !app.isDefaultProtocolClient('layers')) {
+    app.setAsDefaultProtocolClient('layers');
+  }
 }

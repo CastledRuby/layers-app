@@ -123,3 +123,22 @@ describe('validateBackup repairs or skips damaged records', () => {
     expect(result.data.exportedAt).toBeNull();
   });
 });
+
+describe('calendar data', () => {
+  it('keeps key dates and plan settings, and drops broken ones', () => {
+    const raw = {
+      version: 1,
+      people: [{ id: 'p', name: 'Priya', layer: 2, dates: [{ id: 'b', kind: 'birthday', date: '1998-10-05', yearly: true }, { kind: 'birthday', date: 'soon' }] }],
+      events: [
+        { id: 'e', title: 'Coffee', kind: 'oneoff', date: '2026-10-04', time: 600, duration: 60, alert: null, allDay: false, template: 'coffee', personIds: ['p'] },
+        { id: 'f', title: 'Gym', kind: 'recurring', weekdays: [1], time: 420, from: 'never', duration: -5, alert: 'x', personIds: [] },
+      ],
+    };
+    const { data } = validateBackup(raw);
+    expect(data.people[0].dates).toEqual([{ id: 'b', kind: 'birthday', date: '1998-10-05', yearly: true }]);
+    expect(data.events[0]).toMatchObject({ duration: 60, alert: null, allDay: false, template: 'coffee' });
+    expect(data.events[1]).not.toHaveProperty('from');
+    expect(data.events[1]).not.toHaveProperty('duration');
+    expect(data.events[1]).not.toHaveProperty('alert');
+  });
+});

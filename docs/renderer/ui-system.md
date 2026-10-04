@@ -151,8 +151,8 @@ keyboard handler in `LayersApp` uses the stack in two ways:
   sheet underneath keeps what you typed.
 - **Shortcuts are off while any sheet is open** (`hasOpenSheet()`).
 
-This covers sheets owned by a screen, such as "Prepare to talk" in `PersonProfile`, Home's
-detail picker, the date and time pickers and `GoalModal`'s variant picker, as well as the
+This covers sheets owned by a screen, such as "Prepare to talk" in `PersonProfile`, the
+date and time pickers and `GoalModal`'s variant picker, as well as the
 ones `LayersApp` owns. Up to 1.0.26 `LayersApp` kept its own list of open flags, which
 missed screen-owned sheets and closed a whole dialog when Esc was meant for a picker
 inside it.
@@ -195,7 +195,7 @@ was bumped so the rebuilt app is distinguishable and the updater offers it.
 
 `ErrorBoundary` ([`components/ErrorBoundary.jsx`](../../src/components/ErrorBoundary.jsx))
 wraps the current screen inside `.scroll-area`. If a screen throws while rendering, it
-shows "This screen hit a problem" with **Go to Home**, **Reload Layers** and the error
+shows "This screen hit a problem" with **Go to Today**, **Reload Layers** and the error
 message, instead of React unmounting the whole app and leaving a blank window. Data is
 saved as it changes, so nothing is lost. `LayersApp` keys the boundary by onboarding
 state, screen, person and tab, so going anywhere else tries again.

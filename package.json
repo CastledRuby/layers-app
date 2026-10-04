@@ -58,6 +58,14 @@
   "build": {
     "appId": "com.layers.app",
     "productName": "Layers",
+    "protocols": [
+      {
+        "name": "Layers",
+        "schemes": [
+          "layers"
+        ]
+      }
+    ],
     "asar": true,
     "compression": "store",
     "directories": {
@@ -66,6 +74,7 @@
     "files": [
       "electron/main.cjs",
       "electron/preload.cjs",
+      "electron/toasts.cjs",
       "electron/icon.png",
       "electron/icon.ico",
       "electron/tray-icon-dark.png",

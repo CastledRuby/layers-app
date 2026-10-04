@@ -2,7 +2,8 @@
 // temporary data folder (LAYERS_USER_DATA_DIR), so the tests never read or
 // change your real Layers data, and don't collide with a Layers that's
 // already running (the single-instance lock lives in the data folder).
-// LAYERS_NO_UPDATES keeps them from checking GitHub for updates.
+// LAYERS_NO_UPDATES keeps them from checking GitHub for updates, and
+// LAYERS_NO_SCHEDULE from scheduling real Windows notifications.
 import { _electron as electron } from '@playwright/test';
 import { spawn } from 'node:child_process';
 import fs from 'node:fs';
@@ -15,12 +16,13 @@ export function tempDataDir() {
   return fs.mkdtempSync(path.join(os.tmpdir(), 'layers-e2e-'));
 }
 
-export function appEnv(dataDir) {
-  return { ...process.env, LAYERS_USER_DATA_DIR: dataDir, LAYERS_NO_UPDATES: '1' };
+export function appEnv(dataDir, extra = {}) {
+  return { ...process.env, LAYERS_USER_DATA_DIR: dataDir, LAYERS_NO_UPDATES: '1', LAYERS_NO_SCHEDULE: '1', ...extra };
 }
 
-export async function launch(dataDir, args = []) {
-  const app = await electron.launch({ executablePath: EXE, args, env: appEnv(dataDir) });
+// `extra` adds or overrides environment variables, e.g. LAYERS_SCHEDULE_DUMP.
+export async function launch(dataDir, args = [], extra = {}) {
+  const app = await electron.launch({ executablePath: EXE, args, env: appEnv(dataDir, extra) });
   const page = await app.firstWindow();
   await page.waitForSelector('.layers-root');
   return { app, page };

@@ -1,11 +1,12 @@
-// The five-tab bottom navigation bar.
+// The five-tab bottom navigation bar. Today (the calendar) comes first, as
+// Layers' main screen; People holds the map of how close you are to everyone.
 
-import { BookOpen, Home, MessageCircle, User, Users } from 'lucide-react';
+import { BookOpen, CalendarDays, MessageCircle, User, Users } from 'lucide-react';
 import { COLORS } from '../theme.js';
 
 export function BottomNav({ active, onChange }) {
   const items = [
-    { key: 'home', label: 'Home', Icon: Home },
+    { key: 'today', label: 'Today', Icon: CalendarDays },
     { key: 'people', label: 'People', Icon: Users },
     { key: 'coach', label: 'Coach', Icon: MessageCircle },
     { key: 'journal', label: 'Journal', Icon: BookOpen },

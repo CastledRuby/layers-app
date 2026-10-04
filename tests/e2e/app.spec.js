@@ -32,7 +32,7 @@ test('works with nobody in the circle', async () => {
   await page.getByLabel('Your name').fill('Sam');
   await page.getByRole('button', { name: 'Start fresh with my own people' }).click();
   await page.getByRole('button', { name: "Skip, I'll add people later" }).click();
-  for (const tab of ['People', 'Coach', 'Journal', 'Me', 'Home']) {
+  for (const tab of ['People', 'Coach', 'Journal', 'Me', 'Today']) {
     await page.locator('.nav-bar').getByRole('button', { name: tab, exact: true }).click();
   }
   await page.keyboard.press('n');
@@ -116,4 +116,26 @@ test('the exe identifies itself as Layers, not Electron', async () => {
   expect(info.ProductName).toBe('Layers');
   expect(info.FileDescription).toBe('Layers');
   expect(info.CompanyName).not.toMatch(/GitHub/);
+});
+
+test('a plan is handed to Windows with buttons, and a pressed button reaches Layers', async () => {
+  const dataDir = tempDataDir();
+  const dump = path.join(dataDir, 'scheduled.json');
+  // Instead of scheduling real toasts, the app writes what it would schedule.
+  const { app, page } = await launch(dataDir, [], { LAYERS_SCHEDULE_DUMP: dump, LAYERS_NO_SCHEDULE: '' });
+  await onboard(page);
+  await page.keyboard.press('p');
+  await page.keyboard.press('8'); // Something else
+  await page.getByRole('button', { name: /Continue without anyone/ }).click();
+  await page.getByRole('button', { name: 'Tomorrow', exact: true }).click();
+  await page.getByRole('button', { name: 'Save plan' }).click();
+  const ev = await page.evaluate(() => JSON.parse(localStorage.getItem('layers-app-state-v1')).events[0]);
+  await expect.poll(() => fs.existsSync(dump) && JSON.parse(fs.readFileSync(dump, 'utf8')).some(n => n.tag === `a:${ev.id}:${ev.date}`)).toBe(true);
+  const toast = JSON.parse(fs.readFileSync(dump, 'utf8')).find(n => n.tag === `a:${ev.id}:${ev.date}`);
+  expect(toast.xml).toContain(`arguments="layers://done?e=${ev.id}&amp;d=${ev.date}"`);
+
+  // Pressing Done launches Layers.exe with the link; the running app takes it.
+  expect(await runExe(dataDir, [`layers://done?e=${ev.id}&d=${ev.date}`])).toBe(0);
+  await expect.poll(() => page.evaluate(() => JSON.parse(localStorage.getItem('layers-app-state-v1')).events[0].doneAt || null)).toBe(ev.date);
+  await quit(app);
 });

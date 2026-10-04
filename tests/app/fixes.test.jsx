@@ -158,7 +158,7 @@ describe('#4 Adjust', () => {
 });
 
 describe('#10 / jumps to search from any tab', () => {
-  it('focuses People search from Home', async () => {
+  it('focuses People search from Today', async () => {
     seedState({ people: [person('Morgan')] });
     const { user } = renderApp();
     await user.keyboard('/');
@@ -275,17 +275,17 @@ describe('#15 and #17 levelling up', () => {
   });
 });
 
-describe('#16 Home "Recent activity"', () => {
-  it('is ordered by the logged date, not the order entries were added', () => {
+describe('#16 logged interactions on the day plan', () => {
+  it('show on the day they were logged for, not the day they were added', () => {
     const morgan = person('Morgan');
     seedState({ people: [morgan], journal: [
       { id: 'j1', personId: morgan.id, at: '2026-01-05', type: 'talked', meaningfulness: 3, added: [], activeListening: [], summary: 'Backdated chat' },
       { id: 'j2', personId: morgan.id, at: TODAY, type: 'talked', meaningfulness: 3, added: [], activeListening: [], summary: 'Chat today' },
     ] });
     renderApp();
-    const recent = screen.getByText('Recent activity').closest('.mt-7');
-    const text = recent.textContent;
-    expect(text.indexOf('Chat today')).toBeLessThan(text.indexOf('Backdated chat'));
+    const logged = screen.getByText('Logged').parentElement.textContent;
+    expect(logged).toContain('Chat today');
+    expect(logged).not.toContain('Backdated chat');
   });
 });
 
@@ -362,7 +362,7 @@ describe('#21 wording', () => {
     expect(screen.getByText(/Nothing logged yet/)).toBeTruthy();
   });
 
-  it("Home no longer says Layers doesn't send notifications", () => {
+  it("Today doesn't say Layers can't send notifications", () => {
     seedState();
     renderApp();
     expect(screen.queryByText(/doesn't send OS notifications/)).toBeNull();
@@ -373,11 +373,12 @@ describe('#22 reminders', () => {
   it('can be created with nobody in your circle', async () => {
     seedState();
     const { user } = renderApp();
-    await user.click(screen.getByRole('button', { name: '+ New' }));
-    await user.click(screen.getByRole('button', { name: /One-off/ }));
-    await user.click(screen.getByRole('button', { name: /Create new/ }));
-    await user.type(screen.getByPlaceholderText(/Ask Sam about/), 'Book dentist');
-    await user.click(screen.getByRole('button', { name: 'Save event' }));
+    await user.keyboard('p');
+    await user.click(screen.getByRole('button', { name: /Something else/ }));
+    await user.click(screen.getByRole('button', { name: /Continue without anyone/ }));
+    await user.clear(screen.getByLabelText('Title'));
+    await user.type(screen.getByLabelText('Title'), 'Book dentist');
+    await user.click(screen.getByRole('button', { name: 'Save plan' }));
     expect(savedState().events.map(e => [e.title, e.createdAt])).toEqual([['Book dentist', TODAY]]);
   });
 
@@ -393,13 +394,13 @@ describe('#22 reminders', () => {
   it('asks before deleting', async () => {
     seedState({ events: [{ id: 'e1', title: 'Call Gran', kind: 'recurring', weekdays: [0, 1, 2, 3, 4, 5, 6], time: 600, personIds: [] }] });
     const { user } = renderApp();
-    await user.click(screen.getByRole('button', { name: 'Manage' }));
+    await user.click(screen.getByRole('button', { name: 'Call Gran' }));
     await user.click(screen.getByRole('button', { name: 'Delete' }));
-    expect(confirmDialog('Delete this event?').textContent).toContain('"Call Gran" will be removed');
+    expect(confirmDialog('Delete this plan?').textContent).toContain('"Call Gran" will be removed for good, every time it repeats');
     await user.keyboard('{Escape}');
     expect(savedState().events).toHaveLength(1);
     await user.click(screen.getByRole('button', { name: 'Delete' }));
-    await user.click(screen.getByRole('button', { name: 'Delete event' }));
+    await user.click(screen.getByRole('button', { name: 'Delete plan' }));
     expect(savedState().events).toEqual([]);
   });
 });

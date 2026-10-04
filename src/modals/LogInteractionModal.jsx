@@ -1,20 +1,20 @@
-// Log an interaction, or create/manage saved events. A step machine; see
-// docs/renderer/app-structure.md.
+// Log an interaction. A step machine; see docs/renderer/app-structure.md.
+// "Plan something" on the first step hands over to the calendar's PlanSheet.
 //
 // The quick log (the details step) asks only for the date, how meaningful it
 // was and a note. Everything else is optional and opens in its own small
 // sheet (LogDetailSheets.jsx), one thing at a time. Every step can be driven
 // from the keyboard; the keys are shown next to what they do.
 
-import { useEffect, useRef, useState } from 'react';
-import { Calendar, Check, Clock, Ear, Gauge, MessageCircle, PenLine, Plus, Repeat, Sparkles, Target, X } from 'lucide-react';
+import { useRef, useState } from 'react';
+import { Calendar, Check, Ear, Gauge, MessageCircle, PenLine, Plus, Sparkles, Target, X } from 'lucide-react';
 import { Sheet } from '../components/Sheet.jsx';
 import { isTabbedToButton, isTyping } from '../components/sheetLayer.js';
 import { Avatar, Kbd } from '../components/atoms.jsx';
-import { DateDropdown, TimeDropdown } from '../components/pickers.jsx';
+import { DateDropdown } from '../components/pickers.jsx';
+import { PersonPick } from '../components/PersonPick.jsx';
 import { categoryMeta, DIM_ORDER, getLayer, NOTE_TEMPLATE_CATEGORY, TYPE_META, TYPE_ORDER } from '../data/constants.js';
-import { formatCalendarDate, formatTime12, formatWeekdays, nowToMinutes, toISODate, WEEKDAY_SHORT } from '../lib/dates.js';
-import { occurrenceToLog } from '../lib/reminders.js';
+import { parseISODay } from '../lib/dates.js';
 import { GoalsSheet, ListeningSheet, NewInfoSheet, RateSheet, ReflectionSheet } from './LogDetailSheets.jsx';
 import { TemplatePickerModal } from './TemplatePickerModal.jsx';
 import { COLORS } from '../theme.js';
@@ -22,7 +22,7 @@ import { COLORS } from '../theme.js';
 const ML_LABELS = ['Very brief', 'Casual', 'Good conversation', 'Personal', 'Deep conversation'];
 
 // Step order, so moving forward slides in from the right and back from the left.
-const STEP_ORDER = ['kind', 'type', 'who', 'details', 'eventKind', 'eventChoice', 'eventList', 'eventForm'];
+const STEP_ORDER = ['kind', 'type', 'who', 'details'];
 
 // The quick log's title says what's being logged: "Talked with Ana".
 const DETAIL_TITLE = { talked: 'Talked with', activity: 'Activity with', messaged: 'Messaged', hangout: 'Hung out with', called: 'Called', other: 'Time with' };
@@ -41,23 +41,6 @@ function SectionLabel({ children, extra }) {
 }
 const optional = <span style={{ fontWeight: 500, color: COLORS.inkSoft }}>(optional)</span>;
 
-function PersonPick({ person, active, onClick, size = 48 }) {
-  const l = getLayer(person.layer);
-  return (
-    <button type="button" onClick={onClick} aria-pressed={active} className="flex flex-col items-center gap-1 shrink-0 rounded-2xl py-1.5" style={{ width: 64 }}>
-      <span style={{ position: 'relative', display: 'inline-block' }} className={active ? 'pop' : ''}>
-        <Avatar emoji={person.emoji} size={size} ringColor={active ? COLORS.accent : l.color} />
-        {active && (
-          <span style={{ position: 'absolute', bottom: -2, right: -2, width: 18, height: 18, borderRadius: '50%', background: COLORS.accent, display: 'flex', alignItems: 'center', justifyContent: 'center', border: `2px solid ${COLORS.paperRaised}` }}>
-            <Check size={10} color={COLORS.onAccent} strokeWidth={3} />
-          </span>
-        )}
-      </span>
-      <span className="text-xs truncate" style={{ maxWidth: 60, color: active ? COLORS.accent : COLORS.inkSoft, fontWeight: active ? 700 : 500 }}>{person.name}</span>
-    </button>
-  );
-}
-
 function Scale({ value, onChange, label, size = 'md' }) {
   return (
     <div className={`seg${size === 'sm' ? ' seg--sm' : ''}`} role="group" aria-label={label}>
@@ -68,19 +51,22 @@ function Scale({ value, onChange, label, size = 'md' }) {
   );
 }
 
-export function LogInteractionModal({ people, defaultPersonId, events, initialStep, initialEditEvent, onClose, onSubmit, onCreateEvent, onUpdateEvent, onDeleteEvent, onMarkEventDone, linkedGoalIds }) {
-  const [step, setStep] = useState(initialStep || 'kind'); // kind -> type -> who -> details  |  kind -> eventKind -> eventChoice -> eventForm/eventList
+// prefill (logging a plan from the calendar): { personIds, type, note, day,
+// goalIds } opens straight on the details, filled in; goalIds, when given,
+// are the only goals ticked.
+export function LogInteractionModal({ people, defaultPersonId, prefill, onClose, onSubmit, onPlan }) {
+  const [step, setStep] = useState(prefill ? 'details' : 'kind'); // kind -> type -> who -> details
   const [dir, setDir] = useState(null); // 'in' | 'back': the slide for the step just shown
-  const [type, setType] = useState(null);
+  const [type, setType] = useState(prefill ? prefill.type || 'other' : null);
   // Only preselect someone who still exists (Coach can pass a removed person).
   const startPerson = defaultPersonId && people.some(p => p.id === defaultPersonId) ? defaultPersonId : null;
-  const [personIds, setPersonIds] = useState(startPerson ? [startPerson] : []);
+  const [personIds, setPersonIds] = useState(() => prefill ? (prefill.personIds || []).filter(id => people.some(p => p.id === id)) : startPerson ? [startPerson] : []);
   const [meaningfulness, setMeaningfulness] = useState(3);
   const [al, setAl] = useState([]);
-  const [quickNote, setQuickNote] = useState('');
+  const [quickNote, setQuickNote] = useState(prefill && prefill.note ? prefill.note : '');
   const [quickNoteTags, setQuickNoteTags] = useState([]);
   const [noteTemplatesOpen, setNoteTemplatesOpen] = useState(false);
-  const [logDate, setLogDate] = useState(() => new Date());
+  const [logDate, setLogDate] = useState(() => (prefill && prefill.day ? parseISODay(prefill.day) : new Date()));
   const noteRef = useRef(null);
   // "More details": which of their sheets is open (null = none), and what's in them.
   const [extra, setExtra] = useState(null); // 'rate' | 'listening' | 'new' | 'goals' | 'reflect'
@@ -91,65 +77,26 @@ export function LogInteractionModal({ people, defaultPersonId, events, initialSt
   // a number fills next (DIM_ORDER.length = past the last row).
   const [ratings, setRatings] = useState({});
   const [ratingCursor, setRatingCursor] = useState(0);
-  const [untickedGoals, setUntickedGoals] = useState([]);
+  const [untickedGoals, setUntickedGoals] = useState(() => {
+    if (!prefill || !prefill.goalIds) return [];
+    return people.filter(p => (prefill.personIds || []).includes(p.id)).flatMap(p => p.goals.filter(g => g.progress < 100).map(g => g.id)).filter(id => !prefill.goalIds.includes(id));
+  });
   const [reflection, setReflection] = useState('');
   const [reflectionTags, setReflectionTags] = useState([]); // phrases picked in "How did it feel?"
-
-  const [eventKind, setEventKind] = useState(null); // 'recurring' | 'oneoff'
-  const [eventTitle, setEventTitle] = useState('');
-  const [eventPersonIds, setEventPersonIds] = useState(startPerson ? [startPerson] : []);
-  const [eventDate, setEventDate] = useState(() => new Date());
-  const [eventWeekdays, setEventWeekdays] = useState([new Date().getDay()]);
-  const [eventTime, setEventTime] = useState(() => nowToMinutes());
-  const [eventDefaultMeaningfulness, setEventDefaultMeaningfulness] = useState(3);
-  const [eventGoalId, setEventGoalId] = useState(null);
-  const [editingEventId, setEditingEventId] = useState(null);
-  const [selectedExisting, setSelectedExisting] = useState(null);
-  const [logMeaningfulness, setLogMeaningfulness] = useState(3);
-  const [logQuickDetailTags, setLogQuickDetailTags] = useState([]);
-  const [logTemplatesOpen, setLogTemplatesOpen] = useState(false);
 
   function go(next) {
     setDir(STEP_ORDER.indexOf(next) >= STEP_ORDER.indexOf(step) ? 'in' : 'back');
     setStep(next);
   }
-  const BACK = { type: 'kind', who: 'type', details: 'who', eventKind: 'kind', eventChoice: 'eventKind', eventList: 'eventChoice', eventForm: editingEventId ? 'eventList' : 'eventChoice' };
+  const BACK = { type: 'kind', who: 'type', details: 'who' };
   function goBack() {
     if (!BACK[step]) return;
-    if (step === 'eventList') setSelectedExisting(null);
     go(BACK[step]);
   }
 
   function toggleIn(setter, key) { setter(prev => prev.includes(key) ? prev.filter(k => k !== key) : [...prev, key]); }
   function togglePerson(id) { toggleIn(setPersonIds, id); }
-  function toggleEventPerson(id) { toggleIn(setEventPersonIds, id); }
-  function toggleEventWeekday(i) { setEventWeekdays(prev => prev.includes(i) ? prev.filter(x => x !== i) : [...prev, i].sort((a, b) => a - b)); }
   function pickType(key) { setType(key); go('who'); }
-  function openEditEvent(ev) {
-    setEditingEventId(ev.id);
-    setEventKind(ev.kind);
-    setEventTitle(ev.title);
-    setEventPersonIds(ev.personIds || []);
-    setEventDate(ev.date ? new Date(ev.date + 'T00:00:00') : new Date());
-    setEventWeekdays(ev.weekdays || (ev.weekday != null ? [ev.weekday] : [new Date().getDay()]));
-    setEventTime(ev.time != null ? ev.time : nowToMinutes());
-    setEventDefaultMeaningfulness(ev.defaultMeaningfulness || 3);
-    setEventGoalId(ev.goalId || null);
-    go('eventForm');
-  }
-  function startNewEvent() {
-    setEditingEventId(null); setEventTitle(''); setEventPersonIds(defaultPersonId ? [defaultPersonId] : []); setEventDate(new Date());
-    setEventWeekdays([new Date().getDay()]); setEventTime(nowToMinutes()); setEventDefaultMeaningfulness(3); setEventGoalId(null);
-    go('eventForm');
-  }
-
-  // Lets Home's "Manage recurring" section jump straight into editing a
-  // specific event, bypassing kind/eventKind/eventChoice entirely.
-  useEffect(() => {
-    if (initialEditEvent) openEditEvent(initialEditEvent);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
   const canSave = personIds.length > 0 && type;
   const loggedPeople = personIds.map(id => people.find(p => p.id === id)).filter(Boolean);
   // Topics picked with "+ Add detail" are also saved on the person's profile
@@ -185,36 +132,12 @@ export function LogInteractionModal({ people, defaultPersonId, events, initialSt
     { key: 'reflect', letter: 'F', Icon: PenLine, label: 'How it felt', summary: reflectionTags.length ? `${reflectionTags.length} picked${reflection.trim() ? ', written' : ''}` : reflection.trim() ? 'written' : null },
   ].filter(Boolean);
 
-  const canSaveEvent = eventTitle.trim().length > 0 && (eventKind !== 'recurring' || eventWeekdays.length > 0);
-  // A reminder can be linked to one active goal of the people it's about;
-  // logging it then moves that goal (and only that one).
-  const eventGoals = people.filter(p => eventPersonIds.includes(p.id)).flatMap(p => p.goals.filter(g => g.progress < 100).map(g => ({ id: g.id, title: g.title, personName: p.name })));
-  function handleSaveEvent() {
-    if (!canSaveEvent) return;
-    const payload = {
-      title: eventTitle.trim(),
-      personIds: eventPersonIds,
-      kind: eventKind,
-      date: eventKind === 'oneoff' ? toISODate(eventDate) : null,
-      weekdays: eventKind === 'recurring' ? eventWeekdays : null,
-      time: eventTime,
-      defaultMeaningfulness: eventDefaultMeaningfulness,
-      goalId: eventGoals.some(g => g.id === eventGoalId) ? eventGoalId : null,
-    };
-    if (editingEventId) onUpdateEvent(editingEventId, payload);
-    else onCreateEvent(payload);
-    onClose();
-  }
-
-  const existingOfKind = (events || []).filter(e => e.kind === eventKind);
-
   // Keys, while this sheet is on top (not while one of its pickers is):
   //   every step  Backspace goes back
-  //   kind        1 Interaction, 2 Event       type  1-6 the types
+  //   kind        1 Interaction, 2 Plan something    type  1-6 the types
   //   who         Enter confirms
   //   details     1-5 how meaningful, N the note, D Add detail, R/L/I/G/F
   //               the extras, Enter (or Ctrl+Enter, even in the note) saves
-  //   eventKind   1 One-off, 2 Recurring       eventChoice  1 New, 2 Saved
   // Enter on a button reached with Tab presses that button instead.
   function handleKey(e) {
     if (e.metaKey || e.altKey) return;
@@ -231,7 +154,7 @@ export function LogInteractionModal({ people, defaultPersonId, events, initialSt
     const act = (fn) => { e.preventDefault(); fn(); };
     if (step === 'kind') {
       if (num === 1 && people.length > 0) act(() => go('type'));
-      else if (num === 2) act(() => go('eventKind'));
+      else if (num === 2 && onPlan) act(onPlan);
     } else if (step === 'type') {
       if (num && num <= TYPE_ORDER.length) act(() => pickType(TYPE_ORDER[num - 1]));
     } else if (step === 'who') {
@@ -245,12 +168,6 @@ export function LogInteractionModal({ people, defaultPersonId, events, initialSt
         const x = extras.find(item => item.letter.toLowerCase() === letter);
         if (x) act(() => setExtra(x.key));
       }
-    } else if (step === 'eventKind') {
-      if (num === 1) act(() => { setEventKind('oneoff'); go('eventChoice'); });
-      else if (num === 2) act(() => { setEventKind('recurring'); go('eventChoice'); });
-    } else if (step === 'eventChoice') {
-      if (num === 1) act(startNewEvent);
-      else if (num === 2 && existingOfKind.length > 0) act(() => go('eventList'));
     }
   }
 
@@ -259,10 +176,6 @@ export function LogInteractionModal({ people, defaultPersonId, events, initialSt
     type: 'What did you do?',
     who: 'Who was this with?',
     details: type && loggedPeople.length ? `${DETAIL_TITLE[type] || 'With'} ${namesText(loggedPeople.map(p => p.name))}` : 'Add details',
-    eventKind: 'Recurring or one-off?',
-    eventChoice: 'Create new or choose existing?',
-    eventForm: editingEventId ? 'Edit event' : (eventKind === 'recurring' ? 'New recurring event' : 'New one-off event'),
-    eventList: 'Your saved events',
   };
   const footer =
     step === 'who' ? (
@@ -271,8 +184,6 @@ export function LogInteractionModal({ people, defaultPersonId, events, initialSt
       </button>
     ) : step === 'details' ? (
       <button type="button" onClick={handleSave} disabled={!canSave} className="primary-btn">Save interaction <Kbd onAccent>↵</Kbd></button>
-    ) : step === 'eventForm' ? (
-      <button type="button" onClick={handleSaveEvent} disabled={!canSaveEvent} className="primary-btn">{editingEventId ? 'Save changes' : `Save ${eventKind === 'recurring' ? 'recurring event' : 'event'}`}</button>
     ) : null;
 
   return (
@@ -280,18 +191,18 @@ export function LogInteractionModal({ people, defaultPersonId, events, initialSt
       <div key={step} className={dir === 'in' ? 'step-in' : dir === 'back' ? 'step-back' : ''}>
         {step === 'kind' && (
           <div className="grid grid-cols-2 gap-3">
-            {/* With nobody in your circle yet, only events can be made. */}
+            {/* With nobody in your circle yet, only plans can be made. */}
             <button type="button" onClick={() => go('type')} disabled={people.length === 0} className="tile px-3 py-6 flex flex-col items-center gap-2.5 text-center">
               <Kbd>1</Kbd>
               <span className="tile-icon"><MessageCircle size={22} color={COLORS.accent} /></span>
               <span className="text-sm font-bold">Interaction</span>
               <span className="text-xs" style={{ color: COLORS.inkSoft }}>{people.length === 0 ? 'Add someone in People first' : 'Something that already happened'}</span>
             </button>
-            <button type="button" onClick={() => go('eventKind')} className="tile px-3 py-6 flex flex-col items-center gap-2.5 text-center">
+            <button type="button" onClick={onPlan} className="tile px-3 py-6 flex flex-col items-center gap-2.5 text-center">
               <Kbd>2</Kbd>
               <span className="tile-icon"><Calendar size={22} color={COLORS.accent} /></span>
-              <span className="text-sm font-bold">Event</span>
-              <span className="text-xs" style={{ color: COLORS.inkSoft }}>Something upcoming or recurring</span>
+              <span className="text-sm font-bold">Plan something</span>
+              <span className="text-xs" style={{ color: COLORS.inkSoft }}>Something coming up, on your calendar</span>
             </button>
           </div>
         )}
@@ -378,142 +289,6 @@ export function LogInteractionModal({ people, defaultPersonId, events, initialSt
           </>
         )}
 
-        {step === 'eventKind' && (
-          <div className="grid grid-cols-2 gap-3">
-            <button type="button" onClick={() => { setEventKind('oneoff'); go('eventChoice'); }} className="tile px-3 py-6 flex flex-col items-center gap-2.5 text-center">
-              <Kbd>1</Kbd>
-              <span className="tile-icon"><Calendar size={22} color={COLORS.accent} /></span>
-              <span className="text-sm font-bold">One-off</span>
-              <span className="text-xs" style={{ color: COLORS.inkSoft }}>A single upcoming thing</span>
-            </button>
-            <button type="button" onClick={() => { setEventKind('recurring'); go('eventChoice'); }} className="tile px-3 py-6 flex flex-col items-center gap-2.5 text-center">
-              <Kbd>2</Kbd>
-              <span className="tile-icon"><Repeat size={22} color={COLORS.accent} /></span>
-              <span className="text-sm font-bold">Recurring</span>
-              <span className="text-xs" style={{ color: COLORS.inkSoft }}>Repeats weekly</span>
-            </button>
-          </div>
-        )}
-
-        {step === 'eventChoice' && (
-          <div className="grid grid-cols-2 gap-3">
-            <button type="button" onClick={startNewEvent} className="tile px-3 py-6 flex flex-col items-center gap-2.5 text-center">
-              <Kbd>1</Kbd>
-              <span className="tile-icon"><Plus size={22} color={COLORS.accent} /></span>
-              <span className="text-sm font-bold">Create new</span>
-            </button>
-            <button type="button" onClick={() => go('eventList')} disabled={existingOfKind.length === 0} className="tile px-3 py-6 flex flex-col items-center gap-2.5 text-center">
-              <Kbd>2</Kbd>
-              <span className="tile-icon"><Clock size={22} color={COLORS.accent} /></span>
-              <span className="text-sm font-bold">Choose saved</span>
-              <span className="text-xs" style={{ color: COLORS.inkSoft }}>{existingOfKind.length > 0 ? `${existingOfKind.length} saved` : 'None saved yet'}</span>
-            </button>
-          </div>
-        )}
-
-        {step === 'eventForm' && (
-          <>
-            <SectionLabel>What is it?</SectionLabel>
-            <input autoFocus value={eventTitle} onChange={e => setEventTitle(e.target.value)} placeholder={eventKind === 'recurring' ? 'e.g. Check in with Grandma' : 'e.g. Ask Sam about their football game'} className="w-full text-sm rounded-xl px-3 py-2.5 mb-5" style={{ border: `1px solid ${COLORS.line}` }} />
-
-            {eventKind === 'oneoff' ? (
-              <>
-                <SectionLabel>When?</SectionLabel>
-                <div className="mb-5">
-                  <DateDropdown value={eventDate} onChange={setEventDate} minDate={new Date()} />
-                </div>
-              </>
-            ) : (
-              <>
-                <SectionLabel>Which day(s) of the week?</SectionLabel>
-                <p className="text-xs mb-2" style={{ color: COLORS.inkSoft }}>Tap as many as apply, for example Monday through Friday.</p>
-                <div className="grid grid-cols-7 gap-1 mb-1.5">
-                  {WEEKDAY_SHORT.map((w, i) => {
-                    const on = eventWeekdays.includes(i);
-                    return <button key={w} type="button" onClick={() => toggleEventWeekday(i)} aria-pressed={on} aria-label={w} className="rounded-xl py-2 flex items-center justify-center" style={{ background: on ? COLORS.accent : COLORS.tile, border: `1.5px solid ${on ? COLORS.accent : COLORS.line}`, color: on ? COLORS.onAccent : COLORS.ink, fontSize: 11, fontWeight: 700 }}>{w[0]}</button>;
-                  })}
-                </div>
-                {eventWeekdays.length > 0 && <p className="text-xs mb-5" style={{ color: COLORS.accent, fontWeight: 600 }}>{formatWeekdays(eventWeekdays)}</p>}
-              </>
-            )}
-
-            <SectionLabel>What time?</SectionLabel>
-            <div className="mb-5">
-              <TimeDropdown value={eventTime} onChange={setEventTime} />
-            </div>
-
-            <SectionLabel>Usual meaningfulness</SectionLabel>
-            <p className="text-xs mb-2" style={{ color: COLORS.inkSoft }}>Pre-fills this each time you log it. You can still change it in the moment.</p>
-            <div className="mb-5"><Scale value={eventDefaultMeaningfulness} onChange={setEventDefaultMeaningfulness} label="Usual meaningfulness" /></div>
-
-            <SectionLabel>Who's this about? {optional}</SectionLabel>
-            <div style={{ display: 'flex', flexWrap: 'wrap', columnGap: 6, rowGap: 8, paddingBottom: 4, maxHeight: 180, overflowY: 'auto' }}>
-              {people.map(p => <PersonPick key={p.id} person={p} size={42} active={eventPersonIds.includes(p.id)} onClick={() => toggleEventPerson(p.id)} />)}
-            </div>
-            {eventGoals.length > 0 && (
-              <>
-                <div className="mt-5"><SectionLabel>Linked goal {optional}</SectionLabel></div>
-                <div className="flex flex-wrap gap-1.5">
-                  {eventGoals.map(g => (
-                    <button key={g.id} type="button" onClick={() => setEventGoalId(id => id === g.id ? null : g.id)} aria-pressed={eventGoalId === g.id} className={`chip${eventGoalId === g.id ? ' chip--on' : ''}`}>{g.title}{eventPersonIds.length > 1 ? ` (${g.personName})` : ''}</button>
-                  ))}
-                </div>
-              </>
-            )}
-          </>
-        )}
-
-        {step === 'eventList' && existingOfKind.map(ev => {
-          const evPeople = (ev.personIds || []).map(id => people.find(p => p.id === id)).filter(Boolean);
-          const isSel = selectedExisting === ev.id;
-          const evWeekdays = ev.weekdays || (ev.weekday != null ? [ev.weekday] : []);
-          return (
-            <div key={ev.id} className="rounded-2xl p-3.5 mb-2.5" style={{ background: COLORS.tile, border: `1.5px solid ${isSel ? COLORS.accent : COLORS.line}`, transition: 'border-color .16s' }}>
-              <button type="button" onClick={() => { const next = isSel ? null : ev.id; setSelectedExisting(next); if (next) { setLogMeaningfulness(ev.defaultMeaningfulness || 3); setLogQuickDetailTags([]); setLogTemplatesOpen(false); } }} className="w-full text-left">
-                <p className="text-sm font-semibold" style={{ color: COLORS.ink }}>{ev.title}</p>
-                <p className="text-xs mt-0.5" style={{ color: COLORS.inkSoft }}>
-                  {ev.kind === 'recurring' ? formatWeekdays(evWeekdays) : (ev.date ? formatCalendarDate(new Date(`${ev.date}T00:00:00`)) : 'One-off')}
-                  {ev.time != null ? ` · ${formatTime12(ev.time)}` : ''}
-                  {evPeople.length > 0 ? ` · ${evPeople.map(p => p.name).join(', ')}` : ''}
-                </p>
-              </button>
-              {isSel && (
-                <div className="mt-3 fade-anim">
-                  {evPeople.length > 0 && (
-                    <>
-                      <p className="text-xs font-semibold mb-1.5" style={{ color: COLORS.ink }}>How meaningful was it?</p>
-                      <div className="mb-3"><Scale size="sm" value={logMeaningfulness} onChange={setLogMeaningfulness} label="How meaningful was it?" /></div>
-                      <div className="flex items-center justify-between mb-1.5">
-                        <p className="text-xs font-semibold" style={{ color: COLORS.ink }}>Quick detail {optional}</p>
-                        <button type="button" onClick={() => setLogTemplatesOpen(true)} className="text-xs font-semibold" style={{ color: COLORS.accent }}>+ Add detail</button>
-                      </div>
-                      {logTemplatesOpen && (
-                        <TemplatePickerModal title="Add detail" onClose={() => setLogTemplatesOpen(false)} onPick={(item) => setLogQuickDetailTags(prev => [...prev, item])} />
-                      )}
-                      {logQuickDetailTags.length > 0 && (
-                        <div className="flex items-center gap-1.5 flex-wrap mb-3">
-                          {logQuickDetailTags.map((tag, i) => (
-                            <span key={i} className="chip chip--on chip-in" style={{ paddingRight: 6 }}>
-                              {tag}
-                              <button type="button" onClick={() => setLogQuickDetailTags(prev => prev.filter((_, idx) => idx !== i))} aria-label={`Remove "${tag}"`} className="p-0.5"><X size={12} /></button>
-                            </span>
-                          ))}
-                        </div>
-                      )}
-                    </>
-                  )}
-                  <div className="flex items-center gap-2">
-                    {evPeople.length > 0 && (
-                      <button type="button" onClick={() => { const detail = logQuickDetailTags.join(', '); if (onMarkEventDone) onMarkEventDone(ev.id, occurrenceToLog(ev), { quiet: true }); onSubmit({ personIds: ev.personIds, type: 'other', meaningfulness: logMeaningfulness, notes: [], activeListening: [], summary: detail ? `${ev.title} — ${detail}` : ev.title, pickedDate: new Date(), goalIds: linkedGoalIds ? linkedGoalIds(ev) : undefined }); }} className="flex-1 text-xs font-semibold rounded-full py-2" style={{ background: COLORS.accent, color: COLORS.onAccent }}>Log this now</button>
-                    )}
-                    <button type="button" onClick={() => openEditEvent(ev)} className="flex-1 text-xs font-semibold rounded-full py-2" style={{ background: COLORS.paperRaised, border: `1px solid ${COLORS.line}`, color: COLORS.ink }}>Edit</button>
-                    <button type="button" onClick={() => { onDeleteEvent(ev.id); setSelectedExisting(null); }} className="flex-1 text-xs font-semibold rounded-full py-2" style={{ background: COLORS.paperRaised, border: `1px solid ${COLORS.alert}`, color: COLORS.alert }}>Delete</button>
-                  </div>
-                </div>
-              )}
-            </div>
-          );
-        })}
       </div>
     </Sheet>
   );

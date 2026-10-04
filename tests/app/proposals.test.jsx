@@ -187,29 +187,35 @@ describe('P6 smarter reminders', () => {
   const minutesNow = now.getHours() * 60 + now.getMinutes();
   const inDays = (n) => { const d = new Date(); d.setDate(d.getDate() + n); return d; };
 
-  it('shows a weekly reminder ahead of its day, and marking a one-off done hides it', async () => {
+  it('shows a weekly plan on its day, and marking a one-off done ticks it off', async () => {
     const tomorrow = inDays(1);
     seedState({ events: [
       { id: 'w', title: 'Football practice', kind: 'recurring', weekdays: [tomorrow.getDay()], time: 1080, personIds: [] },
       { id: 'o', title: 'Book dentist', kind: 'oneoff', date: TODAY, time: 600, personIds: [] },
     ] });
     const { user } = renderApp();
-    expect(screen.getByText('Football practice').closest('button').textContent).toContain('Tomorrow');
-    await user.click(screen.getByText('Book dentist'));
+    expect(screen.queryByText('Football practice')).toBeNull();
+    await user.keyboard('{ArrowRight}');
+    expect(screen.getByRole('heading', { name: 'Tomorrow' })).toBeTruthy();
+    expect(screen.getByText('Football practice')).toBeTruthy();
+    await user.keyboard('t');
+    await user.click(screen.getByRole('button', { name: 'Book dentist' }));
     await user.click(screen.getByRole('button', { name: 'Mark done' }));
-    expect(screen.queryByText('Book dentist')).toBeNull();
     expect(savedState().events.find(e => e.id === 'o').doneAt).toBe(TODAY);
-    await user.click(screen.getByRole('button', { name: 'Manage' }));
-    expect(screen.getByText(/\(done\)/)).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Book dentist, done' })).toBeTruthy();
   });
 
   it('logging a reminder linked to a goal moves only that goal, and marks it done', async () => {
     const morgan = person('Morgan', { goals: [goal('g1', 'Learn more'), goal('g2', 'Spend time together')] });
     seedState({ people: [morgan], events: [{ id: 'o', title: 'Lunch with Morgan', kind: 'oneoff', date: TODAY, time: 720, personIds: [morgan.id], goalId: 'g2' }] });
     const { user } = renderApp();
-    expect(screen.getByText('Goal: Spend time together')).toBeTruthy();
-    await user.click(screen.getByText('Lunch with Morgan'));
-    await user.click(screen.getByRole('button', { name: 'Log this now' }));
+    await user.click(screen.getByRole('button', { name: 'Lunch with Morgan' }));
+    const sheet = dialog('Lunch with Morgan');
+    expect(within(sheet).getByText('Moves "Spend time together"')).toBeTruthy();
+    await user.click(within(sheet).getByRole('button', { name: 'Log it' }));
+    expect(screen.getByRole('dialog', { name: 'Time with Morgan' })).toBeTruthy();
+    expect(screen.getByLabelText('Quick note').value).toBe('Lunch with Morgan');
+    await user.keyboard('{Enter}');
     const goals = savedPerson('Morgan').goals;
     expect(goals.find(g => g.id === 'g1').progress).toBe(10);
     expect(goals.find(g => g.id === 'g2').progress).toBeGreaterThan(10);
@@ -235,16 +241,16 @@ describe('P6 smarter reminders', () => {
       const event = { id: 'w', title: 'Call Morgan', kind: 'recurring', weekdays: [0, 1, 2, 3, 4, 5, 6], time: minutesNow, personIds: [morgan.id] };
       seedState({ people: [morgan], events: [event] });
       const first = renderApp();
-      expect(shown).toContainEqual(['Layers reminder', 'Call Morgan (Morgan)']);
+      expect(shown.find(s => s[0] === 'Call Morgan')[1]).toMatch(/^Starting now · .* · with Morgan$/);
       first.unmount();
       renderApp(); // a relaunch the same day doesn't repeat it
-      expect(shown.filter(s => s[0] === 'Layers reminder')).toHaveLength(1);
+      expect(shown.filter(s => s[0] === 'Call Morgan')).toHaveLength(1);
 
       window.localStorage.clear();
       shown.length = 0;
       seedState({ people: [morgan], events: [event], profile: { name: 'T', focus: 'mix', reminderNotifications: false } });
       renderApp();
-      expect(shown.filter(s => s[0] === 'Layers reminder')).toEqual([]);
+      expect(shown.filter(s => s[0] === 'Call Morgan')).toEqual([]);
     } finally {
       delete globalThis.Notification;
     }
@@ -254,10 +260,13 @@ describe('P6 smarter reminders', () => {
     seedState();
     const { user } = renderApp();
     await user.click(nav('Me'));
-    const sw = screen.getByRole('switch', { name: /Reminders at their time/ });
+    const sw = screen.getByRole('switch', { name: /Reminders before plans/ });
     expect(sw.getAttribute('aria-checked')).toBe('true');
     await user.click(sw);
     expect(savedState().profile.reminderNotifications).toBe(false);
+    await user.click(screen.getByRole('button', { name: '9:00 AM' })); // morning summary time
+    await user.click(screen.getByRole('switch', { name: /Evening heads-up/ }));
+    expect(savedState().profile).toMatchObject({ morningTime: 540, eveningHeadsUp: false });
   });
 });
 

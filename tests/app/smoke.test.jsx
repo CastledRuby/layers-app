@@ -6,7 +6,7 @@ import { describe, expect, it } from 'vitest';
 import { nav, relaunch, renderApp, savedState, seedState, trackErrors } from './harness.jsx';
 
 const TABS = [
-  ['Home', /Good (morning|afternoon|evening)/],
+  ['Today', /Good (morning|afternoon|evening)/],
   ['People', /Your circle/],
   ['Coach', /Conversation Coach/],
   ['Journal', /Every interaction, in one place/],

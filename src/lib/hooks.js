@@ -3,7 +3,7 @@
 // rather than assume the app was launched this morning.
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { toISODate } from './dates.js';
-import { dueReminders } from './reminders.js';
+import { plannedNotifications } from './calendar.js';
 import { addNotifiedReminder, getLastNotifiedDate, getNotifiedReminders, setLastNotifiedDate } from './storage.js';
 import { checkInReminder } from './text.js';
 
@@ -57,28 +57,62 @@ function notify(title, body) {
   return n;
 }
 
-// Reminders notify at their time (P6): checked every 30 seconds while Layers
-// runs, including in the tray, and at most once per reminder per day
-// (lib/reminders.js dueReminders). Turned off in Me > Notifications.
-export function useReminderNotifications(enabled, events, people) {
-  const latest = useRef({ events, people });
-  useLayoutEffect(() => { latest.current = { events, people }; });
+// The calendar's notifications (lib/calendar.js plannedNotifications):
+// reminders before each plan, "How did it go?" after one, and the morning
+// and evening summaries.
+// - In the Windows app (window.layersSystem.scheduleNotifications), the next
+//   two weeks are handed to Windows whenever they change, and again every
+//   hour as that window moves on. Windows shows them on time, even with
+//   Layers closed, with buttons that come back as layers:// links.
+// - Anywhere else (a browser), Layers shows each one itself while it runs,
+//   once, within 15 minutes of its time.
+const SCHEDULE_DAYS = 14;
+const LATE_MINUTES = 15;
+
+export function useCalendarNotifications({ enabled, state, settings, snoozes }) {
+  const latest = useRef({ state, settings, snoozes });
+  useLayoutEffect(() => { latest.current = { state, settings, snoozes }; });
+  const canSchedule = typeof window !== 'undefined' && !!(window.layersSystem && window.layersSystem.scheduleNotifications);
+  const [hour, setHour] = useState(0);
   useEffect(() => {
-    if (!enabled || typeof Notification === 'undefined') return undefined;
+    const timer = setInterval(() => setHour(h => h + 1), 60 * 60 * 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const lastSent = useRef(null);
+  const settingsKey = JSON.stringify(settings);
+  useEffect(() => {
+    if (!canSchedule) return undefined;
+    const timer = setTimeout(() => {
+      const now = Date.now();
+      const cur = latest.current;
+      const list = enabled ? plannedNotifications(cur.state, cur.settings, now, now + SCHEDULE_DAYS * 86400000, cur.snoozes) : [];
+      const json = JSON.stringify(list);
+      if (json === lastSent.current) return;
+      lastSent.current = json;
+      Promise.resolve(window.layersSystem.scheduleNotifications(list)).catch(() => { lastSent.current = null; });
+    }, 1500);
+    return () => clearTimeout(timer);
+  }, [canSchedule, enabled, state.events, state.people, state.generalGoals, settingsKey, snoozes, hour]);
+
+  useEffect(() => {
+    if (canSchedule || !enabled || typeof Notification === 'undefined') return undefined;
     const check = () => {
       if (Notification.permission !== 'granted') {
         if (Notification.permission === 'default') Notification.requestPermission();
         return;
       }
-      const { events: evs, people: ppl } = latest.current;
-      dueReminders(evs, new Date(), getNotifiedReminders()).forEach(({ ev, key }) => {
-        const names = (ev.personIds || []).map(id => (ppl.find(p => p.id === id) || {}).name).filter(Boolean);
-        try { notify('Layers reminder', names.length ? `${ev.title} (${names.join(', ')})` : ev.title); } catch { return; }
-        addNotifiedReminder(key);
+      const now = Date.now();
+      const cur = latest.current;
+      const seen = getNotifiedReminders();
+      plannedNotifications(cur.state, cur.settings, now - LATE_MINUTES * 60000, now, cur.snoozes).forEach(n => {
+        if (seen.has(n.tag)) return;
+        try { notify(n.title, n.body); } catch { return; }
+        addNotifiedReminder(n.tag);
       });
     };
     check();
     const timer = setInterval(check, 30 * 1000);
     return () => clearInterval(timer);
-  }, [enabled]);
+  }, [canSchedule, enabled]);
 }

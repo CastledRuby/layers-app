@@ -1,0 +1,319 @@
+// The Today tab, Layers' main screen: your day planned out, with a week strip
+// or the month grid to move around in, what's waiting for a quick answer,
+// ideas for who to see, and your goals. See docs/renderer/app-structure.md.
+//
+// Keys (not while typing or with a sheet open): M switches Day and Month,
+// the arrows move a day, T comes back to today. P (anywhere) plans
+// something on the day shown; that one lives in App.jsx.
+
+import { useEffect, useMemo } from 'react';
+import { Bell, Check, ChevronLeft, ChevronRight, Plus, Repeat } from 'lucide-react';
+import { Kbd, ProgressBar } from '../components/atoms.jsx';
+import { AvatarStack } from '../components/PersonPick.jsx';
+import { hasOpenSheet, isTyping } from '../components/sheetLayer.js';
+import { getLayer, TYPE_META } from '../data/constants.js';
+import { alertOf, dayAgenda, isDaily, monthMarks, needsAnswer, planIdeas, templateFor } from '../lib/calendar.js';
+import { formatTime12, MONTH_NAMES, parseISODay, toISODate, WEEKDAY_SHORT } from '../lib/dates.js';
+import { focusSuggestion, homeGoalTitle, summaryFor } from '../lib/text.js';
+import { COLORS } from '../theme.js';
+
+const WEEKDAY_LONG = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+const addDays = (day, n) => { const d = parseISODay(day); return toISODate(new Date(d.getFullYear(), d.getMonth(), d.getDate() + n)); };
+const daysBetween = (a, b) => Math.round((parseISODay(b) - parseISODay(a)) / 86400000);
+
+function relativeLabel(day, today) {
+  const diff = daysBetween(today, day);
+  if (diff === 0) return 'Today';
+  if (diff === 1) return 'Tomorrow';
+  if (diff === -1) return 'Yesterday';
+  return WEEKDAY_LONG[parseISODay(day).getDay()];
+}
+function fullDate(day, today) {
+  const d = parseISODay(day);
+  const year = d.getFullYear() !== parseISODay(today).getFullYear() ? ` ${d.getFullYear()}` : '';
+  return `${WEEKDAY_LONG[d.getDay()]} ${d.getDate()} ${MONTH_NAMES[d.getMonth()]}${year}`;
+}
+
+// Small dots under a day: planned (accent), key dates (rose), logged (green).
+function Dots({ mark }) {
+  if (!mark) return <span style={{ height: 5 }} />;
+  const dots = [mark.planned && COLORS.accent, mark.dates && COLORS.layer4, mark.logged && COLORS.good].filter(Boolean);
+  return (
+    <span className="flex items-center justify-center gap-0.5" style={{ height: 5 }} aria-hidden="true">
+      {dots.map((c, i) => <span key={i} style={{ width: 5, height: 5, borderRadius: '50%', background: c }} />)}
+    </span>
+  );
+}
+
+function DayCell({ day, today, selected, mark, onSelect, compact }) {
+  const d = parseISODay(day);
+  const isToday = day === today;
+  const isSel = day === selected;
+  return (
+    <button type="button" onClick={() => onSelect(day)} aria-pressed={isSel} aria-label={fullDate(day, today)} className="flex flex-col items-center gap-1 rounded-2xl py-1.5 day-cell" style={{ flex: 1, minWidth: 0 }}>
+      {!compact && <span className="text-xs font-semibold" style={{ color: isSel ? COLORS.accent : COLORS.inkSoft }}>{WEEKDAY_SHORT[d.getDay()][0]}</span>}
+      <span className={isSel ? 'pop' : ''} style={{ width: 34, height: 34, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: isSel || isToday ? 700 : 500, fontVariantNumeric: 'tabular-nums', background: isSel ? COLORS.accent : 'transparent', color: isSel ? COLORS.onAccent : COLORS.ink, boxShadow: isToday && !isSel ? `inset 0 0 0 1.5px ${COLORS.accent}` : 'none' }}>{d.getDate()}</span>
+      <Dots mark={mark} />
+    </button>
+  );
+}
+
+function WeekStrip({ selected, today, marksFor, onSelect }) {
+  const d = parseISODay(selected);
+  const monday = addDays(selected, -((d.getDay() + 6) % 7));
+  const days = Array.from({ length: 7 }, (_, i) => addDays(monday, i));
+  return (
+    <div className="flex items-center gap-1 mt-4">
+      <button type="button" onClick={() => onSelect(addDays(selected, -7))} aria-label="Previous week" className="icon-btn"><ChevronLeft size={18} color={COLORS.inkSoft} /></button>
+      <div className="flex flex-1 min-w-0">{days.map(day => <DayCell key={day} day={day} today={today} selected={selected} mark={marksFor(day)} onSelect={onSelect} />)}</div>
+      <button type="button" onClick={() => onSelect(addDays(selected, 7))} aria-label="Next week" className="icon-btn"><ChevronRight size={18} color={COLORS.inkSoft} /></button>
+    </div>
+  );
+}
+
+function MonthGrid({ selected, today, marksFor, onSelect }) {
+  const d = parseISODay(selected);
+  const year = d.getFullYear(); const month = d.getMonth();
+  const lead = (new Date(year, month, 1).getDay() + 6) % 7; // weeks start on Monday
+  const count = new Date(year, month + 1, 0).getDate();
+  const cells = [...Array(lead).fill(null), ...Array.from({ length: count }, (_, i) => toISODate(new Date(year, month, i + 1)))];
+  const moveMonth = (n) => {
+    const target = new Date(year, month + n, 1);
+    const last = new Date(target.getFullYear(), target.getMonth() + 1, 0).getDate();
+    onSelect(toISODate(new Date(target.getFullYear(), target.getMonth(), Math.min(d.getDate(), last))));
+  };
+  return (
+    <div className="mt-4 rounded-3xl p-3 fade-anim" style={{ background: COLORS.paperRaised, border: `1px solid ${COLORS.line}` }}>
+      <div className="flex items-center justify-between mb-2">
+        <button type="button" onClick={() => moveMonth(-1)} aria-label="Previous month" className="icon-btn"><ChevronLeft size={18} color={COLORS.inkSoft} /></button>
+        <p className="font-display" style={{ fontSize: 18, color: COLORS.ink }}>{MONTH_NAMES[month]} {year}</p>
+        <button type="button" onClick={() => moveMonth(1)} aria-label="Next month" className="icon-btn"><ChevronRight size={18} color={COLORS.inkSoft} /></button>
+      </div>
+      <div className="grid grid-cols-7 mb-1">
+        {['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((w, i) => <span key={i} className="text-center text-xs font-semibold" style={{ color: COLORS.inkSoft }}>{w}</span>)}
+      </div>
+      <div className="grid grid-cols-7" role="grid" aria-label={`${MONTH_NAMES[month]} ${year}`}>
+        {cells.map((day, i) => day ? <DayCell key={day} day={day} today={today} selected={selected} mark={marksFor(day)} onSelect={onSelect} compact /> : <span key={`x${i}`} />)}
+      </div>
+    </div>
+  );
+}
+
+function SectionTitle({ children, extra }) {
+  return (
+    <div className="flex items-center justify-between mt-6 mb-2.5">
+      <p className="font-display" style={{ fontSize: 19, color: COLORS.ink }}>{children}</p>
+      {extra}
+    </div>
+  );
+}
+
+function EventRow({ item, now, onOpen }) {
+  const { ev, start, end, people, done } = item;
+  const template = templateFor(ev.template);
+  const past = end !== null && now !== null && end <= now;
+  const alert = alertOf(ev);
+  return (
+    <button type="button" onClick={onOpen} aria-label={`${ev.title}${done ? ', done' : ''}`} className="w-full flex items-stretch gap-3 text-left event-row">
+      <div className="shrink-0 text-right pt-2.5" style={{ width: 62 }}>
+        {start === null ? (
+          <p className="text-xs font-semibold" style={{ color: COLORS.inkSoft }}>All day</p>
+        ) : (
+          <>
+            <p className="text-xs font-bold" style={{ color: past ? COLORS.inkSoft : COLORS.ink, fontVariantNumeric: 'tabular-nums' }}>{formatTime12(start)}</p>
+            <p className="text-xs" style={{ color: COLORS.inkSoft, fontVariantNumeric: 'tabular-nums' }}>{formatTime12(end)}</p>
+          </>
+        )}
+      </div>
+      <div className="flex-1 min-w-0 rounded-2xl px-3.5 py-2.5 mb-2" style={{ background: done ? 'transparent' : COLORS.paperRaised, border: `1px solid ${COLORS.line}`, boxShadow: done ? 'none' : `inset 3px 0 0 ${people.length ? getLayer(Math.max(...people.map(p => p.layer))).color : COLORS.accent}`, opacity: done ? 0.6 : 1 }}>
+        <div className="flex items-center gap-2">
+          {done ? <Check size={15} color={COLORS.good} strokeWidth={3} /> : template && <span aria-hidden="true">{template.emoji}</span>}
+          <p className="text-sm font-semibold flex-1 min-w-0 truncate" style={{ color: COLORS.ink, textDecoration: done ? 'line-through' : 'none' }}>{ev.title}</p>
+          {people.length > 0 && <AvatarStack people={people} size={22} />}
+        </div>
+        <p className="text-xs mt-0.5 flex items-center gap-1.5" style={{ color: COLORS.inkSoft }}>
+          {people.length > 0 && <span className="truncate">{people.map(p => p.name).join(', ')}</span>}
+          {ev.kind === 'recurring' && <span className="flex items-center gap-0.5 shrink-0"><Repeat size={11} />{isDaily(ev) ? 'Daily' : 'Weekly'}</span>}
+          {alert !== null && !done && <span className="flex items-center gap-0.5 shrink-0"><Bell size={11} />{alert === 0 ? 'At time' : alert >= 1440 ? '1 day' : alert >= 60 ? `${alert / 60} h` : `${alert} min`}</span>}
+        </p>
+      </div>
+    </button>
+  );
+}
+
+export function TodayView({ today, selectedDay, onSelectDay, mode, onSetMode, people, journal, events, generalGoals, skills, profile, onPlan, onOpenEvent, onLogEvent, onTickEvent, onOpenPerson, onAddPerson, onOpenLog, onSwitchTab, onOpenGoals }) {
+  const state = useMemo(() => ({ people, journal, events, generalGoals }), [people, journal, events, generalGoals]);
+  const day = selectedDay || today;
+  const sel = parseISODay(day);
+  const marks = useMemo(() => {
+    const out = {};
+    // This month and its neighbours, enough for any week strip.
+    [-1, 0, 1].forEach(n => Object.assign(out, monthMarks(state, new Date(sel.getFullYear(), sel.getMonth() + n, 1).getFullYear(), new Date(sel.getFullYear(), sel.getMonth() + n, 1).getMonth())));
+    return out;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state, sel.getFullYear(), sel.getMonth()]);
+  const marksFor = (d) => marks[d];
+  const agenda = useMemo(() => dayAgenda(state, day), [state, day]);
+  const clock = new Date();
+  const nowMinutes = day === today ? clock.getHours() * 60 + clock.getMinutes() : null;
+  const waiting = useMemo(() => needsAnswer(agenda, day, clock), [agenda, day, clock.getHours(), clock.getMinutes()]); // eslint-disable-line react-hooks/exhaustive-deps
+  const ideas = useMemo(() => (day >= today ? planIdeas(state, parseISODay(today)) : []), [state, day, today]);
+  const suggestion = useMemo(() => focusSuggestion(profile && profile.focus, people, journal, skills, parseISODay(today)), [profile, people, journal, skills, today]);
+  const topGoals = useMemo(() => {
+    const fromPeople = people.flatMap(p => p.goals.filter(g => g.progress < 100).map(g => ({ ...g, personName: p.name, color: getLayer(p.layer).color })));
+    const fromGeneral = generalGoals.filter(g => g.progress < 100).map(g => ({ ...g, personName: null, color: COLORS.accent }));
+    return [...fromPeople, ...fromGeneral].sort((a, b) => b.progress - a.progress).slice(0, 3);
+  }, [people, generalGoals]);
+
+  // Day-level keys; P for planning is global (App.jsx).
+  useEffect(() => {
+    function onKey(e) {
+      if (e.ctrlKey || e.metaKey || e.altKey || isTyping() || hasOpenSheet()) return;
+      if (e.key === 'm' || e.key === 'M') { e.preventDefault(); onSetMode(mode === 'month' ? 'day' : 'month'); }
+      else if (e.key === 'ArrowLeft') { e.preventDefault(); onSelectDay(addDays(day, -1)); }
+      else if (e.key === 'ArrowRight') { e.preventDefault(); onSelectDay(addDays(day, 1)); }
+      else if (e.key === 't' || e.key === 'T') { e.preventDefault(); onSelectDay(today); }
+    }
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [mode, day, today, onSetMode, onSelectDay]);
+
+  const hour = clock.getHours();
+  const greeting = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
+  const isEmpty = agenda.allDay.length === 0 && agenda.timed.length === 0;
+  const nowIndex = nowMinutes === null ? -1 : agenda.timed.findIndex(it => it.start > nowMinutes);
+  function runSuggestion() {
+    const a = suggestion.action;
+    if (a.type === 'addPerson') onAddPerson();
+    else if (a.type === 'log') onOpenLog();
+    else if (a.type === 'person') onOpenPerson(a.id);
+    else if (a.type === 'tab') onSwitchTab(a.tab);
+  }
+
+  return (
+    <div className="px-5 pt-6 pb-4">
+      <p className="text-sm" style={{ color: COLORS.inkSoft }}>{greeting}{profile && profile.name ? `, ${profile.name}` : ''}</p>
+      <div className="flex items-end justify-between gap-3 mt-0.5">
+        <div className="min-w-0">
+          <h1 className="font-display" style={{ fontSize: 30, lineHeight: 1.1, color: COLORS.ink, margin: 0 }}>{relativeLabel(day, today)}</h1>
+          <p className="text-sm mt-1 flex items-center gap-2" style={{ color: COLORS.inkSoft }}>
+            {fullDate(day, today)}
+            {day !== today && <button type="button" onClick={() => onSelectDay(today)} className="chip" style={{ padding: '2px 8px', fontSize: 11 }}>Back to today <Kbd>T</Kbd></button>}
+          </p>
+        </div>
+        <div className="seg seg--sm shrink-0" role="group" aria-label="Calendar view" style={{ width: 132 }}>
+          {['day', 'month'].map(m => (
+            <button key={m} type="button" onClick={() => onSetMode(m)} aria-pressed={mode === m} className={`seg-btn${mode === m ? ' seg-btn--on' : ''}`} style={{ fontSize: 12 }}>{m === 'day' ? 'Day' : 'Month'}</button>
+          ))}
+        </div>
+      </div>
+
+      {mode === 'month'
+        ? <MonthGrid selected={day} today={today} marksFor={marksFor} onSelect={onSelectDay} />
+        : <WeekStrip selected={day} today={today} marksFor={marksFor} onSelect={onSelectDay} />}
+
+      {waiting.length > 0 && (
+        <div className="mt-5 flex flex-col gap-2">
+          {waiting.map(it => (
+            <div key={it.ev.id} className="rounded-2xl p-3.5 fade-anim" style={{ background: COLORS.accentSoft }}>
+              <p className="text-sm font-semibold" style={{ color: COLORS.ink }}>How did {it.ev.title.charAt(0).toLowerCase() + it.ev.title.slice(1)} go?</p>
+              <div className="flex items-center gap-2 mt-2.5">
+                <button type="button" onClick={() => onLogEvent(it.ev, day)} className="text-xs font-semibold rounded-full px-3.5 py-2" style={{ background: COLORS.accent, color: COLORS.onAccent }}>Log it</button>
+                <button type="button" onClick={() => onTickEvent(it.ev, day)} className="chip">Just tick it</button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <SectionTitle extra={<button type="button" onClick={() => onPlan({ day })} className="chip" style={{ padding: '4px 6px 4px 10px' }}><Plus size={13} color={COLORS.accent} />Plan<Kbd>P</Kbd></button>}>
+        {day === today ? 'Your day' : 'Planned'}
+      </SectionTitle>
+
+      {agenda.allDay.length > 0 && (
+        <div className="flex flex-wrap gap-1.5 mb-3">
+          {agenda.allDay.map(x => x.kind === 'event' ? (
+            <button key={x.id} type="button" onClick={() => onOpenEvent(x.ev.id, day)} className={`chip${x.done ? '' : ' chip--on'}`}>{x.done ? <Check size={12} /> : '📌'} {x.ev.title}</button>
+          ) : (
+            <button key={x.id} type="button" onClick={() => x.person ? onOpenPerson(x.person.id) : onOpenGoals()} className="chip">{x.emoji} {x.label}</button>
+          ))}
+        </div>
+      )}
+
+      {agenda.timed.map((it, i) => (
+        <div key={it.ev.id}>
+          {i === nowIndex && <NowLine minutes={nowMinutes} />}
+          <EventRow item={it} now={nowMinutes} onOpen={() => onOpenEvent(it.ev.id, day)} />
+        </div>
+      ))}
+      {nowIndex === -1 && nowMinutes !== null && agenda.timed.length > 0 && <NowLine minutes={nowMinutes} />}
+
+      {isEmpty && (
+        <button type="button" onClick={() => onPlan({ day })} className="w-full rounded-2xl p-5 text-center" style={{ border: `1.5px dashed ${COLORS.line}`, color: COLORS.inkSoft }}>
+          <p className="text-sm font-semibold" style={{ color: COLORS.ink }}>Nothing planned{day === today ? ' today' : ''}</p>
+          <p className="text-xs mt-1">Tap to plan something, or press P.</p>
+        </button>
+      )}
+
+      {agenda.logged.length > 0 && (
+        <div className="mt-4">
+          <p className="text-xs font-bold mb-1.5" style={{ color: COLORS.inkSoft, letterSpacing: '0.06em', textTransform: 'uppercase' }}>Logged</p>
+          {agenda.logged.map(x => (
+            <button key={x.id} type="button" onClick={() => onOpenPerson(x.person.id)} className="w-full flex items-center gap-2 py-1.5 text-left">
+              <Check size={13} color={COLORS.good} strokeWidth={3} />
+              <span className="text-sm" style={{ color: COLORS.ink }}>{(TYPE_META[x.entry.type] || TYPE_META.other).emoji} <span className="font-semibold">{x.person.name}:</span> {summaryFor(x.entry)}</span>
+            </button>
+          ))}
+        </div>
+      )}
+
+      {ideas.length > 0 && (
+        <>
+          <SectionTitle>Ideas</SectionTitle>
+          <div className="flex flex-col gap-2">
+            {ideas.map(idea => (
+              <div key={idea.person.id} className="flex items-center gap-3 rounded-2xl p-3" style={{ background: COLORS.paperRaised, border: `1px solid ${COLORS.line}` }}>
+                <AvatarStack people={[idea.person]} size={36} />
+                <p className="text-sm flex-1 min-w-0" style={{ color: COLORS.ink }}>{idea.text}</p>
+                <button type="button" onClick={() => onPlan({ day, personIds: [idea.person.id], template: idea.template })} className="text-xs font-semibold rounded-full px-3 py-2 shrink-0" style={{ background: COLORS.accent, color: COLORS.onAccent }}>Plan {templateFor(idea.template).label.toLowerCase()}</button>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+
+      {day === today && (
+        <>
+          <div className="rounded-2xl p-3.5 mt-6" style={{ background: COLORS.accentSoft }}>
+            <p className="text-xs font-semibold" style={{ color: COLORS.accent }}>Try this next</p>
+            <p className="text-sm mt-1" style={{ color: COLORS.ink }}>{suggestion.text}</p>
+            <button type="button" onClick={runSuggestion} className="text-xs font-semibold rounded-full px-3 py-1.5 mt-2.5" style={{ background: COLORS.accent, color: COLORS.onAccent }}>{suggestion.button}</button>
+          </div>
+
+          <SectionTitle extra={<button type="button" onClick={onOpenGoals} className="text-xs font-medium" style={{ color: COLORS.accent }}>See all</button>}>Current goals</SectionTitle>
+          {topGoals.length === 0 ? (
+            <p className="text-sm" style={{ color: COLORS.inkSoft }}>No active goals yet. Set one to start tracking progress.</p>
+          ) : topGoals.map(g => (
+            <button key={g.id} type="button" onClick={() => g.personId ? onOpenPerson(g.personId) : onOpenGoals()} className="w-full text-left rounded-2xl p-3.5 mb-2.5" style={{ background: COLORS.paperRaised, border: `1px solid ${COLORS.line}` }}>
+              <div className="flex items-center justify-between gap-2">
+                <p className="text-sm font-semibold" style={{ color: COLORS.ink }}>{homeGoalTitle(g, g.personName)}</p>
+                <span className="font-display shrink-0" style={{ fontSize: 19, color: g.color }}>{g.progress}%</span>
+              </div>
+              <div className="mt-2"><ProgressBar percent={g.progress} color={g.color} height={7} /></div>
+            </button>
+          ))}
+        </>
+      )}
+    </div>
+  );
+}
+
+function NowLine({ minutes }) {
+  return (
+    <div className="flex items-center gap-2 my-1.5" aria-label={`Now, ${formatTime12(minutes)}`}>
+      <span className="text-xs font-bold shrink-0 text-right" style={{ width: 62, color: COLORS.alert }}>Now</span>
+      <span style={{ width: 7, height: 7, borderRadius: '50%', background: COLORS.alert }} />
+      <span style={{ flex: 1, height: 1.5, background: COLORS.alert, opacity: 0.6 }} />
+    </div>
+  );
+}

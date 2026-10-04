@@ -25,7 +25,7 @@ how the app behaves for you is listed with the default chosen, so it can be chan
 | Icon and Windows identity | ✅ Done (1.0.27) | `Layers.exe` is "Layers" by CastledRuby, with the Layers icon. The tray icon follows the taskbar's light or dark mode. |
 | Single instance, `--quit`, tray | ✅ Done | Checked end-to-end on every release. Closing to the tray no longer holds up a Windows shutdown. |
 | Full local persistence | ✅ Done | Everything is saved: people, journal, goals, events, skills with history, achievements with dates, profile and settings. Saved data is checked at startup, and damaged data is kept and explained. |
-| Onboarding | ✅ Done | Name and focus can be changed in Me (1.0.28). The focus drives Home's "Try this next". |
+| Onboarding | ✅ Done | Name and focus can be changed in Me (1.0.28). The focus drives Today's "Try this next". |
 | Sample data separable | ✅ Done (1.0.28) | "Remove sample people" keeps yours, and "Add sample people" adds them alongside your own. |
 | Works with zero people | ✅ Done | Checked by both the app tests and the end-to-end tests. |
 | Data-model migration | ✅ Done | Saved data has a version number (2), and older saves are migrated once at startup. Old dates, skill history and login items are upgraded in place too. |
@@ -36,7 +36,7 @@ how the app behaves for you is listed with the default chosen, so it can be chan
 | Social skills | ✅ Done | The chart records points, and achievements are stored with dates. Strength and focus come from your real levels. |
 | Journal | ✅ Done (1.0.28) | Edit or delete an entry. Filters by person, type and period, plus search, which includes reflections. Every filter row fits on screen (1.0.29). |
 | Logging flow | ✅ Done | The quick log asks only for the date, how meaningful it was and a note. Each extra (ratings, active listening, something new, goals, reflection) opens in its own small sheet from a chip. Every step works from the keyboard. |
-| Events / reminders | ✅ Done (1.0.28) | One-off and weekly, with a done state, goal links and "remind me to follow up". Desktop notifications fire at the reminder's time, and can be switched off in Me. |
+| Calendar and reminders | ✅ Done (1.0.30) | Today is the main screen: your day, the week and month, plans in three steps, key dates, ideas, and Windows notifications that arrive with Layers closed, with Done, Log it and Snooze. |
 | Me / Settings | ✅ Done | Profile, notifications, backup, privacy and sample controls. |
 | Keyboard shortcuts | ✅ Done | All 12 work. Esc closes only the top sheet, and Ctrl/Alt combinations don't trigger single-key shortcuts. |
 
@@ -97,7 +97,7 @@ and how.
   conversation it may now show as locked until you reach 5 conversations.
 - Achievements earned by loading data (startup, samples, an import) are recorded without
   a notice. Ones you earn by using the app get a 🏅 toast.
-- "Try this next" on Home:
+- "Try this next" on Today:
   - "Building new friendships": add people, or ask a newer one about something they
     mentioned.
   - "Deepening close relationships": plan something with your closest relationship.
@@ -164,17 +164,19 @@ anyone else whose Windows has it on. It also removes Windows'
 certificate, which is paid: roughly US$100–400 a year, or Azure Trusted Signing at about
 US$10 a month. Once there is one, `npm run release` can sign with it.
 
-## Next big task: the calendar
+## The calendar (built in 1.0.30)
 
-You asked for a fully working calendar with notifications. Your answers to the ten
-questions (2026-10-04) set what it does:
+You asked for a fully working calendar with notifications, as the main part of the app:
+"when I open Layers I should see my day planned out", with the month grid close at hand
+and the map of how close you are on its own key. Your answers to the ten questions
+(2026-10-04) set what it does, and all of it is built:
 
 | | Question | Your answer |
 |---|---|---|
 | 1 | Where it lives | A new **Calendar tab**, the sixth (Ctrl+6) |
 | 2 | First view | A **month grid**: dots on busy days, and tapping a day lists it below |
 | 3 | What's on it | Everything: **events and reminders**, **past interactions** from the journal, **birthdays and key dates** from profiles (yearly), and **goal due dates** |
-| 4 | Repeats | **Weekly** on chosen days, and **daily** |
+| 4 | Repeats | **Weekly** on chosen days, and **daily** (birthdays and anniversaries repeat yearly) |
 | 5 | When notifications come | A **set time before**, chosen per event, plus a **morning summary** of the day and an **evening heads-up** for tomorrow |
 | 6 | Notification buttons | **Open** in Layers, **Snooze**, **Mark done**, and **Log it** (the quick log, filled in) |
 | 7 | After an event | **Ask how it went**, with the option to **just tick it off** |
@@ -183,11 +185,28 @@ questions (2026-10-04) set what it does:
 | 10 | Other calendars | **Private and local first**, built so **two-way sync** can come later |
 
 Layers is meant to reach the **iPhone, the App Store and maybe the Apple Watch** later. So
-the calendar's data should be portable and ready to sync:
+the calendar's data is portable and ready to sync:
 - stable ids
 - an `updatedAt` on each event
 - dates and times stored plainly, not as text
 - the logic kept in `lib/`, away from Windows-only code
+
+**Defaults chosen** (each is easy to change):
+- **Where it lives:** Today is the first tab and the screen Layers opens on. Ctrl+2 is
+  People, whose map shows how close you are. The month grid is a Day/Month switch at the
+  top of Today (or M).
+- **Plans:** they last an hour unless the template says otherwise. New ones remind you 15
+  minutes before; that's set in Me.
+- **Snoozes:** 10 minutes, 1 hour, or the same time tomorrow.
+- **Summaries:** the morning summary at 8:00 AM and the evening heads-up at 8:00 PM, on
+  days with something on. Both times can be changed in Me.
+- **How did it go?** asks when a plan with people ends, if it isn't done yet.
+- **Month dots:** the month grid leaves daily routines out, so special days stand out.
+- **Moved from the old Home:**
+  - the four numbers went to the top of Me
+  - Prepare and Analyse are in the Coach tab
+  - "Haven't caught up" became Ideas
+  - Recent activity is the Journal
 
 ## Next: smaller fixes
 
@@ -240,6 +259,14 @@ start.
   privacy principle comes first.
 
 ## History
+
+### The calendar as the main screen (1.0.30)
+
+Today is the first tab: your day planned out, with the week strip, the month grid on M,
+"How did it go?", ideas and goals. Plans take three tap-and-key steps. Profiles get
+**Plan something** and **Key dates**. Windows delivers the reminders, summaries and
+"How did it go?" with Layers closed, with Done, Log it and Snooze buttons. See [The
+calendar](#the-calendar-built-in-1030).
 
 ### Rings brand, fewer keystrokes, tidier Journal (1.0.29)
 

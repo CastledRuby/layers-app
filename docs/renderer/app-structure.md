@@ -29,15 +29,16 @@ and constant are in [../generated/code-map.md](../generated/code-map.md).
 | [`lib/util.js`](../../src/lib/util.js) | `clamp`, `uid` |
 | [`lib/dates.js`](../../src/lib/dates.js) | Every date helper: relative/absolute labels, chart history (`sortHistory`, `pushHistoryPoint`), the stored-`at` helpers for journal entries, info items and timeline steps, date ordering (`newestFirst`, `sortByDay`), and the `backfill*` loaders. See [state-and-data.md](state-and-data.md#dates-store-the-day-derive-the-label). |
 | [`lib/progress.js`](../../src/lib/progress.js) | The progression model: `computeOverall`, `layerForOverall`, `advanceLayer`, `placeOnLayers`, `progressDelta`, `dimsEqual`, `chartDay`, `movePerson`, `makePerson`, `bumpSkills`, `raisedSkills`, `advanceSkillGoals`, `generateGoalDescription`. See [state-and-data.md](state-and-data.md#progression-model). |
-| [`lib/text.js`](../../src/lib/text.js) | Sentence builders: `summaryFor`, `homeGoalTitle`, `generateSuggestions`, `getCheckInSuggestions`, `checkInReminder`, `buildPotentialHooks` (Prepare's hooks, [below](#prepares-hooks)), `focusSuggestion` (Home's "Try this next"), `updateStatusText` |
-| [`lib/storage.js`](../../src/lib/storage.js) | `loadSavedState` (checks saved data at startup) / `persistState` (the `layers-app-state-v1` key), and the notification bookkeeping: the check-in nudge's last day and the reminders already notified. See [state-and-data.md](state-and-data.md#loading-saved-data). |
+| [`lib/text.js`](../../src/lib/text.js) | Sentence builders: `summaryFor`, `homeGoalTitle`, `generateSuggestions`, `getCheckInSuggestions`, `checkInReminder`, `buildPotentialHooks` (Prepare's hooks, [below](#prepares-hooks)), `focusSuggestion` (Today's "Try this next"), `updateStatusText` |
+| [`lib/storage.js`](../../src/lib/storage.js) | `loadSavedState` (checks saved data at startup) / `persistState` (the `layers-app-state-v1` key), and the notification bookkeeping: the check-in nudge's last day, the notifications Layers already showed itself, and snoozes (`getSnoozes` / `setSnoozes`). See [state-and-data.md](state-and-data.md#loading-saved-data). |
 | [`lib/backup.js`](../../src/lib/backup.js) | `createBackup` / `validateBackup` for Export and Import. See [state-and-data.md](state-and-data.md#backup-format). |
-| [`lib/reminders.js`](../../src/lib/reminders.js) | Reminders (saved events): `nextOccurrence`, `markDone`, `isPastOneOff`, `dueReminders` (which are due for a notification) and `followUpEvent`. See [state-and-data.md](state-and-data.md#reminders-and-notifications). |
+| [`lib/calendar.js`](../../src/lib/calendar.js) | The calendar: `EVENT_TEMPLATES`, `DATE_KINDS`, `occursOn`, `isDoneOn`, `dayAgenda` (one day's plan), `monthMarks` (the month's dots), `needsAnswer` ("How did it go?"), `planIdeas`, `plannedNotifications`, `notifySettings`, `snoozeUntil`, `parseActionUrl`. See [state-and-data.md](state-and-data.md#the-calendar). |
+| [`lib/reminders.js`](../../src/lib/reminders.js) | `markDone` (a plan done for good, or for one day) and `followUpEvent`. |
 | [`lib/achievements.js`](../../src/lib/achievements.js) | `achievementProgress` (how close you are to each one), `newlyUnlocked` and `progressText`. See [state-and-data.md](state-and-data.md#achievements). |
-| [`lib/hooks.js`](../../src/lib/hooks.js) | `useToday` (the local date, updated at midnight), `useDailyCheckIn` (the once-a-day check-in nudge) and `useReminderNotifications` (a notification at each reminder's time). The only React in `lib/`. |
-| [`components/`](../../src/components/) | `Sheet` + `SheetPortal`, `sheetLayer.js` (the portal context and the open-sheet stack Esc uses), `ErrorBoundary` (the "This screen hit a problem" fallback around the current screen), `atoms.jsx` (`CircularProgress`, `ProgressBar`, `LabeledBar`, `Avatar`, `LayerBadge`, `ChatBubble`, `Timeline`, `ConvStateBadge`), `rows.jsx` (`GoalRow`, `InfoItemRow`), `BottomNav`, `pickers.jsx` (`DateDropdown`, `TimeDropdown`) |
-| [`modals/`](../../src/modals/) | `ConfirmDialog`, `EditPersonModal`, `EditEntryModal` (edit or delete a journal entry), `EditProfileModal` (your name and focus), `LogInteractionModal` (with its detail sheets in `LogDetailSheets`), `GoalModal`, `TemplatePickerModal`, `QuickAddInterestModal`, `AddInfoModal`, `AddPersonModal`, `ShortcutsModal` |
-| [`views/`](../../src/views/) | `HomeView`, `PeopleView`, `PersonProfile` (with `AdjustSlider`, `PrepareTipsModal`), `GoalsView`, `JournalView`, `CoachView`, `MeView`, `OnboardingView` |
+| [`lib/hooks.js`](../../src/lib/hooks.js) | `useToday` (the local date, updated at midnight), `useDailyCheckIn` (the once-a-day check-in nudge) and `useCalendarNotifications` (hands the calendar's notifications to Windows, or shows them itself in a browser). The only React in `lib/`. |
+| [`components/`](../../src/components/) | `Sheet` + `SheetPortal`, `sheetLayer.js` (the portal context and the open-sheet stack Esc uses), `ErrorBoundary` (the "This screen hit a problem" fallback around the current screen), `atoms.jsx` (`CircularProgress`, `ProgressBar`, `LabeledBar`, `Avatar`, `LayerBadge`, `ChatBubble`, `Timeline`, `ConvStateBadge`), `rows.jsx` (`GoalRow`, `InfoItemRow`), `BottomNav`, `pickers.jsx` (`DateDropdown`, `TimeDropdown`, each with a compact chip form), `PersonPick.jsx` (`PersonPick`, `AvatarStack`), `illustrations.jsx` |
+| [`modals/`](../../src/modals/) | `ConfirmDialog`, `EditPersonModal`, `EditEntryModal` (edit or delete a journal entry), `EditProfileModal` (your name and focus), `LogInteractionModal` (with its detail sheets in `LogDetailSheets`), `PlanSheet`, `EventSheet`, `KeyDateSheet`, `GoalModal`, `TemplatePickerModal`, `QuickAddInterestModal`, `AddInfoModal`, `AddPersonModal`, `ShortcutsModal` |
+| [`views/`](../../src/views/) | `TodayView`, `PeopleView`, `PersonProfile` (with `AdjustSlider`, `PrepareTipsModal`), `GoalsView`, `JournalView`, `CoachView`, `MeView`, `OnboardingView` |
 | [`App.jsx`](../../src/App.jsx) | `LayersApp`, plus the small helpers it uses: `sampleData` and the sample-people checks (`SAMPLE_PERSON_IDS`, `SAMPLE_GOAL_IDS`, `skillsCameWithSamples`, `allSkillsZero`), `unlinkMissingPeople`, `addNotes` and `listNames` |
 
 Where new code goes: anything without React goes in `lib/` (and gets a unit test in
@@ -80,13 +81,13 @@ stateDiagram-v2
 | Screen | Component | What it shows / does |
 |---|---|---|
 | Onboarding | `OnboardingView` | Name, focus (`FOCUS_OPTIONS`), then either "start fresh" (add your own people) or "explore with example people" (seed data) |
-| Home | `HomeView` | Greeting + weekly stats, **Try this next** (one suggestion from `focusSuggestion` that follows your focus: meeting new people, deepening your closest relationship, or this week's skill challenge; "a bit of everything" or no focus takes turns day by day), *Prepare to talk* / *Analyse a conversation* shortcuts, **Current goals**, **Upcoming** (each reminder's next time in the coming week, weekly ones included, with its linked goal; inline "Log this now" and "Mark done" / "Done for today" / "Skip Mon, 6 Oct"; **Manage** lists every reminder, done and passed ones too; always shown, so **+ New** is there before the first reminder), **Haven't caught up in a while**, **Recent activity** (newest logged day first) |
-| People | `PeopleView` | "Your circle": searchable list (`#people-search-input`, `/` focuses it) grouped by layer, add person |
-| Person profile | `PersonProfile` | Layer badge + layer-progress ring (level-up pulse), the last change and why, six dimension bars with **Adjust manually** sliders (previewing where saving would put them), *Prepare to talk* tips (`PrepareTipsModal`), **Ideas for next time**, **Goals** (`GoalRow`), **What I know about…** (five info categories via `InfoItemRow`, quick-add interests, temporary/archived items; a bell on a temporary item sets a "how did it go?" reminder for three days later), relationship **Timeline**, **Progress** chart |
+| Today | `TodayView` | **The main screen, and the first tab (Ctrl+1).** A greeting, the day's name and date, and a Day/Month switch (`M`). Day shows a week strip; Month shows the month grid. Both have dots for days with plans (accent), key dates (rose) and logs (green); daily routines don't get dots. Tapping a day, or the arrow keys, picks it, and `T` comes back to today. Below that:<br>1. **How did it go?** cards for plans with people that have ended and aren't done: **Log it** or **Just tick it**.<br>2. The day's plan: all-day chips (birthdays, goals due, all-day plans), then plans in time order with a **Now** line. Tapping a plan opens `EventSheet`.<br>3. **Logged** that day, then **Ideas** (`planIdeas`, from today on).<br>4. On today only: **Try this next** and the top three **Current goals**.<br>**+ Plan** or `P` plans something on the day shown. The old Home's stats moved to Me, and its Upcoming list became the calendar. |
+| People | `PeopleView` | "Your circle", Ctrl+2: the map of how close you are to everyone (rings by layer), or a searchable list (`#people-search-input`, `/` focuses it) grouped by layer, add person |
+| Person profile | `PersonProfile` | Layer badge + layer-progress ring (level-up pulse), the last change and why, six dimension bars with **Adjust manually** sliders (previewing where saving would put them), *Prepare to talk* tips (`PrepareTipsModal`), **Plan something** (`PlanSheet` with them filled in), **Ideas for next time**, **Key dates** (birthdays and other dates, via `KeyDateSheet`), **Goals** (`GoalRow`), **What I know about…** (five info categories via `InfoItemRow`, quick-add interests, temporary/archived items; a bell on a temporary item sets a "how did it go?" reminder for three days later), relationship **Timeline**, **Progress** chart |
 | Goals overview | `GoalsView` | Every goal across people plus general (skill) goals, with filters |
 | Journal | `JournalView` | Feed of logged interactions, newest first, showing each entry's reflection and dimension ratings. Search (`#journal-search-input`) covers names, notes, saved details and reflections. Filters by person (each chip shows their layer's colour), type (emoji only) and period (past week, month or 3 months, counted back from `today`), each row fitting on screen, with **Clear filters**. A pencil on each entry opens `EditEntryModal`. |
 | Coach | `CoachView` | **Prepare** tab: conversation hooks built from what you know (`buildPotentialHooks`, [below](#prepares-hooks)) and suggestions. **Analyse** tab: pick one of the mock `SCENARIOS` → fake loading → grading, conversation state, info to approve into a profile (`onApproveInfo`), log the result (`onLogFromAnalysis`). |
-| Me | `MeView` | A profile card (your name and focus, **Edit** opens `EditProfileModal`), "Your social skills" bars, your strength and focus (highest and lowest skill, with a tip and challenge from `SKILL_TIPS`; a "Getting started" note while every skill is 0%) + **Progress history** chart, **Achievements** (recorded ones show the day they were unlocked, locked ones how close you are), **Appearance** (light/dark), **Notifications** (switches for reminder notifications and the daily check-in nudge), Electron-only rows (version, check for updates / restart to install / open download page for the portable build, launch at login, a warning if another app owns Ctrl+Shift+L, keyboard shortcuts), data export/import, **Remove sample people** / **Add sample people** (each shown only when it would do something), delete everything |
+| Me | `MeView` | A profile card (your name and focus, **Edit** opens `EditProfileModal`), four numbers at a glance (active goals, conversations logged, meaningful interactions, being developed), "Your social skills" bars, your strength and focus (highest and lowest skill, with a tip and challenge from `SKILL_TIPS`; a "Getting started" note while every skill is 0%) + **Progress history** chart, **Achievements** (recorded ones show the day they were unlocked, locked ones how close you are), **Appearance** (light/dark), **Notifications** (reminders before plans with the default for new plans, the morning summary and evening heads-up with their times, ask how it went, and the daily check-in nudge), Electron-only rows (version, check for updates / restart to install / open download page for the portable build, launch at login, a warning if another app owns Ctrl+Shift+L, keyboard shortcuts), data export/import, **Remove sample people** / **Add sample people** (each shown only when it would do something), delete everything |
 
 ### Prepare's hooks
 
@@ -114,7 +115,10 @@ Every modal is a `Sheet` (or `ConfirmDialog`). Most are opened by a boolean flag
 
 | Modal | Opened by | Owner |
 |---|---|---|
-| `LogInteractionModal` | FAB, `N`, `openLog(personId)`, Home "manage events" / edit event | `LayersApp` (`logOpen`, `logInitialStep`, `logEditEvent`) |
+| `LogInteractionModal` | FAB, `N`, `openLog(personId)`, or a plan's **Log it** (`openLogFromEvent`, filled in) | `LayersApp` (`logOpen`, `logPrefill`) |
+| `PlanSheet` | `P`, **+ Plan**, an idea, a profile's **Plan something**, the log's "Plan something", a plan's **Edit** (`openPlan`) | `LayersApp` (`planState`) |
+| `EventSheet` | Tapping a plan on Today, or a notification's body | `LayersApp` (`eventView`) |
+| `KeyDateSheet` | A profile's **Add date** | `LayersApp` (`keyDateFor`) |
 | `GoalModal` | "Add goal" / goal "Edit" (`openGoalCreate`, `openGoalEdit`) | `LayersApp` (`goalModalOpen`, `goalEditing`) |
 | `AddInfoModal` | "+" on an info category (`openAddInfo`) | `LayersApp` |
 | `QuickAddInterestModal` | "Quick add" interests (`openQuickAddInterest`) | `LayersApp` |
@@ -125,7 +129,7 @@ Every modal is a `Sheet` (or `ConfirmDialog`). Most are opened by a boolean flag
 | `ShortcutsModal` | `?`, Me tab | `LayersApp` |
 | `TemplatePickerModal` (standalone) | `D` outside logging. A pick copies the text to the clipboard. | `LayersApp` |
 | `ConfirmDialog` | `askConfirm({...})` from any destructive handler | `LayersApp` (`confirmState`) |
-| `TemplatePickerModal` (in-flow) | "+ Add detail" while logging / on Home upcoming | local state |
+| `TemplatePickerModal` (in-flow) | "+ Add detail" while logging | local state |
 | `DateDropdown` / `TimeDropdown` pickers | The date/time buttons inside forms | local state, nested on top of the parent sheet |
 | Goal variant picker | The `>` chevron on a selected preset in `GoalModal` | local `variantPickerFor`, nested |
 | `PrepareTipsModal` | Profile "Prepare to talk" | local state in `PersonProfile` |
@@ -140,12 +144,7 @@ flowchart LR
   type --> who[who<br/>Who was this with?]
   who --> details[details: the quick log<br/>date, meaningfulness 1–5, note,<br/>More details chips]
   details -->|onSubmit| done((handleLogSubmit))
-  kind -->|event| eventKind[eventKind<br/>Recurring or one-off?]
-  eventKind --> eventChoice[eventChoice<br/>Create new or choose existing?]
-  eventChoice --> eventForm[eventForm<br/>title, people, date/weekdays, time, linked goal]
-  eventChoice --> eventList[eventList<br/>log / edit / delete a saved event]
-  eventForm -->|onCreateEvent / onUpdateEvent| saved((events))
-  eventList -->|Log this now, marks it done| done
+  kind -->|plan something| plan((PlanSheet))
 ```
 
 The *details* step is the **quick log**. Its title says what's being logged ("Talked with
@@ -172,10 +171,32 @@ says what each one changes.
 Moving between steps slides forward or back (`step-in` / `step-back`), and every step
 except the first has a back arrow in the title bar.
 
-`initialStep` lets callers jump straight to `eventKind` (manage events) or `eventForm`
-(edit an event). With nobody in your circle the modal still opens: *Interaction* is
-disabled and says to add someone first, and events can be made without people. The event
-form's optional **Linked goal** offers the active goals of the people you picked.
+`prefill` (logging a plan: `{ eventId, day, personIds, type, note, goalIds }`) opens it
+straight on the details, filled in from the plan, with only its linked goal ticked.
+Saving it ticks the plan off for that day. With nobody in your circle the modal still
+opens: *Interaction* is disabled and says to add someone first, and plans can be made
+without people.
+
+### `PlanSheet` steps
+
+Planning is three steps, one thing at a time, nearly all taps:
+
+1. **what**: eight templates (`EVENT_TEMPLATES`), keys 1–8. Each fills the title, the
+   interaction type a log gets, a usual time and a length.
+2. **who**: the people. Enter goes on, with or without anyone.
+3. **when**: the title (editable), then chips for each choice:
+   - **Day**: the next seven days, or **Other day**
+   - **Time**: five times, All day, or **Other time**
+   - **How long**
+   - **Repeat**: once, every day, or every week on chosen days
+   - **Remind me**: none, at the time, or 5 minutes to 1 day before (the default is set
+     in Me)
+   - **Moves a goal**, when the people have goals
+
+   Enter saves.
+
+A plan from a profile or an idea skips the steps it already knows, and **Edit** opens on
+"when" with a **Delete** button.
 
 ## Keyboard shortcuts
 
@@ -191,6 +212,12 @@ These are defined once in `SHORTCUTS` (shown by `ShortcutsModal`) and implemente
   it has rendered, through the `searchFocus` state. It works from any tab.
 - **`Esc`** leaves a search box, or closes only the top-most sheet or dialog. See
   [ui-system.md](ui-system.md#esc-and-the-open-sheet-stack).
+- **`P`** plans something (`PlanSheet`) on the day Today shows, from any tab. On Today
+  itself, `M` switches Day and Month, the arrows move a day, and `T` comes back to today
+  (`TodayView`'s own listener). Ctrl+1 is Today, Ctrl+2 People (the map).
+- **The calendar's sheets** have keys too: PlanSheet 1–8 for a template, Enter to go on or
+  save, Backspace to go back; EventSheet L to log, Enter to mark done, E to edit;
+  KeyDateSheet 1–5 for the kind, Enter to save.
 
 The log sheet has its own keys, handled by `Sheet`'s `onKey` only while it's the top
 sheet and you're not typing in a text box. Each key is shown next to what it does
@@ -199,12 +226,10 @@ sheet and you're not typing in a text box. Each key is shown next to what it doe
 | Step | Keys |
 |---|---|
 | any | Backspace goes back a step |
-| What are you logging? | 1 Interaction, 2 Event |
+| What are you logging? | 1 Interaction, 2 Plan something |
 | What did you do? | 1–6 the types |
 | Who was this with? | Enter confirms |
 | quick log | 1–5 how meaningful; N focuses the note; D Add detail; R, L, I, G, F the More details sheets; Enter saves (also from the note, and Ctrl+Enter from anywhere) |
-| Recurring or one-off? | 1 One-off, 2 Recurring |
-| Create new or choose existing? | 1 Create new, 2 Choose saved |
 
 Enter on a button you reached with Tab presses that button instead
 (`isTabbedToButton` in `sheetLayer.js`). A key already handled, such as Enter in a

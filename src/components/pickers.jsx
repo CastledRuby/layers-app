@@ -7,8 +7,10 @@ import { formatCalendarDate, formatTime12, MONTH_NAMES, startOfDay, WEEKDAY_SHOR
 import { COLORS } from '../theme.js';
 
 // compact: a small chip ("Today ⌄") for forms that should stay short (the
-// quick log), instead of the full button with its hint.
-export function DateDropdown({ value, onChange, maxDate, minDate, compact }) {
+// quick log), instead of the full button with its hint. `other` turns it
+// into an "Other day" chip beside quick choices, showing the date (ticked)
+// once one of its own is picked.
+export function DateDropdown({ value, onChange, maxDate, minDate, compact, other, highlight }) {
   const [open, setOpen] = useState(false);
   const [viewDate, setViewDate] = useState(() => new Date(value.getFullYear(), value.getMonth(), 1));
 
@@ -28,9 +30,9 @@ export function DateDropdown({ value, onChange, maxDate, minDate, compact }) {
   return (
     <>
       {compact ? (
-        <button type="button" onClick={openPicker} aria-label={`Date: ${formatCalendarDate(value)}. Change it`} className="chip">
+        <button type="button" onClick={openPicker} aria-label={other && !highlight ? 'Other day' : `Date: ${formatCalendarDate(value)}. Change it`} className={`chip${other && highlight ? ' chip--on' : ''}`}>
           <Calendar size={14} color={COLORS.accent} />
-          {formatCalendarDate(value)}
+          {other && !highlight ? 'Other day' : formatCalendarDate(value)}
           <ChevronDown size={14} color={COLORS.inkSoft} />
         </button>
       ) : (
@@ -78,7 +80,9 @@ export function DateDropdown({ value, onChange, maxDate, minDate, compact }) {
   );
 }
 
-export function TimeDropdown({ value, onChange }) {
+// compact: a chip ("Other time" until a time that isn't one of the
+// `highlight`ed presets is picked, then that time, ticked).
+export function TimeDropdown({ value, onChange, compact, highlight }) {
   const [open, setOpen] = useState(false);
   const hours12 = Array.from({ length: 12 }, (_, i) => i + 1);
   const minuteOptions = Array.from({ length: 12 }, (_, i) => i * 5);
@@ -93,6 +97,13 @@ export function TimeDropdown({ value, onChange }) {
 
   return (
     <>
+      {compact ? (
+        <button type="button" onClick={() => setOpen(true)} aria-pressed={!!highlight} aria-label={highlight ? `Time: ${formatTime12(value)}. Change it` : 'Other time'} className={`chip${highlight ? ' chip--on' : ''}`}>
+          <Clock size={13} color={COLORS.accent} />
+          {highlight ? formatTime12(value) : 'Other time'}
+          <ChevronDown size={13} color={COLORS.inkSoft} />
+        </button>
+      ) : (
       <button type="button" onClick={() => setOpen(true)} className="flex items-center gap-2.5 rounded-2xl pl-2 pr-4 py-2" style={{ border: `1.5px solid ${COLORS.line}`, color: COLORS.ink, background: COLORS.paperRaised }}>
         <span style={{ width: 34, height: 34, borderRadius: 12, background: COLORS.accentSoft, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
           <Clock size={17} color={COLORS.accent} />
@@ -102,6 +113,7 @@ export function TimeDropdown({ value, onChange }) {
           <span className="block" style={{ fontSize: 10, color: COLORS.inkSoft }}>Tap to set a time</span>
         </span>
       </button>
+      )}
       {open && (
         <Sheet title="Pick a time" onClose={() => setOpen(false)}>
           <div style={{ display: 'flex', gap: 10 }}>

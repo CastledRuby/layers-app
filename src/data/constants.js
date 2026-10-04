@@ -32,12 +32,16 @@ export const CATEGORIES = [
 export function categoryMeta(key) { return CATEGORIES.find(c => c.key === key) || CATEGORIES[0]; }
 
 export const SHORTCUTS = [
-  { keys: ['Ctrl', '1'], desc: 'Go to Home' },
-  { keys: ['Ctrl', '2'], desc: 'Go to People' },
+  { keys: ['Ctrl', '1'], desc: 'Go to Today (your day and the calendar)' },
+  { keys: ['Ctrl', '2'], desc: 'Go to People (the map of how close you are)' },
   { keys: ['Ctrl', '3'], desc: 'Go to Coach' },
   { keys: ['Ctrl', '4'], desc: 'Go to Journal' },
   { keys: ['Ctrl', '5'], desc: 'Go to Me' },
-  { keys: ['N'], desc: 'Quick log an interaction or event' },
+  { keys: ['N'], desc: 'Quick log an interaction' },
+  { keys: ['P'], desc: 'Plan something on the calendar' },
+  { keys: ['M'], desc: 'Today: switch between the day and the month' },
+  { keys: ['←', '→'], desc: 'Today: the day before or after' },
+  { keys: ['T'], desc: 'Today: back to today' },
   { keys: ['D'], desc: 'Add detail — browse templates and copy one, no logging needed' },
   { keys: ['Ctrl', 'Shift', 'A'], desc: 'Add a new person' },
   { keys: ['/'], desc: 'Jump to search (People or Journal)' },

@@ -1,7 +1,7 @@
 // One person's profile screen.
 
 import { useEffect, useMemo, useState } from 'react';
-import { ChevronLeft, Pencil, Plus } from 'lucide-react';
+import { ChevronLeft, Pencil, Plus, X } from 'lucide-react';
 import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { Sheet } from '../components/Sheet.jsx';
 import { Avatar, CircularProgress, LabeledBar, LayerBadge, Timeline } from '../components/atoms.jsx';
@@ -9,8 +9,28 @@ import { GoalRow, InfoItemRow } from '../components/rows.jsx';
 import { CATEGORIES, DIM_COLORS, DIM_LABELS, DIM_ORDER, getLayer } from '../data/constants.js';
 import { parseISODay, sortByDay, sortHistory } from '../lib/dates.js';
 import { computeOverall, dimsEqual, placeOnLayers, progressDelta } from '../lib/progress.js';
+import { dateKind, keyDateOn } from '../lib/calendar.js';
+import { MONTH_NAMES, toISODate } from '../lib/dates.js';
 import { buildPotentialHooks, generateSuggestions } from '../lib/text.js';
 import { COLORS } from '../theme.js';
+
+// "5 Oct" for a yearly date, "5 Oct 2026" for a one-off.
+function shortDate(iso, yearly) {
+  const [y, m, d] = iso.split('-').map(Number);
+  return `${d} ${MONTH_NAMES[m - 1].slice(0, 3)}${yearly ? '' : ` ${y}`}`;
+}
+// Soonest first: days until each next comes round (one-offs that passed last).
+function keyDatesInOrder(dates, today) {
+  const start = new Date(`${today || toISODate(new Date())}T00:00:00`);
+  const next = (kd) => {
+    for (let i = 0; i < 366; i++) {
+      const day = toISODate(new Date(start.getFullYear(), start.getMonth(), start.getDate() + i));
+      if (keyDateOn(kd, day)) return i;
+    }
+    return 9999;
+  };
+  return [...dates].sort((a, b) => next(a) - next(b));
+}
 
 function AdjustSlider({ label, value, onChange, color }) {
   return (
@@ -51,7 +71,7 @@ function PrepareTipsModal({ person, journal, onClose, onOpenFullCoach }) {
   );
 }
 
-export function PersonProfile({ today, person, journal, onBack, onOpenLog, onOpenGoalCreate, onOpenGoalEdit, onDeleteGoal, onBumpGoal, onOpenAddInfo, onOpenQuickAddInterest, onSaveInfo, onDeleteInfo, onToggleTemporary, onToggleArchive, onAdjust, onOpenCoach, onEditPerson, onClearLevelUpFlag, onRemindFollowUp }) {
+export function PersonProfile({ today, person, journal, onBack, onOpenLog, onOpenGoalCreate, onOpenGoalEdit, onDeleteGoal, onBumpGoal, onOpenAddInfo, onOpenQuickAddInterest, onSaveInfo, onDeleteInfo, onToggleTemporary, onToggleArchive, onAdjust, onOpenCoach, onEditPerson, onClearLevelUpFlag, onRemindFollowUp, onPlan, onAddKeyDate, onDeleteKeyDate }) {
   const [prepareOpen, setPrepareOpen] = useState(false);
   const [showAdjust, setShowAdjust] = useState(false);
   const [draft, setDraft] = useState(person.dims);
@@ -94,6 +114,7 @@ export function PersonProfile({ today, person, journal, onBack, onOpenLog, onOpe
         <div className="mt-1.5"><LayerBadge layerId={person.layer} /></div>
         <div className="flex items-center gap-2 mt-4">
           <button onClick={() => onOpenLog(person.id)} className="text-xs font-semibold rounded-full px-4 py-2" style={{ background: COLORS.accent, color: COLORS.onAccent }}>Log an interaction</button>
+          {onPlan && <button onClick={() => onPlan(person.id)} className="text-xs font-semibold rounded-full px-4 py-2" style={{ background: COLORS.paperRaised, color: COLORS.accent, border: `1px solid ${COLORS.accent}` }}>Plan something</button>}
           <button onClick={() => setPrepareOpen(true)} className="text-xs font-semibold rounded-full px-4 py-2" style={{ background: COLORS.paperRaised, color: COLORS.accent, border: `1px solid ${COLORS.accent}` }}>Prepare to talk</button>
         </div>
       </div>
@@ -163,6 +184,27 @@ export function PersonProfile({ today, person, journal, onBack, onOpenLog, onOpe
               </div>
             ))}
           </div>
+        </div>
+      )}
+
+      {onAddKeyDate && (
+        <div className="mt-7">
+          <div className="flex items-center justify-between">
+            <p className="font-display" style={{ fontSize: 18, color: COLORS.ink }}>Key dates</p>
+            <button onClick={() => onAddKeyDate(person.id)} className="flex items-center gap-1 text-xs font-semibold" style={{ color: COLORS.accent }}><Plus size={14} /> Add date</button>
+          </div>
+          {(person.dates || []).length === 0 ? (
+            <p className="text-xs mt-2" style={{ color: COLORS.inkSoft }}>Birthdays, exams and big days. They show on your calendar and in the morning summary.</p>
+          ) : (
+            <div className="flex flex-wrap gap-1.5 mt-3">
+              {keyDatesInOrder(person.dates, today).map(kd => (
+                <span key={kd.id} className="chip" style={{ paddingRight: 6 }}>
+                  {dateKind(kd.kind).emoji} {kd.kind === 'custom' && kd.label ? kd.label : dateKind(kd.kind).label} · {shortDate(kd.date, kd.yearly)}
+                  <button type="button" onClick={() => onDeleteKeyDate(person.id, kd.id)} aria-label={`Remove ${dateKind(kd.kind).label}`} className="p-0.5"><X size={12} /></button>
+                </span>
+              ))}
+            </div>
+          )}
         </div>
       )}
 

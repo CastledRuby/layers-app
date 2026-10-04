@@ -33,15 +33,15 @@ These keys are saved as one JSON blob under `localStorage['layers-app-state-v1']
 | `theme` | `'light' \| 'dark'` | `'light'` |
 | `achievements` | `{ [key]: 'YYYY-MM-DD' }`, or `null` until worked out | `null` (saved as `{}`). See [Achievements](#achievements). |
 
-Two more keys belong to the desktop notifications
-([below](#reminders-and-notifications)): `layers-last-notified-date` (the day the
-check-in nudge last fired) and `layers-notified-reminders` (which reminders have already
-notified today).
+Three more keys belong to notifications ([below](#notifications)):
+- `layers-last-notified-date`: the day the check-in nudge last fired
+- `layers-notified-reminders`: notifications Layers already showed itself, in a browser
+- `layers-snoozes`: snoozed reminders
 
 `useToday` ([`src/lib/hooks.js`](../../src/lib/hooks.js)) holds the local date. It
 notices a new day within a minute of midnight, or as soon as the window becomes visible
-again. `LayersApp` passes `today` to `HomeView`, `PersonProfile` and `JournalView`, whose
-cached date maths ("Upcoming", "haven't caught up", weekly counts, profile suggestions,
+again. `LayersApp` passes `today` to `TodayView`, `PersonProfile` and `JournalView`, whose
+cached date maths (the day plan, ideas, profile suggestions,
 goal due labels, the journal's period filters) runs from it, so it refreshes at midnight
 even when the app has been in the tray for days.
 
@@ -145,12 +145,18 @@ type JournalEntry = {
   analysis?: { grading: object; conversationState: string }; // from Coach → Analyse
 };
 
-type Event = {                                // a reminder; see Reminders and notifications
+type Event = {                                // a plan on the calendar; see The calendar
   id: string; title: string; personIds: string[];
   kind: 'oneoff' | 'recurring';
   date?: string;                              // 'YYYY-MM-DD' (one-off)
-  weekdays?: number[];                        // 0=Sun…6=Sat (recurring); legacy single `weekday` also read
-  time?: number | null;                       // minutes since midnight
+  weekdays?: number[];                        // 0=Sun…6=Sat (recurring; all seven = daily); legacy single `weekday` also read
+  from?: string;                              // recurring: the first day it applies (1.0.30+; older ones have always applied)
+  time?: number | null;                       // minutes since midnight; null for all day
+  allDay?: boolean;
+  duration?: number;                          // minutes; missing means 60
+  alert?: number | null;                      // minutes before to notify; null = none; missing means 0 (at the time, as before 1.0.30)
+  template?: string;                          // EVENT_TEMPLATES key: the emoji, and the type a log of it gets
+  updatedAt?: string;                         // ISO timestamp of the last change (for syncing later)
   defaultMeaningfulness?: number;
   goalId?: string;                            // one of its people's goals; logging the reminder moves only that goal
   doneAt?: string;                            // one-off: the day it was marked done. It's finished for good.
@@ -161,8 +167,19 @@ type Event = {                                // a reminder; see Reminders and n
 type Profile = {
   name: string;
   focus: string | null;                       // FOCUS_OPTIONS key: 'new' | 'deepen' | 'skills' | 'mix'
-  reminderNotifications?: boolean;            // Me → Notifications; missing means on
+  reminderNotifications?: boolean;            // Me → Notifications; missing means on (all of these: NOTIFY_DEFAULTS)
+  defaultAlert?: number | null;               // the reminder new plans start with (15)
+  morningSummary?: boolean; morningTime?: number;   // on, 8:00 AM (minutes since midnight)
+  eveningHeadsUp?: boolean; eveningTime?: number;   // on, 8:00 PM
+  askAfter?: boolean;                         // "How did it go?" when a plan with people ends; on
   checkInNotifications?: boolean;             // Me → Notifications; missing means on
+};
+
+type KeyDate = {                              // Person.dates: birthdays and other days for the calendar
+  id: string; kind: 'birthday' | 'anniversary' | 'exam' | 'bigday' | 'custom';
+  date: string;                               // 'YYYY-MM-DD'; a yearly one matches month and day every year
+  yearly: boolean;
+  label?: string;                             // custom ones' own wording
 };
 
 type Skills = Record<'activeListening'|'followUp'|'reciprocity'|'selfDisclosure'|'readingCues'|'knowingWhenToStop',
@@ -179,8 +196,7 @@ Every date in the data is an absolute ISO day. Nothing stores a relative label l
   "3 days ago" label on every render, so labels age on their own. Each record type has a
   thin wrapper:
   - journal: `journalDateLabel`, `journalDaysAgo`, and `isJournalThisWeek` (the last 7
-    days, rolling, not the calendar week). Used by the Journal, Home (recent activity,
-    "being developed", the quiet-people list), the Coach's "Last time you spoke" hook and
+    days, rolling, not the calendar week). Used by the Journal, Me ("being developed"), the calendar's ideas, the Coach's "Last time you spoke" hook and
     `getCheckInSuggestions`.
   - info items: `infoItemDateLabel` ("Last mentioned: …" on the profile) and
     `infoItemDaysAgo` (the 3- and 7-day thresholds in `generateSuggestions`, which feeds
@@ -378,46 +394,68 @@ Within a layer, Adjust can still change the percentage, since it places by the
 dimensions. The preview shows both, for example "Saving puts Ana at Layer 3: Personal,
 40% (now 72%)", before anything is saved.
 
-## Reminders and notifications
+## The calendar
 
-Saved events are reminders. [`lib/reminders.js`](../../src/lib/reminders.js) works out
-when each one next comes up and whether it's done. It's unit-tested in
-`src/reminders.test.js`.
+Plans (`events`) are the calendar. [`lib/calendar.js`](../../src/lib/calendar.js) holds
+its logic, as plain functions with no Electron or Windows in them, so it can move to a
+phone later. It's unit-tested in `src/calendar.test.js`.
 
-- **`nextOccurrence(ev, now, days = 7)`** returns the next time within `days` days, today
-  included, as `{ day, offset, when }`. `when` is "Today", "Tomorrow" or a date. It skips
-  an occurrence that's marked done. Home's **Upcoming** lists each reminder's next
-  occurrence, so a weekly reminder shows ahead of its day, not only on it.
-- **`markDone(ev, day)`**: a one-off gets `doneAt` and is finished for good. A recurring
-  one adds the day to `doneDays` and is done for that day only; every day is kept (the
-  last 14), so skipping next Wednesday doesn't undo today. `occurrenceToLog` picks the day
-  a log counts for: today if the reminder comes up today, otherwise its next time. Home's buttons say which: "Mark done",
-  "Done for today" or "Skip Mon, 6 Oct". Logging a reminder (Home's "Log this now", or the
-  log sheet's list of saved events) marks it done without a toast. `isPastOneOff` flags a
-  one-off whose day went by without being done, and Manage shows "(done)" or "(passed)".
-- **A linked goal** (`goalId`, "Linked goal" in the event form) is one of the reminder's
-  people's active goals. Logging the reminder passes `goalIds: [goalId]`, so only that
-  goal moves.
-- **`followUpEvent(person, item)`** makes a one-off reminder like
-  `Ask Sam how "Job interview" went` for three days later at 9:00 AM. It's the bell on a
-  temporary detail in the profile (`InfoItemRow`'s `onRemind`, then
-  `handleRemindFollowUp`).
+- **`occursOn(ev, day)`**: a one-off on its date; a repeating plan on its weekdays (all
+  seven is daily), from its `from` day.
+- **`dayAgenda(state, day)`**: one day's plan, as:
+  - `allDay`: key dates, goals due and all-day plans
+  - `timed`: plans with a time, in order, each with its start and end
+  - `logged`: the journal entries for that day
+- **`monthMarks`** gives the month grid's dots. Daily routines aren't counted, so special
+  days stand out.
+- **`needsAnswer`**: plans with people that have ended and aren't done, for **How did it
+  go?** (**Log it** or **Just tick it**).
+- **`planIdeas`**: people it's been a while since you logged with, sooner the closer
+  they are: 35 days for Layer 1, 21 for Layer 2, 14 for Layer 3, 7 for Layer 4. Only
+  people with nothing planned in the next week.
+- **`markDone(ev, day)`** (`lib/reminders.js`): a one-off gets `doneAt` and is finished
+  for good; a repeating one adds the day to `doneDays` (the last 14). Logging a plan
+  ticks it off for that day, and only its linked goal (`goalId`) moves.
+- **`followUpEvent(person, item)`** makes a one-off like `Ask Sam how "Job interview"
+  went` for three days later at 9:00 AM. It's the bell on a temporary detail in the
+  profile.
 
-### Desktop notifications
+### Notifications
 
-Two hooks in [`lib/hooks.js`](../../src/lib/hooks.js) send desktop notifications with the
-web `Notification` API. They run while the window is hidden in the tray, because closing
-only hides it. Clicking a notification calls `layersSystem.showWindow()` to bring Layers
-forward ([electron.md](../electron.md#notifications)). Each one has a switch in Me →
-Notifications, stored as a profile flag. A missing flag means on, so older profiles get
-both.
+`plannedNotifications(state, settings, from, to, snoozes)` lists every notification due
+in a time window, oldest first. Each has a `tag` (unique per plan and day), a time,
+`kind`, title, body, and the plan and day it's about:
 
-| Hook | Profile flag | When it notifies | What it remembers |
-|---|---|---|---|
-| `useReminderNotifications` | `reminderNotifications` | It checks every 30 s. `dueReminders(events, now, notified)` returns today's occurrences that aren't done and whose time passed at most `NOTIFY_WINDOW_MINUTES` (15) ago. A laptop that slept through the time still gets it on waking, but not hours later. A reminder without a `time` never notifies. | `localStorage['layers-notified-reminders']`: `<eventId>:<day>` keys (the latest 200), so each reminder notifies once a day, even across restarts |
-| `useDailyCheckIn` | `checkInNotifications` | 4 s after launch, and again whenever the local date changes. `checkInReminder` in `lib/text.js` decides whether the "haven't checked in" nudge is due and words it. | `localStorage['layers-last-notified-date']`: the day it last fired, so it fires at most once a day |
+| Kind | When | Says |
+|---|---|---|
+| `alert` | A plan's `alert` minutes before it (all-day: 9:00 AM) | The title; "In 15 minutes · 10:00 AM · with Priya" |
+| `after` | When a plan with people ends, unless it's done (`askAfter`) | "How did it go with Priya?" |
+| `morning` | `morningTime`, on days with something on | "Today: 3 things", and each in a line |
+| `evening` | `eveningTime`, the night before a day with something on | "Tomorrow: …" |
+| `snooze` | A snoozed reminder's time | The title, "Snoozed reminder" |
 
-Neither runs before onboarding.
+`useCalendarNotifications` in [`lib/hooks.js`](../../src/lib/hooks.js) delivers them:
+
+- **In the Windows app** it hands the next 14 days to the main process
+  (`layersSystem.scheduleNotifications`) whenever they change, and again every hour.
+  Windows then shows them on time, even with Layers closed
+  ([electron.md](../electron.md#notifications)).
+  - A reminder has **Done**, **Log it** and snooze buttons (10 minutes, 1 hour,
+    Tomorrow).
+  - "How did it go?" has **Log it** and **Just tick it**.
+  - Clicking a notification itself opens that day.
+- **In a browser** it shows each one itself while Layers is open, within 15 minutes of its
+  time, once (the tags are kept in `localStorage['layers-notified-reminders']`, the
+  latest 200).
+
+A button comes back as a `layers://` link (`parseActionUrl`), and `handleCalendarAction`
+in `App.jsx` acts on it: it marks the plan done, snoozes it, opens the quick log filled in,
+or shows the day. Snoozes (`{ id, eventId, day, at }`) live in
+`localStorage['layers-snoozes']` until a day after they fire, not in the saved state or
+backups.
+
+The daily check-in nudge (`useDailyCheckIn`, `checkInNotifications`) still comes from the
+page while Layers runs. Neither hook runs before onboarding.
 
 ## Achievements
 

@@ -86,9 +86,9 @@ export function setLastNotifiedDate(d) {
   try { window.localStorage.setItem(LAST_NOTIFIED_KEY, d); } catch { /* ignore */ }
 }
 
-// Reminder notifications already shown, as `${eventId}:${day}` keys, so each
-// reminder notifies once a day even across restarts. Only the latest 200
-// are kept.
+// Notifications Layers showed itself (outside the Windows app), by their tag
+// (lib/calendar.js), so each shows once even across restarts. Only the latest
+// 200 are kept.
 const NOTIFIED_REMINDERS_KEY = 'layers-notified-reminders';
 
 export function getNotifiedReminders() {
@@ -103,4 +103,20 @@ export function addNotifiedReminder(key) {
     const list = [...getNotifiedReminders(), key].slice(-200);
     window.localStorage.setItem(NOTIFIED_REMINDERS_KEY, JSON.stringify(list));
   } catch { /* ignore */ }
+}
+
+// Snoozed reminders ({ id, eventId, day, at }) from a notification's Snooze
+// button. They only matter until they've fired, so they're kept here rather
+// than in the saved state (and backups); ones a day past are dropped.
+const SNOOZES_KEY = 'layers-snoozes';
+
+export function getSnoozes(now = Date.now()) {
+  try {
+    const list = JSON.parse(window.localStorage.getItem(SNOOZES_KEY) || '[]');
+    return (Array.isArray(list) ? list : []).filter(s => s && typeof s.at === 'number' && s.at > now - 86400000 && typeof s.eventId === 'string');
+  } catch { return []; }
+}
+
+export function setSnoozes(list) {
+  try { window.localStorage.setItem(SNOOZES_KEY, JSON.stringify(list)); } catch { /* ignore */ }
 }

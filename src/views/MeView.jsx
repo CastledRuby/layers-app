@@ -6,11 +6,31 @@ import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YA
 import { LabeledBar } from '../components/atoms.jsx';
 import { ACHIEVEMENTS, FOCUS_LABELS, FOCUS_SKILL_KEY, SKILL_ORDER, SKILL_TIPS } from '../data/constants.js';
 import { achievementProgress, progressText } from '../lib/achievements.js';
-import { formatAbsoluteDate, parseISODay, sortHistory } from '../lib/dates.js';
+import { notifySettings } from '../lib/calendar.js';
+import { formatAbsoluteDate, formatTime12, isJournalThisWeek, parseISODay, sortHistory } from '../lib/dates.js';
 import { updateStatusText } from '../lib/text.js';
 import { COLORS } from '../theme.js';
 
-export function MeView({ people, journal, skills, profile, onUpdateProfile, onEditProfile, achievements, onAddSample, onRemoveSample, hasSamplePeople, canAddSample, onStartOver, onExport, onImportClick, hasUpdater, updateStatus, onCheckForUpdates, onInstallUpdate, onOpenDownloadPage, shortcutStatus, theme, onSetTheme, hasSystemBridge, autoLaunch, onToggleAutoLaunch, onOpenShortcuts, appVersion }) {
+// A switch row (role="switch") for a setting kept on the profile.
+function Toggle({ on, onChange, label, hint, children }) {
+  return (
+    <div className="mt-3">
+      <button type="button" role="switch" aria-checked={on} onClick={() => onChange(!on)} className="w-full flex items-center justify-between gap-3 text-left">
+        <span>
+          <span className="block text-xs font-semibold" style={{ color: COLORS.ink }}>{label}</span>
+          {hint && <span className="block text-xs" style={{ color: COLORS.inkSoft }}>{hint}</span>}
+        </span>
+        <span style={{ width: 36, height: 20, borderRadius: 999, background: on ? COLORS.accent : COLORS.line, position: 'relative', flexShrink: 0, transition: 'background-color .15s' }}>
+          <span style={{ position: 'absolute', top: 2, left: on ? 18 : 2, width: 16, height: 16, borderRadius: '50%', background: '#fff', transition: 'left 0.15s' }} />
+        </span>
+      </button>
+      {on && children && <div className="flex flex-wrap gap-1.5 mt-2">{children}</div>}
+    </div>
+  );
+}
+const Pick = ({ on, onClick, children }) => <button type="button" onClick={onClick} aria-pressed={on} className={`chip${on ? ' chip--on' : ''}`} style={{ padding: '3px 10px' }}>{children}</button>;
+
+export function MeView({ people, journal, skills, profile, generalGoals = [], onUpdateProfile, onEditProfile, achievements, onAddSample, onRemoveSample, hasSamplePeople, canAddSample, onStartOver, onExport, onImportClick, hasUpdater, updateStatus, onCheckForUpdates, onInstallUpdate, onOpenDownloadPage, shortcutStatus, theme, onSetTheme, hasSystemBridge, autoLaunch, onToggleAutoLaunch, onOpenShortcuts, appVersion }) {
   const [chartSkill, setChartSkill] = useState(FOCUS_SKILL_KEY);
 
   // Strength is your highest skill and focus your lowest. Until something has
@@ -22,6 +42,18 @@ export function MeView({ people, journal, skills, profile, onUpdateProfile, onEd
 
   // Recorded achievements stay unlocked; locked ones show how close you are.
   const progress = useMemo(() => achievementProgress(people, journal, skills), [people, journal, skills]);
+  const glance = useMemo(() => {
+    const developing = new Set();
+    people.forEach(p => { if (p.goals.some(g => g.progress < 100)) developing.add(p.id); });
+    journal.forEach(j => { if (isJournalThisWeek(j)) developing.add(j.personId); });
+    return [
+      [people.flatMap(p => p.goals).concat(generalGoals).filter(g => g.progress < 100).length, 'active goals'],
+      [journal.length, 'conversations logged'],
+      [journal.filter(j => j.meaningfulness >= 4).length, 'meaningful interactions'],
+      [developing.size, 'being developed'],
+    ];
+  }, [people, journal, generalGoals]);
+  const notify = notifySettings(profile);
 
   return (
     <div className="fade-anim px-5 pt-6 pb-6">
@@ -31,6 +63,15 @@ export function MeView({ people, journal, skills, profile, onUpdateProfile, onEd
           <p className="text-xs mt-0.5" style={{ color: COLORS.inkSoft }}>{profile && FOCUS_LABELS[profile.focus] ? `Focusing on ${FOCUS_LABELS[profile.focus]}` : 'No focus chosen yet'}</p>
         </div>
         <button onClick={onEditProfile} className="text-xs font-semibold rounded-full px-3 py-1.5 shrink-0" style={{ background: COLORS.accentSoft, color: COLORS.accent }}>Edit</button>
+      </div>
+
+      <div className="grid grid-cols-2 gap-y-4 mb-7">
+        {glance.map(([n, label]) => (
+          <div key={label}>
+            <p className="font-display" style={{ fontSize: 26, color: COLORS.ink }}>{n}</p>
+            <p className="text-xs mt-0.5" style={{ color: COLORS.inkSoft }}>{label}</p>
+          </div>
+        ))}
       </div>
 
       <p className="font-display" style={{ fontSize: 24, color: COLORS.ink }}>Your social skills</p>
@@ -114,24 +155,18 @@ export function MeView({ people, journal, skills, profile, onUpdateProfile, onEd
 
       <div className="mt-4 rounded-2xl p-4" style={{ background: COLORS.paperRaised, border: `1px solid ${COLORS.line}` }}>
         <p className="text-sm font-semibold" style={{ color: COLORS.ink }}>Notifications</p>
-        <p className="text-xs mt-1.5" style={{ color: COLORS.inkSoft }}>Small desktop nudges while Layers is running, even in the tray. Click one to open Layers.</p>
-        {[
-          { key: 'reminderNotifications', label: 'Reminders at their time', hint: 'From Upcoming on Home.' },
-          { key: 'checkInNotifications', label: 'Daily check-in nudge', hint: "When you haven't logged with someone for two weeks." },
-        ].map(opt => {
-          const on = !profile || profile[opt.key] !== false;
-          return (
-            <button key={opt.key} type="button" role="switch" aria-checked={on} onClick={() => onUpdateProfile({ [opt.key]: !on })} className="w-full flex items-center justify-between gap-3 mt-3 text-left">
-              <span>
-                <span className="block text-xs font-semibold" style={{ color: COLORS.ink }}>{opt.label}</span>
-                <span className="block text-xs" style={{ color: COLORS.inkSoft }}>{opt.hint}</span>
-              </span>
-              <span style={{ width: 36, height: 20, borderRadius: 999, background: on ? COLORS.accent : COLORS.line, position: 'relative', flexShrink: 0 }}>
-                <span style={{ position: 'absolute', top: 2, left: on ? 18 : 2, width: 16, height: 16, borderRadius: '50%', background: '#fff', transition: 'left 0.15s' }} />
-              </span>
-            </button>
-          );
-        })}
+        <p className="text-xs mt-1.5" style={{ color: COLORS.inkSoft }}>{hasSystemBridge ? 'Windows delivers these on time, even when Layers is closed. Their buttons tick a plan off, log it or snooze it.' : 'Small desktop nudges while Layers is open.'}</p>
+        <Toggle on={notify.reminderNotifications} onChange={(v) => onUpdateProfile({ reminderNotifications: v })} label="Reminders before plans" hint="Each plan has its own; this is the one new plans start with.">
+          {[[null, 'None'], [0, 'At the time'], [5, '5 min'], [15, '15 min'], [30, '30 min'], [60, '1 hour']].map(([v, l]) => <Pick key={l} on={notify.defaultAlert === v} onClick={() => onUpdateProfile({ defaultAlert: v })}>{l}</Pick>)}
+        </Toggle>
+        <Toggle on={notify.morningSummary} onChange={(v) => onUpdateProfile({ morningSummary: v })} label="Morning summary" hint="Your day's plans and key dates, each morning there's something on.">
+          {[7 * 60, 8 * 60, 9 * 60].map(t => <Pick key={t} on={notify.morningTime === t} onClick={() => onUpdateProfile({ morningTime: t })}>{formatTime12(t)}</Pick>)}
+        </Toggle>
+        <Toggle on={notify.eveningHeadsUp} onChange={(v) => onUpdateProfile({ eveningHeadsUp: v })} label="Evening heads-up" hint="Tomorrow's plans, the night before.">
+          {[19 * 60, 20 * 60, 21 * 60].map(t => <Pick key={t} on={notify.eveningTime === t} onClick={() => onUpdateProfile({ eveningTime: t })}>{formatTime12(t)}</Pick>)}
+        </Toggle>
+        <Toggle on={notify.askAfter} onChange={(v) => onUpdateProfile({ askAfter: v })} label="Ask how it went" hint="When a plan with someone ends: log it, or just tick it off." />
+        <Toggle on={!profile || profile.checkInNotifications !== false} onChange={(v) => onUpdateProfile({ checkInNotifications: v })} label="Daily check-in nudge" hint="When you haven't logged with someone for two weeks." />
       </div>
 
       {hasSystemBridge && (

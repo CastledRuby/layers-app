@@ -4,6 +4,7 @@
 // message; individually damaged records are repaired where that's safe (a
 // missing list becomes empty, a number is clamped into range) or skipped and
 // counted, so a bad entry can't crash a screen after import.
+import { DATE_KINDS } from './calendar.js';
 import { ACHIEVEMENTS, CATEGORIES, DIM_ORDER, LAYER_BASE_DIMS, SKILL_ORDER, TYPE_META, categoryMeta } from '../data/constants.js';
 import { EMPTY_SKILLS } from '../data/seed.js';
 import { clamp, uid } from './util.js';
@@ -58,6 +59,16 @@ function cleanPerson(p, skipped) {
     history: cleanHistory(p.history),
     timeline: (Array.isArray(p.timeline) ? p.timeline : []).filter(t => isObject(t) && isText(t.label)),
   };
+  // Key dates (birthdays, exams) for the calendar; ones without a real day are dropped.
+  if ('dates' in p) {
+    person.dates = (Array.isArray(p.dates) ? p.dates : []).filter(d => isObject(d) && isISODay(d.date)).map(d => ({
+      id: isText(d.id) ? d.id : uid(),
+      kind: DATE_KINDS.some(k => k.key === d.kind) ? d.kind : 'custom',
+      date: d.date,
+      yearly: !!d.yearly,
+      ...(isText(d.label) ? { label: d.label } : {}),
+    }));
+  }
   CATEGORIES.forEach(({ key }) => {
     person[key] = (Array.isArray(p[key]) ? p[key] : []).flatMap(item => {
       if (!isObject(item) || !isText(item.text)) { skipped.items++; return []; }
@@ -104,6 +115,13 @@ function cleanEvent(e, personIds, skipped) {
   if ('doneAt' in clean && !isISODay(clean.doneAt)) delete clean.doneAt;
   if ('doneOn' in clean && !isISODay(clean.doneOn)) delete clean.doneOn;
   if ('doneDays' in clean) clean.doneDays = (Array.isArray(clean.doneDays) ? clean.doneDays : []).filter(isISODay);
+  // Calendar fields (lib/calendar.js): length and reminder in minutes (a
+  // reminder may be null, for none), all-day, the first day of a repeat.
+  if ('duration' in clean && !(typeof clean.duration === 'number' && clean.duration > 0 && clean.duration <= 24 * 60)) delete clean.duration;
+  if ('alert' in clean && clean.alert !== null && !(typeof clean.alert === 'number' && clean.alert >= 0 && clean.alert <= 7 * 24 * 60)) delete clean.alert;
+  if ('allDay' in clean) clean.allDay = clean.allDay === true;
+  if ('from' in clean && !isISODay(clean.from)) delete clean.from;
+  if ('template' in clean && !isText(clean.template)) delete clean.template;
   return clean;
 }
 

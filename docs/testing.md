@@ -56,6 +56,12 @@ interact.
   [roadmap.md](roadmap.md#proposals-built-in-1028)) through the UI: the log's More
   details, journal editing and filters, sample people, reminders and their
   notifications, profile editing, achievements, skill goals and "Try this next".
+- `calendar.test.jsx` covers the calendar as the main screen:
+  - Today first, the month on M, Ctrl+2 for the map
+  - planning by keys and from a profile, and daily plans and edits
+  - "How did it go?", ideas and birthdays
+  - what's handed to Windows (a fake `layersSystem`), and notification buttons pressed
+    with Layers closed or open
 - `polish.test.jsx` covers the quick log redesign:
   - the quick log asks for little
   - each extra detail opens its own sheet

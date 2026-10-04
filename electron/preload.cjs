@@ -18,4 +18,13 @@ contextBridge.exposeInMainWorld('layersSystem', {
   getShortcutStatus: () => ipcRenderer.invoke('get-shortcut-status'),
   showWindow: () => ipcRenderer.send('show-window'),
   setTheme: (theme) => ipcRenderer.send('set-theme', theme),
+  // Calendar (main.cjs): hand Windows the notifications to schedule, and
+  // receive notification button presses as layers:// links.
+  scheduleNotifications: (list) => ipcRenderer.invoke('schedule-notifications', list),
+  calendarReady: () => ipcRenderer.invoke('calendar-ready'),
+  onCalendarAction: (callback) => {
+    const listener = (_event, link) => callback(link);
+    ipcRenderer.on('calendar-action', listener);
+    return () => ipcRenderer.removeListener('calendar-action', listener);
+  },
 });
