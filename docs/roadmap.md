@@ -222,6 +222,24 @@ the calendar's data is portable and ready to sync:
   "When?", 1–7 picks the day and T, L, R, A and G step through time, length, repeat,
   reminder and goal; on Today, L and J answer "How did it go?" and I plans the first idea.
 
+## Next big task: quality of life (decided 2026-10-05, not built yet)
+
+Your answers to ten quality-of-life questions. Nothing here is built yet; each is a
+medium-sized change, so the plan for each is shown before it's built.
+
+| | Question | Your answer |
+|---|---|---|
+| 1 | Use more of the laptop screen? | **Wider on desktop**: when the window is wide, the month grid beside your day and the people list beside a profile; still phone-sized when narrow |
+| 2 | A Ctrl+K box to jump anywhere? | **Yes, everything**: people, plans, pages and actions ("plan coffee", "dark mode", "export") |
+| 3 | Undo after deleting, ticking or logging? | **Undo on all of them**, for a few seconds, on the message at the bottom |
+| 4 | Rate a plan from its "How did it go?" notification? | **Both**: rate 1–5 right in the notification (saved as a quick log), or Log it for the full log |
+| 5 | Ctrl+Shift+L from anywhere in Windows | **A tiny quick-add box**: log or plan in a few keys without the full window |
+| 6 | Nudges to keep in touch | **A weekly catch-up list** (who you haven't seen, with Plan buttons) and **a notification when someone close goes quiet** (Personal or Close, past their usual gap) |
+| 7 | A weekly review? | **Sunday evening**: a notification opens your week (who you saw, plans done, goals moved), then plan next week in one go |
+| 8 | How early for birthdays and key dates? | **A week before, the day before, and on the morning** |
+| 9 | Automatic backups? | **Daily, keeping the last 14**, in a Layers backups folder |
+| 10 | Light and dark mode | **Follow Windows**, changing when it does |
+
 ## Next: smaller fixes
 
 These are small and contained, so they can go in the next batch.
