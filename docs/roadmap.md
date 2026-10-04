@@ -164,7 +164,32 @@ anyone else whose Windows has it on. It also removes Windows'
 certificate, which is paid: roughly US$100–400 a year, or Azure Trusted Signing at about
 US$10 a month. Once there is one, `npm run release` can sign with it.
 
-## Next
+## Next big task: the calendar
+
+You asked for a fully working calendar with notifications. Your answers to the ten
+questions (2026-10-04) set what it does:
+
+| | Question | Your answer |
+|---|---|---|
+| 1 | Where it lives | A new **Calendar tab**, the sixth (Ctrl+6) |
+| 2 | First view | A **month grid**: dots on busy days, and tapping a day lists it below |
+| 3 | What's on it | Everything: **events and reminders**, **past interactions** from the journal, **birthdays and key dates** from profiles (yearly), and **goal due dates** |
+| 4 | Repeats | **Weekly** on chosen days, and **daily** |
+| 5 | When notifications come | A **set time before**, chosen per event, plus a **morning summary** of the day and an **evening heads-up** for tomorrow |
+| 6 | Notification buttons | **Open** in Layers, **Snooze**, **Mark done**, and **Log it** (the quick log, filled in) |
+| 7 | After an event | **Ask how it went**, with the option to **just tick it off** |
+| 8 | With Layers closed | Notifications **still arrive with Layers fully closed** (Windows schedules them ahead) |
+| 9 | Adding with little typing | **Templates**, **tap a day then pick**, **"Plan something" on a profile**, and **smart suggestions** ("You haven't seen Priya in 3 weeks") |
+| 10 | Other calendars | **Private and local first**, built so **two-way sync** can come later |
+
+Layers is meant to reach the **iPhone, the App Store and maybe the Apple Watch** later. So
+the calendar's data should be portable and ready to sync:
+- stable ids
+- an `updatedAt` on each event
+- dates and times stored plainly, not as text
+- the logic kept in `lib/`, away from Windows-only code
+
+## Next: smaller fixes
 
 These are small and contained, so they can go in the next batch.
 
