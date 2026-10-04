@@ -4,7 +4,7 @@
 > Run `npm run docs:map` after changing anything under `src/`, `electron/*.cjs` or `package.json` scripts.
 > Hand-written explanations live in the other files under [`docs/`](../README.md).
 
-Package: `layers-web` v1.0.27 · `src/`: 43 files, 6235 lines, 51 components, 121 top-level functions, 62 constants.
+Package: `layers-web` v1.0.28 · `src/`: 43 files, 6235 lines, 51 components, 121 top-level functions, 62 constants.
 
 ## Source files
 
