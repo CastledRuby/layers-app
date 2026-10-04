@@ -7,7 +7,7 @@ import { LabeledBar } from '../components/atoms.jsx';
 import { ACHIEVEMENTS, FOCUS_LABELS, FOCUS_SKILL_KEY, SKILL_ORDER, SKILL_TIPS } from '../data/constants.js';
 import { achievementProgress, progressText } from '../lib/achievements.js';
 import { notifySettings } from '../lib/calendar.js';
-import { formatAbsoluteDate, formatTime12, isJournalThisWeek, parseISODay, sortHistory } from '../lib/dates.js';
+import { formatAbsoluteDate, formatCalendarDate, formatTime12, isJournalThisWeek, parseISODay, sortHistory } from '../lib/dates.js';
 import { updateStatusText } from '../lib/text.js';
 import { COLORS } from '../theme.js';
 
@@ -30,7 +30,7 @@ function Toggle({ on, onChange, label, hint, children }) {
 }
 const Pick = ({ on, onClick, children }) => <button type="button" onClick={onClick} aria-pressed={on} className={`chip${on ? ' chip--on' : ''}`} style={{ padding: '3px 10px' }}>{children}</button>;
 
-export function MeView({ people, journal, skills, profile, generalGoals = [], onUpdateProfile, onEditProfile, achievements, onAddSample, onRemoveSample, hasSamplePeople, canAddSample, onStartOver, onExport, onImportClick, hasUpdater, updateStatus, onCheckForUpdates, onInstallUpdate, onOpenDownloadPage, shortcutStatus, theme, onSetTheme, hasSystemBridge, autoLaunch, onToggleAutoLaunch, onOpenShortcuts, appVersion }) {
+export function MeView({ people, journal, skills, profile, generalGoals = [], onUpdateProfile, onEditProfile, achievements, onAddSample, onRemoveSample, hasSamplePeople, canAddSample, onStartOver, onExport, onImportClick, backupInfo, onOpenBackups, hasUpdater, updateStatus, onCheckForUpdates, onInstallUpdate, onOpenDownloadPage, shortcutStatus, themeMode, onSetTheme, hasSystemBridge, autoLaunch, onToggleAutoLaunch, onOpenShortcuts, appVersion }) {
   const [chartSkill, setChartSkill] = useState(FOCUS_SKILL_KEY);
 
   // Strength is your highest skill and focus your lowest. Until something has
@@ -146,9 +146,10 @@ export function MeView({ people, journal, skills, profile, generalGoals = [], on
 
       <div className="mt-7 rounded-2xl p-4" style={{ background: COLORS.paperRaised, border: `1px solid ${COLORS.line}` }}>
         <p className="text-sm font-semibold" style={{ color: COLORS.ink }}>Appearance</p>
-        <div className="flex items-center gap-2 mt-3">
-          {['light', 'dark'].map(t => (
-            <button key={t} onClick={() => onSetTheme(t)} aria-pressed={theme === t} className="text-xs font-semibold rounded-full px-3 py-1.5 capitalize" style={{ background: theme === t ? COLORS.accent : COLORS.paperRaised, color: theme === t ? COLORS.onAccent : COLORS.inkSoft, border: `1px solid ${theme === t ? COLORS.accent : COLORS.line}` }}>{t}</button>
+        <p className="text-xs mt-1.5" style={{ color: COLORS.inkSoft }}>Match Windows switches between light and dark when Windows does.</p>
+        <div className="flex items-center gap-2 mt-3 flex-wrap">
+          {[['system', 'Match Windows'], ['light', 'Light'], ['dark', 'Dark']].map(([t, label]) => (
+            <button key={t} type="button" onClick={() => onSetTheme(t)} aria-pressed={themeMode === t} className="text-xs font-semibold rounded-full px-3 py-1.5" style={{ background: themeMode === t ? COLORS.accent : COLORS.paperRaised, color: themeMode === t ? COLORS.onAccent : COLORS.inkSoft, border: `1px solid ${themeMode === t ? COLORS.accent : COLORS.line}` }}>{label}</button>
           ))}
         </div>
       </div>
@@ -159,6 +160,7 @@ export function MeView({ people, journal, skills, profile, generalGoals = [], on
         <Toggle on={notify.reminderNotifications} onChange={(v) => onUpdateProfile({ reminderNotifications: v })} label="Reminders before plans" hint="Each plan has its own; this is the one new plans start with.">
           {[[null, 'None'], [0, 'At the time'], [5, '5 min'], [15, '15 min'], [30, '30 min'], [60, '1 hour']].map(([v, l]) => <Pick key={l} on={notify.defaultAlert === v} onClick={() => onUpdateProfile({ defaultAlert: v })}>{l}</Pick>)}
         </Toggle>
+        <Toggle on={notify.keyDateReminders} onChange={(v) => onUpdateProfile({ keyDateReminders: v })} label="Birthdays and key dates" hint="A week before, the evening before, and on the morning, with a button to plan something." />
         <Toggle on={notify.morningSummary} onChange={(v) => onUpdateProfile({ morningSummary: v })} label="Morning summary" hint="Your day's plans and key dates, each morning there's something on.">
           {[7 * 60, 8 * 60, 9 * 60].map(t => <Pick key={t} on={notify.morningTime === t} onClick={() => onUpdateProfile({ morningTime: t })}>{formatTime12(t)}</Pick>)}
         </Toggle>
@@ -218,6 +220,15 @@ export function MeView({ people, journal, skills, profile, generalGoals = [], on
           <button onClick={onExport} className="flex items-center gap-1.5 text-xs font-semibold rounded-full px-3 py-2" style={{ background: COLORS.accentSoft, color: COLORS.accent }}><Download size={13} /> Export data</button>
           <button onClick={onImportClick} className="flex items-center gap-1.5 text-xs font-semibold rounded-full px-3 py-2" style={{ background: COLORS.paperRaised, color: COLORS.ink, border: `1px solid ${COLORS.line}` }}><Upload size={13} /> Import data</button>
         </div>
+        {backupInfo && (
+          <div className="flex items-center justify-between gap-3 mt-4 pt-3" style={{ borderTop: `1px solid ${COLORS.line}` }}>
+            <div>
+              <p className="text-xs font-semibold" style={{ color: COLORS.ink }}>Automatic backups</p>
+              <p className="text-xs mt-0.5" style={{ color: COLORS.inkSoft }}>One a day, the last 14 kept, in {backupInfo.dir.split(/[\\/]/).slice(-2).join('\\')}. {backupInfo.latest ? `Latest: ${formatCalendarDate(parseISODay(backupInfo.latest))}.` : 'The first one is saved shortly.'}</p>
+            </div>
+            <button type="button" onClick={onOpenBackups} className="text-xs font-semibold rounded-full px-3 py-2 shrink-0" style={{ background: COLORS.accentSoft, color: COLORS.accent }}>Open folder</button>
+          </div>
+        )}
       </div>
 
       <div className="mt-4 rounded-2xl p-4" style={{ background: COLORS.paperRaised, border: `1px solid ${COLORS.line}` }}>

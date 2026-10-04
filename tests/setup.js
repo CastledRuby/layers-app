@@ -24,7 +24,8 @@ if (typeof window !== 'undefined') {
   // it's dismissed instead of after its closing slide (Sheet.jsx). One test
   // in tests/app/polish.test.jsx turns it off to check the slide.
   if (!window.matchMedia) {
-    window.matchMedia = (query) => ({ matches: query.includes('prefers-reduced-motion') && !window.__layersMotion, media: query, addEventListener() {}, removeEventListener() {}, addListener() {}, removeListener() {} });
+    // Windows' dark mode is off unless a test sets window.__layersDark.
+    window.matchMedia = (query) => ({ matches: (query.includes('prefers-reduced-motion') && !window.__layersMotion) || (query.includes('prefers-color-scheme: dark') && !!window.__layersDark), media: query, addEventListener() {}, removeEventListener() {}, addListener() {}, removeListener() {} });
   }
 
   // Charts measure a 0×0 box in jsdom and warn about it on every render.

@@ -32,11 +32,14 @@ Three layers keep a dark-mode launch dark from the first frame. Each one covers 
 moment before the next takes over:
 
 1. **The Electron window** opens with `backgroundColor` set to the saved theme's paper
-   colour. `main.cjs` stores the theme in `theme.json` in the userData folder.
+   colour. `main.cjs` stores the theme and mode in `theme.json` in the userData folder;
+   with Match Windows it asks Windows instead.
 2. **The page**, before any app code runs: an inline script in `index.html` reads the
-   theme from `localStorage` and paints `<html>` with the paper colour.
+   theme mode from `localStorage` (asking `prefers-color-scheme` for Match Windows) and
+   paints `<html>` with the paper colour.
 3. **React**: an effect in `LayersApp` keeps `<html>`'s background in sync and calls
-   `layersSystem.setTheme(theme)` whenever the theme changes, so the window colour and
+   `layersSystem.setTheme(theme, themeMode)` whenever the theme changes (with Match
+   Windows, `useSystemDark` follows Windows' mode as it changes), so the window colour and
    `theme.json` are right for the next launch.
 
 The two paper colours (`#F5F6F1`, `#1B1E27`) are therefore written in three places:
@@ -207,8 +210,15 @@ reloads the window ([electron.md](../electron.md)).
 
 ## Toasts
 
-`pushToast(text)` in `LayersApp` adds `{ id, text }` and removes it after 2.6 s. The
-stack lives inside `.phone-frame` above the nav bar.
+`pushToast(text, { undo })` in `LayersApp` adds `{ id, text, undo }` and removes it after
+2.6 s (longer for long messages). The stack lives inside `.phone-frame` above the nav bar.
+
+**Undo.** Deletes (a plan, entry, goal, person, key date, the sample people), ticking a
+plan off, a log, a saved or edited plan, and clearing some things when starting over pass
+`undo: snapshot()`: the people, journal, plans, goals, skills, achievements and profile as
+they were just before. That toast shows an **Undo** button for 7 s, and **Ctrl+Z** undoes
+the newest one (not while typing or with a sheet open). Undo puts the snapshot back and
+says "Undone".
 
 ## Switches, disclosures and chips
 

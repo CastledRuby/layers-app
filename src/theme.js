@@ -229,6 +229,11 @@ input:focus, textarea:focus { outline: none; border-color: ${COLORS.accent} !imp
 .toast-stack { position: absolute; left: 0; right: 0; bottom: 92px; display: flex; flex-direction: column; align-items: center; gap: 8px; z-index: 70; pointer-events: none; padding: 0 20px; }
 .toast { background: #23283A; color: #fff; padding: 10px 16px; border-radius: 999px; font-size: 13px; box-shadow: 0 8px 20px rgba(0,0,0,0.35); text-align: center; animation: toastIn .25s ease-out; }
 .layers-root.dark .toast { background: #EDEDE6; color: #1B1E27; }
+.toast--undo { pointer-events: auto; display: flex; align-items: center; gap: 14px; padding-right: 8px; }
+.toast-undo { font-weight: 800; color: #A9CBE6; padding: 4px 10px; border-radius: 999px; }
+.toast-undo:hover { background: rgba(255,255,255,0.12); }
+.layers-root.dark .toast-undo { color: #33506B; }
+.layers-root.dark .toast-undo:hover { background: rgba(0,0,0,0.08); }
 
 button:focus-visible, input:focus-visible, textarea:focus-visible { outline: 2px solid ${COLORS.accent}; outline-offset: 2px; }
 input:focus-visible, textarea:focus-visible { outline: none; }

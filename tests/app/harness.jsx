@@ -72,8 +72,9 @@ export function nav(name) {
   return within(document.querySelector('.nav-bar')).getByRole('button', { name: new RegExp(`^${name}$`, 'i') });
 }
 
+// The toasts' messages (without an Undo button's label).
 export function toasts() {
-  return [...document.querySelectorAll('.toast')].map(t => t.textContent);
+  return [...document.querySelectorAll('.toast')].map(t => (t.querySelector('.toast-text') || t).textContent);
 }
 
 // Let pending timers and effects run (toasts, the analysis "reading" delay).

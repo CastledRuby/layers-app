@@ -16,7 +16,7 @@ import { achievementProgress, newlyUnlocked } from './lib/achievements.js';
 import { advanceLayer, advanceSkillGoals, bumpSkills, chartDay, computeOverall, dimBumps, dimsEqual, goalBumpFor, keepDimsInLayer, makePerson, migrateDimsToLayers, movePerson, placeOnLayers, raisedSkills } from './lib/progress.js';
 import { MAX_BACKUP_BYTES, createBackup, validateBackup } from './lib/backup.js';
 import { NOTIFY_DEFAULTS, notifySettings, parseActionUrl, snoozeUntil, templateFor } from './lib/calendar.js';
-import { useCalendarNotifications, useDailyCheckIn, useToday } from './lib/hooks.js';
+import { useCalendarNotifications, useDailyBackup, useDailyCheckIn, useSystemDark, useToday } from './lib/hooks.js';
 import { followUpEvent, markDone } from './lib/reminders.js';
 import { getSnoozes, loadSavedState, persistState, setSnoozes } from './lib/storage.js';
 import { clamp, uid } from './lib/util.js';
@@ -97,7 +97,10 @@ function LayersApp() {
   const [skills, setSkills] = useState(() => backfillSkillDates(saved ? saved.skills : INITIAL_SKILLS));
   const [profile, setProfile] = useState(() => (saved && saved.profile) ? saved.profile : { name: '', focus: null });
   const [onboarded, setOnboarded] = useState(() => !!(saved && saved.onboarded));
-  const [theme, setTheme] = useState(() => (saved && saved.theme === 'dark') ? 'dark' : 'light');
+  // 'system' follows Windows' light or dark mode; `theme` is what's showing.
+  const [themeMode, setThemeMode] = useState(() => (saved && saved.themeMode) || 'system');
+  const systemDark = useSystemDark();
+  const theme = themeMode === 'system' ? (systemDark ? 'dark' : 'light') : themeMode;
   // { key: 'YYYY-MM-DD' } for each achievement reached; null until worked out.
   const [achievements, setAchievements] = useState(() => (saved && saved.achievements) || null);
   const [screen, setScreen] = useState({ name: 'tabs' });
@@ -109,7 +112,8 @@ function LayersApp() {
   const [eventView, setEventView] = useState(null); // { eventId, day } in EventSheet
   const [keyDateFor, setKeyDateFor] = useState(null); // person id, KeyDateSheet
   const [snoozes, setSnoozeList] = useState(() => getSnoozes());
-  const [toasts, setToasts] = useState([]);
+  const [toasts, setToasts] = useState([]); // [{ id, text, undo? }]
+  const lastUndo = useRef(null); // the newest toast that can still be undone
   const [coachInit, setCoachInit] = useState({ personId: null, tab: 'prepare' });
   const [updateStatus, setUpdateStatus] = useState(null);
   const hasUpdater = typeof window !== 'undefined' && !!window.layersUpdater;
@@ -151,13 +155,13 @@ function LayersApp() {
   }
 
   useEffect(() => {
-    const ok = persistState({ people, journal, generalGoals, events, skills, profile, onboarded, theme, achievements: achievements || {} });
+    const ok = persistState({ people, journal, generalGoals, events, skills, profile, onboarded, theme, themeMode, achievements: achievements || {} });
     // Say so once if saving fails (storage full), rather than silently losing
     // every change after it.
     if (!ok && !saveFailed.current) pushToast("Layers couldn't save your latest changes: storage may be full. Export a backup from Me to keep a copy.");
     saveFailed.current = !ok;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [people, journal, generalGoals, events, skills, profile, onboarded, theme, achievements]);
+  }, [people, journal, generalGoals, events, skills, profile, onboarded, theme, themeMode, achievements]);
 
   // Record achievements as they're reached (lib/achievements.js).
   useEffect(() => {
@@ -196,6 +200,17 @@ function LayersApp() {
   // Both can be turned off in Me > Notifications (stored on the profile).
   const today = useToday();
   useDailyCheckIn(onboarded && profile.checkInNotifications !== false, people, journal, today);
+  // What the backups folder holds ({ dir, count, latest }), for Me.
+  const [backupInfo, setBackupInfo] = useState(null);
+  useEffect(() => {
+    if (hasSystemBridge && window.layersSystem.getBackupsInfo) Promise.resolve(window.layersSystem.getBackupsInfo()).then(setBackupInfo).catch(() => {});
+  }, [hasSystemBridge]);
+  useDailyBackup(onboarded && hasSystemBridge, today,
+    () => JSON.stringify(createBackup({ people, journal, generalGoals, events, skills, profile, achievements })),
+    setBackupInfo);
+  function handleOpenBackups() {
+    Promise.resolve(window.layersSystem.openBackupsFolder()).then(r => { if (r && r.error) pushToast(`Couldn't open the backups folder: ${r.error}`); }).catch(() => {});
+  }
   useCalendarNotifications({ enabled: onboarded, state: { events, people, generalGoals, journal }, settings: notifySettings(profile), snoozes });
 
   useEffect(() => {
@@ -238,8 +253,8 @@ function LayersApp() {
   // saves the theme for that; index.html paints it before the app loads).
   useEffect(() => {
     document.documentElement.style.background = (theme === 'dark' ? THEME_DARK : THEME_LIGHT).paper;
-    if (hasSystemBridge && window.layersSystem.setTheme) window.layersSystem.setTheme(theme);
-  }, [theme, hasSystemBridge]);
+    if (hasSystemBridge && window.layersSystem.setTheme) window.layersSystem.setTheme(theme, themeMode);
+  }, [theme, themeMode, hasSystemBridge]);
 
   function handleToggleAutoLaunch() {
     if (!hasSystemBridge) return;
@@ -288,6 +303,11 @@ function LayersApp() {
         setActiveTab('people'); setScreen({ name: 'tabs' }); setAddPersonOpen(true);
         return;
       }
+      if (ctrlOnly && !e.shiftKey && (e.key === 'z' || e.key === 'Z') && lastUndo.current) {
+        e.preventDefault();
+        undoToast(lastUndo.current.id, lastUndo.current.undo);
+        return;
+      }
       if (ctrlOnly && !e.shiftKey && ['1', '2', '3', '4', '5'].includes(e.key)) {
         e.preventDefault();
         switchTab(TABS[Number(e.key) - 1]);
@@ -311,11 +331,29 @@ function LayersApp() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [onboarded, activeTab, screen.name, selectedDay, today]);
 
-  function pushToast(text) {
+  // `undo`: a snapshot() from just before the change; the toast then offers
+  // Undo (or Ctrl+Z) while it's showing.
+  function pushToast(text, { undo } = {}) {
     const id = uid();
-    setToasts(t => [...t, { id, text }]);
-    // Longer messages (import errors) stay up long enough to read.
-    setTimeout(() => setToasts(t => t.filter(x => x.id !== id)), Math.max(2600, text.length * 55));
+    setToasts(t => [...t, { id, text, undo }]);
+    if (undo) lastUndo.current = { id, undo };
+    // Longer messages (import errors) stay up long enough to read, and ones
+    // with Undo long enough to reach it.
+    setTimeout(() => {
+      setToasts(t => t.filter(x => x.id !== id));
+      if (lastUndo.current && lastUndo.current.id === id) lastUndo.current = null;
+    }, undo ? 7000 : Math.max(2600, text.length * 55));
+  }
+  // Undo puts the saved data back as it was just before a change: people,
+  // journal, plans, goals, skills, achievements and your profile.
+  function snapshot() { return { people, journal, events, generalGoals, skills, achievements, profile }; }
+  function undoToast(id, snap) {
+    quietAchievements.current = true;
+    setPeople(snap.people); setJournal(snap.journal); setEvents(snap.events); setGeneralGoals(snap.generalGoals);
+    setSkills(snap.skills); setAchievements(snap.achievements); setProfile(snap.profile);
+    setToasts(t => t.filter(x => x.id !== id));
+    if (lastUndo.current && lastUndo.current.id === id) lastUndo.current = null;
+    pushToast('Undone');
   }
 
   const selectedPerson = screen.name === 'person' ? people.find(p => p.id === screen.personId) : null;
@@ -350,6 +388,7 @@ function LayersApp() {
   // (only these goals move; undefined means all of each person's active
   // goals) and a `reflection`.
   function handleLogSubmit({ personIds, type, meaningfulness, notes, activeListening, summary, pickedDate, ratings = {}, goalIds, reflection }) {
+    const snap = snapshot();
     const rated = DIM_ORDER.filter(k => ratings[k]);
     const pd = pickedDate || new Date();
     const chartAt = toISODate(pd); // the journal entry's day, and "last mentioned" for any notes
@@ -407,7 +446,7 @@ function LayersApp() {
     setSkills(nextSkills);
     setLogOpen(false);
     const who = loggedNames.length <= 2 ? loggedNames.join(' and ') : `${loggedNames.slice(0, 2).join(', ')} and ${loggedNames.length - 2} other${loggedNames.length - 2 > 1 ? 's' : ''}`;
-    pushToast(who ? `Logged time with ${who}` : 'Interaction logged');
+    pushToast(who ? `Logged time with ${who}` : 'Interaction logged', { undo: snap });
     levelUps.forEach(lu => pushToast(`🎉 ${lu.name} moved up to Layer ${lu.layer}: ${getLayer(lu.layer).name}!`));
   }
 
@@ -416,17 +455,18 @@ function LayersApp() {
   // keeps a stale goal or start day. With `another` the sheet stays open for
   // the next plan and lists what's been added, so there's no toast or jump.
   function handleSavePlan(fieldsOrList, editingId, { another = false } = {}) {
+    const snap = snapshot();
     const now = new Date().toISOString();
     const tidy = (ev) => { Object.keys(ev).forEach(k => { if (ev[k] === null || ev[k] === undefined) delete ev[k]; }); return ev; };
     const list = Array.isArray(fieldsOrList) ? fieldsOrList : [fieldsOrList];
     const fields = list[0];
     if (editingId) {
       setEvents(prev => prev.map(e => e.id !== editingId ? e : tidy({ ...e, goalId: null, from: null, date: null, weekdays: null, allDay: null, ...fields, updatedAt: now })));
-      pushToast('Plan updated');
+      pushToast('Plan updated', { undo: snap });
     } else {
       const created = toISODate(new Date());
       setEvents(prev => [...list.map(f => tidy({ id: uid(), defaultMeaningfulness: 3, ...f, createdAt: created, updatedAt: now })), ...prev]);
-      if (!another) pushToast(list.length > 1 ? `${list.length} plans saved` : fields.kind === 'recurring' ? 'Repeating plan saved' : 'Plan saved');
+      if (!another) pushToast(list.length > 1 ? `${list.length} plans saved` : fields.kind === 'recurring' ? 'Repeating plan saved' : 'Plan saved', { undo: snap });
     }
     if (another) return;
     setPlanState(null);
@@ -449,8 +489,9 @@ function LayersApp() {
   }
   // A one-off is done for good; a weekly reminder for that day only.
   function handleMarkEventDone(eventId, day, { quiet = false } = {}) {
+    const snap = snapshot();
     setEvents(prev => prev.map(e => e.id === eventId ? markDone(e, day) : e));
-    if (!quiet) pushToast('Marked done');
+    if (!quiet) pushToast('Marked done', { undo: snap });
   }
   function handleSaveKeyDate(personId, kd) {
     setPeople(prev => prev.map(p => p.id !== personId ? p : { ...p, dates: [...(p.dates || []), { id: uid(), ...kd }] }));
@@ -458,7 +499,9 @@ function LayersApp() {
     pushToast('Date saved to the calendar');
   }
   function handleDeleteKeyDate(personId, dateId) {
+    const snap = snapshot();
     setPeople(prev => prev.map(p => p.id !== personId ? p : { ...p, dates: (p.dates || []).filter(d => d.id !== dateId) }));
+    pushToast('Date removed', { undo: snap });
   }
 
   // A notification button, as a layers:// link from main.cjs: mark done,
@@ -471,6 +514,13 @@ function LayersApp() {
     if (a.action === 'done' && ev) handleMarkEventDone(ev.id, day);
     else if (a.action === 'snooze' && ev) handleSnooze(ev.id, day, a.minutes);
     else if (a.action === 'log' && ev) { switchTab('today'); setSelectedDay(day === today ? null : day); openLogFromEvent(ev, day); }
+    else if (a.action === 'plan') {
+      // A key date's "Plan something": with that person, on the day (or today, if it's passed).
+      const on = day < today ? today : day;
+      switchTab('today');
+      setSelectedDay(on === today ? null : on);
+      openPlan({ day: on, personIds: a.personId && people.some(p => p.id === a.personId) ? [a.personId] : undefined });
+    }
     else {
       switchTab('today');
       setSelectedDay(day === today ? null : day);
@@ -496,12 +546,13 @@ function LayersApp() {
   }
   function handleDeleteEvent(eventId) {
     const ev = events.find(e => e.id === eventId);
+    const snap = snapshot();
     askConfirm({
       title: 'Delete this plan?',
       message: ev ? `"${ev.title}" will be removed for good${ev.kind === 'recurring' ? ', every time it repeats' : ''}.` : 'This plan will be removed for good.',
       confirmLabel: 'Delete plan',
       danger: true,
-      onConfirm: () => { setEvents(prev => prev.filter(e => e.id !== eventId)); setEventView(null); setPlanState(null); pushToast('Plan deleted'); },
+      onConfirm: () => { setEvents(prev => prev.filter(e => e.id !== eventId)); setEventView(null); setPlanState(null); pushToast('Plan deleted', { undo: snap }); },
     });
   }
 
@@ -520,12 +571,13 @@ function LayersApp() {
     pushToast('Entry updated');
   }
   function handleDeleteEntry(entryId) {
+    const snap = snapshot();
     askConfirm({
       title: 'Delete this entry?',
       message: "It's removed from the journal for good. Progress it already added stays.",
       confirmLabel: 'Delete entry',
       danger: true,
-      onConfirm: () => { setJournal(prev => prev.filter(j => j.id !== entryId)); setEditingEntryId(null); pushToast('Entry deleted'); },
+      onConfirm: () => { setJournal(prev => prev.filter(j => j.id !== entryId)); setEditingEntryId(null); pushToast('Entry deleted', { undo: snap }); },
     });
   }
 
@@ -544,6 +596,7 @@ function LayersApp() {
     setGoalModalOpen(false); setGoalEditing(null);
   }
   function handleDeleteGoal(personId, goalId, title) {
+    const snap = snapshot();
     askConfirm({
       title: 'Delete this goal?',
       message: title ? `"${title}" will be removed for good.` : 'This goal will be removed for good.',
@@ -552,7 +605,7 @@ function LayersApp() {
       onConfirm: () => {
         updateGoalsFor(personId, goals => goals.filter(g => g.id !== goalId));
         setEvents(prev => prev.map(e => { if (e.goalId !== goalId) return e; const next = { ...e }; delete next.goalId; return next; }));
-        pushToast('Goal removed');
+        pushToast('Goal removed', { undo: snap });
       },
     });
   }
@@ -687,6 +740,7 @@ function LayersApp() {
     setEditPersonOpen(false);
   }
   function handleDeletePerson(personId, name) {
+    const snap = snapshot();
     setEditPersonOpen(false);
     askConfirm({
       title: `Remove ${name}?`,
@@ -701,7 +755,7 @@ function LayersApp() {
         // someone who no longer exists.
         setCoachInit(c => c.personId === personId ? { ...c, personId: null } : c);
         setScreen({ name: 'tabs' }); setActiveTab('people');
-        pushToast(`${name} was removed`);
+        pushToast(`${name} was removed`, { undo: snap });
       },
     });
   }
@@ -711,6 +765,7 @@ function LayersApp() {
   // replace everything, and there was no way to remove only the samples,
   // though onboarding promised you could clear them.)
   function handleRemoveSample() {
+    const snap = snapshot();
     const names = people.filter(p => SAMPLE_PERSON_IDS.has(p.id)).map(p => p.name);
     const resetSkills = skillsCameWithSamples(skills);
     askConfirm({
@@ -732,7 +787,7 @@ function LayersApp() {
         setAchievements(prev => Object.fromEntries(Object.entries(prev || {}).filter(([k]) => still[k] && still[k].done)));
         setCoachInit(c => SAMPLE_PERSON_IDS.has(c.personId) ? { ...c, personId: null } : c);
         setScreen({ name: 'tabs' }); setActiveTab('today');
-        pushToast('Sample people removed');
+        pushToast('Sample people removed', { undo: snap });
       },
     });
   }
@@ -761,13 +816,14 @@ function LayersApp() {
   // progress, settings }). Clearing people (and so their journal) goes back
   // to the welcome screen to set up again; otherwise you stay in Me.
   function handleStartOver(parts) {
+    const snap = snapshot();
     quietAchievements.current = true;
     if (parts.people) { setPeople([]); setCoachInit(c => ({ ...c, personId: null })); }
     if (parts.people || parts.journal) setJournal([]);
     if (parts.plans) { setEvents([]); setSnoozes([]); setSnoozeList([]); }
     else if (parts.people) setEvents(prev => unlinkMissingPeople(prev, []));
     if (parts.progress) { setGeneralGoals([]); setSkills(EMPTY_SKILLS); setAchievements(null); }
-    if (parts.settings) { setProfile({ name: '', focus: null }); setTheme('light'); }
+    if (parts.settings) { setProfile({ name: '', focus: null }); setThemeMode('system'); }
     setStartOverOpen(false);
     setSelectedDay(null);
     if (parts.people) {
@@ -776,7 +832,7 @@ function LayersApp() {
       return;
     }
     const names = { journal: 'the journal', plans: 'plans', progress: 'skills and goals', settings: 'settings' };
-    pushToast(`Cleared ${listNames(Object.keys(names).filter(k => parts[k]).map(k => names[k]))}`);
+    pushToast(`Cleared ${listNames(Object.keys(names).filter(k => parts[k]).map(k => names[k]))}`, { undo: snap });
   }
 
   function handleExportData() {
@@ -913,7 +969,7 @@ function LayersApp() {
                         {activeTab === 'people' && <PeopleView people={people} journal={journal} onOpenPerson={openPerson} onAddPerson={() => setAddPersonOpen(true)} />}
                         {activeTab === 'coach' && <CoachView people={people} journal={journal} initialPersonId={coachInit.personId} initialTab={coachInit.tab} onOpenLog={openLog} onApproveInfo={handleApproveInfo} onLogFromAnalysis={handleLogFromAnalysis} onOpenPerson={openPerson} />}
                         {activeTab === 'journal' && <JournalView today={today} people={people} journal={journal} onOpenPerson={openPerson} onEditEntry={setEditingEntryId} />}
-                        {activeTab === 'me' && <MeView people={people} journal={journal} skills={skills} generalGoals={generalGoals} profile={profile} onAddSample={handleAddSample} onRemoveSample={handleRemoveSample} hasSamplePeople={people.some(p => SAMPLE_PERSON_IDS.has(p.id))} canAddSample={INITIAL_PEOPLE.some(sp => !people.some(p => p.id === sp.id))} onStartOver={() => setStartOverOpen(true)} onExport={handleExportData} onImportClick={handleImportClick} hasUpdater={hasUpdater} updateStatus={updateStatus} onCheckForUpdates={handleCheckForUpdates} onInstallUpdate={handleInstallUpdate} onOpenDownloadPage={handleOpenDownloadPage} shortcutStatus={shortcutStatus} theme={theme} onSetTheme={setTheme} onUpdateProfile={(changes) => setProfile(p => ({ ...p, ...changes }))} onEditProfile={() => setEditProfileOpen(true)} achievements={achievements || {}} hasSystemBridge={hasSystemBridge} autoLaunch={autoLaunch} onToggleAutoLaunch={handleToggleAutoLaunch} onOpenShortcuts={() => setShortcutsOpen(true)} appVersion={appVersion} />}
+                        {activeTab === 'me' && <MeView people={people} journal={journal} skills={skills} generalGoals={generalGoals} profile={profile} onAddSample={handleAddSample} onRemoveSample={handleRemoveSample} hasSamplePeople={people.some(p => SAMPLE_PERSON_IDS.has(p.id))} canAddSample={INITIAL_PEOPLE.some(sp => !people.some(p => p.id === sp.id))} onStartOver={() => setStartOverOpen(true)} onExport={handleExportData} onImportClick={handleImportClick} backupInfo={backupInfo} onOpenBackups={handleOpenBackups} hasUpdater={hasUpdater} updateStatus={updateStatus} onCheckForUpdates={handleCheckForUpdates} onInstallUpdate={handleInstallUpdate} onOpenDownloadPage={handleOpenDownloadPage} shortcutStatus={shortcutStatus} themeMode={themeMode} onSetTheme={setThemeMode} onUpdateProfile={(changes) => setProfile(p => ({ ...p, ...changes }))} onEditProfile={() => setEditProfileOpen(true)} achievements={achievements || {}} hasSystemBridge={hasSystemBridge} autoLaunch={autoLaunch} onToggleAutoLaunch={handleToggleAutoLaunch} onOpenShortcuts={() => setShortcutsOpen(true)} appVersion={appVersion} />}
                       </>
                     )}
                   </>
@@ -930,7 +986,12 @@ function LayersApp() {
             )}
 
             <div className="toast-stack">
-              {toasts.map(t => (<div key={t.id} className="toast">{t.text}</div>))}
+              {toasts.map(t => (
+                <div key={t.id} className={`toast${t.undo ? ' toast--undo' : ''}`}>
+                  <span className="toast-text">{t.text}</span>
+                  {t.undo && <button type="button" onClick={() => undoToast(t.id, t.undo)} className="toast-undo" aria-label="Undo (Ctrl+Z)">Undo</button>}
+                </div>
+              ))}
             </div>
 
             <input ref={importInputRef} type="file" accept="application/json" onChange={handleImportFile} style={{ display: 'none' }} />

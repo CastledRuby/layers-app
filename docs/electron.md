@@ -17,6 +17,7 @@ channel are in [generated/code-map.md](generated/code-map.md#electron-ipc).
 | Global shortcut | `registerGlobalShortcut()` | **Ctrl+Shift+L** calls `showWindow()`. `register()` returns false when another app already owns the combination; the result is kept and reported through `get-shortcut-status`, so the Me tab can say so. Unregistered on `will-quit`. |
 | Auto-update | `setupAutoUpdate()` | See [Auto-update](#auto-update) below. |
 | Launch at login | `setupAutoLaunch()`, `loginItem()` | Registers `{ path, args: ['--hidden'] }`, so a login launch starts in the tray. (`openAsHidden` only works on macOS.) `path` is the portable `.exe` (`PORTABLE_EXECUTABLE_FILE`) when running portable, because `process.execPath` is a temporary folder that's deleted on exit; otherwise `process.execPath`. `get-auto-launch` upgrades an entry from before 1.0.27 (same path, no `--hidden`) in place, and turning it off removes both kinds. |
+| Daily backups | `setupBackups()`, [`backups.cjs`](../electron/backups.cjs) | The page sends one backup a day (`save-daily-backup`); it's saved as `layers-backup-YYYY-MM-DD.json` in **Documents\Layers backups** (`Backups` in the data folder when `LAYERS_USER_DATA_DIR` is set). A day's file is never overwritten, so it holds the data as it was when Layers first ran that day, and only the newest 14 are kept. Files with other names are left alone. `backups-info` and `open-backups-folder` serve Me's **Automatic backups** row. |
 | Version | `setupVersionInfo()` | Returns `app.getVersion()`, the version baked in at package time. The Me tab shows it. |
 | Show from a notification | `ipcMain.on('show-window', showWindow)` | Registered in `setupVersionInfo()`. The renderer sends it when you click one of its notifications. |
 
@@ -43,6 +44,7 @@ when Layers is closed:
      stay on screen, with **10 min**, **1 hour** and **Tomorrow**. They have no Log it
      or Done: the plan hasn't happened yet.
    - "How did it go?" (when a plan with people ends) has **Log it** and **Just tick it**.
+   - A birthday or key date coming up has **Plan something** (`layers://plan?p=<person>&d=<day>`), which opens planning with that person on that day.
    - Every button and the toast body are `layers://` links.
 3. It replaces Layers' scheduled toasts (group `layers`) through Windows PowerShell and
    the WinRT `ToastNotificationManager`, so no native module is needed. One run happens
@@ -68,7 +70,7 @@ while Layers runs. Clicking it calls `layersSystem.showWindow()`.
 | `--hidden` | Start in the tray without showing the window. The login item passes it. |
 | `--quit` | Ask a running Layers to quit cleanly, then exit. |
 | `PORTABLE_EXECUTABLE_FILE` | Set by electron-builder's portable launcher to the `.exe` itself. Layers uses it for the login item and to tell the portable build from the installed one. |
-| `LAYERS_USER_DATA_DIR` | Use this folder for userData (`localStorage`, `theme.json`, `window-state.json` and the single-instance lock). It's applied before the lock, so a test copy can run beside your own Layers. The end-to-end tests give every launch a new temporary folder ([testing.md](testing.md#3-end-to-end-tests-testse2especjs)). |
+| `LAYERS_USER_DATA_DIR` | Use this folder for userData (`localStorage`, `theme.json`, `window-state.json` and the single-instance lock), and its `Backups` folder for daily backups. It's applied before the lock, so a test copy can run beside your own Layers. The end-to-end tests give every launch a new temporary folder ([testing.md](testing.md#3-end-to-end-tests-testse2especjs)). |
 | `LAYERS_NO_UPDATES` | Don't load `electron-updater`. `check-for-updates` answers `not-configured`. The end-to-end tests set it so they never contact GitHub. |
 | `LAYERS_NO_SCHEDULE` | Don't schedule Windows notifications. The end-to-end tests set it, so they never put toasts on your computer. |
 | `LAYERS_SCHEDULE_DUMP` | Write the toasts that would be scheduled (tag, time, XML) to this file instead. One end-to-end test uses it. |
@@ -142,7 +144,10 @@ The renderer turns these statuses into toasts and the Me-tab update row
 | `scheduleNotifications(list)` | `invoke('schedule-notifications')` | Replaces Layers' scheduled Windows toasts with `list` (`toasts.cjs`); resolves `{ scheduled }` or `{ error }` |
 | `calendarReady()` | `invoke('calendar-ready')` | Marks the page ready and returns the `layers://` links that arrived before it was |
 | `onCalendarAction(cb)` | `on('calendar-action')` | Calls `cb(link)` for each later button press; returns an unsubscribe function |
-| `setTheme(theme)` | `send('set-theme')` | Sets the window's background colour and saves `{ theme }` to `theme.json` for the next launch (see [ui-system.md](renderer/ui-system.md#no-flash-at-startup)) |
+| `setTheme(theme, mode)` | `send('set-theme')` | Sets the window's background colour and saves `{ theme, mode }` to `theme.json` for the next launch. With `mode: 'system'` (Match Windows) the next launch asks Windows (`nativeTheme.shouldUseDarkColors`). See [ui-system.md](renderer/ui-system.md#no-flash-at-startup). |
+| `saveDailyBackup(day, json)` | `invoke('save-daily-backup')` | Saves the day's backup unless it has one, keeps the newest 14; resolves `{ saved, dir, count, latest }` or `{ error }` |
+| `getBackupsInfo()` | `invoke('backups-info')` | `{ dir, count, latest }` for Me |
+| `openBackupsFolder()` | `invoke('open-backups-folder')` | Opens the backups folder in Explorer, creating it if needed |
 
 Ctrl+Shift+L doesn't message the renderer. Up to 1.0.23 it also sent
 `trigger-log-interaction` to open the log sheet. That channel and its

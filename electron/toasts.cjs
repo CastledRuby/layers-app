@@ -23,6 +23,8 @@ const link = (action, params) => `layers://${action}?${new URLSearchParams(Objec
 //   or Done; those wait for "How did it go?". It uses the reminder scenario,
 //   so it stays on screen.
 // - "How did it go?" (after): Log it, or Just tick it.
+// - A birthday or key date coming up (date): Plan something, with them on
+//   that day.
 // - Summaries (morning, evening): clicking opens that day.
 function toastXml(n) {
   const ids = { e: n.eventId, d: n.day };
@@ -34,6 +36,8 @@ function toastXml(n) {
     actions = button('10 min', 'snooze', { m: '10' }) + button('1 hour', 'snooze', { m: '60' }) + button('Tomorrow', 'snooze', { m: 'tomorrow' });
   } else if (n.kind === 'after' && n.eventId) {
     actions = button('Log it', 'log') + button('Just tick it', 'done');
+  } else if (n.kind === 'date' && n.personId) {
+    actions = button('Plan something', 'plan', { p: n.personId });
   }
   return `<toast activationType="protocol" launch="${esc(link('open', ids))}"${scenario}>`
     + `<visual><binding template="ToastGeneric"><text>${esc(n.title)}</text><text>${esc(n.body)}</text></binding></visual>`

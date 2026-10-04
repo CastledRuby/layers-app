@@ -53,7 +53,9 @@ export function loadSavedState(now = new Date()) {
     return { state: null, problem: { kind: 'unreadable', warnings: [], copyKept: keepCopy(raw, now) } };
   }
   // achievements: null for saved data from before they were recorded.
-  const state = { ...result.data, onboarded: !!parsed.onboarded, theme: parsed.theme === 'dark' ? 'dark' : 'light' };
+  // themeMode: 'system' follows Windows (the default since 2026-10-05, when
+  // the owner chose it, so saves from before it follow Windows too).
+  const state = { ...result.data, onboarded: !!parsed.onboarded, theme: parsed.theme === 'dark' ? 'dark' : 'light', themeMode: ['system', 'light', 'dark'].includes(parsed.themeMode) ? parsed.themeMode : 'system' };
   delete state.exportedAt;
   let migrated = [];
   if (!(parsed.dataVersion >= 2)) {

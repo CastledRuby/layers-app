@@ -23,6 +23,12 @@ describe('Windows toasts', () => {
     expect(morning).toContain('launch="layers://open?d=2026-10-04"');
   });
 
+  it('a birthday coming up offers Plan something, with that person on that day', () => {
+    const xml = toastXml({ kind: 'date', title: "🎂 Priya's birthday is in a week", body: '', personId: 'p1', day: '2026-10-05' });
+    expect([...xml.matchAll(/arguments="([^"]+)"/g)].map(m => m[1])).toEqual(['layers://plan?d=2026-10-05&amp;p=p1']);
+    expect(xml).toContain('content="Plan something"');
+  });
+
   it('only schedules well-formed, future notifications', () => {
     const now = Date.now();
     const list = cleanList([

@@ -4,26 +4,26 @@
 > Run `npm run docs:map` after changing anything under `src/`, `electron/*.cjs` or `package.json` scripts.
 > Hand-written explanations live in the other files under [`docs/`](../README.md).
 
-Package: `layers-web` v1.0.30 · `src/`: 52 files, 7594 lines, 76 components, 163 top-level functions, 89 constants.
+Package: `layers-web` v1.0.30 · `src/`: 52 files, 7732 lines, 76 components, 165 top-level functions, 90 constants.
 
 ## Source files
 
 | File | Lines | Declares | Imports from |
 |---|---|---|---|
 | [main.jsx](../../src/main.jsx) | 11 | — | — |
-| [App.jsx](../../src/App.jsx) | 989 | sampleData, SAMPLE_PERSON_IDS, SAMPLE_GOAL_IDS, skillsCameWithSamples, allSkillsZero, listNames, unlinkMissingPeople, addNotes, LayersApp | `components/BottomNav`, `components/ErrorBoundary`, `components/PageTransition`, `components/sheetLayer`, `data/constants`, `data/seed`, `lib/dates`, `lib/achievements`, `lib/progress`, `lib/backup`, `lib/calendar`, `lib/hooks`, `lib/reminders`, `lib/storage`, `lib/util`, `modals/AddInfoModal`, `modals/AddPersonModal`, `modals/ConfirmDialog`, `modals/EditEntryModal`, `modals/EditPersonModal`, `modals/EditProfileModal`, `modals/EventSheet`, `modals/GoalModal`, `modals/KeyDateSheet`, `modals/LogInteractionModal`, `modals/PlanSheet`, `modals/QuickAddInterestModal`, `modals/ShortcutsModal`, `modals/StartOverSheet`, `modals/TemplatePickerModal`, `theme`, `views/CoachView`, `views/GoalsView`, `views/JournalView`, `views/MeView`, `views/OnboardingView`, `views/PeopleView`, `views/PersonProfile`, `views/TodayView` |
-| [theme.js](../../src/theme.js) | 244 | THEME_LIGHT, THEME_DARK, COLORS, cssVarBlock, EASE, CSS | `fonts` |
-| [data/constants.js](../../src/data/constants.js) | 255 | LAYERS, getLayer, DIM_ORDER, DIM_LABELS, DIM_COLORS, LAYER_BASE_DIMS, CATEGORIES, categoryMeta, TABS, SHORTCUTS, … (+25) | `theme` |
+| [App.jsx](../../src/App.jsx) | 1050 | sampleData, SAMPLE_PERSON_IDS, SAMPLE_GOAL_IDS, skillsCameWithSamples, allSkillsZero, listNames, unlinkMissingPeople, addNotes, LayersApp | `components/BottomNav`, `components/ErrorBoundary`, `components/PageTransition`, `components/sheetLayer`, `data/constants`, `data/seed`, `lib/dates`, `lib/achievements`, `lib/progress`, `lib/backup`, `lib/calendar`, `lib/hooks`, `lib/reminders`, `lib/storage`, `lib/util`, `modals/AddInfoModal`, `modals/AddPersonModal`, `modals/ConfirmDialog`, `modals/EditEntryModal`, `modals/EditPersonModal`, `modals/EditProfileModal`, `modals/EventSheet`, `modals/GoalModal`, `modals/KeyDateSheet`, `modals/LogInteractionModal`, `modals/PlanSheet`, `modals/QuickAddInterestModal`, `modals/ShortcutsModal`, `modals/StartOverSheet`, `modals/TemplatePickerModal`, `theme`, `views/CoachView`, `views/GoalsView`, `views/JournalView`, `views/MeView`, `views/OnboardingView`, `views/PeopleView`, `views/PersonProfile`, `views/TodayView` |
+| [theme.js](../../src/theme.js) | 249 | THEME_LIGHT, THEME_DARK, COLORS, cssVarBlock, EASE, CSS | `fonts` |
+| [data/constants.js](../../src/data/constants.js) | 256 | LAYERS, getLayer, DIM_ORDER, DIM_LABELS, DIM_COLORS, LAYER_BASE_DIMS, CATEGORIES, categoryMeta, TABS, SHORTCUTS, … (+25) | `theme` |
 | [data/scenarios.js](../../src/data/scenarios.js) | 115 | SCENARIOS | — |
 | [data/seed.js](../../src/data/seed.js) | 176 | INITIAL_PEOPLE, INITIAL_GENERAL_GOALS, INITIAL_JOURNAL, INITIAL_SKILLS, EMPTY_SKILLS | — |
 | [lib/achievements.js](../../src/lib/achievements.js) | 37 | achievementProgress, newlyUnlocked, progressText | `data/constants` |
 | [lib/backup.js](../../src/lib/backup.js) | 195 | BACKUP_VERSION, MAX_BACKUP_BYTES, createBackup, isObject, isText, isISODay, num, count, cleanHistory, cleanGoal, … (+5) | `lib/calendar`, `data/constants`, `data/seed`, `lib/util` |
-| [lib/calendar.js](../../src/lib/calendar.js) | 308 | DEFAULT_DURATION, EVENT_TEMPLATES, templateFor, DATE_KINDS, dateKind, NOTIFY_DEFAULTS, notifySettings, dayDate, addDays, weekdaysOf, … (+23) | `lib/dates` |
+| [lib/calendar.js](../../src/lib/calendar.js) | 330 | WEEKDAY_NAMES, DEFAULT_DURATION, EVENT_TEMPLATES, templateFor, DATE_KINDS, dateKind, NOTIFY_DEFAULTS, notifySettings, dayDate, addDays, … (+24) | `lib/dates` |
 | [lib/dates.js](../../src/lib/dates.js) | 282 | parseDaysAgo, startOfDay, WEEKDAY_SHORT, WEEKDAY_FULL, formatWeekdays, MONTH_NAMES, dateToRelativeLabel, formatCalendarDate, toISODate, formatAbsoluteDate, … (+23) | `data/constants` |
-| [lib/hooks.js](../../src/lib/hooks.js) | 119 | useToday, useDailyCheckIn, notify, SCHEDULE_DAYS, LATE_MINUTES, useCalendarNotifications | `lib/dates`, `lib/calendar`, `lib/storage`, `lib/text` |
+| [lib/hooks.js](../../src/lib/hooks.js) | 155 | useToday, useDailyBackup, useSystemDark, useDailyCheckIn, notify, SCHEDULE_DAYS, LATE_MINUTES, useCalendarNotifications | `lib/dates`, `lib/calendar`, `lib/storage`, `lib/text` |
 | [lib/progress.js](../../src/lib/progress.js) | 213 | layerForOverall, advanceLayer, computeOverall, dimsEqual, placeOnLayers, progressDelta, chartDay, movePerson, makePerson, generateGoalDescription, … (+10) | `data/constants`, `lib/dates`, `lib/util` |
 | [lib/reminders.js](../../src/lib/reminders.js) | 33 | markDone, followUpEvent | `lib/dates` |
-| [lib/storage.js](../../src/lib/storage.js) | 123 | STORAGE_KEY, DATA_VERSION, UNREADABLE_PREFIX, keepCopy, loadSavedState, persistState, LAST_NOTIFIED_KEY, getLastNotifiedDate, setLastNotifiedDate, NOTIFIED_REMINDERS_KEY, … (+5) | `lib/backup`, `lib/progress` |
+| [lib/storage.js](../../src/lib/storage.js) | 125 | STORAGE_KEY, DATA_VERSION, UNREADABLE_PREFIX, keepCopy, loadSavedState, persistState, LAST_NOTIFIED_KEY, getLastNotifiedDate, setLastNotifiedDate, NOTIFIED_REMINDERS_KEY, … (+5) | `lib/backup`, `lib/progress` |
 | [lib/text.js](../../src/lib/text.js) | 168 | summaryFor, updateStatusText, homeGoalTitle, generateSuggestions, getCheckInSuggestions, checkInReminder, HOOKS, buildPotentialHooks, focusSuggestion | `data/constants`, `lib/dates` |
 | [lib/util.js](../../src/lib/util.js) | 9 | clamp, uidCounter, uid | — |
 | [components/atoms.jsx](../../src/components/atoms.jsx) | 114 | CircularProgress, ProgressBar, LabeledBar, Avatar, LayerBadge, ChatBubble, Timeline, ConvStateBadge, Kbd | `data/constants`, `lib/dates`, `lib/util`, `theme` |
@@ -56,7 +56,7 @@ Package: `layers-web` v1.0.30 · `src/`: 52 files, 7594 lines, 76 components, 16
 | [views/CoachView.jsx](../../src/views/CoachView.jsx) | 381 | CoachView | `components/atoms`, `data/constants`, `data/scenarios`, `lib/text`, `theme` |
 | [views/GoalsView.jsx](../../src/views/GoalsView.jsx) | 65 | GoalsView | `components/atoms`, `components/rows`, `data/constants`, `theme` |
 | [views/JournalView.jsx](../../src/views/JournalView.jsx) | 135 | PERIODS, Chip, JournalView | `data/constants`, `lib/dates`, `lib/text`, `theme` |
-| [views/MeView.jsx](../../src/views/MeView.jsx) | 237 | Toggle, Pick, MeView | `components/atoms`, `data/constants`, `lib/achievements`, `lib/calendar`, `lib/dates`, `lib/text`, `theme` |
+| [views/MeView.jsx](../../src/views/MeView.jsx) | 248 | Toggle, Pick, MeView | `components/atoms`, `data/constants`, `lib/achievements`, `lib/calendar`, `lib/dates`, `lib/text`, `theme` |
 | [views/OnboardingView.jsx](../../src/views/OnboardingView.jsx) | 198 | QUICK_NAMES, STEP_LABELS, listNames, Progress, Switch, OnboardingView | `components/atoms`, `components/illustrations`, `data/constants`, `lib/calendar`, `lib/dates`, `theme` |
 | [views/PeopleView.jsx](../../src/views/PeopleView.jsx) | 189 | PeopleView | `components/atoms`, `components/illustrations`, `data/constants`, `lib/dates`, `lib/text`, `theme` |
 | [views/PersonProfile.jsx](../../src/views/PersonProfile.jsx) | 306 | shortDate, keyDatesInOrder, AdjustSlider, PrepareTipsModal, PersonProfile | `components/Sheet`, `components/atoms`, `components/rows`, `data/constants`, `lib/dates`, `lib/progress`, `lib/calendar`, `lib/dates`, `lib/text`, `theme` |
@@ -127,7 +127,7 @@ Package: `layers-web` v1.0.30 · `src/`: 52 files, 7594 lines, 76 components, 16
 | `JournalView` | [JournalView.jsx:27](../../src/views/JournalView.jsx#L27) | `today`, `people`, `journal`, `onOpenPerson`, `onEditEntry` | `LayersApp` |
 | `Toggle` | [MeView.jsx:15](../../src/views/MeView.jsx#L15) | `on`, `onChange`, `label`, `hint`, `children` | `MeView` |
 | `Pick` | [MeView.jsx:31](../../src/views/MeView.jsx#L31) | — | `NewInfoSheet`, `ReflectionSheet`, `MeView` |
-| `MeView` | [MeView.jsx:33](../../src/views/MeView.jsx#L33) | `people`, `journal`, `skills`, `profile`, `generalGoals`, `onUpdateProfile`, `onEditProfile`, `achievements`, `onAddSample`, `onRemoveSample`, `hasSamplePeople`, `canAddSample`, `onStartOver`, `onExport`, `onImportClick`, `hasUpdater`, `updateStatus`, `onCheckForUpdates`, `onInstallUpdate`, `onOpenDownloadPage`, `shortcutStatus`, `theme`, `onSetTheme`, `hasSystemBridge`, `autoLaunch`, `onToggleAutoLaunch`, `onOpenShortcuts`, `appVersion` | `LayersApp` |
+| `MeView` | [MeView.jsx:33](../../src/views/MeView.jsx#L33) | `people`, `journal`, `skills`, `profile`, `generalGoals`, `onUpdateProfile`, `onEditProfile`, `achievements`, `onAddSample`, `onRemoveSample`, `hasSamplePeople`, `canAddSample`, `onStartOver`, `onExport`, `onImportClick`, `backupInfo`, `onOpenBackups`, `hasUpdater`, `updateStatus`, `onCheckForUpdates`, `onInstallUpdate`, `onOpenDownloadPage`, `shortcutStatus`, `themeMode`, `onSetTheme`, `hasSystemBridge`, `autoLaunch`, `onToggleAutoLaunch`, `onOpenShortcuts`, `appVersion` | `LayersApp` |
 | `Progress` | [OnboardingView.jsx:24](../../src/views/OnboardingView.jsx#L24) | `step`, `samples` | `OnboardingView` |
 | `Switch` | [OnboardingView.jsx:37](../../src/views/OnboardingView.jsx#L37) | `on`, `onChange`, `label`, `detail` | `OnboardingView` |
 | `OnboardingView` | [OnboardingView.jsx:51](../../src/views/OnboardingView.jsx#L51) | `initialName`, `initialFocus`, `initialNotify`, `onComplete`, `onRestore` | `LayersApp` |
@@ -157,7 +157,7 @@ Package: `layers-web` v1.0.30 · `src/`: 52 files, 7594 lines, 76 components, 16
 | `cssVarBlock` | [theme.js:60](../../src/theme.js#L60) |  |  |
 | `getLayer` | [constants.js:13](../../src/data/constants.js#L13) | ✓ |  |
 | `categoryMeta` | [constants.js:32](../../src/data/constants.js#L32) | ✓ |  |
-| `presetMeta` | [constants.js:159](../../src/data/constants.js#L159) | ✓ |  |
+| `presetMeta` | [constants.js:160](../../src/data/constants.js#L160) | ✓ |  |
 | `achievementProgress` | [achievements.js:9](../../src/lib/achievements.js#L9) | ✓ |  |
 | `newlyUnlocked` | [achievements.js:29](../../src/lib/achievements.js#L29) | ✓ |  |
 | `progressText` | [achievements.js:34](../../src/lib/achievements.js#L34) | ✓ |  |
@@ -174,34 +174,34 @@ Package: `layers-web` v1.0.30 · `src/`: 52 files, 7594 lines, 76 components, 16
 | `cleanEvent` | [backup.js:102](../../src/lib/backup.js#L102) |  |  |
 | `cleanSkills` | [backup.js:128](../../src/lib/backup.js#L128) |  |  |
 | `validateBackup` | [backup.js:140](../../src/lib/backup.js#L140) | ✓ | ✓ |
-| `templateFor` | [calendar.js:37](../../src/lib/calendar.js#L37) | ✓ |  |
-| `dateKind` | [calendar.js:47](../../src/lib/calendar.js#L47) | ✓ |  |
-| `notifySettings` | [calendar.js:60](../../src/lib/calendar.js#L60) | ✓ |  |
-| `dayDate` | [calendar.js:65](../../src/lib/calendar.js#L65) |  |  |
-| `addDays` | [calendar.js:66](../../src/lib/calendar.js#L66) |  |  |
-| `weekdaysOf` | [calendar.js:67](../../src/lib/calendar.js#L67) |  |  |
-| `isDaily` | [calendar.js:68](../../src/lib/calendar.js#L68) | ✓ |  |
-| `occursOn` | [calendar.js:71](../../src/lib/calendar.js#L71) | ✓ | ✓ |
-| `isDoneOn` | [calendar.js:79](../../src/lib/calendar.js#L79) | ✓ | ✓ |
-| `durationOf` | [calendar.js:84](../../src/lib/calendar.js#L84) | ✓ |  |
-| `alertOf` | [calendar.js:85](../../src/lib/calendar.js#L85) | ✓ |  |
-| `timed` | [calendar.js:86](../../src/lib/calendar.js#L86) |  |  |
-| `keyDateOn` | [calendar.js:90](../../src/lib/calendar.js#L90) | ✓ | ✓ |
-| `keyDateLabel` | [calendar.js:102](../../src/lib/calendar.js#L102) | ✓ |  |
-| `dayAgenda` | [calendar.js:111](../../src/lib/calendar.js#L111) | ✓ | ✓ |
-| `monthMarks` | [calendar.js:137](../../src/lib/calendar.js#L137) | ✓ | ✓ |
-| `recentPlans` | [calendar.js:152](../../src/lib/calendar.js#L152) | ✓ | ✓ |
-| `clashesOn` | [calendar.js:167](../../src/lib/calendar.js#L167) | ✓ | ✓ |
-| `needsAnswer` | [calendar.js:174](../../src/lib/calendar.js#L174) | ✓ | ✓ |
-| `planIdeas` | [calendar.js:185](../../src/lib/calendar.js#L185) | ✓ | ✓ |
-| `sinceText` | [calendar.js:202](../../src/lib/calendar.js#L202) |  |  |
-| `at` | [calendar.js:208](../../src/lib/calendar.js#L208) |  |  |
-| `clock` | [calendar.js:209](../../src/lib/calendar.js#L209) |  |  |
-| `names` | [calendar.js:213](../../src/lib/calendar.js#L213) |  |  |
-| `alertWhen` | [calendar.js:214](../../src/lib/calendar.js#L214) |  |  |
-| `plannedNotifications` | [calendar.js:227](../../src/lib/calendar.js#L227) | ✓ | ✓ |
-| `snoozeUntil` | [calendar.js:285](../../src/lib/calendar.js#L285) | ✓ | ✓ |
-| `parseActionUrl` | [calendar.js:295](../../src/lib/calendar.js#L295) | ✓ | ✓ |
+| `templateFor` | [calendar.js:39](../../src/lib/calendar.js#L39) | ✓ |  |
+| `dateKind` | [calendar.js:49](../../src/lib/calendar.js#L49) | ✓ |  |
+| `notifySettings` | [calendar.js:63](../../src/lib/calendar.js#L63) | ✓ |  |
+| `dayDate` | [calendar.js:68](../../src/lib/calendar.js#L68) |  |  |
+| `addDays` | [calendar.js:69](../../src/lib/calendar.js#L69) |  |  |
+| `weekdaysOf` | [calendar.js:70](../../src/lib/calendar.js#L70) |  |  |
+| `isDaily` | [calendar.js:71](../../src/lib/calendar.js#L71) | ✓ |  |
+| `occursOn` | [calendar.js:74](../../src/lib/calendar.js#L74) | ✓ | ✓ |
+| `isDoneOn` | [calendar.js:82](../../src/lib/calendar.js#L82) | ✓ | ✓ |
+| `durationOf` | [calendar.js:87](../../src/lib/calendar.js#L87) | ✓ |  |
+| `alertOf` | [calendar.js:88](../../src/lib/calendar.js#L88) | ✓ |  |
+| `timed` | [calendar.js:89](../../src/lib/calendar.js#L89) |  |  |
+| `keyDateOn` | [calendar.js:93](../../src/lib/calendar.js#L93) | ✓ | ✓ |
+| `keyDateLabel` | [calendar.js:105](../../src/lib/calendar.js#L105) | ✓ |  |
+| `dayAgenda` | [calendar.js:114](../../src/lib/calendar.js#L114) | ✓ | ✓ |
+| `monthMarks` | [calendar.js:140](../../src/lib/calendar.js#L140) | ✓ | ✓ |
+| `recentPlans` | [calendar.js:155](../../src/lib/calendar.js#L155) | ✓ | ✓ |
+| `clashesOn` | [calendar.js:170](../../src/lib/calendar.js#L170) | ✓ | ✓ |
+| `needsAnswer` | [calendar.js:177](../../src/lib/calendar.js#L177) | ✓ | ✓ |
+| `planIdeas` | [calendar.js:188](../../src/lib/calendar.js#L188) | ✓ | ✓ |
+| `sinceText` | [calendar.js:205](../../src/lib/calendar.js#L205) |  |  |
+| `at` | [calendar.js:211](../../src/lib/calendar.js#L211) |  |  |
+| `clock` | [calendar.js:212](../../src/lib/calendar.js#L212) |  |  |
+| `names` | [calendar.js:216](../../src/lib/calendar.js#L216) |  |  |
+| `alertWhen` | [calendar.js:217](../../src/lib/calendar.js#L217) |  |  |
+| `plannedNotifications` | [calendar.js:233](../../src/lib/calendar.js#L233) | ✓ | ✓ |
+| `snoozeUntil` | [calendar.js:307](../../src/lib/calendar.js#L307) | ✓ | ✓ |
+| `parseActionUrl` | [calendar.js:317](../../src/lib/calendar.js#L317) | ✓ | ✓ |
 | `parseDaysAgo` | [dates.js:6](../../src/lib/dates.js#L6) | ✓ | ✓ |
 | `startOfDay` | [dates.js:23](../../src/lib/dates.js#L23) | ✓ |  |
 | `formatWeekdays` | [dates.js:29](../../src/lib/dates.js#L29) | ✓ |  |
@@ -233,9 +233,11 @@ Package: `layers-web` v1.0.30 · `src/`: 52 files, 7594 lines, 76 components, 16
 | `formatTime12` | [dates.js:273](../../src/lib/dates.js#L273) | ✓ |  |
 | `nowToMinutes` | [dates.js:281](../../src/lib/dates.js#L281) | ✓ |  |
 | `useToday` | [hooks.js:13](../../src/lib/hooks.js#L13) | ✓ |  |
-| `useDailyCheckIn` | [hooks.js:29](../../src/lib/hooks.js#L29) | ✓ |  |
-| `notify` | [hooks.js:54](../../src/lib/hooks.js#L54) |  |  |
-| `useCalendarNotifications` | [hooks.js:72](../../src/lib/hooks.js#L72) | ✓ |  |
+| `useDailyBackup` | [hooks.js:29](../../src/lib/hooks.js#L29) | ✓ |  |
+| `useSystemDark` | [hooks.js:47](../../src/lib/hooks.js#L47) | ✓ |  |
+| `useDailyCheckIn` | [hooks.js:65](../../src/lib/hooks.js#L65) | ✓ |  |
+| `notify` | [hooks.js:90](../../src/lib/hooks.js#L90) |  |  |
+| `useCalendarNotifications` | [hooks.js:108](../../src/lib/hooks.js#L108) | ✓ |  |
 | `layerForOverall` | [progress.js:7](../../src/lib/progress.js#L7) | ✓ | ✓ |
 | `advanceLayer` | [progress.js:13](../../src/lib/progress.js#L13) | ✓ |  |
 | `computeOverall` | [progress.js:26](../../src/lib/progress.js#L26) | ✓ | ✓ |
@@ -260,13 +262,13 @@ Package: `layers-web` v1.0.30 · `src/`: 52 files, 7594 lines, 76 components, 16
 | `followUpEvent` | [reminders.js:18](../../src/lib/reminders.js#L18) | ✓ | ✓ |
 | `keepCopy` | [storage.js:14](../../src/lib/storage.js#L14) |  |  |
 | `loadSavedState` | [storage.js:38](../../src/lib/storage.js#L38) | ✓ |  |
-| `persistState` | [storage.js:70](../../src/lib/storage.js#L70) | ✓ |  |
-| `getLastNotifiedDate` | [storage.js:81](../../src/lib/storage.js#L81) | ✓ |  |
-| `setLastNotifiedDate` | [storage.js:85](../../src/lib/storage.js#L85) | ✓ |  |
-| `getNotifiedReminders` | [storage.js:94](../../src/lib/storage.js#L94) | ✓ |  |
-| `addNotifiedReminder` | [storage.js:101](../../src/lib/storage.js#L101) | ✓ |  |
-| `getSnoozes` | [storage.js:113](../../src/lib/storage.js#L113) | ✓ |  |
-| `setSnoozes` | [storage.js:120](../../src/lib/storage.js#L120) | ✓ |  |
+| `persistState` | [storage.js:72](../../src/lib/storage.js#L72) | ✓ |  |
+| `getLastNotifiedDate` | [storage.js:83](../../src/lib/storage.js#L83) | ✓ |  |
+| `setLastNotifiedDate` | [storage.js:87](../../src/lib/storage.js#L87) | ✓ |  |
+| `getNotifiedReminders` | [storage.js:96](../../src/lib/storage.js#L96) | ✓ |  |
+| `addNotifiedReminder` | [storage.js:103](../../src/lib/storage.js#L103) | ✓ |  |
+| `getSnoozes` | [storage.js:115](../../src/lib/storage.js#L115) | ✓ |  |
+| `setSnoozes` | [storage.js:122](../../src/lib/storage.js#L122) | ✓ |  |
 | `summaryFor` | [text.js:7](../../src/lib/text.js#L7) | ✓ | ✓ |
 | `updateStatusText` | [text.js:13](../../src/lib/text.js#L13) | ✓ | ✓ |
 | `homeGoalTitle` | [text.js:29](../../src/lib/text.js#L29) | ✓ | ✓ |
@@ -331,30 +333,30 @@ Package: `layers-web` v1.0.30 · `src/`: 52 files, 7594 lines, 76 components, 16
 | `CATEGORIES` | [constants.js:24](../../src/data/constants.js#L24) |
 | `TABS` | [constants.js:35](../../src/data/constants.js#L35) |
 | `SHORTCUTS` | [constants.js:37](../../src/data/constants.js#L37) |
-| `EMOJI_CHOICES` | [constants.js:63](../../src/data/constants.js#L63) |
-| `PERSON_EMOJIS` | [constants.js:65](../../src/data/constants.js#L65) |
-| `NOTE_TEMPLATES` | [constants.js:71](../../src/data/constants.js#L71) |
-| `NOTE_TEMPLATE_CATEGORY` | [constants.js:89](../../src/data/constants.js#L89) |
-| `INFO_TEMPLATES` | [constants.js:98](../../src/data/constants.js#L98) |
-| `REFLECTION_TEMPLATES` | [constants.js:107](../../src/data/constants.js#L107) |
-| `DIM_QUESTIONS` | [constants.js:115](../../src/data/constants.js#L115) |
-| `GOAL_PRESET_DIM` | [constants.js:126](../../src/data/constants.js#L126) |
-| `STANDOUTS` | [constants.js:133](../../src/data/constants.js#L133) |
-| `PRESETS` | [constants.js:141](../../src/data/constants.js#L141) |
-| `PRESET_VARIANTS` | [constants.js:164](../../src/data/constants.js#L164) |
-| `GOAL_DIM_PHRASES` | [constants.js:186](../../src/data/constants.js#L186) |
-| `TYPE_META` | [constants.js:188](../../src/data/constants.js#L188) |
-| `TYPE_ORDER` | [constants.js:198](../../src/data/constants.js#L198) |
-| `AL_ITEMS` | [constants.js:200](../../src/data/constants.js#L200) |
-| `CONV_STATES` | [constants.js:207](../../src/data/constants.js#L207) |
-| `SKILL_GOAL_PRESETS` | [constants.js:218](../../src/data/constants.js#L218) |
-| `SKILL_GOAL_STEP` | [constants.js:222](../../src/data/constants.js#L222) |
-| `ACHIEVEMENTS` | [constants.js:224](../../src/data/constants.js#L224) |
-| `SKILL_ORDER` | [constants.js:232](../../src/data/constants.js#L232) |
-| `FOCUS_SKILL_KEY` | [constants.js:234](../../src/data/constants.js#L234) |
-| `SKILL_TIPS` | [constants.js:238](../../src/data/constants.js#L238) |
-| `FOCUS_OPTIONS` | [constants.js:247](../../src/data/constants.js#L247) |
-| `FOCUS_LABELS` | [constants.js:254](../../src/data/constants.js#L254) |
+| `EMOJI_CHOICES` | [constants.js:64](../../src/data/constants.js#L64) |
+| `PERSON_EMOJIS` | [constants.js:66](../../src/data/constants.js#L66) |
+| `NOTE_TEMPLATES` | [constants.js:72](../../src/data/constants.js#L72) |
+| `NOTE_TEMPLATE_CATEGORY` | [constants.js:90](../../src/data/constants.js#L90) |
+| `INFO_TEMPLATES` | [constants.js:99](../../src/data/constants.js#L99) |
+| `REFLECTION_TEMPLATES` | [constants.js:108](../../src/data/constants.js#L108) |
+| `DIM_QUESTIONS` | [constants.js:116](../../src/data/constants.js#L116) |
+| `GOAL_PRESET_DIM` | [constants.js:127](../../src/data/constants.js#L127) |
+| `STANDOUTS` | [constants.js:134](../../src/data/constants.js#L134) |
+| `PRESETS` | [constants.js:142](../../src/data/constants.js#L142) |
+| `PRESET_VARIANTS` | [constants.js:165](../../src/data/constants.js#L165) |
+| `GOAL_DIM_PHRASES` | [constants.js:187](../../src/data/constants.js#L187) |
+| `TYPE_META` | [constants.js:189](../../src/data/constants.js#L189) |
+| `TYPE_ORDER` | [constants.js:199](../../src/data/constants.js#L199) |
+| `AL_ITEMS` | [constants.js:201](../../src/data/constants.js#L201) |
+| `CONV_STATES` | [constants.js:208](../../src/data/constants.js#L208) |
+| `SKILL_GOAL_PRESETS` | [constants.js:219](../../src/data/constants.js#L219) |
+| `SKILL_GOAL_STEP` | [constants.js:223](../../src/data/constants.js#L223) |
+| `ACHIEVEMENTS` | [constants.js:225](../../src/data/constants.js#L225) |
+| `SKILL_ORDER` | [constants.js:233](../../src/data/constants.js#L233) |
+| `FOCUS_SKILL_KEY` | [constants.js:235](../../src/data/constants.js#L235) |
+| `SKILL_TIPS` | [constants.js:239](../../src/data/constants.js#L239) |
+| `FOCUS_OPTIONS` | [constants.js:248](../../src/data/constants.js#L248) |
+| `FOCUS_LABELS` | [constants.js:255](../../src/data/constants.js#L255) |
 | `SCENARIOS` | [scenarios.js:5](../../src/data/scenarios.js#L5) |
 | `INITIAL_PEOPLE` | [seed.js:12](../../src/data/seed.js#L12) |
 | `INITIAL_GENERAL_GOALS` | [seed.js:142](../../src/data/seed.js#L142) |
@@ -363,22 +365,23 @@ Package: `layers-web` v1.0.30 · `src/`: 52 files, 7594 lines, 76 components, 16
 | `EMPTY_SKILLS` | [seed.js:168](../../src/data/seed.js#L168) |
 | `BACKUP_VERSION` | [backup.js:12](../../src/lib/backup.js#L12) |
 | `MAX_BACKUP_BYTES` | [backup.js:14](../../src/lib/backup.js#L14) |
-| `DEFAULT_DURATION` | [calendar.js:23](../../src/lib/calendar.js#L23) |
-| `EVENT_TEMPLATES` | [calendar.js:27](../../src/lib/calendar.js#L27) |
-| `DATE_KINDS` | [calendar.js:40](../../src/lib/calendar.js#L40) |
-| `NOTIFY_DEFAULTS` | [calendar.js:51](../../src/lib/calendar.js#L51) |
-| `QUIET_DAYS` | [calendar.js:184](../../src/lib/calendar.js#L184) |
+| `WEEKDAY_NAMES` | [calendar.js:23](../../src/lib/calendar.js#L23) |
+| `DEFAULT_DURATION` | [calendar.js:25](../../src/lib/calendar.js#L25) |
+| `EVENT_TEMPLATES` | [calendar.js:29](../../src/lib/calendar.js#L29) |
+| `DATE_KINDS` | [calendar.js:42](../../src/lib/calendar.js#L42) |
+| `NOTIFY_DEFAULTS` | [calendar.js:53](../../src/lib/calendar.js#L53) |
+| `QUIET_DAYS` | [calendar.js:187](../../src/lib/calendar.js#L187) |
 | `WEEKDAY_SHORT` | [dates.js:25](../../src/lib/dates.js#L25) |
 | `WEEKDAY_FULL` | [dates.js:27](../../src/lib/dates.js#L27) |
 | `MONTH_NAMES` | [dates.js:39](../../src/lib/dates.js#L39) |
-| `SCHEDULE_DAYS` | [hooks.js:69](../../src/lib/hooks.js#L69) |
-| `LATE_MINUTES` | [hooks.js:70](../../src/lib/hooks.js#L70) |
+| `SCHEDULE_DAYS` | [hooks.js:105](../../src/lib/hooks.js#L105) |
+| `LATE_MINUTES` | [hooks.js:106](../../src/lib/hooks.js#L106) |
 | `STORAGE_KEY` | [storage.js:6](../../src/lib/storage.js#L6) |
 | `DATA_VERSION` | [storage.js:9](../../src/lib/storage.js#L9) |
 | `UNREADABLE_PREFIX` | [storage.js:12](../../src/lib/storage.js#L12) |
-| `LAST_NOTIFIED_KEY` | [storage.js:79](../../src/lib/storage.js#L79) |
-| `NOTIFIED_REMINDERS_KEY` | [storage.js:92](../../src/lib/storage.js#L92) |
-| `SNOOZES_KEY` | [storage.js:111](../../src/lib/storage.js#L111) |
+| `LAST_NOTIFIED_KEY` | [storage.js:81](../../src/lib/storage.js#L81) |
+| `NOTIFIED_REMINDERS_KEY` | [storage.js:94](../../src/lib/storage.js#L94) |
+| `SNOOZES_KEY` | [storage.js:113](../../src/lib/storage.js#L113) |
 | `HOOKS` | [text.js:78](../../src/lib/text.js#L78) |
 | `ITEMS` | [BottomNav.jsx:13](../../src/components/BottomNav.jsx#L13) |
 | `LAYER` | [illustrations.jsx:7](../../src/components/illustrations.jsx#L7) |
@@ -412,21 +415,24 @@ Package: `layers-web` v1.0.30 · `src/`: 52 files, 7594 lines, 76 components, 16
 
 | Channel | Direction | Defined |
 |---|---|---|
-| `update-status` | main → renderer push | [main.cjs:118](../../electron/main.cjs#L118) |
-| `open-download-page` | invoke → handle | [main.cjs:144](../../electron/main.cjs#L144) |
-| `check-for-updates` | invoke → handle | [main.cjs:156](../../electron/main.cjs#L156) |
-| `quit-and-install` | send → on | [main.cjs:157](../../electron/main.cjs#L157) |
-| `check-for-updates` | invoke → handle | [main.cjs:181](../../electron/main.cjs#L181) |
-| `quit-and-install` | send → on | [main.cjs:192](../../electron/main.cjs#L192) |
-| `set-theme` | send → on | [main.cjs:221](../../electron/main.cjs#L221) |
-| `get-app-version` | invoke → handle | [main.cjs:339](../../electron/main.cjs#L339) |
-| `show-window` | send → on | [main.cjs:345](../../electron/main.cjs#L345) |
-| `get-auto-launch` | invoke → handle | [main.cjs:358](../../electron/main.cjs#L358) |
-| `set-auto-launch` | invoke → handle | [main.cjs:368](../../electron/main.cjs#L368) |
-| `get-shortcut-status` | invoke → handle | [main.cjs:382](../../electron/main.cjs#L382) |
-| `calendar-action` | main → renderer push | [main.cjs:403](../../electron/main.cjs#L403) |
-| `schedule-notifications` | invoke → handle | [main.cjs:408](../../electron/main.cjs#L408) |
-| `calendar-ready` | invoke → handle | [main.cjs:409](../../electron/main.cjs#L409) |
+| `update-status` | main → renderer push | [main.cjs:120](../../electron/main.cjs#L120) |
+| `open-download-page` | invoke → handle | [main.cjs:146](../../electron/main.cjs#L146) |
+| `check-for-updates` | invoke → handle | [main.cjs:158](../../electron/main.cjs#L158) |
+| `quit-and-install` | send → on | [main.cjs:159](../../electron/main.cjs#L159) |
+| `check-for-updates` | invoke → handle | [main.cjs:183](../../electron/main.cjs#L183) |
+| `quit-and-install` | send → on | [main.cjs:194](../../electron/main.cjs#L194) |
+| `set-theme` | send → on | [main.cjs:229](../../electron/main.cjs#L229) |
+| `get-app-version` | invoke → handle | [main.cjs:349](../../electron/main.cjs#L349) |
+| `show-window` | send → on | [main.cjs:355](../../electron/main.cjs#L355) |
+| `get-auto-launch` | invoke → handle | [main.cjs:368](../../electron/main.cjs#L368) |
+| `set-auto-launch` | invoke → handle | [main.cjs:378](../../electron/main.cjs#L378) |
+| `get-shortcut-status` | invoke → handle | [main.cjs:392](../../electron/main.cjs#L392) |
+| `calendar-action` | main → renderer push | [main.cjs:413](../../electron/main.cjs#L413) |
+| `save-daily-backup` | invoke → handle | [main.cjs:421](../../electron/main.cjs#L421) |
+| `backups-info` | invoke → handle | [main.cjs:424](../../electron/main.cjs#L424) |
+| `open-backups-folder` | invoke → handle | [main.cjs:425](../../electron/main.cjs#L425) |
+| `schedule-notifications` | invoke → handle | [main.cjs:434](../../electron/main.cjs#L434) |
+| `calendar-ready` | invoke → handle | [main.cjs:435](../../electron/main.cjs#L435) |
 
 ### Preload bridges (what the renderer can call)
 
@@ -444,7 +450,10 @@ Package: `layers-web` v1.0.30 · `src/`: 52 files, 7594 lines, 76 components, 16
 | `window.layersSystem.setTheme()` | `set-theme` | [preload.cjs:20](../../electron/preload.cjs#L20) |
 | `window.layersSystem.scheduleNotifications()` | `schedule-notifications` | [preload.cjs:23](../../electron/preload.cjs#L23) |
 | `window.layersSystem.calendarReady()` | `calendar-ready` | [preload.cjs:24](../../electron/preload.cjs#L24) |
-| `window.layersSystem.onCalendarAction()` | `calendar-action` | [preload.cjs:25](../../electron/preload.cjs#L25) |
+| `window.layersSystem.saveDailyBackup()` | `save-daily-backup` | [preload.cjs:26](../../electron/preload.cjs#L26) |
+| `window.layersSystem.getBackupsInfo()` | `backups-info` | [preload.cjs:27](../../electron/preload.cjs#L27) |
+| `window.layersSystem.openBackupsFolder()` | `open-backups-folder` | [preload.cjs:28](../../electron/preload.cjs#L28) |
+| `window.layersSystem.onCalendarAction()` | `calendar-action` | [preload.cjs:29](../../electron/preload.cjs#L29) |
 
 ### Channel mismatches
 

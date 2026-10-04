@@ -4,6 +4,7 @@ const fs = require('fs');
 const path = require('path');
 const windowStateKeeper = require('electron-window-state');
 const { createScheduler } = require('./toasts.cjs');
+const { backupDir, backupsInfo, saveDailyBackup } = require('./backups.cjs');
 
 // Windows groups taskbar entries, toast notifications, and jump lists by
 // this identity string. It must be set before the app is ready, and it
@@ -86,6 +87,7 @@ if (!gotSingleInstanceLock || quitRequested) {
     setupVersionInfo();
     setupWindowIpc();
     setupCalendar();
+    setupBackups();
     registerGlobalShortcut();
 
     app.on('activate', () => {
@@ -203,27 +205,35 @@ function setupAutoUpdate() {
 // The window paints backgroundColor before the page loads. It used to be the
 // light paper colour, so dark mode flashed white on every launch. The
 // renderer reports its theme (layersSystem.setTheme) whenever it changes,
-// and it's saved here so the next launch opens in the right colour.
+// and it's saved here so the next launch opens in the right colour. With
+// "Match Windows" (mode 'system') the next launch asks Windows instead.
 // Keep these in sync with THEME_LIGHT.paper / THEME_DARK.paper (src/theme.js)
 // and the early script in index.html.
 const BACKGROUNDS = { light: '#F5F6F1', dark: '#1B1E27' };
 const themeFile = () => path.join(app.getPath('userData'), 'theme.json');
 
-function savedTheme() {
+function savedThemeFile() {
   try {
-    return JSON.parse(fs.readFileSync(themeFile(), 'utf8')).theme === 'dark' ? 'dark' : 'light';
+    return JSON.parse(fs.readFileSync(themeFile(), 'utf8')) || {};
   } catch {
-    return 'light';
+    return {};
   }
+}
+function savedTheme() {
+  const saved = savedThemeFile();
+  if (saved.mode === 'system' || !saved.theme) return nativeTheme.shouldUseDarkColors ? 'dark' : 'light';
+  return saved.theme === 'dark' ? 'dark' : 'light';
 }
 
 function setupThemeSync() {
-  ipcMain.on('set-theme', (_event, theme) => {
+  ipcMain.on('set-theme', (_event, theme, mode) => {
     const next = theme === 'dark' ? 'dark' : 'light';
+    const nextMode = ['system', 'light', 'dark'].includes(mode) ? mode : next;
     if (mainWindow && !mainWindow.isDestroyed()) mainWindow.setBackgroundColor(BACKGROUNDS[next]);
-    if (next === savedTheme()) return;
+    const saved = savedThemeFile();
+    if (saved.theme === next && saved.mode === nextMode) return;
     try {
-      fs.writeFileSync(themeFile(), JSON.stringify({ theme: next }));
+      fs.writeFileSync(themeFile(), JSON.stringify({ theme: next, mode: nextMode }));
     } catch {
       // Not fatal: the next launch just opens with the light background.
     }
@@ -401,6 +411,22 @@ function queueAction(link) {
 function deliverActions() {
   if (!rendererReady || !mainWindow || mainWindow.isDestroyed()) return;
   while (pendingActions.length) mainWindow.webContents.send('calendar-action', pendingActions.shift());
+}
+
+// --- Daily backups (backups.cjs) -------------------------------------------
+// The page sends a backup once a day; Me shows the last one and opens the
+// folder.
+function setupBackups() {
+  const dir = () => backupDir({ documents: app.getPath('documents'), userData: app.getPath('userData') });
+  ipcMain.handle('save-daily-backup', (_event, day, json) => {
+    try { return saveDailyBackup(dir(), day, json); } catch (e) { return { error: e.message }; }
+  });
+  ipcMain.handle('backups-info', () => backupsInfo(dir()));
+  ipcMain.handle('open-backups-folder', async () => {
+    try { fs.mkdirSync(dir(), { recursive: true }); } catch { /* openPath says why */ }
+    const error = await shell.openPath(dir());
+    return { error: error || null };
+  });
 }
 
 function setupCalendar() {

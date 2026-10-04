@@ -66,8 +66,19 @@ describe('first launch', () => {
 
 describe('returning user', () => {
   it('restores the saved theme', () => {
-    seedState({ theme: 'dark' });
+    seedState({ theme: 'dark', themeMode: 'dark' });
     renderApp();
     expect(document.querySelector('.layers-root').classList.contains('dark')).toBe(true);
+  });
+
+  it('follows Windows by default, including saves from before "Match Windows"', () => {
+    window.__layersDark = true;
+    try {
+      seedState({ theme: 'light' });
+      renderApp();
+      expect(document.querySelector('.layers-root').classList.contains('dark')).toBe(true);
+    } finally {
+      delete window.__layersDark;
+    }
   });
 });

@@ -30,7 +30,8 @@ These keys are saved as one JSON blob under `localStorage['layers-app-state-v1']
 | `skills` | `Skills` | `INITIAL_SKILLS` |
 | `profile` | `Profile` | `{ name: '', focus: null }` |
 | `onboarded` | `boolean` | `false` |
-| `theme` | `'light' \| 'dark'` | `'light'` |
+| `themeMode` | `'system' \| 'light' \| 'dark'` | `'system'`: Match Windows. Saves from before 2026-10-05 have none, so they follow Windows too (the owner's choice). |
+| `theme` | `'light' \| 'dark'`: what's showing, worked out from `themeMode` | `'light'` |
 | `achievements` | `{ [key]: 'YYYY-MM-DD' }`, or `null` until worked out | `null` (saved as `{}`). See [Achievements](#achievements). |
 
 Three more keys belong to notifications ([below](#notifications)):
@@ -433,6 +434,7 @@ in a time window, oldest first. Each has a `tag` (unique per plan and day), a ti
 | `morning` | `morningTime`, on days with something on | "Today: 3 things", and each in a line |
 | `evening` | `eveningTime`, the night before a day with something on | "Tomorrow: …" |
 | `snooze` | A snoozed reminder's time | The title, "Snoozed reminder" |
+| `date` | A person's key date: a week before and on the day (`morningTime`), and the evening before (`eveningTime`), unless `keyDateReminders` is off | "🎂 Priya's birthday is in a week", "🎂 Tomorrow: …", "🎂 Today: …" |
 
 `useCalendarNotifications` in [`lib/hooks.js`](../../src/lib/hooks.js) delivers them:
 

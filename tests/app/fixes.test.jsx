@@ -108,8 +108,8 @@ describe('#2 saved data that is damaged or fails to save', () => {
     const { user } = renderApp();
     vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => { throw new Error('QuotaExceededError'); });
     await user.click(nav('Me'));
-    await user.click(screen.getByRole('button', { name: 'dark' }));
-    await user.click(screen.getByRole('button', { name: 'light' }));
+    await user.click(screen.getByRole('button', { name: 'Dark' }));
+    await user.click(screen.getByRole('button', { name: 'Light' }));
     expect(toasts().filter(t => t.includes("couldn't save")).length).toBe(1);
   });
 });

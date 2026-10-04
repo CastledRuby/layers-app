@@ -18,7 +18,9 @@
 //     createdAt, updatedAt? }
 // A person's key dates (person.dates) are { id, kind, label, date: 'YYYY-MM-DD',
 // yearly }: a yearly one (birthday) comes round on the same month and day.
-import { journalDaysAgo, parseISODay, startOfDay, toISODate } from './dates.js';
+import { journalDaysAgo, MONTH_NAMES, parseISODay, startOfDay, toISODate } from './dates.js';
+
+const WEEKDAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
 export const DEFAULT_DURATION = 60;
 
@@ -56,6 +58,7 @@ export const NOTIFY_DEFAULTS = {
   eveningHeadsUp: true,
   eveningTime: 20 * 60,
   askAfter: true, // "How did it go?" when an event with people ends
+  keyDateReminders: true, // birthdays and key dates: a week before, the evening before, the morning of
 };
 export function notifySettings(profile) {
   const p = profile || {};
@@ -219,8 +222,11 @@ function alertWhen(alert) {
 }
 
 // Every notification due between `from` and `to` (ms), oldest first:
-//   { tag, at, kind: 'alert' | 'after' | 'morning' | 'evening' | 'snooze',
-//     title, body, eventId?, day? }
+//   { tag, at, kind: 'alert' | 'after' | 'morning' | 'evening' | 'snooze' | 'date',
+//     title, body, eventId?, personId?, day? }
+// A key date (kind 'date') reminds you a week before and on the morning (at
+// morningTime), and the evening before (at eveningTime); its day is the key
+// date's.
 // Windows schedules these ahead (electron/toasts.cjs), so they arrive with
 // Layers closed; elsewhere the app shows them while it runs (lib/hooks.js).
 // `snoozes` are [{ id, eventId, day, at }].
@@ -264,6 +270,22 @@ export function plannedNotifications(state, settings, from, to, snoozes = []) {
     if (s.morningSummary && lines.length) {
       out.push({ tag: `m:${day}`, at: at(day, s.morningTime), kind: 'morning', day, title: `Today: ${lines.length === 1 ? '1 thing' : `${lines.length} things`}`, body: lines.join(' · ') });
     }
+    if (s.keyDateReminders) {
+      (state.people || []).forEach(p => (p.dates || []).forEach(kd => {
+        const { emoji } = dateKind(kd.kind);
+        const label = keyDateLabel(p, kd);
+        [['w', 7, s.morningTime], ['b', 1, s.eveningTime], ['t', 0, s.morningTime]].forEach(([code, ahead, time]) => {
+          const on = toISODate(addDays(d, ahead));
+          if (!keyDateOn(kd, on)) return;
+          const onDate = dayDate(on);
+          out.push({
+            tag: `k${code}:${kd.id}:${on}`, at: at(day, time), kind: 'date', personId: p.id, day: on,
+            title: ahead === 7 ? `${emoji} ${label} is in a week` : ahead === 1 ? `${emoji} Tomorrow: ${label}` : `${emoji} Today: ${label}`,
+            body: ahead === 0 ? `Plan something with ${p.name}, or send them a message.` : `${WEEKDAY_NAMES[onDate.getDay()]} ${onDate.getDate()} ${MONTH_NAMES[onDate.getMonth()]}. Plan something with ${p.name}?`,
+          });
+        });
+      }));
+    }
     const tomorrow = toISODate(addDays(d, 1));
     const next = summaryLine(dayAgenda(state, tomorrow));
     if (s.eveningHeadsUp && next.length) {
@@ -297,10 +319,10 @@ export function parseActionUrl(url) {
     const u = new URL(url);
     if (u.protocol !== 'layers:') return null;
     const action = (u.hostname || u.pathname.replace(/^\/+/, '')).replace(/\/+$/, '');
-    if (!['done', 'log', 'snooze', 'open'].includes(action)) return null;
+    if (!['done', 'log', 'snooze', 'open', 'plan'].includes(action)) return null;
     const p = u.searchParams;
     const day = p.get('d');
-    return { action, eventId: p.get('e') || null, day: day && /^\d{4}-\d{2}-\d{2}$/.test(day) ? day : null, minutes: p.get('m') || null };
+    return { action, eventId: p.get('e') || null, personId: p.get('p') || null, day: day && /^\d{4}-\d{2}-\d{2}$/.test(day) ? day : null, minutes: p.get('m') || null };
   } catch {
     return null;
   }

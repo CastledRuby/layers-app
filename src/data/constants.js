@@ -56,6 +56,7 @@ export const SHORTCUTS = [
   { keys: ['Ctrl', 'Shift', 'A'], desc: 'Add a new person' },
   { keys: ['/'], desc: 'Jump to search (People or Journal)' },
   { keys: ['Backspace'], desc: 'Go back from a person or goals screen' },
+  { keys: ['Ctrl', 'Z'], desc: 'Undo what you just did, while its message shows (a delete, tick, log or saved plan)' },
   { keys: ['Esc'], desc: 'Close the open sheet/dialog, or leave the search box' },
   { keys: ['?'], desc: 'Show this shortcuts list' },
 ];

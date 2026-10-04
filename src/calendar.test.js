@@ -67,18 +67,31 @@ describe('plannedNotifications', () => {
   it('reminds ahead, asks how it went, and sums up the morning and the evening before', () => {
     const list = plannedNotifications(state, {}, ...window);
     expect(list.map(n => [n.kind, new Date(n.at).getHours(), new Date(n.at).getMinutes()])).toEqual([
-      ['morning', 8, 0], ['alert', 9, 45], ['after', 11, 0], ['evening', 20, 0],
+      ['morning', 8, 0], ['alert', 9, 45], ['after', 11, 0], ['date', 20, 0], ['evening', 20, 0],
     ]);
     expect(list[1]).toMatchObject({ title: 'Coffee with Priya', body: 'In 15 minutes · 10:00 AM · with Priya', eventId: 'c', day: DAY });
     expect(list[0].body).toBe('10:00 AM Coffee with Priya');
-    expect(list[3]).toMatchObject({ title: 'Tomorrow: 1 thing', body: "🎂 Priya's birthday" });
+    expect(list[4]).toMatchObject({ title: 'Tomorrow: 1 thing', body: "🎂 Priya's birthday" });
+  });
+
+  it('reminds of birthdays a week before, the evening before and on the morning', () => {
+    const quiet = { morningSummary: false, eveningHeadsUp: false, askAfter: false, reminderNotifications: false };
+    const weekBefore = '2026-09-28';
+    const list = plannedNotifications({ people: [priya] }, quiet, local(weekBefore, 0), local('2026-10-05', 23, 59));
+    expect(list.map(n => [n.tag, new Date(n.at).getDate(), new Date(n.at).getHours(), n.title])).toEqual([
+      ['kw:b:2026-10-05', 28, 8, "🎂 Priya's birthday is in a week"],
+      ['kb:b:2026-10-05', 4, 20, "🎂 Tomorrow: Priya's birthday"],
+      ['kt:b:2026-10-05', 5, 8, "🎂 Today: Priya's birthday"],
+    ]);
+    expect(list[0]).toMatchObject({ kind: 'date', personId: 'p', day: '2026-10-05', body: 'Monday 5 October. Plan something with Priya?' });
+    expect(plannedNotifications({ people: [priya] }, { ...quiet, keyDateReminders: false }, local(weekBefore, 0), local('2026-10-05', 23, 59))).toEqual([]);
   });
 
   it('follows the settings, skips done events, and adds snoozes', () => {
-    const quiet = plannedNotifications(state, { morningSummary: false, eveningHeadsUp: false, askAfter: false }, ...window);
+    const quiet = plannedNotifications(state, { morningSummary: false, eveningHeadsUp: false, askAfter: false, keyDateReminders: false }, ...window);
     expect(quiet.map(n => n.kind)).toEqual(['alert']);
-    expect(plannedNotifications({ ...state, events: [{ ...coffee, doneAt: DAY }] }, { morningSummary: false, eveningHeadsUp: false }, ...window)).toEqual([]);
-    const snoozed = plannedNotifications(state, { reminderNotifications: false, morningSummary: false, eveningHeadsUp: false, askAfter: false }, ...window, [{ id: 's1', eventId: 'c', day: DAY, at: local(DAY, 10, 10) }]);
+    expect(plannedNotifications({ ...state, events: [{ ...coffee, doneAt: DAY }] }, { morningSummary: false, eveningHeadsUp: false, keyDateReminders: false }, ...window)).toEqual([]);
+    const snoozed = plannedNotifications(state, { reminderNotifications: false, morningSummary: false, eveningHeadsUp: false, askAfter: false, keyDateReminders: false }, ...window, [{ id: 's1', eventId: 'c', day: DAY, at: local(DAY, 10, 10) }]);
     expect(snoozed.map(n => [n.kind, n.tag])).toEqual([['snooze', 's:s1']]);
   });
 
@@ -101,7 +114,8 @@ describe('planIdeas', () => {
 
 describe('notification actions', () => {
   it('reads layers:// links from notification buttons', () => {
-    expect(parseActionUrl('layers://done?e=c&d=2026-10-04')).toEqual({ action: 'done', eventId: 'c', day: '2026-10-04', minutes: null });
+    expect(parseActionUrl('layers://done?e=c&d=2026-10-04')).toEqual({ action: 'done', eventId: 'c', personId: null, day: '2026-10-04', minutes: null });
+    expect(parseActionUrl('layers://plan?p=p&d=2026-10-05')).toMatchObject({ action: 'plan', personId: 'p', day: '2026-10-05' });
     expect(parseActionUrl('layers://snooze?e=c&d=2026-10-04&m=tomorrow').minutes).toBe('tomorrow');
     expect(parseActionUrl('layers://format-disk')).toBeNull();
     expect(parseActionUrl('https://example.com')).toBeNull();

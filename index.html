@@ -14,10 +14,13 @@
     <title>Layers</title>
     <script>
       // Paint the saved theme's background before the app loads, so dark
-      // mode doesn't flash white. Colours match THEME_*.paper in src/theme.js.
+      // mode doesn't flash white. "Match Windows" (themeMode 'system', the
+      // default) asks the system. Colours match THEME_*.paper in src/theme.js.
       try {
-        var saved = JSON.parse(localStorage.getItem('layers-app-state-v1') || '{}');
-        document.documentElement.style.background = saved && saved.theme === 'dark' ? '#1B1E27' : '#F5F6F1';
+        var saved = JSON.parse(localStorage.getItem('layers-app-state-v1') || '{}') || {};
+        var mode = saved.themeMode === 'light' || saved.themeMode === 'dark' ? saved.themeMode : 'system';
+        var dark = mode === 'dark' || (mode === 'system' && !!window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+        document.documentElement.style.background = dark ? '#1B1E27' : '#F5F6F1';
       } catch (e) { /* storage unavailable: keep the default */ }
     </script>
   </head>

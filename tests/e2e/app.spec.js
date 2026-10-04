@@ -47,7 +47,7 @@ test('dark mode is saved for the next launch, so the window opens dark', async (
   let { app, page } = await launch(dataDir);
   await onboard(page);
   await page.locator('.nav-bar').getByRole('button', { name: 'Me', exact: true }).click();
-  await page.getByRole('button', { name: 'dark' }).click();
+  await page.getByRole('button', { name: 'Dark', exact: true }).click();
   await expect.poll(() => fs.existsSync(path.join(dataDir, 'theme.json')) && JSON.parse(fs.readFileSync(path.join(dataDir, 'theme.json'), 'utf8')).theme).toBe('dark');
   await quit(app);
 
@@ -141,5 +141,17 @@ test('a plan is handed to Windows with buttons, and a pressed button reaches Lay
   // the running app takes it.
   expect(await runExe(dataDir, [`layers://done?e=${ev.id}&d=${ev.date}`])).toBe(0);
   await expect.poll(() => page.evaluate(() => JSON.parse(localStorage.getItem('layers-app-state-v1')).events[0].doneAt || null)).toBe(ev.date);
+  await quit(app);
+});
+
+test('a daily backup is saved a few seconds after starting, in the data folder for tests', async () => {
+  const dataDir = tempDataDir();
+  const { app, page } = await launch(dataDir);
+  await onboard(page, 'Sam');
+  const dir = path.join(dataDir, 'Backups');
+  await expect.poll(() => (fs.existsSync(dir) ? fs.readdirSync(dir) : []).filter(n => /^layers-backup-\d{4}-\d{2}-\d{2}\.json$/.test(n)).length, { timeout: 15000 }).toBe(1);
+  const file = fs.readdirSync(dir).find(n => n.startsWith('layers-backup-'));
+  const backup = JSON.parse(fs.readFileSync(path.join(dir, file), 'utf8'));
+  expect(backup.people.map(p => p.name)).toContain('Alex');
   await quit(app);
 });

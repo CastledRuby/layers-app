@@ -22,6 +22,42 @@ export function useToday() {
   return today;
 }
 
+// Daily backups in the Windows app: shortly after Layers starts, and when
+// the day changes while it runs, a copy of everything goes to the backups
+// folder (electron/backups.cjs keeps one a day, the newest 14). `makeBackup`
+// returns the backup as JSON; `onDone` gets what the folder holds now.
+export function useDailyBackup(enabled, today, makeBackup, onDone) {
+  const latest = useRef({ makeBackup, onDone });
+  useLayoutEffect(() => { latest.current = { makeBackup, onDone }; });
+  useEffect(() => {
+    const bridge = typeof window !== 'undefined' ? window.layersSystem : null;
+    if (!enabled || !bridge || !bridge.saveDailyBackup) return undefined;
+    // A moment after startup, once any saved-data repairs have settled.
+    const timer = setTimeout(() => {
+      Promise.resolve(bridge.saveDailyBackup(today, latest.current.makeBackup()))
+        .then(result => { if (result && !result.error && latest.current.onDone) latest.current.onDone(result); })
+        .catch(() => {});
+    }, 4000);
+    return () => clearTimeout(timer);
+  }, [enabled, today]);
+}
+
+// Whether Windows (or the browser) is in dark mode, following it as it
+// changes: the theme's "Match Windows".
+export function useSystemDark() {
+  const query = '(prefers-color-scheme: dark)';
+  const [dark, setDark] = useState(() => typeof window !== 'undefined' && typeof window.matchMedia === 'function' && !!window.matchMedia(query).matches);
+  useEffect(() => {
+    if (typeof window.matchMedia !== 'function') return undefined;
+    const mq = window.matchMedia(query);
+    const onChange = () => setDark(!!mq.matches);
+    onChange();
+    if (mq.addEventListener) mq.addEventListener('change', onChange); else if (mq.addListener) mq.addListener(onChange);
+    return () => { if (mq.removeEventListener) mq.removeEventListener('change', onChange); else if (mq.removeListener) mq.removeListener(onChange); };
+  }, []);
+  return dark;
+}
+
 // The "haven't checked in" desktop notification, at most once per day. It
 // checks shortly after launch and again whenever `today` changes, using the
 // latest people and journal. It used to check once per launch, with the data
