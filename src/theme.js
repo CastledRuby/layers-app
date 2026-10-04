@@ -105,8 +105,35 @@ input, textarea { font-family: 'Manrope', ui-sans-serif, system-ui, sans-serif; 
 }
 .scroll-area { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; }
 
-.nav-bar { display: flex; align-items: center; justify-content: space-around; padding: 8px 4px 12px; border-top: 1px solid ${COLORS.line}; background: ${COLORS.paperRaised}; position: relative; z-index: 10; }
-.nav-btn { display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 6px 8px; border-radius: 14px; font-size: 10.5px; }
+/* The bottom tabs. The page you're on sits on a glowing pill with a bar on
+   the top edge; the pill slides to a new tab with a little overshoot, a ring
+   ripples out from it and its icon hops (BottomNav.jsx). */
+.nav-bar { display: grid; grid-template-columns: repeat(5, 1fr); align-items: center; padding: 8px 6px 12px; border-top: 1px solid ${COLORS.line}; background: ${COLORS.paperRaised}; position: relative; z-index: 10; overflow: hidden; }
+.nav-btn { position: relative; z-index: 1; display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 6px 4px; border-radius: 14px; font-size: 10.5px; font-weight: 500; color: ${COLORS.inkSoft}; }
+.nav-btn:hover:not(.nav-btn--on) { color: ${COLORS.ink}; }
+.nav-btn--on { color: ${COLORS.accent}; font-weight: 800; }
+.nav-btn--on .nav-icon { animation: navHop .5s cubic-bezier(.34,1.56,.64,1); }
+.nav-icon { display: flex; }
+.nav-indicator { position: absolute; top: 5px; bottom: 9px; left: 6px; width: calc((100% - 12px) / 5); pointer-events: none; transition: transform .45s cubic-bezier(.34,1.35,.5,1); }
+.nav-indicator::after { content: ''; position: absolute; inset: 0 7px; border-radius: 16px; background: color-mix(in srgb, ${COLORS.accent} 17%, ${COLORS.paperRaised}); box-shadow: 0 0 0 1.5px color-mix(in srgb, ${COLORS.accent} 35%, transparent), 0 6px 18px color-mix(in srgb, ${COLORS.accent} 24%, transparent); }
+.nav-indicator::before { content: ''; position: absolute; top: -6px; left: 50%; width: 28px; height: 3px; margin-left: -14px; border-radius: 0 0 4px 4px; background: ${COLORS.accent}; box-shadow: 0 0 12px ${COLORS.accent}; }
+.nav-ripple { position: absolute; left: 50%; top: 50%; width: 44px; height: 44px; margin: -22px 0 0 -22px; border-radius: 50%; border: 2px solid ${COLORS.accent}; opacity: 0; pointer-events: none; animation: navRipple .7s ease-out; }
+@keyframes navHop { 0% { transform: none; } 35% { transform: translateY(-4px) scale(1.2); } 70% { transform: translateY(1px) scale(.96); } 100% { transform: none; } }
+@keyframes navRipple { 0% { transform: scale(.4); opacity: .7; } 100% { transform: scale(2.2); opacity: 0; } }
+
+/* A new page slides in from the side its tab is on (forward from the right,
+   back from the left), sharpening from a blur, so it's clear where you went. */
+.page-anim--fwd { animation: pageInFwd .34s cubic-bezier(.2,.8,.2,1); }
+.page-anim--back { animation: pageInBack .34s cubic-bezier(.2,.8,.2,1); }
+@keyframes pageInFwd { from { opacity: 0; transform: translateX(32px) scale(.985); filter: blur(5px); } to { opacity: 1; transform: none; filter: none; } }
+@keyframes pageInBack { from { opacity: 0; transform: translateX(-32px) scale(.985); filter: blur(5px); } to { opacity: 1; transform: none; filter: none; } }
+
+/* Press and hold to confirm something that can't be undone (StartOverSheet). */
+.hold-btn { position: relative; overflow: hidden; width: 100%; display: flex; align-items: center; justify-content: center; gap: 10px; border-radius: 999px; padding: 13px 18px; font-size: 14px; font-weight: 700; background: ${COLORS.layer4Tint}; color: ${COLORS.alert}; border: 1.5px solid ${COLORS.alert}; user-select: none; touch-action: none; }
+.hold-btn > * { position: relative; }
+.hold-btn .hold-fill { position: absolute; inset: 0; background: ${COLORS.alert}; transform: scaleX(0); transform-origin: left; transition: transform .2s ease-out; }
+.hold-btn.is-holding { color: ${COLORS.paperRaised}; }
+.hold-btn.is-holding .hold-fill { transform: scaleX(1); transition: transform var(--hold-ms, 1.5s) linear; }
 
 .fab-btn { position: absolute; right: 18px; bottom: 80px; width: 54px; height: 54px; border-radius: 50%; background: ${COLORS.accent}; display: flex; align-items: center; justify-content: center; box-shadow: 0 10px 24px rgba(51,80,107,0.4); z-index: 20; transition: transform .15s ease, box-shadow .15s ease; }
 .fab-btn:hover { transform: translateY(-1px); box-shadow: 0 14px 28px rgba(51,80,107,0.45); }

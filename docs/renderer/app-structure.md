@@ -36,8 +36,8 @@ and constant are in [../generated/code-map.md](../generated/code-map.md).
 | [`lib/reminders.js`](../../src/lib/reminders.js) | `markDone` (a plan done for good, or for one day) and `followUpEvent`. |
 | [`lib/achievements.js`](../../src/lib/achievements.js) | `achievementProgress` (how close you are to each one), `newlyUnlocked` and `progressText`. See [state-and-data.md](state-and-data.md#achievements). |
 | [`lib/hooks.js`](../../src/lib/hooks.js) | `useToday` (the local date, updated at midnight), `useDailyCheckIn` (the once-a-day check-in nudge) and `useCalendarNotifications` (hands the calendar's notifications to Windows, or shows them itself in a browser). The only React in `lib/`. |
-| [`components/`](../../src/components/) | `Sheet` + `SheetPortal`, `sheetLayer.js` (the portal context and the open-sheet stack Esc uses), `ErrorBoundary` (the "This screen hit a problem" fallback around the current screen), `atoms.jsx` (`CircularProgress`, `ProgressBar`, `LabeledBar`, `Avatar`, `LayerBadge`, `ChatBubble`, `Timeline`, `ConvStateBadge`), `rows.jsx` (`GoalRow`, `InfoItemRow`), `BottomNav`, `pickers.jsx` (`DateDropdown`, `TimeDropdown`, each with a compact chip form), `PersonPick.jsx` (`PersonPick`, `AvatarStack`), `illustrations.jsx` |
-| [`modals/`](../../src/modals/) | `ConfirmDialog`, `EditPersonModal`, `EditEntryModal` (edit or delete a journal entry), `EditProfileModal` (your name and focus), `LogInteractionModal` (with its detail sheets in `LogDetailSheets`), `PlanSheet`, `EventSheet`, `KeyDateSheet`, `GoalModal`, `TemplatePickerModal`, `QuickAddInterestModal`, `AddInfoModal`, `AddPersonModal`, `ShortcutsModal` |
+| [`components/`](../../src/components/) | `Sheet` + `SheetPortal`, `sheetLayer.js` (the portal context and the open-sheet stack Esc uses), `ErrorBoundary` (the "This screen hit a problem" fallback around the current screen), `PageTransition` (slides a new page in), `peopleKeys.js` (picking people by number or name), `atoms.jsx` (`CircularProgress`, `ProgressBar`, `LabeledBar`, `Avatar`, `LayerBadge`, `ChatBubble`, `Timeline`, `ConvStateBadge`), `rows.jsx` (`GoalRow`, `InfoItemRow`), `BottomNav`, `pickers.jsx` (`DateDropdown`, `TimeDropdown`, each with a compact chip form), `PersonPick.jsx` (`PersonPick`, `AvatarStack`), `illustrations.jsx` |
+| [`modals/`](../../src/modals/) | `ConfirmDialog`, `EditPersonModal`, `EditEntryModal` (edit or delete a journal entry), `EditProfileModal` (your name and focus), `LogInteractionModal` (with its detail sheets in `LogDetailSheets`), `PlanSheet`, `EventSheet`, `KeyDateSheet`, `GoalModal`, `TemplatePickerModal`, `QuickAddInterestModal`, `AddInfoModal`, `AddPersonModal`, `ShortcutsModal`, `StartOverSheet` (Delete my data and start over) |
 | [`views/`](../../src/views/) | `TodayView`, `PeopleView`, `PersonProfile` (with `AdjustSlider`, `PrepareTipsModal`), `GoalsView`, `JournalView`, `CoachView`, `MeView`, `OnboardingView` |
 | [`App.jsx`](../../src/App.jsx) | `LayersApp`, plus the small helpers it uses: `sampleData` and the sample-people checks (`SAMPLE_PERSON_IDS`, `SAMPLE_GOAL_IDS`, `skillsCameWithSamples`, `allSkillsZero`), `unlinkMissingPeople`, `addNotes` and `listNames` |
 
@@ -75,19 +75,20 @@ stateDiagram-v2
 - `screen`: `{ name: 'tabs' }` · `{ name: 'person', personId }` · `{ name: 'goals' }`
 - `openCoach(personId, tab)` switches to the Coach tab, pre-selecting a person and a sub-tab (`'prepare' | 'analyse'`) through `coachInit`.
 - The FAB (+) and bottom nav only render when `screen.name === 'tabs'`.
+- **Which page you're on**: `BottomNav` marks the current tab (`aria-current="page"`) on a glowing pill that slides to the new tab, with a ripple and an icon hop. `PageTransition` (around the screen, keyed by `pageKey`) slides the new page in from the side it's on: forward for a tab further right or a person or goals screen, back otherwise. The scroll goes back to the top on every page change. Styles in [ui-system.md](ui-system.md#motion).
 
 ## Screens
 
 | Screen | Component | What it shows / does |
 |---|---|---|
-| Onboarding | `OnboardingView` | Name, focus (`FOCUS_OPTIONS`), then either "start fresh" (add your own people) or "explore with example people" (seed data) |
+| Onboarding | `OnboardingView` | Shown on first launch and after starting over, with a progress bar. 1. **You**: name and focus (`FOCUS_OPTIONS`); **Start fresh** (Enter), **Explore with example people**, or **Restore from a backup** (the import). 2. **Your people** (start fresh only): type a name and press Enter, or tap a suggestion (Mum, Dad, Partner…); each gets a closeness (layer 1–4) and an emoji to tap. 3. **Ready**: switches for reminders, the morning summary and the evening heads-up (only ones changed from the defaults are saved to `profile`), then **Go to Today** (Enter) or **Plan something first** (P). |
 | Today | `TodayView` | **The main screen: the centre tab (Ctrl+3) and the one Layers opens on.** A greeting, the day's name and date, and a Day/Month switch (`M`). Day shows a week strip; Month shows the month grid. Both have dots for days with plans (accent), key dates (rose) and logs (green); daily routines don't get dots. Tapping a day, or the arrow keys, picks it, and `T` comes back to today. Below that:<br>1. **How did it go?** cards for plans with people that have ended and aren't done: **Log it** or **Just tick it** (`L` and `J` answer the first card).<br>2. The day's plan: all-day chips (birthdays, goals due, all-day plans), then plans in time order with a **Now** line. Tapping a plan opens `EventSheet`.<br>3. **Logged** that day, then **Ideas** (`planIdeas`, from today on; `I` plans the first).<br>4. On today only: **Try this next** and the top three **Current goals**.<br>**+ Plan** or `P` plans something on the day shown. The old Home's stats moved to Me, and its Upcoming list became the calendar. |
 | People | `PeopleView` | "Your circle", Ctrl+2: the map of how close you are to everyone (rings by layer), or a searchable list (`#people-search-input`, `/` focuses it) grouped by layer, add person |
 | Person profile | `PersonProfile` | Layer badge + layer-progress ring (level-up pulse), the last change and why, six dimension bars with **Adjust manually** sliders (previewing where saving would put them), *Prepare to talk* tips (`PrepareTipsModal`), **Plan something** (`PlanSheet` with them filled in), **Ideas for next time**, **Key dates** (birthdays and other dates, via `KeyDateSheet`), **Goals** (`GoalRow`), **What I know about…** (five info categories via `InfoItemRow`, quick-add interests, temporary/archived items; a bell on a temporary item sets a "how did it go?" reminder for three days later), relationship **Timeline**, **Progress** chart |
 | Goals overview | `GoalsView` | Every goal across people plus general (skill) goals, with filters |
 | Journal | `JournalView` | Feed of logged interactions, newest first, showing each entry's reflection and dimension ratings. Search (`#journal-search-input`) covers names, notes, saved details and reflections. Filters by person (each chip shows their layer's colour), type (emoji only) and period (past week, month or 3 months, counted back from `today`), each row fitting on screen, with **Clear filters**. A pencil on each entry opens `EditEntryModal`. |
 | Coach | `CoachView` | **Prepare** tab: conversation hooks built from what you know (`buildPotentialHooks`, [below](#prepares-hooks)) and suggestions. **Analyse** tab: pick one of the mock `SCENARIOS` → fake loading → grading, conversation state, info to approve into a profile (`onApproveInfo`), log the result (`onLogFromAnalysis`). |
-| Me | `MeView` | A profile card (your name and focus, **Edit** opens `EditProfileModal`), four numbers at a glance (active goals, conversations logged, meaningful interactions, being developed), "Your social skills" bars, your strength and focus (highest and lowest skill, with a tip and challenge from `SKILL_TIPS`; a "Getting started" note while every skill is 0%) + **Progress history** chart, **Achievements** (recorded ones show the day they were unlocked, locked ones how close you are), **Appearance** (light/dark), **Notifications** (reminders before plans with the default for new plans, the morning summary and evening heads-up with their times, ask how it went, and the daily check-in nudge), Electron-only rows (version, check for updates / restart to install / open download page for the portable build, launch at login, a warning if another app owns Ctrl+Shift+L, keyboard shortcuts), data export/import, **Remove sample people** / **Add sample people** (each shown only when it would do something), delete everything |
+| Me | `MeView` | A profile card (your name and focus, **Edit** opens `EditProfileModal`), four numbers at a glance (active goals, conversations logged, meaningful interactions, being developed), "Your social skills" bars, your strength and focus (highest and lowest skill, with a tip and challenge from `SKILL_TIPS`; a "Getting started" note while every skill is 0%) + **Progress history** chart, **Achievements** (recorded ones show the day they were unlocked, locked ones how close you are), **Appearance** (light/dark), **Notifications** (reminders before plans with the default for new plans, the morning summary and evening heads-up with their times, ask how it went, and the daily check-in nudge), Electron-only rows (version, check for updates / restart to install / open download page for the portable build, launch at login, a warning if another app owns Ctrl+Shift+L, keyboard shortcuts), data export/import, **Remove sample people** / **Add sample people** (each shown only when it would do something), and **Delete my data and start over** (`StartOverSheet`, [below](#starting-over)) |
 
 ### Prepare's hooks
 
@@ -208,9 +209,31 @@ another** from a profile, the next plan is with the same person. **Edit** opens 
 "when" with a **Delete** button, and **Plan it again** (`prefill.copyOf`) opens a copy
 on "when", on the day after.
 
+The "what" step also lists **Plan again**: your four most recent plans (`recentPlans`, one of
+each title and people), keys Q, W, E and R. One opens on "when" with everything filled in, as
+a one-off on the day being planned. "When?" sums the plan up in a line ("Tomorrow, 10:00
+AM–11:00 AM · reminder 15 min before") and warns when it overlaps a plan you already have
+that day (`clashesOn`; plans that only touch don't count).
+
 `EventSheet` shows one plan on one day. Before it starts it offers **Edit**, **Plan it
 again** and **Delete**; **Log it** and **Mark done** come once it has started, since
 there's nothing to log yet.
+
+### Starting over
+
+**Delete my data and start over** in Me opens `StartOverSheet`, three steps:
+
+1. **What to clear**, everything ticked, each with how much it holds: People (with their
+   details, goals, key dates and journal), Journal, Plans and reminders (their scheduled
+   notifications and snoozes go too), Skills, achievements and your own goals, and your
+   name, focus and settings (notifications and theme). 1–5 tick or untick; A ticks
+   everything. Clearing people always clears the journal.
+2. **Save a backup first?**: **Save a backup** (B) exports everything, or go on without.
+3. **Delete for good?**: what goes and what stays, then a button you **press and hold**
+   (1.5 s, or hold Enter or Space) until it fills. Letting go early does nothing.
+
+`handleStartOver` clears the parts picked. If people went, Layers goes back to onboarding
+(with your name filled in if settings were kept); otherwise it stays in Me with a toast.
 
 ## Keyboard shortcuts
 

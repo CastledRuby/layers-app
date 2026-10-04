@@ -64,6 +64,11 @@ interact.
   - "How did it go?", ideas and birthdays
   - what's handed to Windows (a fake `layersSystem`), and notification buttons pressed
     with Layers closed or open
+- `setup.test.jsx` covers knowing which page you're on (the tab marked, pages sliding
+  in from their side), starting over (all of it, with a backup and a held press; or just
+  some things), setting up (people tapped or typed with how close they are, notification
+  switches, Plan something first, Restore from a backup), and planning's Plan again and
+  overlap warning.
 - `polish.test.jsx` covers the quick log redesign:
   - the quick log asks for little
   - each extra detail opens its own sheet

@@ -25,7 +25,7 @@ how the app behaves for you is listed with the default chosen, so it can be chan
 | Icon and Windows identity | ✅ Done (1.0.27) | `Layers.exe` is "Layers" by CastledRuby, with the Layers icon. The tray icon follows the taskbar's light or dark mode. |
 | Single instance, `--quit`, tray | ✅ Done | Checked end-to-end on every release. Closing to the tray no longer holds up a Windows shutdown. |
 | Full local persistence | ✅ Done | Everything is saved: people, journal, goals, events, skills with history, achievements with dates, profile and settings. Saved data is checked at startup, and damaged data is kept and explained. |
-| Onboarding | ✅ Done | Name and focus can be changed in Me (1.0.28). The focus drives Today's "Try this next". |
+| Onboarding | ✅ Done | Three steps with a progress bar: you, your people (tap or type, with how close they are), and notifications. Restore from a backup is offered too. Name and focus can be changed in Me. The focus drives Today's "Try this next". |
 | Sample data separable | ✅ Done (1.0.28) | "Remove sample people" keeps yours, and "Add sample people" adds them alongside your own. |
 | Works with zero people | ✅ Done | Checked by both the app tests and the end-to-end tests. |
 | Data-model migration | ✅ Done | Saved data has a version number (2), and older saves are migrated once at startup. Old dates, skill history and login items are upgraded in place too. |
@@ -273,6 +273,22 @@ start.
   privacy principle comes first.
 
 ## History
+
+### Clearer pages, starting over, setting up (after 1.0.30, not released yet)
+
+You asked for the page you're on to stand out, a visual effect when opening a page, easier
+plan setup, and a more thorough, easier "Delete my data and start over".
+
+- **Which page you're on:** the tab sits on a glowing pill that slides to the new tab, with
+  a ripple and an icon hop; the page slides in from the side its tab is on and starts at
+  the top.
+- **Planning:** **Plan again** (Q–R) repeats a recent plan in one key; "When?" sums the
+  plan up in a line and warns when it overlaps something already planned.
+- **Starting over:** choose what to clear (everything by default), save a backup in one
+  key, then press and hold to delete. Clearing only some things keeps you where you are.
+- **Setting up again:** a progress bar; Restore from a backup; people tapped from
+  suggestions or typed, each with how close you are; notification switches; and Plan
+  something first.
 
 ### The calendar as the main screen (1.0.30)
 

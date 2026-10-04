@@ -7,6 +7,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Plus } from 'lucide-react';
 import { BottomNav } from './components/BottomNav.jsx';
 import { ErrorBoundary } from './components/ErrorBoundary.jsx';
+import { PageTransition } from './components/PageTransition.jsx';
 import { hasOpenSheet, SheetLayerContext, topSheet } from './components/sheetLayer.js';
 import { ACHIEVEMENTS, categoryMeta, DIM_LABELS, DIM_ORDER, getLayer, TABS } from './data/constants.js';
 import { EMPTY_SKILLS, INITIAL_GENERAL_GOALS, INITIAL_JOURNAL, INITIAL_PEOPLE, INITIAL_SKILLS } from './data/seed.js';
@@ -14,7 +15,7 @@ import { backfillJournalDates, backfillPeopleDates, backfillSkillDates, formatAb
 import { achievementProgress, newlyUnlocked } from './lib/achievements.js';
 import { advanceLayer, advanceSkillGoals, bumpSkills, chartDay, computeOverall, dimBumps, dimsEqual, goalBumpFor, keepDimsInLayer, makePerson, migrateDimsToLayers, movePerson, placeOnLayers, raisedSkills } from './lib/progress.js';
 import { MAX_BACKUP_BYTES, createBackup, validateBackup } from './lib/backup.js';
-import { notifySettings, parseActionUrl, snoozeUntil, templateFor } from './lib/calendar.js';
+import { NOTIFY_DEFAULTS, notifySettings, parseActionUrl, snoozeUntil, templateFor } from './lib/calendar.js';
 import { useCalendarNotifications, useDailyCheckIn, useToday } from './lib/hooks.js';
 import { followUpEvent, markDone } from './lib/reminders.js';
 import { getSnoozes, loadSavedState, persistState, setSnoozes } from './lib/storage.js';
@@ -32,6 +33,7 @@ import { LogInteractionModal } from './modals/LogInteractionModal.jsx';
 import { PlanSheet } from './modals/PlanSheet.jsx';
 import { QuickAddInterestModal } from './modals/QuickAddInterestModal.jsx';
 import { ShortcutsModal } from './modals/ShortcutsModal.jsx';
+import { StartOverSheet } from './modals/StartOverSheet.jsx';
 import { TemplatePickerModal } from './modals/TemplatePickerModal.jsx';
 import { COLORS, CSS, THEME_DARK, THEME_LIGHT } from './theme.js';
 import { CoachView } from './views/CoachView.jsx';
@@ -129,6 +131,7 @@ function LayersApp() {
   const [quickInterestPersonId, setQuickInterestPersonId] = useState(null);
   const [addPersonOpen, setAddPersonOpen] = useState(false);
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
+  const [startOverOpen, setStartOverOpen] = useState(false);
   const [standaloneDetailOpen, setStandaloneDetailOpen] = useState(false);
   const [editPersonOpen, setEditPersonOpen] = useState(false);
   const [editingEntryId, setEditingEntryId] = useState(null);
@@ -137,6 +140,7 @@ function LayersApp() {
   const [sheetLayer, setSheetLayer] = useState(null);
   const [searchFocus, setSearchFocus] = useState(null);
   const importInputRef = useRef(null);
+  const scrollRef = useRef(null);
   const saveFailed = useRef(false);
   // Achievements reached by loading data (startup, samples, an import) are
   // recorded without a toast; only ones you reach by using the app announce.
@@ -753,21 +757,26 @@ function LayersApp() {
     });
   }
 
-  function handleStartOver() {
-    askConfirm({
-      title: 'Delete all your data?',
-      message: 'This permanently deletes every person, goal, and journal entry. This cannot be undone unless you export a backup first.',
-      confirmLabel: 'Delete everything',
-      danger: true,
-      onConfirm: () => {
-        setPeople([]); setJournal([]); setGeneralGoals([]); setEvents([]); setSkills(EMPTY_SKILLS);
-        quietAchievements.current = true;
-        setAchievements(null);
-        setCoachInit(c => ({ ...c, personId: null }));
-        setScreen({ name: 'tabs' }); setActiveTab('today');
-        setOnboarded(false);
-      },
-    });
+  // From StartOverSheet: clear the parts picked ({ people, journal, plans,
+  // progress, settings }). Clearing people (and so their journal) goes back
+  // to the welcome screen to set up again; otherwise you stay in Me.
+  function handleStartOver(parts) {
+    quietAchievements.current = true;
+    if (parts.people) { setPeople([]); setCoachInit(c => ({ ...c, personId: null })); }
+    if (parts.people || parts.journal) setJournal([]);
+    if (parts.plans) { setEvents([]); setSnoozes([]); setSnoozeList([]); }
+    else if (parts.people) setEvents(prev => unlinkMissingPeople(prev, []));
+    if (parts.progress) { setGeneralGoals([]); setSkills(EMPTY_SKILLS); setAchievements(null); }
+    if (parts.settings) { setProfile({ name: '', focus: null }); setTheme('light'); }
+    setStartOverOpen(false);
+    setSelectedDay(null);
+    if (parts.people) {
+      setScreen({ name: 'tabs' }); setActiveTab('today');
+      setOnboarded(false);
+      return;
+    }
+    const names = { journal: 'the journal', plans: 'plans', progress: 'skills and goals', settings: 'settings' };
+    pushToast(`Cleared ${listNames(Object.keys(names).filter(k => parts[k]).map(k => names[k]))}`);
   }
 
   function handleExportData() {
@@ -826,11 +835,18 @@ function LayersApp() {
     reader.readAsText(file);
   }
 
-  function handleOnboardingComplete({ name, focus, startFresh, newPeople }) {
-    setProfile({ name, focus });
+  // From onboarding. `notify` holds the notification switches it shows; one
+  // left at its default isn't saved, so it follows the default. `then` is
+  // 'plan' to plan something straight away.
+  function handleOnboardingComplete({ name, focus, startFresh, newPeople, notify = {}, then }) {
+    setProfile(p => {
+      const next = { ...p, name, focus };
+      Object.entries(notify).forEach(([k, v]) => { if (v === NOTIFY_DEFAULTS[k]) delete next[k]; else next[k] = v; });
+      return next;
+    });
     quietAchievements.current = true;
     if (startFresh) {
-      setPeople((newPeople || []).map(p => makePerson({ name: p.name, emoji: p.emoji, layer: 1 })));
+      setPeople((newPeople || []).map(p => makePerson({ name: p.name, emoji: p.emoji, layer: p.layer || 1 })));
       setJournal([]); setGeneralGoals([]); setSkills(EMPTY_SKILLS);
     } else {
       const sample = sampleData();
@@ -838,7 +854,14 @@ function LayersApp() {
     }
     setOnboarded(true);
     setScreen({ name: 'tabs' }); setActiveTab('today');
+    if (then === 'plan') openPlan({ day: today });
   }
+
+  // Which page is showing, for PageTransition: tabs by their place in the
+  // bar, and a person or goals screen as a step further in.
+  const pageKey = !onboarded ? 'welcome' : screen.name === 'tabs' ? activeTab : `${screen.name}:${screen.personId || ''}`;
+  const pageOrder = !onboarded ? -1 : screen.name === 'tabs' ? TABS.indexOf(activeTab) : TABS.length;
+  useEffect(() => { if (scrollRef.current) scrollRef.current.scrollTop = 0; }, [pageKey]);
 
   return (
     <SheetLayerContext.Provider value={sheetLayer}>
@@ -846,11 +869,12 @@ function LayersApp() {
         <style>{CSS}</style>
         <div className="app-shell">
           <div className="phone-frame">
-            <div className="scroll-area no-scrollbar" style={{ paddingBottom: (!onboarded || screen.name !== 'tabs') ? 30 : 110 }}>
+            <div ref={scrollRef} className="scroll-area no-scrollbar" style={{ paddingBottom: (!onboarded || screen.name !== 'tabs') ? 30 : 110 }}>
+              <PageTransition pageKey={pageKey} order={pageOrder}>
               {/* A crash while rendering a screen shows a way out instead of a blank window. */}
               <ErrorBoundary key={`${onboarded}-${screen.name}-${screen.personId || ''}-${activeTab}`} onHome={() => switchTab('today')}>
                 {!onboarded ? (
-                  <OnboardingView initialName={profile.name} initialFocus={profile.focus} onComplete={handleOnboardingComplete} />
+                  <OnboardingView initialName={profile.name} initialFocus={profile.focus} initialNotify={notifySettings(profile)} onComplete={handleOnboardingComplete} onRestore={handleImportClick} />
                 ) : (
                   <>
                     {screen.name === 'person' && selectedPerson && (
@@ -889,12 +913,13 @@ function LayersApp() {
                         {activeTab === 'people' && <PeopleView people={people} journal={journal} onOpenPerson={openPerson} onAddPerson={() => setAddPersonOpen(true)} />}
                         {activeTab === 'coach' && <CoachView people={people} journal={journal} initialPersonId={coachInit.personId} initialTab={coachInit.tab} onOpenLog={openLog} onApproveInfo={handleApproveInfo} onLogFromAnalysis={handleLogFromAnalysis} onOpenPerson={openPerson} />}
                         {activeTab === 'journal' && <JournalView today={today} people={people} journal={journal} onOpenPerson={openPerson} onEditEntry={setEditingEntryId} />}
-                        {activeTab === 'me' && <MeView people={people} journal={journal} skills={skills} generalGoals={generalGoals} profile={profile} onAddSample={handleAddSample} onRemoveSample={handleRemoveSample} hasSamplePeople={people.some(p => SAMPLE_PERSON_IDS.has(p.id))} canAddSample={INITIAL_PEOPLE.some(sp => !people.some(p => p.id === sp.id))} onStartOver={handleStartOver} onExport={handleExportData} onImportClick={handleImportClick} hasUpdater={hasUpdater} updateStatus={updateStatus} onCheckForUpdates={handleCheckForUpdates} onInstallUpdate={handleInstallUpdate} onOpenDownloadPage={handleOpenDownloadPage} shortcutStatus={shortcutStatus} theme={theme} onSetTheme={setTheme} onUpdateProfile={(changes) => setProfile(p => ({ ...p, ...changes }))} onEditProfile={() => setEditProfileOpen(true)} achievements={achievements || {}} hasSystemBridge={hasSystemBridge} autoLaunch={autoLaunch} onToggleAutoLaunch={handleToggleAutoLaunch} onOpenShortcuts={() => setShortcutsOpen(true)} appVersion={appVersion} />}
+                        {activeTab === 'me' && <MeView people={people} journal={journal} skills={skills} generalGoals={generalGoals} profile={profile} onAddSample={handleAddSample} onRemoveSample={handleRemoveSample} hasSamplePeople={people.some(p => SAMPLE_PERSON_IDS.has(p.id))} canAddSample={INITIAL_PEOPLE.some(sp => !people.some(p => p.id === sp.id))} onStartOver={() => setStartOverOpen(true)} onExport={handleExportData} onImportClick={handleImportClick} hasUpdater={hasUpdater} updateStatus={updateStatus} onCheckForUpdates={handleCheckForUpdates} onInstallUpdate={handleInstallUpdate} onOpenDownloadPage={handleOpenDownloadPage} shortcutStatus={shortcutStatus} theme={theme} onSetTheme={setTheme} onUpdateProfile={(changes) => setProfile(p => ({ ...p, ...changes }))} onEditProfile={() => setEditProfileOpen(true)} achievements={achievements || {}} hasSystemBridge={hasSystemBridge} autoLaunch={autoLaunch} onToggleAutoLaunch={handleToggleAutoLaunch} onOpenShortcuts={() => setShortcutsOpen(true)} appVersion={appVersion} />}
                       </>
                     )}
                   </>
                 )}
               </ErrorBoundary>
+              </PageTransition>
             </div>
 
             {onboarded && screen.name === 'tabs' && (
@@ -911,7 +936,7 @@ function LayersApp() {
             <input ref={importInputRef} type="file" accept="application/json" onChange={handleImportFile} style={{ display: 'none' }} />
 
             {logOpen && <LogInteractionModal people={people} defaultPersonId={logDefaultPerson} prefill={logPrefill} onClose={closeLog} onPlan={() => openPlan({ day: selectedDay || today })} onSubmit={(payload) => { handleLogSubmit(payload); if (logPrefill && logPrefill.eventId) handleMarkEventDone(logPrefill.eventId, logPrefill.day, { quiet: true }); setLogPrefill(null); }} />}
-            {planState && <PlanSheet people={people} today={today} prefill={planState} defaultAlert={notifySettings(profile).defaultAlert} onClose={() => setPlanState(null)} onSave={handleSavePlan} onDelete={handleDeleteEvent} />}
+            {planState && <PlanSheet people={people} events={events} today={today} prefill={planState} defaultAlert={notifySettings(profile).defaultAlert} onClose={() => setPlanState(null)} onSave={handleSavePlan} onDelete={handleDeleteEvent} />}
             {eventView && events.some(e => e.id === eventView.eventId) && (() => {
               const ev = events.find(e => e.id === eventView.eventId);
               return <EventSheet ev={ev} day={eventView.day} today={today} people={people} goals={[...people.flatMap(p => p.goals), ...generalGoals]} onClose={() => setEventView(null)} onLog={() => openLogFromEvent(ev, eventView.day)} onDone={() => { handleMarkEventDone(ev.id, eventView.day); setEventView(null); }} onEdit={() => openPlan({ event: ev, day: eventView.day })} onCopy={() => openPlan({ copyOf: ev, day: eventView.day })} onDelete={() => handleDeleteEvent(ev.id)} />;
@@ -926,6 +951,7 @@ function LayersApp() {
             )}
             {addPersonOpen && <AddPersonModal onClose={() => setAddPersonOpen(false)} onSave={handleAddPerson} />}
             {shortcutsOpen && <ShortcutsModal onClose={() => setShortcutsOpen(false)} />}
+            {startOverOpen && <StartOverSheet counts={{ people: people.length, journal: journal.length, events: events.length, goals: generalGoals.length + people.reduce((n, p) => n + p.goals.length, 0) }} onExport={handleExportData} onClose={() => setStartOverOpen(false)} onConfirm={handleStartOver} />}
             {editProfileOpen && <EditProfileModal profile={profile} onClose={() => setEditProfileOpen(false)} onSave={(vals) => { setProfile(p => ({ ...p, ...vals })); setEditProfileOpen(false); pushToast('Profile updated'); }} />}
             {standaloneDetailOpen && (
               <TemplatePickerModal

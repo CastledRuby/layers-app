@@ -476,7 +476,7 @@ later, for example after you remove a person, and Me shows "Unlocked Oct 4". Up 
 `achievements` is saved with the rest of the state and goes into backups, where
 `validateBackup` checks it ([below](#backup-format)). `null` means "not worked out yet":
 saved data or a backup from before 1.0.28, or just after "Remove sample people" or
-"Delete my data and start over". The effect then works them out from the data.
+clearing skills and achievements when starting over. The effect then works them out from the data.
 
 **Quiet recording.** Only achievements you reach by using the app get a toast ("🏅
 Achievement unlocked: …"). Ones that loading data earns are recorded without one: at

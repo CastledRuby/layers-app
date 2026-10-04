@@ -147,6 +147,28 @@ export function monthMarks(state, year, month) {
   return out;
 }
 
+// The plans made or changed most recently, one of each (the same title and
+// people), newest first: "Plan again" in PlanSheet.
+export function recentPlans(events = [], limit = 4) {
+  const stamp = (ev) => String(ev.updatedAt || ev.createdAt || '');
+  const seen = new Set();
+  const out = [];
+  [...events].sort((a, b) => stamp(b).localeCompare(stamp(a))).forEach(ev => {
+    const key = `${String(ev.title || '').trim().toLowerCase()}|${[...(ev.personIds || [])].sort().join(',')}`;
+    if (out.length >= limit || seen.has(key)) return;
+    seen.add(key);
+    out.push(ev);
+  });
+  return out;
+}
+
+// Timed plans on `day`, not yet done, that overlap a plan from `start` for
+// `duration` minutes (leaving out the plan being edited, `exceptId`).
+export function clashesOn(state, day, start, duration, exceptId) {
+  const events = (state.events || []).filter(ev => ev.id !== exceptId);
+  return dayAgenda({ ...state, events }, day).timed.filter(it => !it.done && it.start < start + duration && it.end > start);
+}
+
 // Events whose time has passed today (or on an earlier day still being
 // looked at) that have people and aren't done: "How did it go?"
 export function needsAnswer(agenda, day, now = new Date()) {

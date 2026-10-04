@@ -28,6 +28,7 @@ describe('first launch', () => {
     await user.click(screen.getByRole('button', { name: 'A bit of everything' }));
     await user.click(screen.getByRole('button', { name: 'Start fresh with my own people' }));
     await user.click(screen.getByRole('button', { name: "Skip, I'll add people later" }));
+    await user.click(screen.getByRole('button', { name: 'Go to Today' }));
 
     expect(screen.getByText(/Good (morning|afternoon|evening), Sam/)).toBeTruthy();
     await visitEveryTab(user);
@@ -45,6 +46,7 @@ describe('first launch', () => {
     const { user } = renderApp();
     await user.type(screen.getByLabelText('Your name'), 'Sam');
     await user.click(screen.getByRole('button', { name: 'Explore with example people first' }));
+    await user.click(screen.getByRole('button', { name: 'Go to Today' }));
     await visitEveryTab(user);
     errors.stop();
     expect(errors.errors).toEqual([]);
@@ -55,6 +57,7 @@ describe('first launch', () => {
     const app = renderApp();
     await app.user.type(screen.getByLabelText('Your name'), 'Sam');
     await app.user.click(screen.getByRole('button', { name: 'Explore with example people first' }));
+    await app.user.click(screen.getByRole('button', { name: 'Go to Today' }));
     relaunch(app);
     expect(screen.queryByText('Welcome to Layers')).toBeNull();
     expect(screen.getByText(/Good (morning|afternoon|evening), Sam/)).toBeTruthy();

@@ -141,6 +141,7 @@ describe('P4 sample people', () => {
     const { user } = renderApp();
     await user.type(screen.getByLabelText('Your name'), 'Sam');
     await user.click(screen.getByRole('button', { name: 'Explore with example people first' }));
+    await user.click(screen.getByRole('button', { name: 'Go to Today' }));
     await user.keyboard('{Control>}{Shift>}a{/Shift}{/Control}');
     await user.type(screen.getByPlaceholderText('Their name'), 'Morgan');
     await user.click(screen.getByRole('button', { name: 'Add to my circle' }));

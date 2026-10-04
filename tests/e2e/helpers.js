@@ -54,5 +54,6 @@ export function mainWindowState(app) {
 export async function onboard(page, name = 'Sam') {
   await page.getByLabel('Your name').fill(name);
   await page.getByRole('button', { name: 'Explore with example people first' }).click();
+  await page.getByRole('button', { name: 'Go to Today' }).click();
   await page.getByText(new RegExp(`Good (morning|afternoon|evening), ${name}`)).waitFor();
 }

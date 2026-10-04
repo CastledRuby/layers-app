@@ -1,6 +1,7 @@
 // Plan something: a new calendar event, or editing one. Three steps, one
 // thing at a time, almost all taps, and every tap has a key:
-//   what  a template (Coffee, Call, ...)            keys 1-8
+//   what  a template (Coffee, Call, ...)            keys 1-8, or one of your
+//         recent plans under "Plan again"           Q W E R
 //   who   the people                                1-9 or type a name, Enter goes on
 //   when  day, time, length, repeat and reminder    1-7 the day; T, L, R, A and G
 //                                                   step through time, length,
@@ -10,20 +11,22 @@
 // Shift+Enter (or "Save + another") saves and starts the next plan in the same
 // sheet, for putting in a lot at once; what's been added shows on the first
 // step. "Several days" saves one plan for each day picked.
+// "When?" sums the plan up in a sentence and warns when it overlaps a plan
+// you already have.
 // A plan started from a profile or an idea skips the steps it already knows;
 // editing opens straight on "when", and so does a copy (prefill.copyOf).
 // See docs/renderer/app-structure.md.
 
-import { useRef, useState } from 'react';
-import { Check } from 'lucide-react';
+import { useMemo, useRef, useState } from 'react';
+import { AlertTriangle, Check } from 'lucide-react';
 import { Sheet } from '../components/Sheet.jsx';
 import { isTabbedToButton, isTyping } from '../components/sheetLayer.js';
 import { Kbd } from '../components/atoms.jsx';
-import { PeopleGrid } from '../components/PersonPick.jsx';
+import { AvatarStack, PeopleGrid } from '../components/PersonPick.jsx';
 import { usePeopleKeys } from '../components/peopleKeys.js';
 import { DateDropdown, TimeDropdown } from '../components/pickers.jsx';
-import { DEFAULT_DURATION, EVENT_TEMPLATES, alertOf, durationOf, isDaily, templateFor } from '../lib/calendar.js';
-import { formatTime12, formatWeekdays, parseISODay, toISODate, WEEKDAY_SHORT } from '../lib/dates.js';
+import { DEFAULT_DURATION, EVENT_TEMPLATES, alertOf, clashesOn, durationOf, isDaily, recentPlans, templateFor } from '../lib/calendar.js';
+import { formatCalendarDate, formatTime12, formatWeekdays, parseISODay, toISODate, WEEKDAY_SHORT } from '../lib/dates.js';
 import { COLORS } from '../theme.js';
 
 const TIMES = [9 * 60, 12 * 60 + 30, 15 * 60 + 30, 18 * 60, 20 * 60];
@@ -32,6 +35,7 @@ const ALERTS = [null, 0, 5, 15, 30, 60, 1440];
 const REPEATS = [['once', 'Once'], ['several', 'Several days'], ['daily', 'Every day'], ['weekly', 'Every week']];
 const MON_FRI = [1, 2, 3, 4, 5];
 const STEPS = ['what', 'who', 'when'];
+const AGAIN_KEYS = ['q', 'w', 'e', 'r'];
 const lengthLabel = (m) => (m < 60 ? `${m} min` : `${m / 60} h`);
 const alertLabel = (a) => (a === null ? 'None' : a === 0 ? 'At the time' : a === 1440 ? '1 day before' : a >= 60 ? `${a / 60} h before` : `${a} min before`);
 const namesText = (list) => (list.length <= 2 ? list.join(' and ') : `${list.slice(0, 2).join(', ')} and ${list.length - 2} more`);
@@ -92,7 +96,7 @@ function Section({ title, hint, children }) {
   );
 }
 
-export function PlanSheet({ people, today, prefill = {}, defaultAlert = 15, onClose, onSave, onDelete }) {
+export function PlanSheet({ people, events = [], today, prefill = {}, defaultAlert = 15, onClose, onSave, onDelete }) {
   // After "Save + another", the next plan starts from `start` (the same day,
   // and the same person when planning from a profile).
   const [start, setStart] = useState(prefill);
@@ -112,11 +116,27 @@ export function PlanSheet({ people, today, prefill = {}, defaultAlert = 15, onCl
   const canSave = shownTitle.trim().length > 0 && (repeat !== 'weekly' || weekdays.length > 0) && (repeat !== 'several' || days.length > 0);
   const repeats = editing ? REPEATS.filter(([k]) => k !== 'several') : REPEATS;
   const nextDays = Array.from({ length: 7 }, (_, i) => addDays(today, i));
+  const recent = useMemo(() => recentPlans(events), [events]);
+  // Plans already on the day (or days) that this one would overlap.
+  const clashes = useMemo(() => (allDay ? [] : (repeat === 'several' ? days : [day])
+    .flatMap(d => clashesOn({ events, people }, d, time, duration, editing && editing.id).map(it => ({ day: d, it })))
+    .slice(0, 3)), [events, people, allDay, repeat, days, day, time, duration, editing]);
   const peopleKeys = usePeopleKeys(people, personIds, (id) => set(f => ({ personIds: f.personIds.includes(id) ? f.personIds.filter(x => x !== id) : [...f.personIds, id] })));
 
   function go(next) {
     setDir(STEPS.indexOf(next) >= STEPS.indexOf(step) ? 'in' : 'back');
     setStep(next);
+  }
+  // "Plan again": the same plan (as a one-off) on the day being planned.
+  function pickAgain(ev) {
+    const t = templateFor(ev.template);
+    const ids = (ev.personIds || []).filter(id => people.some(p => p.id === id));
+    set(fm => ({
+      template: t, personIds: ids, title: ev.title, titleTouched: ev.title !== autoTitleFor(t, people, ids),
+      allDay: !!ev.allDay, time: typeof ev.time === 'number' ? ev.time : fm.time, duration: durationOf(ev),
+      repeat: 'once', days: [fm.day], alert: alertOf(ev), goalId: ev.goalId || null,
+    }));
+    go('when');
   }
   function pickTemplate(t) {
     set(editing || copyOf ? { template: t } : { template: t, time: t.time, duration: t.duration });
@@ -185,7 +205,9 @@ export function PlanSheet({ people, today, prefill = {}, defaultAlert = 15, onCl
     const num = /^[1-9]$/.test(e.key) ? Number(e.key) : null;
     const act = (fn) => { e.preventDefault(); fn(); };
     if (step === 'what') {
+      const again = recent[AGAIN_KEYS.indexOf(e.key.toLowerCase())];
       if (num && num <= EVENT_TEMPLATES.length) act(() => pickTemplate(EVENT_TEMPLATES[num - 1]));
+      else if (again) act(() => pickAgain(again));
       return;
     }
     if (step === 'who') {
@@ -205,6 +227,13 @@ export function PlanSheet({ people, today, prefill = {}, defaultAlert = 15, onCl
   }
 
   const dayLabel = (d, i) => (i === 0 ? 'Today' : i === 1 ? 'Tomorrow' : shortDay(d));
+  const span = (s, e) => `${formatTime12(s)}–${formatTime12(e)}`;
+  const whenText = [
+    repeat === 'once' ? formatCalendarDate(parseISODay(day))
+      : repeat === 'several' ? `${days.length} ${days.length === 1 ? 'day' : 'days'}: ${days.map(shortDay).join(', ')}`
+        : `${repeat === 'daily' ? 'Every day' : formatWeekdays(weekdays) || 'Every week'} from ${formatCalendarDate(parseISODay(day))}`,
+    allDay ? 'all day' : span(time, time + duration),
+  ].join(', ') + ` · ${alert === null ? 'no reminder' : alert === 0 ? 'reminder at the time' : `reminder ${alertLabel(alert)}`}`;
   const isDayOn = (d) => (repeat === 'several' ? days.includes(d) : day === d);
   const titles = { what: added.length ? 'Plan another' : 'Plan something', who: 'Who with?', when: editing ? 'Edit plan' : copyOf ? 'Plan it again' : 'When?' };
   const saveLabel = editing ? 'Save changes' : repeat === 'several' && days.length > 1 ? `Save ${days.length} plans` : 'Save plan';
@@ -240,6 +269,26 @@ export function PlanSheet({ people, today, prefill = {}, defaultAlert = 15, onCl
                 </button>
               ))}
             </div>
+            {recent.length > 0 && (
+              <>
+                <p className="text-xs font-bold mt-5 mb-2" style={{ color: COLORS.inkSoft, letterSpacing: '0.06em', textTransform: 'uppercase' }}>Plan again</p>
+                <div className="flex flex-col gap-1.5">
+                  {recent.map((ev, i) => {
+                    const t = templateFor(ev.template);
+                    const who = (ev.personIds || []).map(id => people.find(p => p.id === id)).filter(Boolean);
+                    return (
+                      <button key={ev.id} type="button" onClick={() => pickAgain(ev)} className="tile flex items-center gap-2.5 px-3 py-2.5 text-left">
+                        <span className="shrink-0"><Kbd>{AGAIN_KEYS[i].toUpperCase()}</Kbd></span>
+                        <span aria-hidden="true">{t ? t.emoji : '📌'}</span>
+                        <span className="flex-1 min-w-0 text-sm font-semibold truncate">{ev.title}</span>
+                        <span className="text-xs shrink-0" style={{ color: COLORS.inkSoft }}>{ev.allDay || typeof ev.time !== 'number' ? 'All day' : formatTime12(ev.time)}</span>
+                        {who.length > 0 && <AvatarStack people={who} size={20} />}
+                      </button>
+                    );
+                  })}
+                </div>
+              </>
+            )}
           </>
         )}
 
@@ -258,6 +307,14 @@ export function PlanSheet({ people, today, prefill = {}, defaultAlert = 15, onCl
                 aria-label="Title" className="w-full text-sm font-semibold rounded-xl pl-3 pr-10 py-2.5" style={{ border: `1px solid ${COLORS.line}` }} />
               <span style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }}><Kbd>N</Kbd></span>
             </div>
+            <p className="text-xs -mt-2 mb-2" style={{ color: COLORS.inkSoft }} aria-label="Summary">{whenText}</p>
+            {clashes.length > 0 && (
+              <p className="text-xs mb-3 flex items-start gap-1.5 fade-anim" role="status" style={{ color: COLORS.warn }}>
+                <AlertTriangle size={13} className="shrink-0" style={{ marginTop: 1 }} />
+                <span>Overlaps {clashes.map(c => `${c.it.ev.title} (${repeat === 'several' ? `${shortDay(c.day)}, ` : ''}${span(c.it.start, c.it.end)})`).join(', ')}</span>
+              </p>
+            )}
+            <div className="mb-2" />
             <Section title={repeat === 'several' ? 'Days (pick as many as you like)' : repeat === 'once' ? 'Day' : 'Starting'} hint="1–7">
               {nextDays.map((d, i) => <Choice key={d} on={isDayOn(d)} onClick={() => pickDay(d)}>{dayLabel(d, i)}</Choice>)}
               {repeat === 'several' && days.filter(d => !nextDays.includes(d)).map(d => <Choice key={d} on onClick={() => pickDay(d)}>{shortDay(d)}</Choice>)}

@@ -32,6 +32,7 @@ test('works with nobody in the circle', async () => {
   await page.getByLabel('Your name').fill('Sam');
   await page.getByRole('button', { name: 'Start fresh with my own people' }).click();
   await page.getByRole('button', { name: "Skip, I'll add people later" }).click();
+  await page.getByRole('button', { name: 'Go to Today' }).click();
   for (const tab of ['People', 'Coach', 'Journal', 'Me', 'Today']) {
     await page.locator('.nav-bar').getByRole('button', { name: tab, exact: true }).click();
   }

@@ -244,6 +244,13 @@ start, gentle to settle):
   New chips grow in (`.chip-in`).
 - **Buttons** press in slightly on click everywhere; tiles also lift on hover.
 - **Toasts** rise in (`toastIn`). In dark mode they're light, so they stand out.
+- **The tab bar** shows the page you're on with a pill (`.nav-indicator`): accent-tinted,
+  outlined, with a glowing bar on the top edge. Switching tabs slides it across with a
+  little overshoot, a ring ripples out (`navRipple`) and the icon hops (`navHop`).
+- **Pages** slide in from the side their tab is on, sharpening from a slight blur
+  (`page-anim--fwd`, `page-anim--back`; `PageTransition`).
+- **Press and hold** (`.hold-btn`): a fill runs across the button while it's held
+  (`--hold-ms`), for "Delete for good?" in `StartOverSheet`.
 - The level-up pulse, glow and banner.
 
 A `prefers-reduced-motion: reduce` block shortens every animation and transition to ~0.

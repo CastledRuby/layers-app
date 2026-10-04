@@ -50,6 +50,7 @@ export const SHORTCUTS = [
   { keys: ['1–9'], desc: 'Picking people (log or plan): press their number, or type a name' },
   { keys: ['T', 'L', 'R', 'A'], or: true, desc: 'Planning "When?": step through time, length, repeat, reminder (1–7 picks the day)' },
   { keys: ['Shift', '↵'], desc: 'Planning: save and plan another straight away' },
+  { keys: ['Q', 'W', 'E', 'R'], or: true, desc: 'Planning "What?": plan one of your recent plans again' },
   { keys: ['C'], desc: 'An open plan: plan it again (a copy)' },
   { keys: ['D'], desc: 'Add detail — browse templates and copy one, no logging needed' },
   { keys: ['Ctrl', 'Shift', 'A'], desc: 'Add a new person' },

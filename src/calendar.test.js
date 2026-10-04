@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { dayAgenda, keyDateOn, monthMarks, needsAnswer, occursOn, parseActionUrl, planIdeas, plannedNotifications, snoozeUntil } from './lib/calendar.js';
+import { clashesOn, dayAgenda, keyDateOn, monthMarks, needsAnswer, occursOn, parseActionUrl, planIdeas, plannedNotifications, recentPlans, snoozeUntil } from './lib/calendar.js';
 
 // Sunday 4 October 2026.
 const DAY = '2026-10-04';
@@ -111,5 +111,23 @@ describe('notification actions', () => {
     const now = new Date(local(DAY, 9, 45));
     expect(snoozeUntil('10', now)).toBe(local(DAY, 9, 55));
     expect(snoozeUntil('tomorrow', now)).toBe(local('2026-10-05', 9, 45));
+  });
+});
+
+describe('planning helpers', () => {
+  it('recentPlans: newest first, one of each title and people', () => {
+    const a = { id: 'a', title: 'Coffee with Priya', personIds: ['p'], createdAt: '2026-09-01' };
+    const b = { id: 'b', title: 'coffee with Priya ', personIds: ['p'], updatedAt: '2026-10-02T10:00:00.000Z' };
+    const c = { id: 'c', title: 'Gym', personIds: [], createdAt: '2026-10-01' };
+    expect(recentPlans([a, b, c]).map(e => e.id)).toEqual(['b', 'c']);
+    expect(recentPlans([a, b, c], 1).map(e => e.id)).toEqual(['b']);
+  });
+
+  it('clashesOn: timed plans that overlap, not ones that only touch, nor the one being edited', () => {
+    const state = { events: [coffee, gym] }; // coffee 10:00-11:00, gym 7:00-8:00 daily
+    expect(clashesOn(state, DAY, 630, 60).map(it => it.ev.id)).toEqual(['c']);
+    expect(clashesOn(state, DAY, 660, 30)).toEqual([]);
+    expect(clashesOn(state, DAY, 400, 300).map(it => it.ev.id)).toEqual(['g', 'c']);
+    expect(clashesOn(state, DAY, 630, 60, 'c')).toEqual([]);
   });
 });
