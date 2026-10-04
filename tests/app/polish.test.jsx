@@ -4,7 +4,7 @@
 // sheet, everything works from the keyboard, the date button no longer paints
 // over sheets above it, sheets slide away, and text on the accent colour is
 // readable in both themes.
-import { screen, within } from '@testing-library/react';
+import { within } from '@testing-library/react';
 import { afterEach, describe, expect, it } from 'vitest';
 import { CSS, THEME_DARK, THEME_LIGHT } from '../../src/theme.js';
 import { dialog, logDetails, person, queryDialog, renderApp, savedState, seedState, wait } from './harness.jsx';

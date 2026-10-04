@@ -384,7 +384,7 @@ describe('Rating the six dimensions while logging', () => {
   it('fills one row per number typed, top to bottom', async () => {
     seedState({ people: [person('Morgan')] });
     const { user } = renderApp();
-    const details = await startLog(user, ['Morgan']);
+    await startLog(user, ['Morgan']);
     await openExtra(user, 'Rate each part');
     await user.keyboard('435245');
     expect(rows().map(picked)).toEqual([4, 3, 5, 2, 4, 5]);
@@ -393,7 +393,7 @@ describe('Rating the six dimensions while logging', () => {
   it('Backspace steps back and clears; arrows move without changing', async () => {
     seedState({ people: [person('Morgan')] });
     const { user } = renderApp();
-    const details = await startLog(user, ['Morgan']);
+    await startLog(user, ['Morgan']);
     await openExtra(user, 'Rate each part');
     await user.keyboard('43');
     await user.keyboard('{Backspace}');
@@ -408,7 +408,7 @@ describe('Rating the six dimensions while logging', () => {
   it('clicking works too, and the next row is highlighted', async () => {
     seedState({ people: [person('Morgan')] });
     const { user } = renderApp();
-    const details = await startLog(user, ['Morgan']);
+    await startLog(user, ['Morgan']);
     await openExtra(user, 'Rate each part');
     await user.click(within(screen.getByRole('radiogroup', { name: 'How reciprocal was it?' })).getByRole('radio', { name: '3' }));
     expect(picked('How reciprocal was it?')).toBe(3);
