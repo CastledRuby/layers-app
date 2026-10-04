@@ -1,0 +1,8 @@
+#!/bin/sh
+# Runs after git merge or git pull, fast-forwards included. Installed by `npm install` (scripts/install-hooks.mjs).
+# Builds the app and installs it into the Layers on this computer, so it always
+# runs the latest code (scripts/install-local.mjs). Commits that only change
+# docs, tests, scripts or drafts, or code already installed, skip it in a second.
+# To skip it once: LAYERS_NO_INSTALL=1 git merge ...
+
+node scripts/install-local.mjs --if-changed || echo "post-merge: Layers on this computer was not updated (see above). Fix the problem, then run: npm run install:local"

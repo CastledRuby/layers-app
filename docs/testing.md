@@ -129,6 +129,11 @@ the `prepare` script (`scripts/install-hooks.mjs`, which runs
 `git config core.hooksPath .githooks`). To skip it once, use `git commit --no-verify`,
 but the release script runs the same checks anyway.
 
+After the commit, `.githooks/post-commit` builds the app and installs it on this
+computer
+([build-and-release.md](build-and-release.md#every-commit-is-installed-on-this-computer)).
+A failed install doesn't undo the commit.
+
 ## In the release
 
 `npm run release` ([build-and-release.md](build-and-release.md#releasing)) runs:

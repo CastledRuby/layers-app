@@ -75,8 +75,12 @@ feature is guarded by `hasUpdater` / `hasSystemBridge` checks in `LayersApp`.
 │   ├── verify.mjs            npm run verify: lint, code-map check, tests, build
 │   ├── e2e.mjs               npm run test:e2e: packages the app, runs Playwright
 │   ├── install-hooks.mjs     npm install's "prepare": points git at .githooks/
+│   ├── install-local.mjs     npm run install:local: installs the current code on this computer
 │   └── release.mjs           npm run release
-├── .githooks/pre-commit      Regenerates the code map and runs npm run verify
+├── .githooks/
+│   ├── pre-commit            Regenerates the code map and runs npm run verify
+│   └── post-commit, post-merge   Run install-local.mjs, so every commit is installed here
+├── branding/                 Logo and icon drafts (README.md says which file is what)
 ├── docs/                     You are here
 ├── CLAUDE.md                 Short working rules for Claude Code sessions
 ├── vite.config.js            Normal multi-file web build → dist/, and the Vitest config
@@ -86,10 +90,13 @@ feature is guarded by `hasUpdater` / `hasSystemBridge` checks in `LayersApp`.
 ├── package.json              Scripts + electron-builder config ("build" key)
 ├── dist-local/               BUILD OUTPUT (git-ignored)
 ├── dist-e2e/                 The app npm run test:e2e packages and tests (git-ignored)
+├── dist-install/             The installer install-local.mjs builds and runs (git-ignored)
 └── release/                  electron-builder output: installers, win-unpacked/ (git-ignored)
 ```
 
-The tests and the pre-commit hook are explained in [testing.md](testing.md).
+The tests and the pre-commit hook are explained in [testing.md](testing.md), and the
+install after every commit in
+[build-and-release.md](build-and-release.md#every-commit-is-installed-on-this-computer).
 
 ## Build pipeline
 

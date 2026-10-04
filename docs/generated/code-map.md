@@ -351,6 +351,7 @@ None — every channel is wired on both sides.
 | `npm run sync:app` | `node scripts/sync-app.mjs` |
 | `npm run docs:map` | `node scripts/gen-code-map.mjs` |
 | `npm run release` | `node scripts/release.mjs` |
+| `npm run install:local` | `node scripts/install-local.mjs` |
 | `npm run build:electron` | `npm run build:local && npm run sync:app` |
 | `npm run lint` | `oxlint` |
 | `npm run test` | `vitest run` |

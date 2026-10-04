@@ -1,0 +1,8 @@
+#!/bin/sh
+# Runs after every commit. Installed by `npm install` (scripts/install-hooks.mjs).
+# Builds the app and installs it into the Layers on this computer, so it always
+# runs the latest code (scripts/install-local.mjs). Commits that only change
+# docs, tests, scripts or branding drafts skip it in a second. A failed install keeps the commit.
+# To skip it once: LAYERS_NO_INSTALL=1 git commit ...
+
+node scripts/install-local.mjs --if-changed || echo "post-commit: Layers on this computer was not updated (see above). The commit is saved. Fix the problem, then run: npm run install:local"

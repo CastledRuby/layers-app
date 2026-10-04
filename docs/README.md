@@ -15,7 +15,7 @@ is split across `src/` by role (data, logic, components, modals, views).
 | See where each goal stands and what's next (fixes, then proposals) | [roadmap.md](roadmap.md) |
 | Get the big picture: processes, folders, how a build becomes an `.exe` | [architecture.md](architecture.md) |
 | See the logo, icon and tray-icon drafts, and how to adopt one | [../branding/README.md](../branding/README.md) |
-| Run, build, version and ship a release (and avoid running a stale build) | [build-and-release.md](build-and-release.md) |
+| Run, build, version and ship a release, and how every commit gets installed on this computer | [build-and-release.md](build-and-release.md) |
 | Run the tests, or add one: unit, app and end-to-end tests, and the pre-commit hook | [testing.md](testing.md) |
 | Change the desktop shell: window, tray, shortcuts, auto-update, IPC | [electron.md](electron.md) |
 | Find which file a screen, sheet or helper lives in, or see how screens connect | [renderer/app-structure.md](renderer/app-structure.md) |

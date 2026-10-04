@@ -28,6 +28,12 @@ data folder, never the real one.
 Don't call something done because it builds. Check the behaviour itself (the app
 tests, the browser preview, or the packaged app), and say what was actually checked.
 
+Commit each finished change. The post-commit hook then builds the installer and installs
+it on this computer (`scripts/install-local.mjs`), because the owner wants every change
+on their laptop, not only releases. Check that the hook ends with "is installed and
+running"; if it failed, fix the cause and run `npm run install:local`. See
+[docs/build-and-release.md](docs/build-and-release.md#every-commit-is-installed-on-this-computer).
+
 ## Releasing
 
 `npm run release` bumps the version, verifies, builds and runs the end-to-end tests

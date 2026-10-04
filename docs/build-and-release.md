@@ -14,6 +14,7 @@
 | Run the desktop app from source | `npm run build:electron` then `npx electron .` | Uses `electron/main.cjs` (package.json `"main"`). It shares the installed app's name (`layers-web`), so it uses the same data in `%APPDATA%\layers-web`, and it exits silently while the installed Layers is running (single-instance lock). Quit Layers from the tray first, or set `LAYERS_USER_DATA_DIR` to another folder for a separate profile and lock ([electron.md](electron.md#command-line-flags-and-environment-variables)). |
 | Windows installer + portable exe | `npm run electron:build:win` | `release/Layers Setup x.y.z.exe`, `release/Layers x.y.z.exe`, `release/win-unpacked/` |
 | **Release a new version** | `npm run release` | Bumps the version, verifies, builds, runs the end-to-end tests on that build, pushes to `main`, publishes the GitHub release, then installs it on this computer. See [Releasing](#releasing). |
+| Install the current code on this computer | `npm run install:local` | The post-commit hook runs it after every commit. Builds the installer and runs it silently; nothing is published. See [Every commit is installed on this computer](#every-commit-is-installed-on-this-computer). |
 | Reinstall the current version here | `npm run release -- --install-only` | Silently installs `release/x.y.z/Layers Setup x.y.z.exe` and relaunches Layers |
 | Linux AppImage | `npm run build:electron && npm run electron:build:linux` | `electron:build:linux` does **not** rebuild the renderer on its own |
 
@@ -101,7 +102,54 @@ GitHub untouched.
 still works if you set `GH_TOKEN`, but it creates a *draft* release that you then have to
 publish by hand.
 
+## Every commit is installed on this computer
+
+The owner wants the Layers on their laptop to run the latest code, not just the latest
+release. After every commit, `.githooks/post-commit` runs
+[`scripts/install-local.mjs`](../scripts/install-local.mjs), and `.githooks/post-merge`
+does too after `git merge` or `git pull`. To run it yourself: `npm run install:local`.
+
+1. **Skip if nothing changed.** With `--if-changed` (the hooks), it compares the app's
+   files at `HEAD` with the commit last installed. That commit is recorded in
+   `.git/layers-installed.json`, which `npm run release` writes too. Docs, tests,
+   scripts, branding drafts and the hooks aren't part of the app, so a commit that only
+   changes those finishes in a second.
+2. **Build the installer** the way a release does: `build:electron`, then
+   `electron-builder --win nsis` into `dist-install/`. It's versioned like
+   `1.0.28+local.abc1234`: the last release, then the commit (`.uncommitted` is added
+   when uncommitted changes went in). `electron/app/index.html` is put back afterwards,
+   because only releases commit it. Nothing is published.
+3. **Quit, back up, install.**
+   - It runs `Layers.exe --quit` and waits for Layers to close.
+   - It copies your data's `Local Storage` folder to
+     `%APPDATA%\layers-web\Install backups\<time> before <version>\`. The newest 10 are
+     kept.
+   - It runs the installer silently (`/S`), then reads the installed version back.
+4. **Relaunch.** Layers starts with its window if the window was showing, otherwise in
+   the tray, and it must still be running 3 seconds later.
+
+It takes about a minute and a half. One install runs at a time
+(`.git/layers-install.lock`). It's skipped:
+- while `npm run release` commits, because the release installs its own build
+- during a rebase
+- when `LAYERS_NO_INSTALL` is set
+
+A failed install never undoes the commit: the hook says what went wrong, and
+`npm run install:local` tries again. It needs Windows to let new builds run, so if Smart
+App Control is ever turned on again, it fails at the install
+([testing.md](testing.md#when-windows-blocks-the-build)).
+
+**Updates still work.** The update check ignores the `+local…` part, so
+`1.0.28+local.abc1234` counts as 1.0.28, and the next release installs over it as usual.
+
+**To restore your data from a backup:** quit Layers from the tray icon, replace
+`%APPDATA%\layers-web\Local Storage` with the backup's `Local Storage` folder, then
+start Layers.
+
 ## "Is my installed app actually running the new code?"
+
+Me shows the installed version. `v1.0.28+local.abc1234` means it was built from commit
+`abc1234`, and `.git/layers-installed.json` records the same commit.
 
 The installed app lives in `%LOCALAPPDATA%\Programs\Layers\`. Its renderer is inside
 `resources\app.asar`. Because the asar is stored uncompressed, you can grep it:
@@ -121,6 +169,7 @@ were labelled 1.0.23.
 |---|---|---|
 | `dist/` | Multi-file web build | Yes |
 | `dist-local/` | Single-file build (input to `sync:app`) | Yes |
+| `dist-install/` | The installer `npm run install:local` builds and runs | Yes |
 | `dist-e2e/` | The unpacked app `npm run test:e2e` builds and tests | Yes. `npm run test:e2e -- --no-build` reuses it. |
 | `test-results/` | Playwright's output from the last end-to-end run | Yes |
 | `release/` | `npm run release` output, one folder per version (`release/x.y.z/`: installer, portable exe, `latest.yml`, `win-unpacked/`, ~220 MB each). `npm run electron:build:win` writes straight into `release/`. | Yes. Keep the newest version's folder if you want `--install-only` to work. |

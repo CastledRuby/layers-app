@@ -20,7 +20,7 @@
 // (gh auth login). Windows only: it builds and installs the NSIS installer.
 import { spawn, spawnSync } from 'node:child_process';
 import { readFileSync, writeFileSync, existsSync, mkdirSync, copyFileSync, rmSync } from 'node:fs';
-import { dirname, join } from 'node:path';
+import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
@@ -168,12 +168,19 @@ async function install(v) {
   }
   const installed = JSON.parse(readAsarFile(join(INSTALL_DIR, 'resources', 'app.asar'), 'package.json')).version;
   if (installed !== v) fail(`Installed app reports ${installed}, expected ${v}.`);
+  // Tell the post-commit install (scripts/install-local.mjs) which commit
+  // is installed, so it doesn't rebuild the same code.
+  const stamp = resolve(root, gitOut('rev-parse', '--git-common-dir'), 'layers-installed.json');
+  writeFileSync(stamp, JSON.stringify({ commit: gitOut('rev-parse', 'HEAD'), uncommitted: false, version: v, installedAt: new Date().toISOString() }, null, 2) + '\n');
   for (let i = 0; i < 20 && !layersRunning(); i++) await sleep(500);
   log(layersRunning() ? `Layers ${v} is installed and running.` : `Layers ${v} is installed. Start it from the Start menu.`);
 }
 
 async function main() {
   if (process.platform !== 'win32') fail('Releases are built and installed on Windows.');
+  // The release installs its own build, so the post-commit hook's local
+  // install (scripts/install-local.mjs) skips the release commit.
+  process.env.LAYERS_RELEASING = '1';
 
   if (has('--install-only')) return install(readVersion());
   const gh = findGh();

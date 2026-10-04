@@ -12,6 +12,7 @@
     "sync:app": "node scripts/sync-app.mjs",
     "docs:map": "node scripts/gen-code-map.mjs",
     "release": "node scripts/release.mjs",
+    "install:local": "node scripts/install-local.mjs",
     "build:electron": "npm run build:local && npm run sync:app",
     "lint": "oxlint",
     "test": "vitest run",

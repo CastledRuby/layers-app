@@ -27,6 +27,7 @@ release/
 *.sln
 *.sw?
 dist-e2e/
+dist-install/
 test-results/
 playwright-report/
 
