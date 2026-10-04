@@ -29,3 +29,6 @@ release/
 dist-e2e/
 test-results/
 playwright-report/
+
+# Claude Code: local worktrees and preview config
+.claude/

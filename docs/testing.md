@@ -164,6 +164,7 @@ There are two ways past it:
 - **Turn Smart App Control off** in Windows Security. It's the owner's call, and Windows
   doesn't let you turn it back on without reinstalling.
 
+On 2026-10-04 the owner turned Smart App Control off, so new builds run here again.
 This first happened on 2026-10-04 at 12:51 AM. Every build after that was blocked, and
 the builds before it, including the installed 1.0.27, still run.
 

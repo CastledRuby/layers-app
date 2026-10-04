@@ -12,7 +12,7 @@ UI, so none can come back unnoticed. 1.0.28 then built most of the proposals; wh
 needs a decision is in [roadmap.md](roadmap.md#needs-your-decision).
 
 The last inconsistency, logging and Adjust disagreeing about a person's layer, is
-resolved by P3 option C (after 1.0.28, not released yet): the dimensions stay inside
+resolved by P3 option C (1.0.28): the dimensions stay inside
 the layer's band. See
 [renderer/state-and-data.md](renderer/state-and-data.md#dimensions-stay-inside-the-layer).
 

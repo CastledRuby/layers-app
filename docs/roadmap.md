@@ -10,9 +10,9 @@ what comes next. Last updated 2026-10-04, with 1.0.28.
 2. 1.0.27 fixed all 22 and added the testing system ([testing.md](testing.md)).
 3. 1.0.28 built proposals P1, P2 and P4 to P7 overnight. The owner said "go with what
    you think, I can change it in the morning", so every choice made on their behalf is
-   listed under [Decisions to review](#decisions-to-review). 1.0.28 is tested and
-   committed but **not yet released**, because Windows started blocking new unsigned
-   builds; see [Needs your decision](#needs-your-decision).
+   listed under [Decisions to review](#decisions-to-review). Windows Smart App Control
+   held the release back until the owner turned it off on 2026-10-04. By then 1.0.28
+   also had the per-dimension ratings, P3 option C and the quick log redesign.
 
 Following the [working principles](vision.md#working-principles), anything that changes
 how the app behaves for you is listed with the default chosen, so it can be changed.
@@ -109,35 +109,18 @@ and how.
 
 ## Needs your decision
 
-### Windows is blocking new builds (read this first)
+### Smart App Control (resolved 2026-10-04)
 
-Since 12:51 AM on 2026-10-04, Windows **Smart App Control** has been enforcing on this
-laptop. It refuses to start every new, unsigned build of `Layers.exe`. The installed
-1.0.27 is unaffected: Windows already accepted that exact file, and it keeps running.
-
-**What this means:** 1.0.28 is finished and passes all its tests. It's committed on this
-computer but **not released**. Publishing it would make your 1.0.27 auto-update to an exe
-Windows may refuse to start. The end-to-end tests can't run on new builds here either; the
-release script now stops with a clear message instead of publishing
-([testing.md](testing.md#when-windows-blocks-the-build)).
-
-**Your decision (2026-10-04):** look into code signing once the app is more
-functional. Until then, work continues and is tested here, and nothing is released.
-
-**Options:**
-
-1. **Code signing (P8, recommended).** Signed apps from a trusted certificate are allowed,
-   which also fixes installs and auto-updates for anyone you share Layers with.
-   - Azure Trusted Signing, about US$10 a month, is the quickest.
-   - An OV certificate is roughly US$200–400 a year.
-   - Once you have one, wiring it into `npm run release` is small.
-2. **Turn Smart App Control off** (Windows Security > App & browser control). It's your
-   security setting, and Windows can't turn it back on without a reinstall. Then
-   `npm run release` publishes and installs 1.0.28 as usual.
+From 12:51 AM on 2026-10-04, Windows **Smart App Control** refused to start every new,
+unsigned build of `Layers.exe` on this laptop, so 1.0.28 waited. You turned Smart App
+Control off the same day, and 1.0.28 was released and installed as usual. If it's ever
+turned back on, the end-to-end tests stop the release with a clear message
+([testing.md](testing.md#when-windows-blocks-the-build)), and code signing (P8) is the
+fix.
 
 ### P3. One progress model
 
-**Decided: option C, built (not released yet).** You chose C on 2026-10-04. It's built: `keepDimsInLayer` runs after every log, and saved
+**Decided: option C, released in 1.0.28.** You chose C on 2026-10-04. It's built: `keepDimsInLayer` runs after every log, and saved
 data version 2 migrates older saves once. See
 [state-and-data.md](renderer/state-and-data.md#dimensions-stay-inside-the-layer). The
 analysis that led to it is below for the record.
@@ -171,7 +154,8 @@ explain it.
 
 ### P8. Code signing
 
-This is now **needed, not just nice to have**: see above. It also removes Windows'
+Not needed on this laptop now that Smart App Control is off, but it would be for
+anyone else whose Windows has it on. It also removes Windows'
 "unknown publisher" warning when installing and updating. It needs a code-signing
 certificate, which is paid: roughly US$100–400 a year, or Azure Trusted Signing at about
 US$10 a month. Once there is one, `npm run release` can sign with it.
@@ -205,7 +189,7 @@ start.
     share, trust and support, time together), each answered on 1–5.
   - Result: the answers set the six dimensions, and the layer and percentage come from
     them the same way Adjust works. The answers are kept, so it can be retaken later.
-- **Per-dimension meaningfulness**: ✅ built at your request, after 1.0.28. More details
+- **Per-dimension meaningfulness**: ✅ built at your request, in 1.0.28. More details
   rates each dimension 1–5, by keyboard or click. Each rating drives its dimension, and
   goals about a dimension move by its rating.
 - **Activity heatmap.**
@@ -228,7 +212,7 @@ start.
 
 ## History
 
-### Quick log redesign and polish (after 1.0.28, not released yet)
+### Quick log redesign and polish (1.0.28)
 
 You asked for the quick log to stay quick, with extra details in their own pop-ups, for
 the date overlap to be fixed, and for better fonts, colours, assets and motion.
