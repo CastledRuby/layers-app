@@ -8,7 +8,7 @@ import { Plus } from 'lucide-react';
 import { BottomNav } from './components/BottomNav.jsx';
 import { ErrorBoundary } from './components/ErrorBoundary.jsx';
 import { hasOpenSheet, SheetLayerContext, topSheet } from './components/sheetLayer.js';
-import { ACHIEVEMENTS, categoryMeta, DIM_LABELS, DIM_ORDER, getLayer } from './data/constants.js';
+import { ACHIEVEMENTS, categoryMeta, DIM_LABELS, DIM_ORDER, getLayer, TABS } from './data/constants.js';
 import { EMPTY_SKILLS, INITIAL_GENERAL_GOALS, INITIAL_JOURNAL, INITIAL_PEOPLE, INITIAL_SKILLS } from './data/seed.js';
 import { backfillJournalDates, backfillPeopleDates, backfillSkillDates, formatAbsoluteDate, formatCalendarDate, pushHistoryPoint, toISODate } from './lib/dates.js';
 import { achievementProgress, newlyUnlocked } from './lib/achievements.js';
@@ -286,8 +286,7 @@ function LayersApp() {
       }
       if (ctrlOnly && !e.shiftKey && ['1', '2', '3', '4', '5'].includes(e.key)) {
         e.preventDefault();
-        const tabs = ['today', 'people', 'coach', 'journal', 'me'];
-        switchTab(tabs[Number(e.key) - 1]);
+        switchTab(TABS[Number(e.key) - 1]);
         return;
       }
       if (plain && e.key === '/') {
@@ -338,7 +337,8 @@ function LayersApp() {
     setEventView(null);
     setLogOpen(true);
   }
-  // prefill: { day, personIds, template } or { event } to edit one.
+  // prefill: { day, personIds, template }, { event } to edit one, or
+  // { copyOf, day } to plan one again.
   function openPlan(prefill = {}) { setLogOpen(false); setEventView(null); setPlanState(prefill); }
 
   // From the log sheet. Its optional More details add: `ratings` (a 1-5
@@ -407,18 +407,24 @@ function LayersApp() {
     levelUps.forEach(lu => pushToast(`🎉 ${lu.name} moved up to Layer ${lu.layer}: ${getLayer(lu.layer).name}!`));
   }
 
-  // From PlanSheet: a new plan, or changes to one (editingId). Clearing a
-  // field removes it, so an edited plan never keeps a stale goal or start day.
-  function handleSavePlan(fields, editingId) {
+  // From PlanSheet: a new plan, a list of them ("Several days"), or changes to
+  // one (editingId). Clearing a field removes it, so an edited plan never
+  // keeps a stale goal or start day. With `another` the sheet stays open for
+  // the next plan and lists what's been added, so there's no toast or jump.
+  function handleSavePlan(fieldsOrList, editingId, { another = false } = {}) {
     const now = new Date().toISOString();
     const tidy = (ev) => { Object.keys(ev).forEach(k => { if (ev[k] === null || ev[k] === undefined) delete ev[k]; }); return ev; };
+    const list = Array.isArray(fieldsOrList) ? fieldsOrList : [fieldsOrList];
+    const fields = list[0];
     if (editingId) {
       setEvents(prev => prev.map(e => e.id !== editingId ? e : tidy({ ...e, goalId: null, from: null, date: null, weekdays: null, allDay: null, ...fields, updatedAt: now })));
       pushToast('Plan updated');
     } else {
-      setEvents(prev => [tidy({ id: uid(), defaultMeaningfulness: 3, ...fields, createdAt: toISODate(new Date()), updatedAt: now }), ...prev]);
-      pushToast(fields.kind === 'recurring' ? 'Repeating plan saved' : 'Plan saved');
+      const created = toISODate(new Date());
+      setEvents(prev => [...list.map(f => tidy({ id: uid(), defaultMeaningfulness: 3, ...f, createdAt: created, updatedAt: now })), ...prev]);
+      if (!another) pushToast(list.length > 1 ? `${list.length} plans saved` : fields.kind === 'recurring' ? 'Repeating plan saved' : 'Plan saved');
     }
+    if (another) return;
     setPlanState(null);
     if (fields.kind === 'oneoff' && fields.date) setSelectedDay(fields.date === today ? null : fields.date);
   }
@@ -908,7 +914,7 @@ function LayersApp() {
             {planState && <PlanSheet people={people} today={today} prefill={planState} defaultAlert={notifySettings(profile).defaultAlert} onClose={() => setPlanState(null)} onSave={handleSavePlan} onDelete={handleDeleteEvent} />}
             {eventView && events.some(e => e.id === eventView.eventId) && (() => {
               const ev = events.find(e => e.id === eventView.eventId);
-              return <EventSheet ev={ev} day={eventView.day} people={people} goals={[...people.flatMap(p => p.goals), ...generalGoals]} onClose={() => setEventView(null)} onLog={() => openLogFromEvent(ev, eventView.day)} onDone={() => { handleMarkEventDone(ev.id, eventView.day); setEventView(null); }} onEdit={() => openPlan({ event: ev, day: eventView.day })} onDelete={() => handleDeleteEvent(ev.id)} />;
+              return <EventSheet ev={ev} day={eventView.day} today={today} people={people} goals={[...people.flatMap(p => p.goals), ...generalGoals]} onClose={() => setEventView(null)} onLog={() => openLogFromEvent(ev, eventView.day)} onDone={() => { handleMarkEventDone(ev.id, eventView.day); setEventView(null); }} onEdit={() => openPlan({ event: ev, day: eventView.day })} onCopy={() => openPlan({ copyOf: ev, day: eventView.day })} onDelete={() => handleDeleteEvent(ev.id)} />;
             })()}
             {keyDateFor && people.some(p => p.id === keyDateFor) && <KeyDateSheet personName={people.find(p => p.id === keyDateFor).name} onClose={() => setKeyDateFor(null)} onSave={(kd) => handleSaveKeyDate(keyDateFor, kd)} />}
             {goalModalOpen && <GoalModal people={people} defaultPersonId={goalModalDefaultPerson} editingGoal={goalEditing ? goalEditing.goal : null} editingPersonId={goalEditing ? goalEditing.personId : null} onClose={closeGoalModal} onSave={handleGoalSave} />}

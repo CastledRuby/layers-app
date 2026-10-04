@@ -3,8 +3,9 @@
 // ideas for who to see, and your goals. See docs/renderer/app-structure.md.
 //
 // Keys (not while typing or with a sheet open): M switches Day and Month,
-// the arrows move a day, T comes back to today. P (anywhere) plans
-// something on the day shown; that one lives in App.jsx.
+// the arrows move a day, T comes back to today. L and J answer the first
+// "How did it go?" (Log it, Just tick it), and I plans the first idea. P
+// (anywhere) plans something on the day shown; that one lives in App.jsx.
 
 import { useEffect, useMemo } from 'react';
 import { Bell, Check, ChevronLeft, ChevronRight, Plus, Repeat } from 'lucide-react';
@@ -173,10 +174,13 @@ export function TodayView({ today, selectedDay, onSelectDay, mode, onSetMode, pe
       else if (e.key === 'ArrowLeft') { e.preventDefault(); onSelectDay(addDays(day, -1)); }
       else if (e.key === 'ArrowRight') { e.preventDefault(); onSelectDay(addDays(day, 1)); }
       else if (e.key === 't' || e.key === 'T') { e.preventDefault(); onSelectDay(today); }
+      else if ((e.key === 'l' || e.key === 'L') && waiting[0]) { e.preventDefault(); onLogEvent(waiting[0].ev, day); }
+      else if ((e.key === 'j' || e.key === 'J') && waiting[0]) { e.preventDefault(); onTickEvent(waiting[0].ev, day); }
+      else if ((e.key === 'i' || e.key === 'I') && ideas[0]) { e.preventDefault(); onPlan({ day, personIds: [ideas[0].person.id], template: ideas[0].template }); }
     }
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [mode, day, today, onSetMode, onSelectDay]);
+  }, [mode, day, today, waiting, ideas, onSetMode, onSelectDay, onLogEvent, onTickEvent, onPlan]);
 
   const hour = clock.getHours();
   const greeting = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
@@ -214,12 +218,12 @@ export function TodayView({ today, selectedDay, onSelectDay, mode, onSetMode, pe
 
       {waiting.length > 0 && (
         <div className="mt-5 flex flex-col gap-2">
-          {waiting.map(it => (
+          {waiting.map((it, i) => (
             <div key={it.ev.id} className="rounded-2xl p-3.5 fade-anim" style={{ background: COLORS.accentSoft }}>
               <p className="text-sm font-semibold" style={{ color: COLORS.ink }}>How did {it.ev.title.charAt(0).toLowerCase() + it.ev.title.slice(1)} go?</p>
               <div className="flex items-center gap-2 mt-2.5">
-                <button type="button" onClick={() => onLogEvent(it.ev, day)} className="text-xs font-semibold rounded-full px-3.5 py-2" style={{ background: COLORS.accent, color: COLORS.onAccent }}>Log it</button>
-                <button type="button" onClick={() => onTickEvent(it.ev, day)} className="chip">Just tick it</button>
+                <button type="button" onClick={() => onLogEvent(it.ev, day)} className="text-xs font-semibold rounded-full px-3.5 py-2 flex items-center gap-1.5" style={{ background: COLORS.accent, color: COLORS.onAccent }}>Log it{i === 0 && <Kbd onAccent>L</Kbd>}</button>
+                <button type="button" onClick={() => onTickEvent(it.ev, day)} className="chip">Just tick it{i === 0 && <Kbd>J</Kbd>}</button>
               </div>
             </div>
           ))}
@@ -271,11 +275,11 @@ export function TodayView({ today, selectedDay, onSelectDay, mode, onSetMode, pe
         <>
           <SectionTitle>Ideas</SectionTitle>
           <div className="flex flex-col gap-2">
-            {ideas.map(idea => (
+            {ideas.map((idea, i) => (
               <div key={idea.person.id} className="flex items-center gap-3 rounded-2xl p-3" style={{ background: COLORS.paperRaised, border: `1px solid ${COLORS.line}` }}>
                 <AvatarStack people={[idea.person]} size={36} />
                 <p className="text-sm flex-1 min-w-0" style={{ color: COLORS.ink }}>{idea.text}</p>
-                <button type="button" onClick={() => onPlan({ day, personIds: [idea.person.id], template: idea.template })} className="text-xs font-semibold rounded-full px-3 py-2 shrink-0" style={{ background: COLORS.accent, color: COLORS.onAccent }}>Plan {templateFor(idea.template).label.toLowerCase()}</button>
+                <button type="button" onClick={() => onPlan({ day, personIds: [idea.person.id], template: idea.template })} className="text-xs font-semibold rounded-full px-3 py-2 shrink-0 flex items-center gap-1.5" style={{ background: COLORS.accent, color: COLORS.onAccent }}>Plan {templateFor(idea.template).label.toLowerCase()}{i === 0 && <Kbd onAccent>I</Kbd>}</button>
               </div>
             ))}
           </div>

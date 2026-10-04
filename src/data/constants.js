@@ -31,17 +31,26 @@ export const CATEGORIES = [
 
 export function categoryMeta(key) { return CATEGORIES.find(c => c.key === key) || CATEGORIES[0]; }
 
+// The bottom tabs, in order: Today in the centre. Ctrl+1–5 follow it.
+export const TABS = ['coach', 'people', 'today', 'journal', 'me'];
+
 export const SHORTCUTS = [
-  { keys: ['Ctrl', '1'], desc: 'Go to Today (your day and the calendar)' },
+  { keys: ['Ctrl', '1'], desc: 'Go to Coach' },
   { keys: ['Ctrl', '2'], desc: 'Go to People (the map of how close you are)' },
-  { keys: ['Ctrl', '3'], desc: 'Go to Coach' },
+  { keys: ['Ctrl', '3'], desc: 'Go to Today (your day and the calendar)' },
   { keys: ['Ctrl', '4'], desc: 'Go to Journal' },
   { keys: ['Ctrl', '5'], desc: 'Go to Me' },
   { keys: ['N'], desc: 'Quick log an interaction' },
   { keys: ['P'], desc: 'Plan something on the calendar' },
   { keys: ['M'], desc: 'Today: switch between the day and the month' },
-  { keys: ['←', '→'], desc: 'Today: the day before or after' },
+  { keys: ['←', '→'], or: true, desc: 'Today: the day before or after' },
   { keys: ['T'], desc: 'Today: back to today' },
+  { keys: ['L', 'J'], or: true, desc: 'Today: Log it, or Just tick it, for the first "How did it go?"' },
+  { keys: ['I'], desc: 'Today: plan the first idea' },
+  { keys: ['1–9'], desc: 'Picking people (log or plan): press their number, or type a name' },
+  { keys: ['T', 'L', 'R', 'A'], or: true, desc: 'Planning "When?": step through time, length, repeat, reminder (1–7 picks the day)' },
+  { keys: ['Shift', '↵'], desc: 'Planning: save and plan another straight away' },
+  { keys: ['C'], desc: 'An open plan: plan it again (a copy)' },
   { keys: ['D'], desc: 'Add detail — browse templates and copy one, no logging needed' },
   { keys: ['Ctrl', 'Shift', 'A'], desc: 'Add a new person' },
   { keys: ['/'], desc: 'Jump to search (People or Journal)' },

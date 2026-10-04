@@ -440,8 +440,8 @@ in a time window, oldest first. Each has a `tag` (unique per plan and day), a ti
   (`layersSystem.scheduleNotifications`) whenever they change, and again every hour.
   Windows then shows them on time, even with Layers closed
   ([electron.md](../electron.md#notifications)).
-  - A reminder has **Done**, **Log it** and snooze buttons (10 minutes, 1 hour,
-    Tomorrow).
+  - A reminder (before a plan, or as it starts) only has snooze buttons (10 minutes,
+    1 hour, Tomorrow). There's nothing to log or tick off until it has happened.
   - "How did it go?" has **Log it** and **Just tick it**.
   - Clicking a notification itself opens that day.
 - **In a browser** it shows each one itself while Layers is open, within 15 minutes of its

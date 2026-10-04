@@ -191,7 +191,8 @@ describe('P6 smarter reminders', () => {
     const tomorrow = inDays(1);
     seedState({ events: [
       { id: 'w', title: 'Football practice', kind: 'recurring', weekdays: [tomorrow.getDay()], time: 1080, personIds: [] },
-      { id: 'o', title: 'Book dentist', kind: 'oneoff', date: TODAY, time: 600, personIds: [] },
+      // At midnight, so it has started (and can be marked done) whenever this runs.
+      { id: 'o', title: 'Book dentist', kind: 'oneoff', date: TODAY, time: 0, personIds: [] },
     ] });
     const { user } = renderApp();
     expect(screen.queryByText('Football practice')).toBeNull();
@@ -207,7 +208,7 @@ describe('P6 smarter reminders', () => {
 
   it('logging a reminder linked to a goal moves only that goal, and marks it done', async () => {
     const morgan = person('Morgan', { goals: [goal('g1', 'Learn more'), goal('g2', 'Spend time together')] });
-    seedState({ people: [morgan], events: [{ id: 'o', title: 'Lunch with Morgan', kind: 'oneoff', date: TODAY, time: 720, personIds: [morgan.id], goalId: 'g2' }] });
+    seedState({ people: [morgan], events: [{ id: 'o', title: 'Lunch with Morgan', kind: 'oneoff', date: TODAY, time: 0, personIds: [morgan.id], goalId: 'g2' }] });
     const { user } = renderApp();
     await user.click(screen.getByRole('button', { name: 'Lunch with Morgan' }));
     const sheet = dialog('Lunch with Morgan');

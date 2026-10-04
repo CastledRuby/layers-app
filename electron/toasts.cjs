@@ -5,7 +5,7 @@
 //
 // Buttons are layers:// links (registered as Layers' protocol by the
 // installer). Windows opens Layers with the link, and main.cjs passes it to
-// the renderer, which does the action: mark done, log it, snooze or open.
+// the renderer, which does the action: snooze, log it, tick it off or open.
 const { spawn } = require('child_process');
 const fs = require('fs');
 const os = require('os');
@@ -18,8 +18,10 @@ const esc = (s) => String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</
 const link = (action, params) => `layers://${action}?${new URLSearchParams(Object.entries(params).filter(([, v]) => v != null && v !== '')).toString()}`;
 
 // One planned notification ({ kind, title, body, eventId?, day? }) as toast XML.
-// - A reminder (alert, snooze): Done, Log it, and snooze 10 minutes, 1 hour or
-//   until tomorrow. It uses the reminder scenario, so it stays on screen.
+// - A reminder (alert, snooze), before or at the start: snooze 10 minutes,
+//   1 hour or until tomorrow. Nothing has happened yet, so there's no Log it
+//   or Done; those wait for "How did it go?". It uses the reminder scenario,
+//   so it stays on screen.
 // - "How did it go?" (after): Log it, or Just tick it.
 // - Summaries (morning, evening): clicking opens that day.
 function toastXml(n) {
@@ -29,7 +31,7 @@ function toastXml(n) {
   let scenario = '';
   if ((n.kind === 'alert' || n.kind === 'snooze') && n.eventId) {
     scenario = ' scenario="reminder"';
-    actions = button('Done', 'done') + button('Log it', 'log') + button('10 min', 'snooze', { m: '10' }) + button('1 hour', 'snooze', { m: '60' }) + button('Tomorrow', 'snooze', { m: 'tomorrow' });
+    actions = button('10 min', 'snooze', { m: '10' }) + button('1 hour', 'snooze', { m: '60' }) + button('Tomorrow', 'snooze', { m: 'tomorrow' });
   } else if (n.kind === 'after' && n.eventId) {
     actions = button('Log it', 'log') + button('Just tick it', 'done');
   }

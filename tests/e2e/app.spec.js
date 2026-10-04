@@ -132,9 +132,12 @@ test('a plan is handed to Windows with buttons, and a pressed button reaches Lay
   const ev = await page.evaluate(() => JSON.parse(localStorage.getItem('layers-app-state-v1')).events[0]);
   await expect.poll(() => fs.existsSync(dump) && JSON.parse(fs.readFileSync(dump, 'utf8')).some(n => n.tag === `a:${ev.id}:${ev.date}`)).toBe(true);
   const toast = JSON.parse(fs.readFileSync(dump, 'utf8')).find(n => n.tag === `a:${ev.id}:${ev.date}`);
-  expect(toast.xml).toContain(`arguments="layers://done?e=${ev.id}&amp;d=${ev.date}"`);
+  // A reminder only snoozes; Log it and ticking off wait for "How did it go?".
+  expect(toast.xml).toContain(`arguments="layers://snooze?e=${ev.id}&amp;d=${ev.date}&amp;m=10"`);
+  expect(toast.xml).not.toContain('layers://done');
 
-  // Pressing Done launches Layers.exe with the link; the running app takes it.
+  // Pressing a button (here "Just tick it") launches Layers.exe with the link;
+  // the running app takes it.
   expect(await runExe(dataDir, [`layers://done?e=${ev.id}&d=${ev.date}`])).toBe(0);
   await expect.poll(() => page.evaluate(() => JSON.parse(localStorage.getItem('layers-app-state-v1')).events[0].doneAt || null)).toBe(ev.date);
   await quit(app);

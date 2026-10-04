@@ -39,9 +39,10 @@ when Layers is closed:
    `layersSystem.scheduleNotifications` whenever they change, and every hour.
 2. [`electron/toasts.cjs`](../electron/toasts.cjs) turns each into toast XML
    (`toastXml`).
-   - Reminders use the `reminder` scenario, so they stay on screen, with **Done**,
-     **Log it**, **10 min**, **1 hour** and **Tomorrow**.
-   - "How did it go?" has **Log it** and **Just tick it**.
+   - Reminders (before a plan, or as it starts) use the `reminder` scenario, so they
+     stay on screen, with **10 min**, **1 hour** and **Tomorrow**. They have no Log it
+     or Done: the plan hasn't happened yet.
+   - "How did it go?" (when a plan with people ends) has **Log it** and **Just tick it**.
    - Every button and the toast body are `layers://` links.
 3. It replaces Layers' scheduled toasts (group `layers`) through Windows PowerShell and
    the WinRT `ToastNotificationManager`, so no native module is needed. One run happens
@@ -52,8 +53,8 @@ when Layers is closed:
    protocol (`build.protocols`), and `setupCalendar()` re-registers it if the app moved.
    It never does this for test runs or the portable build.
 2. If Layers is already running, the link reaches it through `second-instance`.
-   Otherwise it starts with the link, in the tray for Done and Snooze, or with its
-   window for Log it and the body.
+   Otherwise it starts with the link, in the tray for Just tick it and Snooze, or with
+   its window for Log it and the body.
 3. Links wait in `pendingActions` until the page asks for them (`calendar-ready`), then
    go out as `calendar-action`.
 

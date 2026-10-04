@@ -36,9 +36,9 @@ how the app behaves for you is listed with the default chosen, so it can be chan
 | Social skills | ✅ Done | The chart records points, and achievements are stored with dates. Strength and focus come from your real levels. |
 | Journal | ✅ Done (1.0.28) | Edit or delete an entry. Filters by person, type and period, plus search, which includes reflections. Every filter row fits on screen (1.0.29). |
 | Logging flow | ✅ Done | The quick log asks only for the date, how meaningful it was and a note. Each extra (ratings, active listening, something new, goals, reflection) opens in its own small sheet from a chip. Every step works from the keyboard. |
-| Calendar and reminders | ✅ Done (1.0.30) | Today is the main screen: your day, the week and month, plans in three steps, key dates, ideas, and Windows notifications that arrive with Layers closed, with Done, Log it and Snooze. |
+| Calendar and reminders | ✅ Done (1.0.30) | Today is the main screen and the centre tab: your day, the week and month, plans in three steps (or lots at once), key dates, ideas, and Windows notifications that arrive with Layers closed. Reminders snooze; "How did it go?" logs or ticks. |
 | Me / Settings | ✅ Done | Profile, notifications, backup, privacy and sample controls. |
-| Keyboard shortcuts | ✅ Done | All 12 work. Esc closes only the top sheet, and Ctrl/Alt combinations don't trigger single-key shortcuts. |
+| Keyboard shortcuts | ✅ Done | All of them work (the list is under `?`), and the planning and logging steps show their keys. Esc closes only the top sheet, and Ctrl/Alt combinations don't trigger single-key shortcuts. |
 
 ## Decisions to review
 
@@ -192,9 +192,9 @@ the calendar's data is portable and ready to sync:
 - the logic kept in `lib/`, away from Windows-only code
 
 **Defaults chosen** (each is easy to change):
-- **Where it lives:** Today is the first tab and the screen Layers opens on. Ctrl+2 is
-  People, whose map shows how close you are. The month grid is a Day/Month switch at the
-  top of Today (or M).
+- **Where it lives:** Today is the centre tab (Ctrl+3) and the screen Layers opens on.
+  Ctrl+2 is People, whose map shows how close you are. The month grid is a Day/Month
+  switch at the top of Today (or M).
 - **Plans:** they last an hour unless the template says otherwise. New ones remind you 15
   minutes before; that's set in Me.
 - **Snoozes:** 10 minutes, 1 hour, or the same time tomorrow.
@@ -207,6 +207,20 @@ the calendar's data is portable and ready to sync:
   - Prepare and Analyse are in the Coach tab
   - "Haven't caught up" became Ideas
   - Recent activity is the Journal
+
+**Changed after you tried it** (2026-10-04):
+- Reminders before a plan, or as it starts, only offer **Snooze** (10 min, 1 hour,
+  Tomorrow). Log it and ticking off wait for "How did it go?", since nothing has
+  happened yet. The same goes for an open plan in Layers: before it starts it offers
+  Edit, Plan it again and Delete.
+- Today moved to the **centre tab**, swapping places with Coach. Ctrl+1–5 follow the tabs,
+  so Today is Ctrl+3.
+- **Putting in a lot of plans:** **Save + another** (Shift+Enter) keeps the planning sheet
+  open for the next one and lists what's been added; **Several days** saves the same plan
+  on each day picked; **Mon–Fri** for weekly routines; **Plan it again** (C) copies a plan.
+- **Fewer clicks:** 1–9 or typing a name picks people when logging or planning; on
+  "When?", 1–7 picks the day and T, L, R, A and G step through time, length, repeat,
+  reminder and goal; on Today, L and J answer "How did it go?" and I plans the first idea.
 
 ## Next: smaller fixes
 
@@ -262,10 +276,11 @@ start.
 
 ### The calendar as the main screen (1.0.30)
 
-Today is the first tab: your day planned out, with the week strip, the month grid on M,
-"How did it go?", ideas and goals. Plans take three tap-and-key steps. Profiles get
-**Plan something** and **Key dates**. Windows delivers the reminders, summaries and
-"How did it go?" with Layers closed, with Done, Log it and Snooze buttons. See [The
+Today is the centre tab: your day planned out, with the week strip, the month grid on M,
+"How did it go?", ideas and goals. Plans take three tap-and-key steps, and **Save +
+another** and **Several days** put in a lot at once. Profiles get **Plan something** and
+**Key dates**. Windows delivers the reminders (with Snooze), summaries and "How did it
+go?" (Log it or Just tick it) with Layers closed. See [The
 calendar](#the-calendar-built-in-1030).
 
 ### Rings brand, fewer keystrokes, tidier Journal (1.0.29)

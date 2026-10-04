@@ -6,7 +6,7 @@
 import { act, screen, within } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { MONTH_NAMES, toISODate } from '../../src/lib/dates.js';
-import { dialog, nav, person, renderApp, savedPerson, savedState, seedState, toasts, wait } from './harness.jsx';
+import { dialog, nav, person, queryDialog, renderApp, savedPerson, savedState, seedState, toasts, wait } from './harness.jsx';
 
 const day = (n) => { const d = new Date(); d.setDate(d.getDate() + n); return toISODate(d); };
 const TODAY = day(0);
@@ -37,6 +37,16 @@ describe('Today is the main screen', () => {
     const { user } = renderApp();
     await user.keyboard('{Control>}2{/Control}');
     expect(screen.getByText(/Your circle/)).toBeTruthy();
+  });
+
+  it('Today is the centre tab, and Ctrl+1-5 follow the tabs in order', async () => {
+    seedState({ people: [person('Morgan')] });
+    const { user } = renderApp();
+    expect([...document.querySelectorAll('.nav-btn')].map(b => b.textContent)).toEqual(['Coach', 'People', 'Today', 'Journal', 'Me']);
+    await user.keyboard('{Control>}1{/Control}');
+    expect(screen.queryByRole('heading', { name: 'Today' })).toBeNull();
+    await user.keyboard('{Control>}3{/Control}');
+    expect(screen.getByRole('heading', { name: 'Today' })).toBeTruthy();
   });
 });
 
@@ -73,6 +83,60 @@ describe('Planning', () => {
     await user.click(screen.getByRole('button', { name: '1 h before' }));
     await user.click(screen.getByRole('button', { name: 'Save changes' }));
     expect(savedState().events[0].alert).toBe(60);
+  });
+
+  it('lots at once: Shift+Enter saves and starts the next plan, typing a name picks someone', async () => {
+    const morgan = person('Morgan');
+    seedState({ people: [person('Ana'), morgan] });
+    const { user } = renderApp();
+    await user.keyboard('p1');
+    await user.keyboard('mo'); // finds Morgan
+    expect(within(dialog('Who with?')).getByText(/Enter picks Morgan/)).toBeTruthy();
+    await user.keyboard('{Enter}{Enter}');
+    await user.keyboard('2{Shift>}{Enter}{/Shift}'); // tomorrow; save + another
+    const next = dialog('Plan another');
+    expect(within(next).getByRole('status', { name: 'Added so far' }).textContent).toMatch(/Coffee with Morgan · \w{3} \d+, 10:00 AM/);
+    await user.keyboard('6{Enter}'); // Study, nobody
+    await user.keyboard('rrr'); // Once -> Several days -> Every day -> Every week
+    await user.click(screen.getByRole('button', { name: 'Mon–Fri' }));
+    await user.keyboard('{Enter}');
+    expect(queryDialog('Plan another')).toBeNull();
+    const events = savedState().events;
+    expect(events).toHaveLength(2);
+    expect(events.find(e => e.template === 'coffee')).toMatchObject({ kind: 'oneoff', date: TOMORROW, personIds: [morgan.id] });
+    expect(events.find(e => e.template === 'study')).toMatchObject({ kind: 'recurring', weekdays: [1, 2, 3, 4, 5] });
+  });
+
+  it('"Several days" saves one plan per day picked; letter keys set the time and reminder', async () => {
+    seedState();
+    const { user } = renderApp();
+    await user.keyboard('p8{Enter}'); // Something else, nobody
+    await user.keyboard('r23'); // Several days: today, plus tomorrow and the day after
+    await user.keyboard('t'); // 12:00 PM (the template's, not a chip) -> 9:00 AM, the first chip
+    await user.keyboard('{Shift>}a{/Shift}'); // reminder 15 min -> 5 min
+    expect(screen.getByRole('button', { name: /Save 3 plans/ })).toBeTruthy();
+    await user.keyboard('{Enter}');
+    const events = savedState().events;
+    expect(events.map(e => e.date).sort()).toEqual([TODAY, TOMORROW, day(2)]);
+    expect(events.every(e => e.kind === 'oneoff' && e.time === 540 && e.alert === 5)).toBe(true);
+    expect(toasts()).toContain('3 plans saved');
+  });
+
+  it("a plan that hasn't started offers Edit and Plan it again, not Log it; C copies it to the next day", async () => {
+    const morgan = person('Morgan');
+    seedState({ people: [morgan], events: [{ id: 'c', title: 'Coffee with Morgan', kind: 'oneoff', date: TOMORROW, time: 600, duration: 60, alert: 15, personIds: [morgan.id], template: 'coffee' }] });
+    const { user } = renderApp();
+    await user.keyboard('{ArrowRight}');
+    await user.click(screen.getByRole('button', { name: 'Coffee with Morgan' }));
+    const sheet = dialog('☕ Coffee with Morgan');
+    expect(within(sheet).queryByRole('button', { name: 'Log it' })).toBeNull();
+    expect(within(sheet).queryByRole('button', { name: 'Mark done' })).toBeNull();
+    expect(within(sheet).getByRole('button', { name: 'Edit' })).toBeTruthy();
+    await user.keyboard('c');
+    expect(within(dialog('Plan it again')).getByLabelText('Title').value).toBe('Coffee with Morgan');
+    await user.keyboard('{Enter}');
+    const copy = savedState().events.find(e => e.id !== 'c');
+    expect(copy).toMatchObject({ title: 'Coffee with Morgan', kind: 'oneoff', date: day(2), time: 600, personIds: [morgan.id] });
   });
 
   it('"Plan something" on a profile starts with that person', async () => {
@@ -132,7 +196,7 @@ describe('Ideas and key dates', () => {
     await user.keyboard('1'); // Birthday
     await user.keyboard('{Enter}');
     expect(savedPerson('Morgan').dates).toEqual([expect.objectContaining({ kind: 'birthday', date: TODAY, yearly: true })]);
-    await user.keyboard('{Control>}1{/Control}');
+    await user.keyboard('{Control>}3{/Control}');
     expect(screen.getByRole('button', { name: /Morgan's birthday/ })).toBeTruthy();
   });
 });
@@ -190,5 +254,15 @@ describe('Notifications in the Windows app', () => {
     await wait(50);
     await bridge.press(`layers://log?e=c&d=${TODAY}`);
     expect(await screen.findByRole('dialog', { name: 'Called Morgan' })).toBeTruthy();
+  });
+});
+
+describe('Picking people by keys', () => {
+  it('in the quick log, a number picks that person and Enter goes on', async () => {
+    seedState({ people: [person('Ana'), person('Morgan')] });
+    const { user } = renderApp();
+    await user.keyboard('n11'); // Interaction, Talked
+    await user.keyboard('2{Enter}');
+    expect(dialog('Talked with Morgan')).toBeTruthy();
   });
 });

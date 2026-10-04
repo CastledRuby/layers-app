@@ -57,8 +57,10 @@ interact.
   details, journal editing and filters, sample people, reminders and their
   notifications, profile editing, achievements, skill goals and "Try this next".
 - `calendar.test.jsx` covers the calendar as the main screen:
-  - Today first, the month on M, Ctrl+2 for the map
-  - planning by keys and from a profile, and daily plans and edits
+  - Today first and in the centre tab, the month on M, Ctrl+2 for the map
+  - planning by keys and from a profile, daily plans and edits, Save + another,
+    Several days, and Plan it again (only offered before a plan starts, without Log it)
+  - picking people by number or name
   - "How did it go?", ideas and birthdays
   - what's handed to Windows (a fake `layersSystem`), and notification buttons pressed
     with Layers closed or open

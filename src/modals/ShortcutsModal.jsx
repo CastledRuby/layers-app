@@ -19,7 +19,7 @@ export function ShortcutsModal({ onClose }) {
               {s.keys.map((k, ki) => (
                 <span key={ki} className="flex items-center gap-1">
                   <ShortcutKey label={k} />
-                  {ki < s.keys.length - 1 && <span style={{ color: COLORS.inkSoft, fontSize: 11 }}>+</span>}
+                  {ki < s.keys.length - 1 && <span style={{ color: COLORS.inkSoft, fontSize: 11 }}>{s.or ? '/' : '+'}</span>}
                 </span>
               ))}
             </div>

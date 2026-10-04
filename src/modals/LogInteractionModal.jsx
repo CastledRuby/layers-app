@@ -12,7 +12,8 @@ import { Sheet } from '../components/Sheet.jsx';
 import { isTabbedToButton, isTyping } from '../components/sheetLayer.js';
 import { Avatar, Kbd } from '../components/atoms.jsx';
 import { DateDropdown } from '../components/pickers.jsx';
-import { PersonPick } from '../components/PersonPick.jsx';
+import { PeopleGrid } from '../components/PersonPick.jsx';
+import { usePeopleKeys } from '../components/peopleKeys.js';
 import { categoryMeta, DIM_ORDER, getLayer, NOTE_TEMPLATE_CATEGORY, TYPE_META, TYPE_ORDER } from '../data/constants.js';
 import { parseISODay } from '../lib/dates.js';
 import { GoalsSheet, ListeningSheet, NewInfoSheet, RateSheet, ReflectionSheet } from './LogDetailSheets.jsx';
@@ -96,6 +97,7 @@ export function LogInteractionModal({ people, defaultPersonId, prefill, onClose,
 
   function toggleIn(setter, key) { setter(prev => prev.includes(key) ? prev.filter(k => k !== key) : [...prev, key]); }
   function togglePerson(id) { toggleIn(setPersonIds, id); }
+  const peopleKeys = usePeopleKeys(people, personIds, togglePerson);
   function pickType(key) { setType(key); go('who'); }
   const canSave = personIds.length > 0 && type;
   const loggedPeople = personIds.map(id => people.find(p => p.id === id)).filter(Boolean);
@@ -135,7 +137,7 @@ export function LogInteractionModal({ people, defaultPersonId, prefill, onClose,
   // Keys, while this sheet is on top (not while one of its pickers is):
   //   every step  Backspace goes back
   //   kind        1 Interaction, 2 Plan something    type  1-6 the types
-  //   who         Enter confirms
+  //   who         1-9 or typing a name picks people (peopleKeys.js), Enter confirms
   //   details     1-5 how meaningful, N the note, D Add detail, R/L/I/G/F
   //               the extras, Enter (or Ctrl+Enter, even in the note) saves
   // Enter on a button reached with Tab presses that button instead.
@@ -147,6 +149,7 @@ export function LogInteractionModal({ people, defaultPersonId, prefill, onClose,
     }
     if (isTyping()) return;
     const key = e.key;
+    if (step === 'who' && !(key === 'Enter' && isTabbedToButton()) && peopleKeys.handleKey(e)) return;
     if (key === 'Backspace' && BACK[step]) { e.preventDefault(); goBack(); return; }
     if (key === 'Enter' && isTabbedToButton()) return;
     const num = /^[1-9]$/.test(key) ? Number(key) : null;
@@ -224,10 +227,8 @@ export function LogInteractionModal({ people, defaultPersonId, prefill, onClose,
 
         {step === 'who' && (
           <>
-            <p className="text-xs mb-3" style={{ color: COLORS.inkSoft }}>Tap everyone who was involved. You can pick more than one.</p>
-            <div style={{ display: 'flex', flexWrap: 'wrap', columnGap: 6, rowGap: 8, paddingBottom: 4 }}>
-              {people.map(p => <PersonPick key={p.id} person={p} active={personIds.includes(p.id)} onClick={() => togglePerson(p.id)} />)}
-            </div>
+            <p className="text-xs mb-3" style={{ color: COLORS.inkSoft }}>Tap everyone who was involved, press their number, or type a name. You can pick more than one.</p>
+            <PeopleGrid keys={peopleKeys} pickedIds={personIds} />
           </>
         )}
 

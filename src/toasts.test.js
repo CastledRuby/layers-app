@@ -2,14 +2,14 @@ import { describe, expect, it } from 'vitest';
 import { cleanList, toastXml } from '../electron/toasts.cjs';
 
 describe('Windows toasts', () => {
-  it('a reminder has Done, Log it and three snoozes, as layers:// links, with text escaped', () => {
+  it("a reminder only snoozes (it hasn't happened yet, so no Log it or Done), as layers:// links, with text escaped", () => {
     const xml = toastXml({ kind: 'alert', title: 'Fish & chips <with> "Sam"', body: 'In 15 minutes', eventId: 'e1', day: '2026-10-04' });
     expect(xml).toContain('scenario="reminder"');
     expect(xml).toContain('launch="layers://open?e=e1&amp;d=2026-10-04"');
     expect(xml).toContain('<text>Fish &amp; chips &lt;with&gt; &quot;Sam&quot;</text>');
+    expect(xml).not.toMatch(/Log it|Done/);
+    expect(toastXml({ kind: 'snooze', title: 'Gym', body: '', eventId: 'e1', day: '2026-10-04' })).not.toMatch(/Log it|Done/);
     expect([...xml.matchAll(/arguments="([^"]+)"/g)].map(m => m[1])).toEqual([
-      'layers://done?e=e1&amp;d=2026-10-04',
-      'layers://log?e=e1&amp;d=2026-10-04',
       'layers://snooze?e=e1&amp;d=2026-10-04&amp;m=10',
       'layers://snooze?e=e1&amp;d=2026-10-04&amp;m=60',
       'layers://snooze?e=e1&amp;d=2026-10-04&amp;m=tomorrow',
