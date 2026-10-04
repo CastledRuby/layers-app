@@ -27,7 +27,7 @@ export function GoalsView({ today, people, generalGoals, onBack, onOpenPerson, o
       </button>
       <div className="flex items-center justify-between">
         <p className="font-display" style={{ fontSize: 24, color: COLORS.ink }}>Goals</p>
-        <button onClick={() => onOpenGoalCreate(null)} className="flex items-center gap-1.5 text-xs font-semibold rounded-full px-3 py-2" style={{ background: COLORS.accent, color: '#fff' }}>
+        <button onClick={() => onOpenGoalCreate(null)} className="flex items-center gap-1.5 text-xs font-semibold rounded-full px-3 py-2" style={{ background: COLORS.accent, color: COLORS.onAccent }}>
           <Plus size={14} /> New goal
         </button>
       </div>
@@ -35,7 +35,7 @@ export function GoalsView({ today, people, generalGoals, onBack, onOpenPerson, o
 
       <div className="flex items-center gap-2 mt-4">
         {['active', 'completed', 'all'].map(f => (
-          <button key={f} onClick={() => setFilter(f)} className="text-xs font-semibold rounded-full px-3 py-1.5" style={{ background: filter === f ? COLORS.accent : COLORS.paperRaised, color: filter === f ? '#fff' : COLORS.inkSoft, border: `1px solid ${filter === f ? COLORS.accent : COLORS.line}` }}>
+          <button key={f} onClick={() => setFilter(f)} className="text-xs font-semibold rounded-full px-3 py-1.5" style={{ background: filter === f ? COLORS.accent : COLORS.paperRaised, color: filter === f ? COLORS.onAccent : COLORS.inkSoft, border: `1px solid ${filter === f ? COLORS.accent : COLORS.line}` }}>
             {f === 'active' ? 'In progress' : f === 'completed' ? 'Completed' : 'All'}
           </button>
         ))}

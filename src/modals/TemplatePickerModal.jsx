@@ -19,13 +19,16 @@ export function TemplatePickerModal({ title, subtitle, onClose, onPick, allowMul
   const [cat, setCat] = useState(null); // null = category grid | 'custom' | a NOTE_TEMPLATES key
   const [customText, setCustomText] = useState('');
   const [pickedCount, setPickedCount] = useState(0);
+  const [dir, setDir] = useState(null); // which way the last screen change went, for its slide
+  function openCat(key) { setDir('in'); setCat(key); }
+  function back() { setDir('back'); setCat(null); }
   const catData = cat && cat !== 'custom' ? NOTE_TEMPLATES.find(c => c.key === cat) : null;
 
   function pickItem(text, emoji, catKey) {
     onPick(text, emoji, catKey);
     if (!allowMultiple) { onClose(); return; }
     setPickedCount(c => c + 1);
-    setCat(null);
+    back();
   }
   function saveCustom() {
     if (!customText.trim()) return;
@@ -36,41 +39,39 @@ export function TemplatePickerModal({ title, subtitle, onClose, onPick, allowMul
   const screenTitle = cat === 'custom' ? 'Custom' : catData ? catData.label : title;
 
   return (
-    <Sheet title={screenTitle} onClose={onClose} tall>
-      {!cat && (
-        <>
-          {subtitle && <p className="text-xs mb-4" style={{ color: COLORS.inkSoft }}>{subtitle}{allowMultiple && pickedCount > 0 ? ` — ${pickedCount} added so far` : ''}</p>}
-          <div className="grid grid-cols-3 gap-2.5">
-            {NOTE_TEMPLATES.map(c => (
-              <button key={c.key} onClick={() => setCat(c.key)} className="rounded-2xl py-5 flex flex-col items-center gap-1.5" style={{ background: COLORS.paperRaised, border: `1.5px solid ${COLORS.line}` }}>
-                <span style={{ fontSize: 22 }}>{c.emoji}</span>
-                <span className="text-xs font-semibold text-center" style={{ color: COLORS.ink }}>{c.label}</span>
+    <Sheet title={screenTitle} onClose={onClose} onBack={cat ? back : undefined} tall>
+      <div key={cat || 'grid'} className={dir === 'in' ? 'step-in' : dir === 'back' ? 'step-back' : ''}>
+        {!cat && (
+          <>
+            {subtitle && <p className="text-xs mb-4" style={{ color: COLORS.inkSoft }}>{subtitle}{allowMultiple && pickedCount > 0 ? ` — ${pickedCount} added so far` : ''}</p>}
+            <div className="grid grid-cols-3 gap-2.5">
+              {NOTE_TEMPLATES.map(c => (
+                <button key={c.key} type="button" onClick={() => openCat(c.key)} className="tile py-5 px-1 flex flex-col items-center gap-2">
+                  <span style={{ fontSize: 24, lineHeight: 1 }}>{c.emoji}</span>
+                  <span className="text-xs font-semibold text-center">{c.label}</span>
+                </button>
+              ))}
+              <button type="button" onClick={() => openCat('custom')} className="tile tile--accent py-5 px-1 flex flex-col items-center gap-2">
+                <span style={{ fontSize: 24, lineHeight: 1 }}>✏️</span>
+                <span className="text-xs font-semibold text-center">Custom</span>
               </button>
-            ))}
-            <button onClick={() => setCat('custom')} className="rounded-2xl py-5 flex flex-col items-center gap-1.5" style={{ background: COLORS.accentSoft, border: `1.5px solid ${COLORS.accent}` }}>
-              <span style={{ fontSize: 22 }}>✏️</span>
-              <span className="text-xs font-semibold text-center" style={{ color: COLORS.accent }}>Custom</span>
-            </button>
-          </div>
-        </>
-      )}
-      {cat === 'custom' && (
-        <>
-          <button onClick={() => setCat(null)} className="text-xs font-semibold mb-3" style={{ color: COLORS.inkSoft }}>‹ Back</button>
-          <input autoFocus value={customText} onChange={e => setCustomText(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') saveCustom(); }} placeholder="Type your own..." className="w-full text-sm rounded-xl px-3 py-2.5 mb-3" style={{ border: `1px solid ${COLORS.accent}` }} />
-          <button onClick={saveCustom} disabled={!customText.trim()} className="w-full text-sm font-semibold rounded-full py-3" style={{ background: customText.trim() ? COLORS.accent : COLORS.line, color: customText.trim() ? '#fff' : COLORS.inkSoft }}>Add</button>
-        </>
-      )}
-      {catData && (
-        <>
-          <button onClick={() => setCat(null)} className="text-xs font-semibold mb-3" style={{ color: COLORS.inkSoft }}>‹ Back</button>
+            </div>
+          </>
+        )}
+        {cat === 'custom' && (
+          <>
+            <input autoFocus value={customText} onChange={e => setCustomText(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); saveCustom(); } }} placeholder="Type your own..." className="w-full text-sm rounded-xl px-3 py-2.5 mb-3" style={{ border: `1px solid ${COLORS.line}` }} />
+            <button type="button" onClick={saveCustom} disabled={!customText.trim()} className="primary-btn">Add</button>
+          </>
+        )}
+        {catData && (
           <div className="grid grid-cols-2 gap-2.5">
             {catData.items.map(item => (
-              <button key={item} onClick={() => pickItem(item, catData.emoji, catData.key)} className="text-sm font-medium rounded-xl py-3.5 px-2 text-center" style={{ background: COLORS.accentSoft, color: COLORS.accent }}>{item}</button>
+              <button key={item} type="button" onClick={() => pickItem(item, catData.emoji, catData.key)} className="tile text-sm font-medium py-3.5 px-2 text-center">{item}</button>
             ))}
           </div>
-        </>
-      )}
+        )}
+      </div>
     </Sheet>
   );
 }

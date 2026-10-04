@@ -41,11 +41,11 @@ export function OnboardingView({ initialName, initialFocus, onComplete }) {
 
         <div className="flex items-center gap-2 mt-5">
           <input autoFocus value={newName} onChange={e => setNewName(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addDraftPerson(); } }} placeholder="Someone's name" aria-label="Person's name" className="flex-1 text-sm rounded-xl px-3 py-2.5" style={{ border: `1px solid ${COLORS.line}` }} />
-          <button onClick={addDraftPerson} className="text-xs font-semibold rounded-full px-4 py-2.5" style={{ background: COLORS.accent, color: '#fff' }}>Add</button>
+          <button onClick={addDraftPerson} className="text-xs font-semibold rounded-full px-4 py-2.5" style={{ background: COLORS.accent, color: COLORS.onAccent }}>Add</button>
         </div>
 
         <div className="mt-9">
-          <button onClick={() => onComplete({ name: name.trim(), focus, startFresh: true, newPeople: draftPeople })} className="w-full text-sm font-semibold rounded-full py-3 mb-2.5" style={{ background: COLORS.accent, color: '#fff' }}>{draftPeople.length > 0 ? `Continue with ${draftPeople.length} ${draftPeople.length === 1 ? 'person' : 'people'}` : 'Continue'}</button>
+          <button onClick={() => onComplete({ name: name.trim(), focus, startFresh: true, newPeople: draftPeople })} className="w-full text-sm font-semibold rounded-full py-3 mb-2.5" style={{ background: COLORS.accent, color: COLORS.onAccent }}>{draftPeople.length > 0 ? `Continue with ${draftPeople.length} ${draftPeople.length === 1 ? 'person' : 'people'}` : 'Continue'}</button>
           <button onClick={() => onComplete({ name: name.trim(), focus, startFresh: true, newPeople: [] })} className="w-full text-sm font-semibold rounded-full py-3" style={{ background: COLORS.paperRaised, color: COLORS.inkSoft, border: `1px solid ${COLORS.line}` }}>Skip, I'll add people later</button>
         </div>
       </div>
@@ -70,7 +70,7 @@ export function OnboardingView({ initialName, initialFocus, onComplete }) {
       </div>
 
       <div className="mt-9">
-        <button onClick={() => canContinue && setStep('people')} disabled={!canContinue} className="w-full text-sm font-semibold rounded-full py-3 mb-2.5" style={{ background: canContinue ? COLORS.accent : COLORS.line, color: canContinue ? '#fff' : COLORS.inkSoft }}>Start fresh with my own people</button>
+        <button onClick={() => canContinue && setStep('people')} disabled={!canContinue} className="w-full text-sm font-semibold rounded-full py-3 mb-2.5" style={{ background: canContinue ? COLORS.accent : COLORS.line, color: canContinue ? COLORS.onAccent : COLORS.inkSoft }}>Start fresh with my own people</button>
         <button onClick={() => canContinue && onComplete({ name: name.trim(), focus, startFresh: false })} disabled={!canContinue} className="w-full text-sm font-semibold rounded-full py-3" style={{ background: COLORS.paperRaised, color: canContinue ? COLORS.accent : COLORS.inkSoft, border: `1px solid ${canContinue ? COLORS.accent : COLORS.line}` }}>Explore with example people first</button>
         <p className="text-xs text-center mt-3" style={{ color: COLORS.inkSoft }}>You can clear the examples any time from the Me tab.</p>
       </div>

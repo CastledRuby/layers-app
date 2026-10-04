@@ -15,7 +15,7 @@ export function AddInfoModal({ personName, category, onClose, onSave }) {
 
   return (
     <Sheet title={`Add to ${cat.label}`} onClose={onClose}
-      footer={<button onClick={() => canSave && onSave({ emoji, text: text.trim(), temporary })} disabled={!canSave} className="w-full text-sm font-semibold rounded-full py-3" style={{ background: canSave ? COLORS.accent : COLORS.line, color: canSave ? '#fff' : COLORS.inkSoft }}>Save</button>}>
+      footer={<button onClick={() => canSave && onSave({ emoji, text: text.trim(), temporary })} disabled={!canSave} className="w-full text-sm font-semibold rounded-full py-3" style={{ background: canSave ? COLORS.accent : COLORS.line, color: canSave ? COLORS.onAccent : COLORS.inkSoft }}>Save</button>}>
       <p className="text-xs mb-3" style={{ color: COLORS.inkSoft }}>Adding to {personName}'s profile</p>
       <p className="text-sm font-semibold mb-2" style={{ color: COLORS.ink }}>Choose an icon</p>
       <div className="grid grid-cols-5 gap-2 mb-4">
@@ -27,7 +27,7 @@ export function AddInfoModal({ personName, category, onClose, onSave }) {
       <input autoFocus value={text} onChange={e => setText(e.target.value)} placeholder={cat.placeholder} className="w-full text-sm rounded-xl px-3 py-2.5" style={{ border: `1px solid ${COLORS.line}` }} />
       <button onClick={() => setTemporary(t => !t)} className="w-full flex items-center gap-3 mt-4">
         <span style={{ width: 20, height: 20, borderRadius: 6, border: `1.5px solid ${temporary ? COLORS.accent : COLORS.line}`, background: temporary ? COLORS.accent : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-          {temporary && <Check size={13} color="#fff" />}
+          {temporary && <Check size={13} color={COLORS.onAccent} />}
         </span>
         <span className="text-sm" style={{ color: COLORS.ink }}>This is temporary (e.g. a one-off event)</span>
       </button>

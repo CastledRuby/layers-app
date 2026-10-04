@@ -56,6 +56,13 @@ interact.
   [roadmap.md](roadmap.md#proposals-built-in-1028)) through the UI: the log's More
   details, journal editing and filters, sample people, reminders and their
   notifications, profile editing, achievements, skill goals and "Try this next".
+- `polish.test.jsx` covers the quick log redesign:
+  - the quick log asks for little
+  - each extra detail opens its own sheet
+  - the whole log works from the keyboard
+  - Enter in a detail sheet never saves the log
+  - sheets are separate layers (the date-button overlap) and slide away when dismissed
+  - text on the accent colour is readable in both themes
 
 `tests/app/harness.jsx` has the helpers:
 
@@ -67,12 +74,17 @@ interact.
 | `relaunch(app)` | unmounts and mounts again from what was saved |
 | `savedState()`, `savedPerson(name)` | what's in `localStorage` now |
 | `dialog(title)`, `confirmDialog(title)` | a sheet or confirm dialog by its title |
+| `logDetails()` | the quick log's sheet, whatever its title ("Talked with Morgan") |
+| `openExtra(user, 'Rate each part')`, `done(user, sheetTitle)` | open a More details sheet from its chip, and close a sheet with Done |
 | `nav('Journal')` | a bottom-nav tab |
 | `toasts()` | the toast messages on screen |
 | `trackErrors()` | collects uncaught errors and React error logs, to assert there were none |
 
 A new feature should get an app test that uses it the way a person would. A bug fix
 should get one that fails without the fix.
+
+The tests run as if "reduce motion" were on (`tests/setup.js`), so a dismissed sheet
+closes at once instead of after its slide.
 
 jsdom has no layout, so these tests can't see sizes, colours or whether something is
 actually visible. Those need the browser preview or the end-to-end tests.

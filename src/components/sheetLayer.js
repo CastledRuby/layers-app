@@ -2,7 +2,7 @@
 // open sheets. Kept apart from Sheet.jsx so that file only exports components
 // (Fast Refresh).
 
-import { createContext, useEffect, useLayoutEffect, useRef } from 'react';
+import { createContext, useEffect, useLayoutEffect, useRef, useState } from 'react';
 
 // The .sheet-layer node rendered by LayersApp: a sibling of .phone-frame
 // inside .app-shell. Sheets portal into it so they escape .phone-frame's
@@ -31,9 +31,37 @@ export function topSheet() { return openSheets[openSheets.length - 1] || null; }
 
 export function hasOpenSheet() { return openSheets.length > 0; }
 
-// Registers the calling sheet while it's mounted; Esc calls its latest onClose.
+// Registers the calling sheet while it's mounted; Esc calls its latest
+// onClose. Returns the sheet's entry, so the sheet can tell whether it's the
+// one on top (topSheet() === entry) before acting on a key.
 export function useOpenSheet(onClose) {
   const latest = useRef(onClose);
+  const [entry] = useState(() => ({ close: () => { if (latest.current) latest.current(); } }));
   useLayoutEffect(() => { latest.current = onClose; });
-  useEffect(() => registerSheet({ close: () => { if (latest.current) latest.current(); } }), []);
+  useEffect(() => registerSheet(entry), [entry]);
+  return entry;
+}
+
+// Whether focus last moved by Tab rather than by a click: a clicked button
+// keeps focus, and Enter shouldn't press it again.
+let tabbing = false;
+if (typeof window !== 'undefined') {
+  window.addEventListener('keydown', (e) => { if (e.key === 'Tab') tabbing = true; }, true);
+  window.addEventListener('pointerdown', () => { tabbing = false; }, true);
+  window.addEventListener('mousedown', () => { tabbing = false; }, true);
+}
+
+// True when a button was reached with Tab (not clicked): Enter then presses
+// that button, so a sheet's own Enter action stays out of the way.
+export function isTabbedToButton() {
+  const el = document.activeElement;
+  return Boolean(tabbing && el && el.tagName === 'BUTTON');
+}
+
+// True while the user is typing in a text box, where letter and number keys
+// (and Enter, Backspace) belong to the text.
+export function isTyping() {
+  const el = document.activeElement;
+  if (!el) return false;
+  return el.tagName === 'TEXTAREA' || el.isContentEditable || (el.tagName === 'INPUT' && !['checkbox', 'radio', 'button', 'range'].includes(el.type));
 }

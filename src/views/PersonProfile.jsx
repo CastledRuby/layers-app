@@ -93,7 +93,7 @@ export function PersonProfile({ today, person, journal, onBack, onOpenLog, onOpe
         <p className="text-xs mt-1" style={{ color: COLORS.inkSoft }}>Current relationship stage</p>
         <div className="mt-1.5"><LayerBadge layerId={person.layer} /></div>
         <div className="flex items-center gap-2 mt-4">
-          <button onClick={() => onOpenLog(person.id)} className="text-xs font-semibold rounded-full px-4 py-2" style={{ background: COLORS.accent, color: '#fff' }}>Log an interaction</button>
+          <button onClick={() => onOpenLog(person.id)} className="text-xs font-semibold rounded-full px-4 py-2" style={{ background: COLORS.accent, color: COLORS.onAccent }}>Log an interaction</button>
           <button onClick={() => setPrepareOpen(true)} className="text-xs font-semibold rounded-full px-4 py-2" style={{ background: COLORS.paperRaised, color: COLORS.accent, border: `1px solid ${COLORS.accent}` }}>Prepare to talk</button>
         </div>
       </div>

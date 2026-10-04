@@ -1,12 +1,14 @@
 // Date and time picker buttons; each opens its own sheet.
 
 import { useState } from 'react';
-import { Calendar, ChevronLeft, ChevronRight, Clock } from 'lucide-react';
+import { Calendar, ChevronDown, ChevronLeft, ChevronRight, Clock } from 'lucide-react';
 import { Sheet } from './Sheet.jsx';
 import { formatCalendarDate, formatTime12, MONTH_NAMES, startOfDay, WEEKDAY_SHORT } from '../lib/dates.js';
 import { COLORS } from '../theme.js';
 
-export function DateDropdown({ value, onChange, maxDate, minDate }) {
+// compact: a small chip ("Today ⌄") for forms that should stay short (the
+// quick log), instead of the full button with its hint.
+export function DateDropdown({ value, onChange, maxDate, minDate, compact }) {
   const [open, setOpen] = useState(false);
   const [viewDate, setViewDate] = useState(() => new Date(value.getFullYear(), value.getMonth(), 1));
 
@@ -21,17 +23,27 @@ export function DateDropdown({ value, onChange, maxDate, minDate }) {
   const minD = minDate ? startOfDay(minDate) : null;
   const todayDisabled = (maxD && today > maxD) || (minD && today < minD);
 
+  const openPicker = () => { setViewDate(new Date(value.getFullYear(), value.getMonth(), 1)); setOpen(true); };
+
   return (
     <>
-      <button type="button" onClick={() => { setViewDate(new Date(value.getFullYear(), value.getMonth(), 1)); setOpen(true); }} className="flex items-center gap-2.5 rounded-2xl pl-2 pr-4 py-2" style={{ border: `1.5px solid ${COLORS.line}`, color: COLORS.ink, background: COLORS.paperRaised }}>
-        <span style={{ width: 34, height: 34, borderRadius: 12, background: COLORS.accentSoft, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-          <Calendar size={17} color={COLORS.accent} />
-        </span>
-        <span>
-          <span className="block text-sm font-semibold">{formatCalendarDate(value)}</span>
-          <span className="block" style={{ fontSize: 10, color: COLORS.inkSoft }}>Tap to change date</span>
-        </span>
-      </button>
+      {compact ? (
+        <button type="button" onClick={openPicker} aria-label={`Date: ${formatCalendarDate(value)}. Change it`} className="chip">
+          <Calendar size={14} color={COLORS.accent} />
+          {formatCalendarDate(value)}
+          <ChevronDown size={14} color={COLORS.inkSoft} />
+        </button>
+      ) : (
+        <button type="button" onClick={openPicker} className="flex items-center gap-2.5 rounded-2xl pl-2 pr-4 py-2" style={{ border: `1.5px solid ${COLORS.line}`, color: COLORS.ink, background: COLORS.paperRaised }}>
+          <span style={{ width: 34, height: 34, borderRadius: 12, background: COLORS.accentSoft, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            <Calendar size={17} color={COLORS.accent} />
+          </span>
+          <span>
+            <span className="block text-sm font-semibold">{formatCalendarDate(value)}</span>
+            <span className="block" style={{ fontSize: 10, color: COLORS.inkSoft }}>Tap to change date</span>
+          </span>
+        </button>
+      )}
       {open && (
         <Sheet title="Pick a date" onClose={() => setOpen(false)}>
           <div className="flex items-center justify-between mb-4">
@@ -51,7 +63,7 @@ export function DateDropdown({ value, onChange, maxDate, minDate }) {
               const isToday = cellDate.getTime() === today.getTime();
               return (
                 <button key={i} type="button" disabled={disabled} onClick={() => { onChange(cellDate); setOpen(false); }}
-                  style={{ width: '100%', aspectRatio: '1', borderRadius: '50%', fontSize: 14, fontWeight: isSelected ? 700 : 500, background: isSelected ? COLORS.accent : 'transparent', color: disabled ? COLORS.line : (isSelected ? '#fff' : COLORS.ink), border: isToday && !isSelected ? `1.5px solid ${COLORS.accent}` : '1.5px solid transparent', opacity: disabled ? 0.35 : 1, cursor: disabled ? 'default' : 'pointer', boxShadow: isSelected ? `0 4px 10px ${COLORS.accentSoft}` : 'none' }}>
+                  style={{ width: '100%', aspectRatio: '1', borderRadius: '50%', fontSize: 14, fontWeight: isSelected ? 700 : 500, background: isSelected ? COLORS.accent : 'transparent', color: disabled ? COLORS.line : (isSelected ? COLORS.onAccent : COLORS.ink), border: isToday && !isSelected ? `1.5px solid ${COLORS.accent}` : '1.5px solid transparent', opacity: disabled ? 0.35 : 1, cursor: disabled ? 'default' : 'pointer', boxShadow: isSelected ? `0 4px 10px ${COLORS.accentSoft}` : 'none' }}>
                   {d}
                 </button>
               );
@@ -109,7 +121,7 @@ export function TimeDropdown({ value, onChange }) {
               ))}
             </div>
           </div>
-          <button type="button" onClick={() => setOpen(false)} className="w-full text-sm font-semibold rounded-xl py-3 mt-5" style={{ background: COLORS.accent, color: '#fff' }}>Done</button>
+          <button type="button" onClick={() => setOpen(false)} className="w-full text-sm font-semibold rounded-xl py-3 mt-5" style={{ background: COLORS.accent, color: COLORS.onAccent }}>Done</button>
         </Sheet>
       )}
     </>

@@ -26,25 +26,25 @@ export function EditEntryModal({ entry, personName, onClose, onSave, onDelete })
 
   return (
     <Sheet title="Edit entry" onClose={onClose} tall
-      footer={<button onClick={save} className="w-full text-sm font-semibold rounded-full py-3" style={{ background: COLORS.accent, color: '#fff' }}>Save changes</button>}>
+      footer={<button onClick={save} className="w-full text-sm font-semibold rounded-full py-3" style={{ background: COLORS.accent, color: COLORS.onAccent }}>Save changes</button>}>
       <p className="text-xs mb-4" style={{ color: COLORS.inkSoft }}>With {personName || 'someone no longer in your circle'}. Changes update the journal only; progress already added stays as it is.</p>
 
       <p className="text-sm font-semibold mb-2" style={{ color: COLORS.ink }}>When was this?</p>
-      <div className="mb-5" style={{ position: 'relative', zIndex: 20 }}>
+      <div className="mb-5">
         <DateDropdown value={date} onChange={setDate} maxDate={new Date()} />
       </div>
 
       <p className="text-sm font-semibold mb-2" style={{ color: COLORS.ink }}>What did you do?</p>
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }} className="mb-5">
         {types.map(key => (
-          <button key={key} type="button" onClick={() => setType(key)} aria-pressed={type === key} className="text-xs font-semibold rounded-full px-2.5 py-1.5" style={{ background: type === key ? COLORS.accent : COLORS.paperRaised, color: type === key ? '#fff' : COLORS.inkSoft, border: `1px solid ${type === key ? COLORS.accent : COLORS.line}` }}>{TYPE_META[key].emoji} {TYPE_META[key].label}</button>
+          <button key={key} type="button" onClick={() => setType(key)} aria-pressed={type === key} className="text-xs font-semibold rounded-full px-2.5 py-1.5" style={{ background: type === key ? COLORS.accent : COLORS.paperRaised, color: type === key ? COLORS.onAccent : COLORS.inkSoft, border: `1px solid ${type === key ? COLORS.accent : COLORS.line}` }}>{TYPE_META[key].emoji} {TYPE_META[key].label}</button>
         ))}
       </div>
 
       <p className="text-sm font-semibold mb-2" style={{ color: COLORS.ink }}>How meaningful was it?</p>
       <div className="flex items-center justify-between gap-2 mb-5">
         {[1, 2, 3, 4, 5].map(n => (
-          <button key={n} type="button" onClick={() => setMeaningfulness(n)} aria-pressed={meaningfulness === n} style={{ width: 38, height: 38, borderRadius: '50%', background: meaningfulness === n ? COLORS.accent : COLORS.paperRaised, border: `1.5px solid ${meaningfulness === n ? COLORS.accent : COLORS.line}`, color: meaningfulness === n ? '#fff' : COLORS.ink, fontWeight: 700, fontSize: 14 }}>{n}</button>
+          <button key={n} type="button" onClick={() => setMeaningfulness(n)} aria-pressed={meaningfulness === n} style={{ width: 38, height: 38, borderRadius: '50%', background: meaningfulness === n ? COLORS.accent : COLORS.paperRaised, border: `1.5px solid ${meaningfulness === n ? COLORS.accent : COLORS.line}`, color: meaningfulness === n ? COLORS.onAccent : COLORS.ink, fontWeight: 700, fontSize: 14 }}>{n}</button>
         ))}
       </div>
 

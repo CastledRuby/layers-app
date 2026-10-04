@@ -13,7 +13,7 @@ export function AddPersonModal({ onClose, onSave }) {
 
   return (
     <Sheet title="Add someone new" onClose={onClose}
-      footer={<button onClick={() => canSave && onSave({ name: name.trim(), emoji, layer })} disabled={!canSave} className="w-full text-sm font-semibold rounded-full py-3" style={{ background: canSave ? COLORS.accent : COLORS.line, color: canSave ? '#fff' : COLORS.inkSoft }}>Add to my circle</button>}>
+      footer={<button onClick={() => canSave && onSave({ name: name.trim(), emoji, layer })} disabled={!canSave} className="w-full text-sm font-semibold rounded-full py-3" style={{ background: canSave ? COLORS.accent : COLORS.line, color: canSave ? COLORS.onAccent : COLORS.inkSoft }}>Add to my circle</button>}>
       <p className="text-sm font-semibold mb-2" style={{ color: COLORS.ink }}>Choose an avatar</p>
       <div className="grid grid-cols-5 gap-2 mb-4">
         {PERSON_EMOJIS.map(e => (

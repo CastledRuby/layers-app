@@ -67,7 +67,7 @@ export function MeView({ people, journal, skills, profile, onUpdateProfile, onEd
         <p className="font-display" style={{ fontSize: 18, color: COLORS.ink }}>Progress history</p>
         <div className="flex items-center gap-2 mt-3 overflow-x-auto no-scrollbar pb-1">
           {SKILL_ORDER.map(k => (
-            <button key={k} onClick={() => setChartSkill(k)} className="text-xs font-semibold rounded-full px-3 py-1.5 shrink-0" style={{ background: chartSkill === k ? COLORS.accent : COLORS.paperRaised, color: chartSkill === k ? '#fff' : COLORS.inkSoft, border: `1px solid ${chartSkill === k ? COLORS.accent : COLORS.line}` }}>{skills[k].label}</button>
+            <button key={k} onClick={() => setChartSkill(k)} className="text-xs font-semibold rounded-full px-3 py-1.5 shrink-0" style={{ background: chartSkill === k ? COLORS.accent : COLORS.paperRaised, color: chartSkill === k ? COLORS.onAccent : COLORS.inkSoft, border: `1px solid ${chartSkill === k ? COLORS.accent : COLORS.line}` }}>{skills[k].label}</button>
           ))}
         </div>
         <div className="mt-3" style={{ width: '100%', height: 170 }}>
@@ -107,7 +107,7 @@ export function MeView({ people, journal, skills, profile, onUpdateProfile, onEd
         <p className="text-sm font-semibold" style={{ color: COLORS.ink }}>Appearance</p>
         <div className="flex items-center gap-2 mt-3">
           {['light', 'dark'].map(t => (
-            <button key={t} onClick={() => onSetTheme(t)} aria-pressed={theme === t} className="text-xs font-semibold rounded-full px-3 py-1.5 capitalize" style={{ background: theme === t ? COLORS.accent : COLORS.paperRaised, color: theme === t ? '#fff' : COLORS.inkSoft, border: `1px solid ${theme === t ? COLORS.accent : COLORS.line}` }}>{t}</button>
+            <button key={t} onClick={() => onSetTheme(t)} aria-pressed={theme === t} className="text-xs font-semibold rounded-full px-3 py-1.5 capitalize" style={{ background: theme === t ? COLORS.accent : COLORS.paperRaised, color: theme === t ? COLORS.onAccent : COLORS.inkSoft, border: `1px solid ${theme === t ? COLORS.accent : COLORS.line}` }}>{t}</button>
           ))}
         </div>
       </div>
@@ -158,9 +158,9 @@ export function MeView({ people, journal, skills, profile, onUpdateProfile, onEd
           <p className="text-xs mt-1.5" style={{ color: COLORS.inkSoft }}>{updateStatusText(updateStatus)}</p>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 12, flexWrap: 'wrap' }}>
             {updateStatus && updateStatus.state === 'ready' ? (
-              <button onClick={onInstallUpdate} className="text-xs font-semibold rounded-full px-3 py-2" style={{ background: COLORS.accent, color: '#fff' }}>Restart &amp; install</button>
+              <button onClick={onInstallUpdate} className="text-xs font-semibold rounded-full px-3 py-2" style={{ background: COLORS.accent, color: COLORS.onAccent }}>Restart &amp; install</button>
             ) : updateStatus && updateStatus.state === 'available-portable' ? (
-              <button onClick={onOpenDownloadPage} className="text-xs font-semibold rounded-full px-3 py-2" style={{ background: COLORS.accent, color: '#fff' }}>Open download page</button>
+              <button onClick={onOpenDownloadPage} className="text-xs font-semibold rounded-full px-3 py-2" style={{ background: COLORS.accent, color: COLORS.onAccent }}>Open download page</button>
             ) : (
               <button onClick={onCheckForUpdates} disabled={!!(updateStatus && (updateStatus.state === 'checking' || updateStatus.state === 'downloading'))} className="text-xs font-semibold rounded-full px-3 py-2" style={{ background: COLORS.accentSoft, color: COLORS.accent }}>Check for updates</button>
             )}

@@ -20,8 +20,11 @@ if (typeof window !== 'undefined') {
     globalThis.ResizeObserver = class { observe() {} unobserve() {} disconnect() {} };
   }
   if (!Element.prototype.scrollIntoView) Element.prototype.scrollIntoView = function () {};
+  // The tests run as if "reduce motion" were on, so a sheet closes the moment
+  // it's dismissed instead of after its closing slide (Sheet.jsx). One test
+  // in tests/app/polish.test.jsx turns it off to check the slide.
   if (!window.matchMedia) {
-    window.matchMedia = (query) => ({ matches: false, media: query, addEventListener() {}, removeEventListener() {}, addListener() {}, removeListener() {} });
+    window.matchMedia = (query) => ({ matches: query.includes('prefers-reduced-motion') && !window.__layersMotion, media: query, addEventListener() {}, removeEventListener() {}, addListener() {}, removeListener() {} });
   }
 
   // Charts measure a 0×0 box in jsdom and warn about it on every render.

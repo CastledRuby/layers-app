@@ -1,10 +1,10 @@
 // Bottom sheets and the portal they render through. See
 // docs/renderer/ui-system.md ("Sheets and dialogs").
 
-import { useContext } from 'react';
+import { useContext, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { X } from 'lucide-react';
-import { SheetLayerContext, useOpenSheet } from './sheetLayer.js';
+import { ChevronLeft, X } from 'lucide-react';
+import { SheetLayerContext, topSheet, useOpenSheet } from './sheetLayer.js';
 import { COLORS } from '../theme.js';
 
 // Never fall back to document.body: content portaled outside .layers-root
@@ -16,19 +16,58 @@ export function SheetPortal({ children }) {
   return layer ? createPortal(children, layer) : null;
 }
 
-export function Sheet({ title, onClose, children, footer, tall }) {
-  useOpenSheet(onClose);
+// How long the closing slide takes (.sheet.is-closing in theme.js).
+const CLOSE_MS = 170;
+const animate = () => typeof window.matchMedia === 'function' && !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+// - onBack: shows a back arrow before the title.
+// - onKey(e): keydown while this sheet is the top one (not while a sheet
+//   opened over it is showing). Esc is handled for every sheet already.
+// - tall: a fixed 80% height, for sheets whose content changes (steps).
+// Closing by X, the backdrop or Esc slides the sheet away first; a parent
+// that unmounts it directly (after saving) closes it at once.
+export function Sheet({ title, onClose, onBack, onKey, children, footer, tall }) {
+  const [closing, setClosing] = useState(false);
+  const closingRef = useRef(false);
+  const timer = useRef(null);
+  useEffect(() => () => clearTimeout(timer.current), []);
+  function requestClose() {
+    if (closingRef.current) return;
+    if (!animate()) { onClose(); return; }
+    closingRef.current = true;
+    setClosing(true);
+    // If the parent keeps the sheet open after all, show it again.
+    timer.current = setTimeout(() => { onClose(); closingRef.current = false; setClosing(false); }, CLOSE_MS);
+  }
+  const entry = useOpenSheet(requestClose);
+
+  const keyHandler = useRef(onKey);
+  useEffect(() => { keyHandler.current = onKey; });
+  const hasKeys = Boolean(onKey);
+  useEffect(() => {
+    if (!hasKeys) return;
+    // A key something already handled (Enter in a text box that then closed
+    // a sheet, say) isn't handled again by the sheet that's now on top.
+    function handle(e) { if (!e.defaultPrevented && topSheet() === entry && !closingRef.current && keyHandler.current) keyHandler.current(e); }
+    window.addEventListener('keydown', handle);
+    return () => window.removeEventListener('keydown', handle);
+  }, [hasKeys, entry]);
+
   return (
     <SheetPortal>
-      <div className="sheet">
-        <div className="sheet-overlay" onClick={onClose} />
+      <div className={`sheet${closing ? ' is-closing' : ''}`}>
+        <div className="sheet-overlay" onClick={requestClose} />
         <div className={`sheet-panel sheet-anim${tall ? ' sheet-panel--tall' : ''}`} role="dialog" aria-modal="true" aria-label={title}>
-          <div className="flex items-center justify-between px-5 pt-5 pb-3">
-            <p className="font-display" style={{ fontSize: 19, color: COLORS.ink }}>{title}</p>
-            <button onClick={onClose} aria-label="Close" className="p-1"><X size={20} color={COLORS.inkSoft} /></button>
+          <div className="sheet-handle" aria-hidden="true" />
+          <div className="flex items-center gap-1.5 px-5 pt-3 pb-3">
+            {onBack && (
+              <button type="button" onClick={onBack} aria-label="Back" className="icon-btn -ml-2"><ChevronLeft size={20} color={COLORS.inkSoft} /></button>
+            )}
+            <p className="font-display sheet-title flex-1 min-w-0">{title}</p>
+            <button type="button" onClick={requestClose} aria-label="Close" className="icon-btn -mr-2"><X size={19} color={COLORS.inkSoft} /></button>
           </div>
           <div className="sheet-body no-scrollbar">{children}</div>
-          {footer && <div style={{ padding: '14px 20px 22px', borderTop: `1px solid ${COLORS.line}` }}>{footer}</div>}
+          {footer && <div className="sheet-footer">{footer}</div>}
         </div>
       </div>
     </SheetPortal>

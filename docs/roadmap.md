@@ -35,7 +35,7 @@ how the app behaves for you is listed with the default chosen, so it can be chan
 | Coach, Analyse | ✅ Works (sample conversations) | It's still a prototype on four sample chats. Real screenshot analysis is a later idea. |
 | Social skills | ✅ Done | The chart records points, and achievements are stored with dates. Strength and focus come from your real levels. |
 | Journal | ✅ Done (1.0.28) | Edit or delete an entry. Filters by person, type, period and layer, plus search, which includes reflections. |
-| Logging flow | ✅ Done | The quick log is unchanged. The optional "More details" adds new info, a 1–5 rating for each of the six dimensions (type 1–5 per row), which goals moved, and a reflection. |
+| Logging flow | ✅ Done | The quick log asks only for the date, how meaningful it was and a note. Each extra (ratings, active listening, something new, goals, reflection) opens in its own small sheet from a chip. Every step works from the keyboard. |
 | Events / reminders | ✅ Done (1.0.28) | One-off and weekly, with a done state, goal links and "remind me to follow up". Desktop notifications fire at the reminder's time, and can be switched off in Me. |
 | Me / Settings | ✅ Done | Profile, notifications, backup, privacy and sample controls. |
 | Keyboard shortcuts | ✅ Done | All 12 work. Esc closes only the top sheet, and Ctrl/Alt combinations don't trigger single-key shortcuts. |
@@ -46,8 +46,10 @@ These are the choices made overnight on your behalf. Each is easy to change. Say
 and how.
 
 **Logging (P1)**
-- "More details" is **closed by default**, so the quick log stays quick. The
-  active-listening checklist stayed where it was rather than moving into it.
+- *(Changed at your request.)* The quick log keeps only the date, how meaningful it was
+  and a note. **Active listening moved out of it** into its own sheet, with the other
+  extras. It's the one that used to be part of every log, so it's ticked less often now
+  unless you press L.
 - *(Replaced at your request.)* "What stood out?" became a **1–5 rating per dimension**.
   A rated dimension grows by `rating × 2.2` (1 → +2, 5 → +11). Goals about one dimension
   move by its rating.
@@ -225,6 +227,32 @@ start.
   privacy principle comes first.
 
 ## History
+
+### Quick log redesign and polish (after 1.0.28, not released yet)
+
+You asked for the quick log to stay quick, with extra details in their own pop-ups, for
+the date overlap to be fixed, and for better fonts, colours, assets and motion.
+
+- **The quick log**:
+  - It's titled after what's logged ("Talked with Priya").
+  - It asks only for the date (a small chip), how meaningful it was and a note.
+  - Rate each part, Active listening, Something new, Goals moved and How it felt are
+    chips. Each one opens its own small sheet, and once filled in its chip shows a
+    summary.
+- **Keyboard**: every step has keys, shown next to what they do: 1–2, 1–6, Enter, 1–5,
+  N, D, R, L, I, G, F, and Backspace to go back
+  ([app-structure.md](renderer/app-structure.md#keyboard-shortcuts)).
+- **The date overlap**: the date button showed through "Add detail". Each sheet is now
+  its own layer.
+- **Colours**:
+  - Text on the accent colour is dark in dark mode (it was white on light blue, about
+    2.5:1).
+  - The sheet backdrop is darker in dark mode, and toasts are light there.
+- **Motion and controls**:
+  - Sheets slide away when closed, and steps slide forward and back.
+  - Choices pop when picked; tiles lift on hover; buttons press in.
+  - Sheets have a handle and a back arrow, text boxes glow while you type, and the type
+    is a little tighter.
 
 ### Proposals built in 1.0.28
 

@@ -55,6 +55,19 @@ export const findDialog = (name) => screen.findByRole('dialog', { name });
 export const queryDialog = (name) => screen.queryByRole('dialog', { name });
 export const confirmDialog = (name) => screen.getByRole('alertdialog', { name });
 
+// The quick log's sheet, titled after what's logged ("Talked with Morgan").
+export const logDetails = () => screen.getByRole('dialog', { name: /^(Talked with|Activity with|Messaged|Hung out with|Called|Time with) / });
+
+// Opens one of the quick log's "More details" sheets from its chip.
+export async function openExtra(user, label) {
+  await user.click(within(logDetails()).getByRole('button', { name: new RegExp(label) }));
+}
+
+// The Done button of the sheet on top.
+export async function done(user, sheetName) {
+  await user.click(within(screen.getByRole('dialog', { name: sheetName })).getByRole('button', { name: 'Done' }));
+}
+
 export function nav(name) {
   return within(document.querySelector('.nav-bar')).getByRole('button', { name: new RegExp(`^${name}$`, 'i') });
 }

@@ -12,7 +12,7 @@ export function EditProfileModal({ profile, onClose, onSave }) {
 
   return (
     <Sheet title="Your profile" onClose={onClose}
-      footer={<button onClick={() => canSave && onSave({ name: name.trim(), focus })} disabled={!canSave} className="w-full text-sm font-semibold rounded-full py-3" style={{ background: canSave ? COLORS.accent : COLORS.line, color: canSave ? '#fff' : COLORS.inkSoft }}>Save changes</button>}>
+      footer={<button onClick={() => canSave && onSave({ name: name.trim(), focus })} disabled={!canSave} className="w-full text-sm font-semibold rounded-full py-3" style={{ background: canSave ? COLORS.accent : COLORS.line, color: canSave ? COLORS.onAccent : COLORS.inkSoft }}>Save changes</button>}>
       <p className="text-sm font-semibold mb-2" style={{ color: COLORS.ink }}>What should we call you?</p>
       <input value={name} onChange={e => setName(e.target.value)} aria-label="Your name" placeholder="Your name" className="w-full text-sm rounded-xl px-3 py-2.5 mb-5" style={{ border: `1px solid ${COLORS.line}` }} />
       <p className="text-sm font-semibold mb-2" style={{ color: COLORS.ink }}>What are you focusing on?</p>

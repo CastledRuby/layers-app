@@ -7,7 +7,7 @@ import { ErrorBoundary } from '../../src/components/ErrorBoundary.jsx';
 import { EMPTY_SKILLS, INITIAL_SKILLS } from '../../src/data/seed.js';
 import { toISODate } from '../../src/lib/dates.js';
 import { STORAGE_KEY, UNREADABLE_PREFIX } from '../../src/lib/storage.js';
-import { confirmDialog, dialog, nav, person, queryDialog, renderApp, savedPerson, savedState, seedState, toasts, trackErrors, wait } from './harness.jsx';
+import { confirmDialog, dialog, done, logDetails, nav, openExtra, person, queryDialog, renderApp, savedPerson, savedState, seedState, toasts, trackErrors, wait } from './harness.jsx';
 
 const TODAY = toISODate(new Date());
 
@@ -24,7 +24,7 @@ async function startLog(user, { names, type = /Talked/ }) {
   const who = dialog('Who was this with?');
   for (const n of names) await user.click(within(who).getByRole('button', { name: new RegExp(n) }));
   await user.click(within(who.closest('.sheet-panel')).getByRole('button', { name: /^Confirm/ }));
-  return dialog('Add details');
+  return logDetails();
 }
 
 async function addTopic(user, category, item) {
@@ -35,7 +35,11 @@ async function addTopic(user, category, item) {
 
 async function saveLog(user, details, { meaningfulness, practised = [] } = {}) {
   if (meaningfulness) await user.click(within(details).getByRole('button', { name: String(meaningfulness) }));
-  for (const label of practised) await user.click(within(details).getByRole('button', { name: label }));
+  if (practised.length) {
+    await openExtra(user, 'Active listening');
+    for (const label of practised) await user.click(screen.getByRole('checkbox', { name: label }));
+    await done(user, 'Did you practise active listening?');
+  }
   await user.click(within(details.closest('.sheet-panel')).getByRole('button', { name: 'Save interaction' }));
 }
 
@@ -195,7 +199,7 @@ describe('#12 Esc', () => {
     expect(dialog('Add detail')).toBeTruthy();
     await user.keyboard('{Escape}');
     expect(queryDialog('Add detail')).toBeNull();
-    expect(within(dialog('Add details')).getByPlaceholderText(/Caught up after school/).value).toBe('Good chat');
+    expect(within(logDetails()).getByPlaceholderText(/Caught up after school/).value).toBe('Good chat');
   });
 });
 

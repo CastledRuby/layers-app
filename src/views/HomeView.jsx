@@ -113,7 +113,7 @@ export function HomeView({ today, people, journal, skills, onAddPerson, onOpenLo
       <div className="rounded-2xl p-3.5 mt-6" style={{ background: COLORS.accentSoft }}>
         <p className="text-xs font-semibold" style={{ color: COLORS.accent }}>Try this next</p>
         <p className="text-sm mt-1" style={{ color: COLORS.ink }}>{suggestion.text}</p>
-        <button onClick={runSuggestion} className="text-xs font-semibold rounded-full px-3 py-1.5 mt-2.5" style={{ background: COLORS.accent, color: '#fff' }}>{suggestion.button}</button>
+        <button onClick={runSuggestion} className="text-xs font-semibold rounded-full px-3 py-1.5 mt-2.5" style={{ background: COLORS.accent, color: COLORS.onAccent }}>{suggestion.button}</button>
       </div>
 
       <div className="grid grid-cols-2 gap-2.5 mt-7">
@@ -219,7 +219,7 @@ export function HomeView({ today, people, journal, skills, onAddPerson, onOpenLo
                       <div className="flex items-center justify-between gap-1.5 mb-3">
                         {[1, 2, 3, 4, 5].map(n => {
                           const active = upcomingMeaningfulness === n;
-                          return (<button key={n} type="button" onClick={() => setUpcomingMeaningfulness(n)} style={{ width: 30, height: 30, borderRadius: '50%', background: active ? COLORS.accent : COLORS.paper, border: `1.5px solid ${active ? COLORS.accent : COLORS.line}`, color: active ? '#fff' : COLORS.ink, fontWeight: 700, fontSize: 12 }}>{n}</button>);
+                          return (<button key={n} type="button" onClick={() => setUpcomingMeaningfulness(n)} style={{ width: 30, height: 30, borderRadius: '50%', background: active ? COLORS.accent : COLORS.paper, border: `1.5px solid ${active ? COLORS.accent : COLORS.line}`, color: active ? COLORS.onAccent : COLORS.ink, fontWeight: 700, fontSize: 12 }}>{n}</button>);
                         })}
                       </div>
                       <div className="flex items-center justify-between mb-1.5">
@@ -240,7 +240,7 @@ export function HomeView({ today, people, journal, skills, onAddPerson, onOpenLo
                         </div>
                       )}
                       <div className="flex items-center gap-2">
-                        <button onClick={() => { onLogEvent(ev, upcomingMeaningfulness, upcomingQuickDetailTags.join(', ')); setExpandedUpcoming(null); }} className="flex-1 text-xs font-semibold rounded-full py-2" style={{ background: COLORS.accent, color: '#fff' }}>Log this now</button>
+                        <button onClick={() => { onLogEvent(ev, upcomingMeaningfulness, upcomingQuickDetailTags.join(', ')); setExpandedUpcoming(null); }} className="flex-1 text-xs font-semibold rounded-full py-2" style={{ background: COLORS.accent, color: COLORS.onAccent }}>Log this now</button>
                         <button onClick={() => { onMarkEventDone(ev.id, ev.occursOn); setExpandedUpcoming(null); }} className="text-xs font-semibold rounded-full px-3 py-2" style={{ background: COLORS.paper, border: `1px solid ${COLORS.line}`, color: COLORS.ink }}>{doneLabel(ev)}</button>
                       </div>
                     </div>

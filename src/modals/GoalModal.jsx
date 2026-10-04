@@ -57,7 +57,7 @@ export function GoalModal({ people, defaultPersonId, editingGoal, editingPersonI
 
   return (
     <Sheet title={isEdit ? 'Edit goal' : 'New goal'} onClose={onClose}
-      footer={<button onClick={handleSave} disabled={!canSave} className="w-full text-sm font-semibold rounded-full py-3" style={{ background: canSave ? COLORS.accent : COLORS.line, color: canSave ? '#fff' : COLORS.inkSoft }}>{isEdit ? 'Save changes' : 'Create goal'}</button>}>
+      footer={<button onClick={handleSave} disabled={!canSave} className="w-full text-sm font-semibold rounded-full py-3" style={{ background: canSave ? COLORS.accent : COLORS.line, color: canSave ? COLORS.onAccent : COLORS.inkSoft }}>{isEdit ? 'Save changes' : 'Create goal'}</button>}>
 
       <p className="text-sm font-semibold mb-2" style={{ color: COLORS.ink }}>Who is this goal for?</p>
       {isEdit ? (
@@ -93,7 +93,7 @@ export function GoalModal({ people, defaultPersonId, editingGoal, editingPersonI
               <p className="text-xs font-semibold mt-1" style={{ color: active ? COLORS.accent : COLORS.ink, paddingRight: hasVariants ? 26 : 0 }}>{preset.label}</p>
               {hasVariants && (
                 <span onClick={(e) => { e.stopPropagation(); setVariantPickerFor(preset.key); }} style={{ position: 'absolute', top: '50%', right: 10, transform: 'translateY(-50%)', width: 26, height: 26, borderRadius: '50%', background: COLORS.accent, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 6px rgba(0,0,0,0.25)' }}>
-                  <ChevronRight size={16} color="#fff" />
+                  <ChevronRight size={16} color={COLORS.onAccent} />
                 </span>
               )}
             </button>
@@ -112,7 +112,7 @@ export function GoalModal({ people, defaultPersonId, editingGoal, editingPersonI
               <p className="text-xs font-semibold mt-1" style={{ color: active ? COLORS.accent : COLORS.ink, paddingRight: hasVariants ? 26 : 0 }}>{preset.label}</p>
               {hasVariants && (
                 <span onClick={(e) => { e.stopPropagation(); setVariantPickerFor(preset.key); }} style={{ position: 'absolute', top: '50%', right: 10, transform: 'translateY(-50%)', width: 26, height: 26, borderRadius: '50%', background: COLORS.accent, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 6px rgba(0,0,0,0.25)' }}>
-                  <ChevronRight size={16} color="#fff" />
+                  <ChevronRight size={16} color={COLORS.onAccent} />
                 </span>
               )}
             </button>
@@ -142,7 +142,7 @@ export function GoalModal({ people, defaultPersonId, editingGoal, editingPersonI
         </button>
       </div>
       {dueDate && (
-        <div style={{ position: 'relative', zIndex: 20 }}>
+        <div>
           <DateDropdown value={dueDate} onChange={setDueDate} />
         </div>
       )}

@@ -28,7 +28,7 @@ export class ErrorBoundary extends Component {
         <p className="font-display mt-3" style={{ fontSize: 22, color: COLORS.ink }}>This screen hit a problem</p>
         <p className="text-sm mt-2" style={{ color: COLORS.inkSoft }}>Your data is saved. Go back to Home, or reload Layers to try again.</p>
         <div className="flex items-center justify-center gap-2 mt-6">
-          <button onClick={() => { this.setState({ error: null }); if (this.props.onHome) this.props.onHome(); }} className="text-sm font-semibold rounded-full px-4 py-2.5" style={{ background: COLORS.accent, color: '#fff' }}>Go to Home</button>
+          <button onClick={() => { this.setState({ error: null }); if (this.props.onHome) this.props.onHome(); }} className="text-sm font-semibold rounded-full px-4 py-2.5" style={{ background: COLORS.accent, color: COLORS.onAccent }}>Go to Home</button>
           <button onClick={() => window.location.reload()} className="text-sm font-semibold rounded-full px-4 py-2.5" style={{ background: COLORS.paperRaised, color: COLORS.ink, border: `1px solid ${COLORS.line}` }}>Reload Layers</button>
         </div>
         <p className="text-xs mt-6" style={{ color: COLORS.inkSoft, wordBreak: 'break-word' }}>{String(this.state.error && this.state.error.message || this.state.error)}</p>

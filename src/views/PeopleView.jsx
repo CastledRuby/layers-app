@@ -55,7 +55,7 @@ export function PeopleView({ people, journal, onOpenPerson, onAddPerson }) {
           <span style={{ fontSize: 26 }}>🧭</span>
           <p className="text-sm font-semibold mt-2" style={{ color: COLORS.ink }}>Your circle is empty</p>
           <p className="text-xs mt-1.5" style={{ color: COLORS.inkSoft }}>Add the first person you'd like to be more intentional about, and place them wherever your relationship is today.</p>
-          <button onClick={onAddPerson} className="text-xs font-semibold rounded-full px-4 py-2 mt-3.5" style={{ background: COLORS.accent, color: '#fff' }}>Add your first person</button>
+          <button onClick={onAddPerson} className="text-xs font-semibold rounded-full px-4 py-2 mt-3.5" style={{ background: COLORS.accent, color: COLORS.onAccent }}>Add your first person</button>
         </div>
       ) : (
         <>
@@ -65,7 +65,7 @@ export function PeopleView({ people, journal, onOpenPerson, onAddPerson }) {
           </div>
           <div className="flex items-center gap-2 mt-3">
             {['map', 'list', 'overview'].map(v => (
-              <button key={v} onClick={() => setView(v)} aria-pressed={view === v} className="text-xs font-semibold rounded-full px-3 py-1.5 capitalize" style={{ background: view === v ? COLORS.accent : COLORS.paperRaised, color: view === v ? '#fff' : COLORS.inkSoft, border: `1px solid ${view === v ? COLORS.accent : COLORS.line}` }}>
+              <button key={v} onClick={() => setView(v)} aria-pressed={view === v} className="text-xs font-semibold rounded-full px-3 py-1.5 capitalize" style={{ background: view === v ? COLORS.accent : COLORS.paperRaised, color: view === v ? COLORS.onAccent : COLORS.inkSoft, border: `1px solid ${view === v ? COLORS.accent : COLORS.line}` }}>
                 {v === 'map' ? 'Map view' : v === 'list' ? 'List view' : 'Overview'}
               </button>
             ))}

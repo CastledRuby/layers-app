@@ -36,7 +36,7 @@ and constant are in [../generated/code-map.md](../generated/code-map.md).
 | [`lib/achievements.js`](../../src/lib/achievements.js) | `achievementProgress` (how close you are to each one), `newlyUnlocked` and `progressText`. See [state-and-data.md](state-and-data.md#achievements). |
 | [`lib/hooks.js`](../../src/lib/hooks.js) | `useToday` (the local date, updated at midnight), `useDailyCheckIn` (the once-a-day check-in nudge) and `useReminderNotifications` (a notification at each reminder's time). The only React in `lib/`. |
 | [`components/`](../../src/components/) | `Sheet` + `SheetPortal`, `sheetLayer.js` (the portal context and the open-sheet stack Esc uses), `ErrorBoundary` (the "This screen hit a problem" fallback around the current screen), `atoms.jsx` (`CircularProgress`, `ProgressBar`, `LabeledBar`, `Avatar`, `LayerBadge`, `ChatBubble`, `Timeline`, `ConvStateBadge`), `rows.jsx` (`GoalRow`, `InfoItemRow`), `BottomNav`, `pickers.jsx` (`DateDropdown`, `TimeDropdown`) |
-| [`modals/`](../../src/modals/) | `ConfirmDialog`, `EditPersonModal`, `EditEntryModal` (edit or delete a journal entry), `EditProfileModal` (your name and focus), `LogInteractionModal`, `GoalModal`, `TemplatePickerModal`, `QuickAddInterestModal`, `AddInfoModal`, `AddPersonModal`, `ShortcutsModal` |
+| [`modals/`](../../src/modals/) | `ConfirmDialog`, `EditPersonModal`, `EditEntryModal` (edit or delete a journal entry), `EditProfileModal` (your name and focus), `LogInteractionModal` (with its detail sheets in `LogDetailSheets`), `GoalModal`, `TemplatePickerModal`, `QuickAddInterestModal`, `AddInfoModal`, `AddPersonModal`, `ShortcutsModal` |
 | [`views/`](../../src/views/) | `HomeView`, `PeopleView`, `PersonProfile` (with `AdjustSlider`, `PrepareTipsModal`), `GoalsView`, `JournalView`, `CoachView`, `MeView`, `OnboardingView` |
 | [`App.jsx`](../../src/App.jsx) | `LayersApp`, plus the small helpers it uses: `sampleData` and the sample-people checks (`SAMPLE_PERSON_IDS`, `SAMPLE_GOAL_IDS`, `skillsCameWithSamples`, `allSkillsZero`), `unlinkMissingPeople`, `addNotes` and `listNames` |
 
@@ -138,7 +138,7 @@ The modal is a step machine (`step` state). Titles come from its `titles` object
 flowchart LR
   kind[kind<br/>What are you logging?] -->|interaction| type[type<br/>What did you do?]
   type --> who[who<br/>Who was this with?]
-  who --> details[details<br/>meaningfulness 1–5, notes, active listening, date,<br/>optional More details]
+  who --> details[details: the quick log<br/>date, meaningfulness 1–5, note,<br/>More details chips]
   details -->|onSubmit| done((handleLogSubmit))
   kind -->|event| eventKind[eventKind<br/>Recurring or one-off?]
   eventKind --> eventChoice[eventChoice<br/>Create new or choose existing?]
@@ -148,14 +148,29 @@ flowchart LR
   eventList -->|Log this now, marks it done| done
 ```
 
-The *details* step ends with an optional **More details** section, closed by default so
-a quick log stays quick. It holds "Something new about …?" (one-person logs only;
-saved to the profile in the category you pick), "How did each part go?" (a 1–5 scale
-for each dimension: type a number per row, top to bottom, or click; Backspace steps
-back), "Goals this moved"
-(every active goal is ticked; untick the ones it didn't help) and "How did it feel?" (a
-reflection). [state-and-data.md](state-and-data.md#progression-model) says what each one
-changes.
+The *details* step is the **quick log**. Its title says what's being logged ("Talked with
+Ana", "Hung out with Sam and Alex"), and it asks only for the date (a small chip), how
+meaningful it was (1–5) and an optional note, with "+ Add detail" for topics.
+
+Everything else sits under **More details** as a row of chips. Each chip opens its own
+small sheet over the quick log ([`LogDetailSheets.jsx`](../../src/modals/LogDetailSheets.jsx)),
+so only one thing is asked at a time:
+
+| Chip | Key | Sheet | Shown |
+|---|---|---|---|
+| Rate each part | R | "How did each part go?": a 1–5 scale for each dimension. Type a number per row, top to bottom, or click. Backspace steps back; the arrows move. | always |
+| Active listening | L | "Did you practise active listening?": the four practices, ticked with 1–4 | always |
+| Something new | I | "Something new about …?": saved to the profile in the category you pick | one-person logs |
+| Goals moved | G | "Goals this moved": every active goal is ticked; untick the ones it didn't help | when there are goals |
+| How it felt | F | "How did it feel?": a reflection | always |
+
+The sheets edit the log's own state as you go, so Done, Enter or Esc just closes them,
+and nothing is lost. Once something is filled in, its chip shows a tick and a summary
+("Rate each part · 3 of 6"). [state-and-data.md](state-and-data.md#progression-model)
+says what each one changes.
+
+Moving between steps slides forward or back (`step-in` / `step-back`), and every step
+except the first has a back arrow in the title bar.
 
 `initialStep` lets callers jump straight to `eventKind` (manage events) or `eventForm`
 (edit an event). With nobody in your circle the modal still opens: *Interaction* is
@@ -177,6 +192,22 @@ These are defined once in `SHORTCUTS` (shown by `ShortcutsModal`) and implemente
 - **`Esc`** leaves a search box, or closes only the top-most sheet or dialog. See
   [ui-system.md](ui-system.md#esc-and-the-open-sheet-stack).
 
-Inside the log modal's *details* step, `D` opens the detail picker. That is a separate
-listener in `LogInteractionModal`, and it also ignores Ctrl, Alt and Win. The OS-wide
-**Ctrl+Shift+L** is registered by Electron, not here.
+The log sheet has its own keys, handled by `Sheet`'s `onKey` only while it's the top
+sheet and you're not typing in a text box. Each key is shown next to what it does
+(`Kbd` in `atoms.jsx`):
+
+| Step | Keys |
+|---|---|
+| any | Backspace goes back a step |
+| What are you logging? | 1 Interaction, 2 Event |
+| What did you do? | 1–6 the types |
+| Who was this with? | Enter confirms |
+| quick log | 1–5 how meaningful; N focuses the note; D Add detail; R, L, I, G, F the More details sheets; Enter saves (also from the note, and Ctrl+Enter from anywhere) |
+| Recurring or one-off? | 1 One-off, 2 Recurring |
+| Create new or choose existing? | 1 Create new, 2 Choose saved |
+
+Enter on a button you reached with Tab presses that button instead
+(`isTabbedToButton` in `sheetLayer.js`). A key already handled, such as Enter in a
+text box that then closed its sheet, isn't handled again by the sheet underneath. That
+stops Enter in a detail sheet from also saving the log. The OS-wide **Ctrl+Shift+L** is
+registered by Electron, not here.

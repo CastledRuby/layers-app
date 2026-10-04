@@ -67,7 +67,7 @@ export function ChatBubble({ who, text }) {
   const isYou = who === 'you';
   return (
     <div className="flex mb-2" style={{ justifyContent: isYou ? 'flex-end' : 'flex-start' }}>
-      <div style={{ maxWidth: '78%', background: isYou ? COLORS.accent : COLORS.paperRaised, color: isYou ? '#fff' : COLORS.ink, border: isYou ? 'none' : `1px solid ${COLORS.line}`, borderRadius: isYou ? '16px 16px 4px 16px' : '16px 16px 16px 4px', padding: '8px 12px' }}>
+      <div style={{ maxWidth: '78%', background: isYou ? COLORS.accent : COLORS.paperRaised, color: isYou ? COLORS.onAccent : COLORS.ink, border: isYou ? 'none' : `1px solid ${COLORS.line}`, borderRadius: isYou ? '16px 16px 4px 16px' : '16px 16px 16px 4px', padding: '8px 12px' }}>
         <p className="text-sm">{text}</p>
       </div>
     </div>
@@ -104,4 +104,10 @@ export function ConvStateBadge({ stateKey }) {
       </div>
     </div>
   );
+}
+
+// A key you can press for the thing next to it. Hidden from screen readers
+// (the button's own label says what it does), so it never changes a name.
+export function Kbd({ children, onAccent }) {
+  return <span className={`kbd${onAccent ? ' kbd--on-accent' : ''}`} aria-hidden="true">{children}</span>;
 }

@@ -828,7 +828,7 @@ function LayersApp() {
 
             {onboarded && screen.name === 'tabs' && (
               <>
-                <button className="fab-btn" onClick={() => openLog(null)} aria-label="Log an interaction"><Plus size={26} color="#fff" /></button>
+                <button className="fab-btn" onClick={() => openLog(null)} aria-label="Log an interaction"><Plus size={26} color={COLORS.onAccent} /></button>
                 <BottomNav active={activeTab} onChange={switchTab} />
               </>
             )}

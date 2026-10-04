@@ -5,6 +5,14 @@
 - `THEME_LIGHT` and `THEME_DARK` ([`src/theme.js`](../../src/theme.js)) are matching palettes:
   `paper`, `paperRaised`, `ink`, `inkSoft`, `line`, `accent`, `accentSoft`, four layer
   colours (each with `Tint`/`Deep`), plus `plum`, `teal`, `good`, `warn`, `alert`.
+- Three more serve the controls:
+  - `onAccent` is for text and icons on an accent background. It's white in light mode
+    and a dark navy in dark mode, where white on the light-blue accent was only about
+    2.5:1. Use it rather than `'#fff'` whenever the background is `COLORS.accent`. A
+    test checks that it's at least 4.5:1 in both themes.
+  - `tile` is the surface of big choice buttons and chips, a step off the sheet.
+  - `overlay` is the backdrop behind an open sheet, darker in dark mode so the sheet's
+    edge shows.
 - `COLORS` **doesn't hold colours.** It maps each key to a CSS variable reference, so
   `COLORS.paperRaised === 'var(--c-paper-raised)'`.
 - The `CSS` string defines those variables on `.layers-root` (light) and
@@ -45,7 +53,14 @@ still flash once, because `theme.json` doesn't exist until the app has reported 
 3. **The `CSS` template string** (injected by `<style>{CSS}</style>` inside
    `.layers-root`) holds structural classes Tailwind doesn't express well: `.phone-frame`,
    `.sheet-*`, `.nav-bar`, `.fab-btn`, `.toast*`, keyframe animations and
-   reduced-motion overrides. It starts with the `@font-face` rules from
+   reduced-motion overrides. It also holds the shared control classes:
+   - `.tile`: big choice buttons, which lift on hover and press in on click (`.tile--accent`
+     is the highlighted one, `.tile-icon` the icon well)
+   - `.chip` and `.chip--on`: small pills
+   - `.seg` and `.seg-btn`: the 1–5 scale
+   - `.primary-btn`: a sheet's main button
+   - `.icon-btn`: round icon buttons such as back and close
+   - `.kbd`: a key hint It starts with the `@font-face` rules from
    [`src/fonts.js`](../../src/fonts.js).
 
 ### Fonts
@@ -76,8 +91,17 @@ reintroduce a Google Fonts `@import`.
 
 ## Sheets and dialogs
 
-The `Sheet` component is a bottom sheet with overlay, title bar, close button, scrollable
-body and an optional sticky `footer`. The optional `tall` prop gives it a fixed 80% height.
+The `Sheet` component is a bottom sheet with overlay, a handle, title bar, close button,
+scrollable body and an optional sticky `footer`. Its other props:
+
+- `tall` gives it a fixed 80% height, for sheets whose content changes between steps.
+- `onBack` shows a back arrow before the title.
+- `onKey(e)` receives key presses only while this sheet is the top one and nothing has
+  handled the key already. The log uses it for its keys.
+
+Closing by X, the backdrop or Esc first plays a short slide (`.sheet.is-closing`, 170
+ms), then calls `onClose`. A parent that unmounts the sheet itself, after saving for
+example, closes it at once. With "reduce motion" on, it closes at once too.
 
 ```jsx
 <Sheet title="Edit goal" onClose={onClose} footer={<button>Save changes</button>}>
@@ -106,7 +130,9 @@ other properties:
   to the phone's rounded corners.
 
 Sheets stack in the order they open. Nested pickers and a `ConfirmDialog` opened later
-always appear on top. Toasts (`z-index: 70`) stay visible above sheets.
+always appear on top. Each `.sheet` is its own stacking context (`isolation: isolate`),
+so nothing inside one sheet can paint over a sheet opened above it. Before this, the
+log's date button sat in a `z-index: 20` wrapper and showed through "Add detail". Toasts (`z-index: 70`) stay visible above sheets.
 
 `ConfirmDialog` takes `hideCancel` for an OK-only notice, such as the startup notice
 about saved data that couldn't be read
@@ -191,22 +217,35 @@ ARIA attribute carries the state:
 
 - **Switches** (Me → Notifications) use `role="switch"` and `aria-checked`. The track
   and knob are two styled spans, and the knob slides with a short `left` transition.
-- **Disclosures** (the log sheet's "More details (optional)") use `aria-expanded`. They
-  start closed, and the section only renders while open.
 - **Chips and single choices** (Journal filters, the type and meaningfulness choices in
   Edit entry) use `aria-pressed`.
 - **Rating scales** (the log's "How did each part go?") are one `role="radiogroup"` per
   dimension, labelled with its question, with `role="radio"` buttons 1–5. The scale fills
   up to the rating in the dimension's colour. The highlighted row is where typing a
-  number lands; the log sheet's own key handler moves it (1–5, Backspace, arrows) while
-  More details is open and no text box has focus. A tick list, like the log's
-  "Goals this moved", uses `role="checkbox"` and `aria-checked`.
+  number lands; the rating sheet's key handler moves it (1–5, Backspace, arrows). A tick
+  list, like "Goals this moved" or active listening, uses `role="checkbox"` and
+  `aria-checked`.
+- **Key hints** (`Kbd`) are `aria-hidden`, so a button's name stays what it does
+  ("Save interaction", not "Save interaction ↵").
 
 Older controls don't all have them yet, but new ones should. Screen readers need them,
 and the app tests find controls by them (`getByRole('switch', …)`).
 
 ## Motion
 
-`sheetUp`, `fadeIn`, `toastIn`, and the level-up pulse/glow/banner keyframes are all in
-`CSS`. A `prefers-reduced-motion: reduce` block shortens every animation and transition
-to ~0.
+All the keyframes are in `CSS`, with one easing for most of them (`EASE`: quick to
+start, gentle to settle):
+
+- **Sheets** slide up with their backdrop fading in (`sheetUp`, `fadeIn`), and slide
+  away when dismissed (`sheetDown`, `fadeOut`).
+- **Steps** inside a sheet slide in from the right going forward and from the left going
+  back (`step-in`, `step-back`).
+- **Picks** pop (`.pop`): the chosen 1–5, a rating, a ticked box, a selected person.
+  New chips grow in (`.chip-in`).
+- **Buttons** press in slightly on click everywhere; tiles also lift on hover.
+- **Toasts** rise in (`toastIn`). In dark mode they're light, so they stand out.
+- The level-up pulse, glow and banner.
+
+A `prefers-reduced-motion: reduce` block shortens every animation and transition to ~0.
+The app tests run as if it were on (`tests/setup.js`), so sheets close at once there.
+One test turns it off to check the closing slide.

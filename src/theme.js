@@ -11,6 +11,12 @@ export const THEME_LIGHT = {
   line: '#E4E3DC',
   accent: '#33506B',
   accentSoft: '#E7EEF1',
+  // Text and icons on an accent background (selected chips, main buttons).
+  onAccent: '#FFFFFF',
+  // Big choice buttons (.tile) inside a sheet, a step off the sheet itself.
+  tile: '#FAFAF7',
+  // The backdrop behind an open sheet.
+  overlay: 'rgba(35,40,58,0.42)',
   layer1: '#8FB8C9', layer1Tint: '#E4EEF2', layer1Deep: '#3E6C7D',
   layer2: '#6FA98C', layer2Tint: '#E4EFE8', layer2Deep: '#3B6B54',
   layer3: '#C98A5B', layer3Tint: '#F3E6DA', layer3Deep: '#8C5A34',
@@ -30,6 +36,10 @@ export const THEME_DARK = {
   line: '#363B4A',
   accent: '#7FA8C9',
   accentSoft: '#26313D',
+  // White on the light dark-mode accent is about 2.5:1; this is about 6.5:1.
+  onAccent: '#122130',
+  tile: '#2A2F3E',
+  overlay: 'rgba(6,8,14,0.62)',
   layer1: '#8FB8C9', layer1Tint: '#22303A', layer1Deep: '#BFE0EC',
   layer2: '#6FA98C', layer2Tint: '#1F2E28', layer2Deep: '#A9D6BE',
   layer3: '#C98A5B', layer3Tint: '#332420', layer3Deep: '#E8B98D',
@@ -51,12 +61,15 @@ function cssVarBlock(theme) {
   return Object.entries(theme).map(([k, v]) => `--c-${k.replace(/[A-Z]/g, m => '-' + m.toLowerCase())}: ${v};`).join('\n  ');
 }
 
+// The app's easing: quick to start, gentle to settle.
+const EASE = 'cubic-bezier(0.22,1,0.36,1)';
+
 export const CSS = `
 ${FONT_FACES}
 
 * { box-sizing: border-box; }
 html, body { margin: 0; padding: 0; }
-.font-display { font-family: 'Fraunces', Georgia, 'Times New Roman', serif; font-weight: 500; }
+.font-display { font-family: 'Fraunces', Georgia, 'Times New Roman', serif; font-weight: 500; letter-spacing: -0.012em; }
 .no-scrollbar::-webkit-scrollbar { display: none; }
 .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 button { font-family: 'Manrope', ui-sans-serif, system-ui, sans-serif; cursor: pointer; background: none; border: none; padding: 0; }
@@ -65,9 +78,12 @@ input, textarea { font-family: 'Manrope', ui-sans-serif, system-ui, sans-serif; 
 .layers-root {
   ${cssVarBlock(THEME_LIGHT)}
   transition: background-color .25s ease;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
 }
 .layers-root.dark {
   ${cssVarBlock(THEME_DARK)}
+  color-scheme: dark;
 }
 
 /* .app-shell sizes and places the phone; .phone-frame and .sheet-layer both
@@ -92,20 +108,90 @@ input, textarea { font-family: 'Manrope', ui-sans-serif, system-ui, sans-serif; 
 .nav-bar { display: flex; align-items: center; justify-content: space-around; padding: 8px 4px 12px; border-top: 1px solid ${COLORS.line}; background: ${COLORS.paperRaised}; position: relative; z-index: 10; }
 .nav-btn { display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 6px 8px; border-radius: 14px; font-size: 10.5px; }
 
-.fab-btn { position: absolute; right: 18px; bottom: 80px; width: 54px; height: 54px; border-radius: 50%; background: ${COLORS.accent}; display: flex; align-items: center; justify-content: center; box-shadow: 0 10px 24px rgba(51,80,107,0.4); z-index: 20; transition: transform .15s ease; }
+.fab-btn { position: absolute; right: 18px; bottom: 80px; width: 54px; height: 54px; border-radius: 50%; background: ${COLORS.accent}; display: flex; align-items: center; justify-content: center; box-shadow: 0 10px 24px rgba(51,80,107,0.4); z-index: 20; transition: transform .15s ease, box-shadow .15s ease; }
+.fab-btn:hover { transform: translateY(-1px); box-shadow: 0 14px 28px rgba(51,80,107,0.45); }
 .fab-btn:active { transform: scale(0.92); }
 
-.sheet { position: absolute; inset: 0; display: flex; align-items: flex-end; justify-content: center; pointer-events: auto; }
-.sheet-overlay { position: absolute; inset: 0; background: rgba(35,40,58,0.45); }
-.sheet-panel { position: relative; width: 100%; max-height: 88%; display: flex; flex-direction: column; background: ${COLORS.paperRaised}; border-radius: 26px 26px 0 0; box-shadow: 0 -12px 36px rgba(35,40,58,0.2); overflow: hidden; }
-.sheet-panel--tall { height: 80%; max-height: 80%; }
-.sheet-body { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 4px 20px 10px; }
+/* Buttons respond to a press everywhere. Inline transforms (positioned
+   avatars) win over this, so nothing is moved that shouldn't be. */
+button { transition: transform .12s ease, background-color .16s ease, border-color .16s ease, color .16s ease, box-shadow .16s ease, opacity .16s ease; }
+button:active:not(:disabled) { transform: scale(0.97); }
+.icon-btn { width: 34px; height: 34px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.icon-btn:hover { background: color-mix(in srgb, ${COLORS.ink} 7%, transparent); }
 
-@keyframes sheetUp { from { transform: translateY(28px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-.sheet-anim { animation: sheetUp .3s cubic-bezier(0.22,1,0.36,1); }
+/* Sheets. Each .sheet is its own stacking context, so nothing inside one
+   (a positioned date button with a z-index, say) can paint over a sheet
+   opened on top of it. */
+.sheet { position: absolute; inset: 0; display: flex; align-items: flex-end; justify-content: center; pointer-events: auto; isolation: isolate; }
+.sheet-overlay { position: absolute; inset: 0; background: ${COLORS.overlay}; animation: fadeIn .24s ease-out; }
+.sheet-panel { position: relative; width: 100%; max-height: 88%; display: flex; flex-direction: column; background: ${COLORS.paperRaised}; color: ${COLORS.ink}; border-radius: 26px 26px 0 0; box-shadow: 0 -1px 0 color-mix(in srgb, ${COLORS.ink} 7%, transparent), 0 -16px 40px rgba(10,12,20,0.22); overflow: hidden; }
+.sheet-panel--tall { height: 80%; max-height: 80%; }
+.sheet-handle { width: 38px; height: 4px; border-radius: 2px; background: ${COLORS.line}; margin: 9px auto 0; flex-shrink: 0; }
+.sheet-title { font-size: 20px; line-height: 1.2; color: ${COLORS.ink}; }
+.sheet-body { flex: 1; overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch; padding: 4px 20px 12px; }
+.sheet-footer { padding: 14px 20px 22px; border-top: 1px solid ${COLORS.line}; }
+.sheet.is-closing { pointer-events: none; }
+.sheet.is-closing .sheet-overlay { animation: fadeOut .17s ease-in forwards; }
+.sheet.is-closing .sheet-panel { animation: sheetDown .17s cubic-bezier(0.4,0,1,1) forwards; }
+
+@keyframes sheetUp { from { transform: translateY(40px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+@keyframes sheetDown { from { transform: translateY(0); opacity: 1; } to { transform: translateY(40px); opacity: 0; } }
+.sheet-anim { animation: sheetUp .32s ${EASE}; }
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes fadeOut { from { opacity: 1; } to { opacity: 0; } }
 .fade-anim { animation: fadeIn .25s ease-out; }
 @keyframes toastIn { from { transform: translateY(10px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+/* Moving between the steps of a sheet: forward slides in from the right,
+   back from the left. */
+@keyframes stepIn { from { opacity: 0; transform: translateX(22px); } to { opacity: 1; transform: none; } }
+@keyframes stepBack { from { opacity: 0; transform: translateX(-22px); } to { opacity: 1; transform: none; } }
+.step-in { animation: stepIn .28s ${EASE}; }
+.step-back { animation: stepBack .28s ${EASE}; }
+
+/* Big choice buttons. */
+.tile { position: relative; background: ${COLORS.tile}; border: 1.5px solid ${COLORS.line}; border-radius: 18px; color: ${COLORS.ink}; transition: transform .18s ${EASE}, border-color .16s ease, background-color .16s ease, box-shadow .18s ease; }
+.tile:hover:not(:disabled) { border-color: color-mix(in srgb, ${COLORS.accent} 55%, ${COLORS.line}); background: color-mix(in srgb, ${COLORS.accent} 7%, ${COLORS.tile}); transform: translateY(-2px); box-shadow: 0 8px 18px rgba(10,12,20,0.10); }
+.tile:active:not(:disabled) { transform: scale(0.97); box-shadow: none; }
+.tile:disabled { opacity: 0.55; cursor: default; }
+.tile--accent { background: ${COLORS.accentSoft}; border-color: ${COLORS.accent}; color: ${COLORS.accent}; }
+.tile-icon { width: 46px; height: 46px; border-radius: 15px; display: flex; align-items: center; justify-content: center; background: ${COLORS.accentSoft}; }
+
+/* Small pill buttons and chips. */
+.chip { display: inline-flex; align-items: center; gap: 6px; border-radius: 999px; padding: 6px 12px; font-size: 12px; font-weight: 600; background: ${COLORS.tile}; color: ${COLORS.ink}; border: 1px solid ${COLORS.line}; }
+.chip:hover:not(:disabled) { border-color: color-mix(in srgb, ${COLORS.accent} 55%, ${COLORS.line}); }
+.chip--on { background: ${COLORS.accentSoft}; color: ${COLORS.accent}; border-color: color-mix(in srgb, ${COLORS.accent} 45%, transparent); }
+@keyframes chipIn { from { opacity: 0; transform: scale(0.88); } to { opacity: 1; transform: scale(1); } }
+.chip-in { animation: chipIn .22s ${EASE}; }
+
+/* A key you can press, shown next to what it does. */
+.kbd { display: inline-flex; align-items: center; justify-content: center; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 5px; font: 600 10px/1 ui-monospace, 'Cascadia Mono', Consolas, monospace; color: ${COLORS.inkSoft}; background: color-mix(in srgb, ${COLORS.ink} 5%, transparent); border: 1px solid ${COLORS.line}; border-bottom-width: 2px; flex-shrink: 0; }
+.kbd--on-accent { color: ${COLORS.onAccent}; background: color-mix(in srgb, ${COLORS.onAccent} 16%, transparent); border-color: color-mix(in srgb, ${COLORS.onAccent} 35%, transparent); }
+.tile > .kbd { position: absolute; top: 9px; right: 9px; }
+
+/* A value just picked: a quick, springy pop. */
+@keyframes pop { 0% { transform: scale(0.86); } 60% { transform: scale(1.08); } 100% { transform: scale(1); } }
+.pop { animation: pop .3s cubic-bezier(0.34,1.56,0.64,1); }
+
+/* A 1-5 scale ("How meaningful was it?"): one track, the pick filled in. */
+.seg { display: flex; gap: 4px; padding: 4px; border-radius: 999px; background: ${COLORS.tile}; border: 1px solid ${COLORS.line}; }
+.seg-btn { flex: 1; height: 38px; border-radius: 999px; font-size: 14px; font-weight: 700; color: ${COLORS.ink}; font-variant-numeric: tabular-nums; }
+.seg--sm .seg-btn { height: 30px; font-size: 12px; }
+.seg-btn:hover:not(.seg-btn--on) { background: color-mix(in srgb, ${COLORS.accent} 10%, transparent); }
+.seg-btn--on { background: ${COLORS.accent}; color: ${COLORS.onAccent}; box-shadow: 0 4px 12px color-mix(in srgb, ${COLORS.accent} 32%, transparent); }
+
+/* Rows in the log's detail sheets. */
+.check-row:hover, .rate-row:hover { background: color-mix(in srgb, ${COLORS.accent} 6%, transparent); }
+
+/* The main button of a sheet. */
+.primary-btn { width: 100%; display: flex; align-items: center; justify-content: center; gap: 10px; border-radius: 999px; padding: 12px 18px; font-size: 14px; font-weight: 700; background: ${COLORS.accent}; color: ${COLORS.onAccent}; box-shadow: 0 6px 16px color-mix(in srgb, ${COLORS.accent} 28%, transparent); }
+.primary-btn:hover:not(:disabled) { box-shadow: 0 8px 22px color-mix(in srgb, ${COLORS.accent} 38%, transparent); }
+.primary-btn:disabled { background: ${COLORS.line}; color: ${COLORS.inkSoft}; box-shadow: none; cursor: default; }
+
+/* Text boxes: a soft glow in the accent colour while you type. */
+input:not([type="range"]):not([type="checkbox"]):not([type="radio"]), textarea { color: ${COLORS.ink}; background-color: ${COLORS.paperRaised}; transition: border-color .16s ease, box-shadow .16s ease; }
+input::placeholder, textarea::placeholder { color: color-mix(in srgb, ${COLORS.inkSoft} 80%, transparent); }
+input:focus, textarea:focus { outline: none; border-color: ${COLORS.accent} !important; box-shadow: 0 0 0 3px color-mix(in srgb, ${COLORS.accent} 20%, transparent); }
 
 @keyframes levelUpScale { 0% { transform: scale(0.85); } 35% { transform: scale(1.08); } 60% { transform: scale(0.98); } 100% { transform: scale(1); } }
 @keyframes levelUpGlow { 0%, 100% { filter: drop-shadow(0 0 0 rgba(0,0,0,0)); } 40% { filter: drop-shadow(0 0 18px currentColor); } }
@@ -115,8 +201,10 @@ input, textarea { font-family: 'Manrope', ui-sans-serif, system-ui, sans-serif; 
 
 .toast-stack { position: absolute; left: 0; right: 0; bottom: 92px; display: flex; flex-direction: column; align-items: center; gap: 8px; z-index: 70; pointer-events: none; padding: 0 20px; }
 .toast { background: #23283A; color: #fff; padding: 10px 16px; border-radius: 999px; font-size: 13px; box-shadow: 0 8px 20px rgba(0,0,0,0.35); text-align: center; animation: toastIn .25s ease-out; }
+.layers-root.dark .toast { background: #EDEDE6; color: #1B1E27; }
 
 button:focus-visible, input:focus-visible, textarea:focus-visible { outline: 2px solid ${COLORS.accent}; outline-offset: 2px; }
+input:focus-visible, textarea:focus-visible { outline: none; }
 input[type="range"] { width: 100%; }
 
 @keyframes spin { to { transform: rotate(360deg); } }

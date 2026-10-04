@@ -13,7 +13,7 @@ export function EditPersonModal({ person, onClose, onSave, onDelete }) {
 
   return (
     <Sheet title="Edit person" onClose={onClose}
-      footer={<button onClick={() => canSave && onSave({ name: name.trim(), emoji })} disabled={!canSave} className="w-full text-sm font-semibold rounded-full py-3" style={{ background: canSave ? COLORS.accent : COLORS.line, color: canSave ? '#fff' : COLORS.inkSoft }}>Save changes</button>}>
+      footer={<button onClick={() => canSave && onSave({ name: name.trim(), emoji })} disabled={!canSave} className="w-full text-sm font-semibold rounded-full py-3" style={{ background: canSave ? COLORS.accent : COLORS.line, color: canSave ? COLORS.onAccent : COLORS.inkSoft }}>Save changes</button>}>
       <p className="text-sm font-semibold mb-2" style={{ color: COLORS.ink }}>Avatar</p>
       <div className="grid grid-cols-5 gap-2 mb-4">
         {PERSON_EMOJIS.map(e => (

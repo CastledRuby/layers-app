@@ -76,7 +76,7 @@ export function CoachView({ people, journal, initialPersonId, initialTab, onOpen
 
       <div className="flex items-center gap-2 mt-4">
         {[{ k: 'prepare', label: 'Prepare' }, { k: 'analyse', label: 'Analyse a chat' }].map(t => (
-          <button key={t.k} onClick={() => setTab(t.k)} className="text-xs font-semibold rounded-full px-3 py-1.5" style={{ background: tab === t.k ? COLORS.accent : COLORS.paperRaised, color: tab === t.k ? '#fff' : COLORS.inkSoft, border: `1px solid ${tab === t.k ? COLORS.accent : COLORS.line}` }}>{t.label}</button>
+          <button key={t.k} onClick={() => setTab(t.k)} className="text-xs font-semibold rounded-full px-3 py-1.5" style={{ background: tab === t.k ? COLORS.accent : COLORS.paperRaised, color: tab === t.k ? COLORS.onAccent : COLORS.inkSoft, border: `1px solid ${tab === t.k ? COLORS.accent : COLORS.line}` }}>{t.label}</button>
         ))}
       </div>
 
@@ -188,7 +188,7 @@ export function CoachView({ people, journal, initialPersonId, initialTab, onOpen
           </div>
 
           <div className="flex items-center gap-2 mt-5">
-            <button onClick={() => onOpenLog(preparePerson ? preparePerson.id : null)} className="flex-1 text-sm font-semibold rounded-full py-3 text-center" style={{ background: COLORS.accent, color: '#fff' }}>Log this conversation</button>
+            <button onClick={() => onOpenLog(preparePerson ? preparePerson.id : null)} className="flex-1 text-sm font-semibold rounded-full py-3 text-center" style={{ background: COLORS.accent, color: COLORS.onAccent }}>Log this conversation</button>
             <button onClick={() => { setAnalysisPersonId(preparePerson ? preparePerson.id : null); setTab('analyse'); }} className="flex-1 text-sm font-semibold rounded-full py-3 text-center" style={{ background: COLORS.paperRaised, color: COLORS.accent, border: `1px solid ${COLORS.accent}` }}>Analyse a screenshot</button>
           </div>
 
@@ -366,7 +366,7 @@ export function CoachView({ people, journal, initialPersonId, initialTab, onOpen
                 {logged ? (
                   <p className="text-sm text-center font-medium" style={{ color: COLORS.good }}>✓ Logged and updated {scenarioPerson ? scenarioPerson.name : 'their'} progress</p>
                 ) : (
-                  <button onClick={handleLogAnalysis} className="w-full text-sm font-semibold rounded-full py-3" style={{ background: COLORS.accent, color: '#fff' }}>Log this as an interaction</button>
+                  <button onClick={handleLogAnalysis} className="w-full text-sm font-semibold rounded-full py-3" style={{ background: COLORS.accent, color: COLORS.onAccent }}>Log this as an interaction</button>
                 )}
               </div>
             </div>

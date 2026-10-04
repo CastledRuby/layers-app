@@ -5,7 +5,7 @@
 import { screen, within } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import { toISODate } from '../../src/lib/dates.js';
-import { dialog, nav, person, renderApp, savedPerson, savedState, seedState } from './harness.jsx';
+import { dialog, done, logDetails, nav, openExtra, person, renderApp, savedPerson, savedState, seedState } from './harness.jsx';
 
 const TODAY = toISODate(new Date());
 const goal = (id, title, progress = 10) => ({ id, personId: null, category: 'relationship', type: 'learn', title, description: '', progress, history: [] });
@@ -17,31 +17,46 @@ async function startLog(user, names) {
   const who = dialog('Who was this with?');
   for (const n of names) await user.click(within(who).getByRole('button', { name: new RegExp(n) }));
   await user.click(within(who.closest('.sheet-panel')).getByRole('button', { name: /^Confirm/ }));
-  return dialog('Add details');
+  return logDetails();
 }
 const save = (user, details) => user.click(within(details.closest('.sheet-panel')).getByRole('button', { name: 'Save interaction' }));
 
 describe('P1 progressive "More details" when logging', () => {
-  it('stays out of the way: closed until you open it', async () => {
+  it('stays out of the way: each extra is a chip until you open it', async () => {
     seedState({ people: [person('Morgan')] });
     const { user } = renderApp();
     const details = await startLog(user, ['Morgan']);
-    expect(within(details).getByRole('button', { name: /More details/ }).getAttribute('aria-expanded')).toBe('false');
-    expect(within(details).queryByText('What stood out?')).toBeNull();
+    for (const chip of ['Rate each part', 'Active listening', 'Something new', 'How it felt']) {
+      expect(within(details).getByRole('button', { name: new RegExp(chip) })).toBeTruthy();
+    }
+    expect(screen.queryByRole('radiogroup', { name: 'How deep did it go?' })).toBeNull();
+    expect(screen.queryByLabelText('Reflection')).toBeNull();
+    expect(screen.queryByRole('checkbox', { name: 'Asked follow-up questions' })).toBeNull();
   });
 
-  it('saves something new, a dimension rating, which goals moved and a reflection', async () => {
+  it('saves something new, a dimension rating, which goals moved and a reflection', { timeout: 20000 }, async () => {
     const before = person('Morgan', { goals: [goal('g1', 'Learn more'), goal('g2', 'Spend time together')] });
     seedState({ people: [before] });
     const { user } = renderApp();
     const details = await startLog(user, ['Morgan']);
-    await user.click(within(details).getByRole('button', { name: /More details/ }));
-    await user.click(within(details).getByRole('button', { name: /Plans/ }));
-    await user.type(within(details).getByLabelText('Something new'), 'Running a marathon in May{Enter}');
-    await user.click(within(details).getByText('How did each part go?'));
+    await openExtra(user, 'Something new');
+    const newInfo = dialog('Something new about Morgan?');
+    await user.click(within(newInfo).getByRole('button', { name: /Plans/ }));
+    await user.type(within(newInfo).getByLabelText('Something new'), 'Running a marathon in May{Enter}');
+    await done(user, 'Something new about Morgan?');
+    await openExtra(user, 'Rate each part');
     await user.keyboard('5'); // the first row, depth
-    await user.click(within(details).getByRole('checkbox', { name: /Spend time together/ }));
-    await user.type(within(details).getByLabelText('Reflection'), 'Felt easy today');
+    await user.keyboard('{Enter}'); // Done
+    await openExtra(user, 'Goals moved');
+    await user.click(screen.getByRole('checkbox', { name: /Spend time together/ }));
+    await done(user, 'Goals this moved');
+    await openExtra(user, 'How it felt');
+    await user.type(screen.getByLabelText('Reflection'), 'Felt easy today');
+    await done(user, 'How did it feel?');
+    expect(within(details).getByRole('button', { name: /Something new, 1 added/ })).toBeTruthy();
+    expect(within(details).getByRole('button', { name: /Rate each part, 1 of 6/ })).toBeTruthy();
+    expect(within(details).getByRole('button', { name: /Goals moved, 1 of 2/ })).toBeTruthy();
+    expect(within(details).getByRole('button', { name: /How it felt, written/ })).toBeTruthy();
     await save(user, details);
 
     const morgan = savedPerson('Morgan');
@@ -269,7 +284,7 @@ describe('P7 skills and Me', () => {
     await user.click(within(dialog('What did you do?')).getByRole('button', { name: /Talked/ }));
     await user.click(within(dialog('Who was this with?')).getByRole('button', { name: /Morgan/ }));
     await user.click(screen.getByRole('button', { name: /^Confirm/ }));
-    await user.click(within(dialog('Add details')).getByRole('button', { name: '4' }));
+    await user.click(within(logDetails()).getByRole('button', { name: '4' }));
     await user.click(screen.getByRole('button', { name: 'Save interaction' }));
     expect([...document.querySelectorAll('.toast')].map(t => t.textContent)).toContain('🏅 Achievement unlocked: First Meaningful Conversation');
     expect(savedState().achievements).toEqual({ firstMeaningful: TODAY });
@@ -292,7 +307,9 @@ describe('P7 skills and Me', () => {
     await user.click(within(dialog('What did you do?')).getByRole('button', { name: /Talked/ }));
     await user.click(within(dialog('Who was this with?')).getByRole('button', { name: /Morgan/ }));
     await user.click(screen.getByRole('button', { name: /^Confirm/ }));
-    await user.click(within(dialog('Add details')).getByRole('button', { name: 'Asked follow-up questions' }));
+    await openExtra(user, 'Active listening');
+    await user.click(screen.getByRole('checkbox', { name: 'Asked follow-up questions' }));
+    await done(user, 'Did you practise active listening?');
     await user.click(screen.getByRole('button', { name: 'Save interaction' }));
     expect(savedState().generalGoals[0].progress).toBe(20);
   });
@@ -320,9 +337,12 @@ describe('follow-up fixes from the 1.0.28 docs review', () => {
     seedState({ people: [person('Morgan', { goals: [skillGoal] })] });
     const { user } = renderApp();
     const details = await startLog(user, ['Morgan']);
-    await user.click(within(details).getByRole('button', { name: 'Asked follow-up questions' }));
-    await user.click(within(details).getByRole('button', { name: /More details/ }));
-    await user.click(within(details).getByRole('checkbox', { name: /Ask better follow-up questions/ }));
+    await openExtra(user, 'Active listening');
+    await user.click(screen.getByRole('checkbox', { name: 'Asked follow-up questions' }));
+    await done(user, 'Did you practise active listening?');
+    await openExtra(user, 'Goals moved');
+    await user.click(screen.getByRole('checkbox', { name: /Ask better follow-up questions/ }));
+    await done(user, 'Goals this moved');
     await save(user, details);
     expect(savedPerson('Morgan').goals[0].progress).toBe(0);
   });
@@ -365,7 +385,7 @@ describe('Rating the six dimensions while logging', () => {
     seedState({ people: [person('Morgan')] });
     const { user } = renderApp();
     const details = await startLog(user, ['Morgan']);
-    await user.click(within(details).getByRole('button', { name: /More details/ }));
+    await openExtra(user, 'Rate each part');
     await user.keyboard('435245');
     expect(rows().map(picked)).toEqual([4, 3, 5, 2, 4, 5]);
   });
@@ -374,7 +394,7 @@ describe('Rating the six dimensions while logging', () => {
     seedState({ people: [person('Morgan')] });
     const { user } = renderApp();
     const details = await startLog(user, ['Morgan']);
-    await user.click(within(details).getByRole('button', { name: /More details/ }));
+    await openExtra(user, 'Rate each part');
     await user.keyboard('43');
     await user.keyboard('{Backspace}');
     expect(rows().slice(0, 3).map(picked)).toEqual([4, null, null]);
@@ -389,7 +409,7 @@ describe('Rating the six dimensions while logging', () => {
     seedState({ people: [person('Morgan')] });
     const { user } = renderApp();
     const details = await startLog(user, ['Morgan']);
-    await user.click(within(details).getByRole('button', { name: /More details/ }));
+    await openExtra(user, 'Rate each part');
     await user.click(within(screen.getByRole('radiogroup', { name: 'How reciprocal was it?' })).getByRole('radio', { name: '3' }));
     expect(picked('How reciprocal was it?')).toBe(3);
     await user.keyboard('1');
@@ -402,8 +422,9 @@ describe('Rating the six dimensions while logging', () => {
     const { user } = renderApp();
     const details = await startLog(user, ['Morgan']);
     await user.click(within(details).getByRole('button', { name: '2' })); // How meaningful: 2
-    await user.click(within(details).getByRole('button', { name: /More details/ }));
+    await openExtra(user, 'Rate each part');
     await user.keyboard('5');
+    await user.keyboard('{Enter}');
     await save(user, details);
     expect(savedState().journal[0].ratings).toEqual({ depth: 5 });
     expect(savedPerson('Morgan').goals[0].progress).toBe(Math.round(5 * 3.2)); // by depth 5, not meaningfulness 2
