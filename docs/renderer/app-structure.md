@@ -62,9 +62,10 @@ Ctrl+Enter opens it in Layers in its full sheet, and Esc closes the box.
 
 ## Navigation model
 
-In a wide window (900 px or more) People shows the list beside the open profile
-(`peopleSplit` in `LayersApp`): opening a person keeps the list and the tabs, and
-Backspace closes the profile. Today shows the month beside the day. See
+In a wide window (900 px or more) People shows the list in the middle, and beside the
+open profile once someone is picked (`peopleSplit` in `LayersApp`): opening a person
+keeps the list and the tabs, and Backspace closes the profile, so the list slides back
+to the middle. On People, **A** (or the big Add person button) adds someone. Today shows the month beside the day. See
 [ui-system.md](ui-system.md#a-wide-window).
 
 There is no router. Two pieces of `LayersApp` state choose what's on screen:

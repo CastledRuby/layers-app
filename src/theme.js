@@ -128,7 +128,16 @@ input, textarea { font-family: 'Manrope', ui-sans-serif, system-ui, sans-serif; 
 .people-split { display: grid; grid-template-columns: minmax(320px, 400px) minmax(0, 1fr); max-width: 1280px; margin: 0 auto; align-items: start; }
 .people-split-list { position: sticky; top: 0; max-height: calc(100vh - 84px); overflow-y: auto; border-right: 1px solid ${COLORS.line}; }
 .people-split-detail { min-width: 0; }
+/* Nobody picked yet: the list on its own, in the middle. */
+.people-split--solo { grid-template-columns: minmax(0, 760px); justify-content: center; }
+.people-split--solo .people-split-list { position: static; max-height: none; overflow: visible; border-right: none; }
 .people-split-detail > * { max-width: 760px; margin: 0 auto; }
+
+/* People's Add person button: big, first in the row, with its key. */
+.add-person-btn { display: inline-flex; align-items: center; gap: 8px; flex-shrink: 0; padding: 9px 10px 9px 9px; border-radius: 999px; font-size: 14px; font-weight: 700; background: ${COLORS.accent}; color: ${COLORS.onAccent}; box-shadow: 0 6px 16px color-mix(in srgb, ${COLORS.accent} 30%, transparent); transition: transform .15s ease, box-shadow .15s ease; }
+.add-person-btn:hover { transform: translateY(-1px); box-shadow: 0 8px 20px color-mix(in srgb, ${COLORS.accent} 38%, transparent); }
+.add-person-btn:active { transform: scale(.97); }
+.add-person-plus { width: 26px; height: 26px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; background: color-mix(in srgb, ${COLORS.onAccent} 22%, transparent); }
 
 /* The bottom tabs. The page you're on sits on a glowing pill with a bar on
    the top edge; the pill slides to a new tab with a little overshoot, a ring

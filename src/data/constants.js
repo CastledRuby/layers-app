@@ -63,6 +63,7 @@ export const SHORTCUTS = [
   { keys: ['T'], desc: 'An open plan, or a plan in the day popup: Coach tips for it' },
   { keys: ['D'], desc: 'Add detail — browse templates and copy one, no logging needed' },
   { keys: ['Ctrl', 'Shift', 'A'], desc: 'Add a new person' },
+  { keys: ['A'], desc: 'People: add a new person' },
   { keys: ['/'], desc: 'Jump to search (People or Journal)' },
   { keys: ['Backspace'], desc: 'Go back from a person or goals screen' },
   { keys: ['Ctrl', 'Z'], desc: 'Undo what you just did, while its message shows (a delete, tick, log or saved plan)' },

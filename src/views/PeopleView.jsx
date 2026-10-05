@@ -1,16 +1,18 @@
 // People tab: your circle, grouped by layer.
 
-import { useMemo, useState } from 'react';
-import { Search, UserPlus } from 'lucide-react';
-import { Avatar, LayerBadge, ProgressBar } from '../components/atoms.jsx';
+import { useEffect, useMemo, useState } from 'react';
+import { Plus, Search } from 'lucide-react';
+import { Avatar, Kbd, LayerBadge, ProgressBar } from '../components/atoms.jsx';
 import { RingsEmpty } from '../components/illustrations.jsx';
 import { getLayer, LAYERS } from '../data/constants.js';
 import { sortHistory } from '../lib/dates.js';
 import { getCheckInSuggestions } from '../lib/text.js';
 import { COLORS } from '../theme.js';
 
-// In a wide window (split) it's the list beside the open profile: it opens
-// on the list, and the person open there (selectedId) is highlighted.
+// In a wide window (split) it's the list, in the middle until someone's
+// picked and then beside their profile: it opens on the list, and the person
+// open there (selectedId) is highlighted and kept in view.
+// Add person (A) is the big button first in the row, by the search box.
 export function PeopleView({ people, journal, onOpenPerson, onAddPerson, split = false, selectedId = null }) {
   const [view, setView] = useState(split ? 'list' : 'map');
   const [query, setQuery] = useState('');
@@ -40,32 +42,38 @@ export function PeopleView({ people, journal, onOpenPerson, onAddPerson, split =
     const needsAttention = getCheckInSuggestions(filteredPeople, journal || []);
     return { ranked: withTrend, avg, trendingUp, needsAttention };
   }, [filteredPeople, journal]);
+  useEffect(() => {
+    if (!selectedId) return;
+    const row = document.querySelector(`[data-person-row="${selectedId}"]`);
+    if (row && typeof row.scrollIntoView === 'function') row.scrollIntoView({ block: 'nearest' });
+  }, [selectedId]);
 
   return (
     <div className="px-5 pt-6 pb-4">
-      <div className="flex items-center justify-between">
-        <div>
-          <p className="font-display" style={{ fontSize: 24, color: COLORS.ink }}>Your circle</p>
-          <p className="text-sm mt-1" style={{ color: COLORS.inkSoft }}>{people.length} relationships, at a glance</p>
+      <p className="font-display" style={{ fontSize: 24, color: COLORS.ink }}>Your circle</p>
+      <p className="text-sm mt-1" style={{ color: COLORS.inkSoft }}>{people.length === 1 ? '1 relationship' : `${people.length} relationships`}, at a glance</p>
+      {people.length > 0 && (
+        <div className="flex items-center gap-2.5 mt-4">
+          <button type="button" onClick={onAddPerson} className="add-person-btn">
+            <span className="add-person-plus" aria-hidden="true"><Plus size={18} strokeWidth={3} /></span>Add person<Kbd onAccent>A</Kbd>
+          </button>
+          <div className="flex-1 min-w-0 flex items-center gap-2 rounded-xl px-3" style={{ border: `1px solid ${COLORS.line}` }}>
+            <Search size={15} color={COLORS.inkSoft} className="shrink-0" />
+            <input id="people-search-input" value={query} onChange={e => setQuery(e.target.value)} placeholder="Search people..." aria-label="Search people" className="flex-1 min-w-0 text-sm py-2.5" style={{ background: 'transparent', border: 'none', outline: 'none' }} />
+            <Kbd>/</Kbd>
+          </div>
         </div>
-        <button onClick={onAddPerson} className="flex items-center gap-1.5 text-xs font-semibold rounded-full px-3 py-2" style={{ background: COLORS.accentSoft, color: COLORS.accent }}>
-          <UserPlus size={14} /> Add
-        </button>
-      </div>
+      )}
 
       {people.length === 0 ? (
         <div className="rounded-2xl p-5 mt-6 text-center" style={{ background: COLORS.paperRaised, border: `1px dashed ${COLORS.line}` }}>
           <RingsEmpty width={200} />
           <p className="text-sm font-semibold mt-3" style={{ color: COLORS.ink }}>Your circle is empty</p>
           <p className="text-xs mt-1.5" style={{ color: COLORS.inkSoft }}>Add the first person you'd like to be more intentional about, and place them wherever your relationship is today.</p>
-          <button onClick={onAddPerson} className="text-xs font-semibold rounded-full px-4 py-2 mt-3.5" style={{ background: COLORS.accent, color: COLORS.onAccent }}>Add your first person</button>
+          <button type="button" onClick={onAddPerson} className="add-person-btn mt-4"><span className="add-person-plus" aria-hidden="true"><Plus size={18} strokeWidth={3} /></span>Add your first person<Kbd onAccent>A</Kbd></button>
         </div>
       ) : (
         <>
-          <div className="flex items-center gap-2 mt-4">
-            <Search size={15} color={COLORS.inkSoft} className="shrink-0" />
-            <input id="people-search-input" value={query} onChange={e => setQuery(e.target.value)} placeholder="Search people..." aria-label="Search people" className="flex-1 text-sm rounded-xl px-3 py-2" style={{ border: `1px solid ${COLORS.line}` }} />
-          </div>
           <div className="flex items-center gap-2 mt-3">
             {['map', 'list', 'overview'].map(v => (
               <button key={v} onClick={() => setView(v)} aria-pressed={view === v} className="text-xs font-semibold rounded-full px-3 py-1.5 capitalize" style={{ background: view === v ? COLORS.accent : COLORS.paperRaised, color: view === v ? COLORS.onAccent : COLORS.inkSoft, border: `1px solid ${view === v ? COLORS.accent : COLORS.line}` }}>
@@ -127,7 +135,7 @@ export function PeopleView({ people, journal, onOpenPerson, onAddPerson, split =
               {[...filteredPeople].sort((a, b) => (b.layer - a.layer) || (b.overall - a.overall)).map(p => {
                 const l = getLayer(p.layer);
                 return (
-                  <button key={p.id} onClick={() => onOpenPerson(p.id)} aria-current={p.id === selectedId ? 'true' : undefined} className={`w-full flex items-center gap-3 py-3${split ? ' px-2 rounded-xl' : ''}`} style={{ borderBottom: `1px solid ${COLORS.line}`, background: p.id === selectedId ? COLORS.accentSoft : undefined }}>
+                  <button key={p.id} data-person-row={p.id} onClick={() => onOpenPerson(p.id)} aria-current={p.id === selectedId ? 'true' : undefined} className={`w-full flex items-center gap-3 py-3${split ? ' px-2 rounded-xl' : ''}`} style={{ borderBottom: `1px solid ${COLORS.line}`, background: p.id === selectedId ? COLORS.accentSoft : undefined }}>
                     <Avatar emoji={p.emoji} size={44} ringColor={l.color} />
                     <div className="flex-1 min-w-0 text-left">
                       <p className="text-sm font-semibold" style={{ color: COLORS.ink }}>{p.name}</p>

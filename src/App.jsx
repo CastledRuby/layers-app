@@ -16,7 +16,7 @@ import { achievementProgress, newlyUnlocked } from './lib/achievements.js';
 import { advanceLayer, advanceSkillGoals, bumpSkills, chartDay, computeOverall, dimBumps, dimsEqual, goalBumpFor, keepDimsInLayer, makePerson, migrateDimsToLayers, movePerson, placeOnLayers, raisedSkills } from './lib/progress.js';
 import { MAX_BACKUP_BYTES, createBackup, validateBackup } from './lib/backup.js';
 import { NOTIFY_DEFAULTS, isDoneOn, notifySettings, parseActionUrl, snoozeUntil, templateFor } from './lib/calendar.js';
-import { useCalendarNotifications, useDailyBackup, useDailyCheckIn, useSystemDark, useToday, useWide } from './lib/hooks.js';
+import { useCalendarNotifications, useDailyBackup, useDailyCheckIn, useSlideAcross, useSystemDark, useToday, useWide } from './lib/hooks.js';
 import { followUpEvent, markDone } from './lib/reminders.js';
 import { getSnoozes, loadSavedState, persistState, setSnoozes } from './lib/storage.js';
 import { clamp, uid } from './lib/util.js';
@@ -315,6 +315,7 @@ function LayersApp() {
       if (plain && (e.key === 'd' || e.key === 'D')) { e.preventDefault(); setStandaloneDetailOpen(true); return; }
       if (plain && (e.key === 'n' || e.key === 'N')) { e.preventDefault(); openLog(null); return; }
       if (plain && (e.key === 'p' || e.key === 'P')) { e.preventDefault(); openPlan({ day: activeTab === 'today' && screen.name === 'tabs' ? selectedDay || today : today }); return; }
+      if (plain && (e.key === 'a' || e.key === 'A') && (activeTab === 'people' || screen.name === 'person')) { e.preventDefault(); setAddPersonOpen(true); return; }
       if (ctrlOnly && e.shiftKey && (e.key === 'a' || e.key === 'A')) {
         e.preventDefault();
         setActiveTab('people'); setScreen({ name: 'tabs' }); setAddPersonOpen(true);
@@ -1028,9 +1029,15 @@ function LayersApp() {
     if (then === 'plan') openPlan({ day: today });
   }
 
-  // A wide window shows People as the list beside the open profile, with the
-  // tabs still showing; going from person to person doesn't slide the page.
+  // A wide window shows People as the list in the middle, and once someone's
+  // picked, the list beside their profile (it slides over), with the tabs
+  // still showing; going from person to person doesn't slide the page.
   const peopleSplit = wide && onboarded && ((screen.name === 'person' && !!selectedPerson) || (screen.name === 'tabs' && activeTab === 'people'));
+  const peopleListRef = useRef(null);
+  useSlideAcross(peopleListRef, selectedPerson ? 'beside' : 'middle');
+  const splitPersonId = peopleSplit && selectedPerson ? selectedPerson.id : null;
+  // A new profile beside the list starts at its top.
+  useEffect(() => { if (splitPersonId && scrollRef.current) scrollRef.current.scrollTop = 0; }, [splitPersonId]);
   const showNav = onboarded && (screen.name === 'tabs' || peopleSplit);
   // Which page is showing, for PageTransition: tabs by their place in the
   // bar, and a person or goals screen as a step further in.
@@ -1078,18 +1085,15 @@ function LayersApp() {
                 {!onboarded ? (
                   <div className="page-col"><OnboardingView initialName={profile.name} initialFocus={profile.focus} initialNotify={notifySettings(profile)} onComplete={handleOnboardingComplete} onRestore={handleImportClick} /></div>
                 ) : peopleSplit ? (
-                  <div className="people-split">
-                    <div className="people-split-list">
+                  <div className={`people-split${selectedPerson ? '' : ' people-split--solo'}`}>
+                    <div className="people-split-list" ref={peopleListRef}>
                       <PeopleView people={people} journal={journal} onOpenPerson={openPerson} onAddPerson={() => setAddPersonOpen(true)} split selectedId={selectedPerson ? selectedPerson.id : null} />
                     </div>
-                    <div className="people-split-detail">
-                      {selectedPerson ? <div key={selectedPerson.id} className="fade-anim">{profileView}</div> : (
-                        <div className="text-center px-6" style={{ paddingTop: '22vh', color: COLORS.inkSoft }}>
-                          <p className="font-display" style={{ fontSize: 20, color: COLORS.ink }}>Pick someone</p>
-                          <p className="text-sm mt-1.5">Their profile opens here, beside the list.</p>
-                        </div>
-                      )}
-                    </div>
+                    {selectedPerson && (
+                      <div className="people-split-detail">
+                        <div key={selectedPerson.id} className="fade-anim">{profileView}</div>
+                      </div>
+                    )}
                   </div>
                 ) : (
                   <>

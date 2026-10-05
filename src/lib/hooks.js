@@ -42,8 +42,6 @@ export function useDailyBackup(enabled, today, makeBackup, onDone) {
   }, [enabled, today]);
 }
 
-// Whether Windows (or the browser) is in dark mode, following it as it
-// changes: the theme's "Match Windows".
 // Whether the window is wide enough for the desktop layout (900 px or more):
 // the month beside the day, the people list beside a profile, a readable
 // column for the other pages and sheets as a centred panel (.is-wide in
@@ -62,6 +60,31 @@ export function useWide() {
   return wide;
 }
 
+// When `key` changes, the element slides sideways from where its centre was
+// to where it is now, instead of jumping: People's list going from the middle
+// of a wide window to beside a profile, and back. Skipped with reduced motion.
+export function useSlideAcross(ref, key) {
+  const last = useRef(null);
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el) return undefined;
+    const centreOf = () => { const r = el.getBoundingClientRect(); return r.left + r.width / 2; };
+    const before = last.current;
+    last.current = centreOf();
+    // A resized window moves it too, without a slide.
+    const onResize = () => { last.current = centreOf(); };
+    window.addEventListener('resize', onResize);
+    const reduced = typeof window.matchMedia === 'function' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const dx = before === null ? 0 : before - last.current;
+    if (Math.abs(dx) > 4 && !reduced && typeof el.animate === 'function') {
+      el.animate([{ transform: `translateX(${dx}px)` }, { transform: 'none' }], { duration: 340, easing: 'cubic-bezier(.22,1,.36,1)' });
+    }
+    return () => window.removeEventListener('resize', onResize);
+  }, [ref, key]);
+}
+
+// Whether Windows (or the browser) is in dark mode, following it as it
+// changes: the theme's "Match Windows".
 export function useSystemDark() {
   const query = '(prefers-color-scheme: dark)';
   const [dark, setDark] = useState(() => typeof window !== 'undefined' && typeof window.matchMedia === 'function' && !!window.matchMedia(query).matches);

@@ -101,8 +101,10 @@ From **900 px** wide (`useWide` in [lib/hooks.js](../../src/lib/hooks.js), which
   window.
 - **Today** is `.today-wide`: the day on the left and the month grid in a sticky column
   on the right (`.today-wide-side`), with no week strip or Day/Month switch.
-- **People** is `.people-split`: the list (sticky, scrolling on its own) beside the open
-  profile, or "Pick someone" until one is open. The tabs stay, with People lit.
+- **People** is `.people-split`: until someone is picked, the list on its own in the
+  middle (`.people-split--solo`, 760 px); once one is, the list (sticky, scrolling on its
+  own) beside their profile. The list slides between the two (`useSlideAcross` in
+  `lib/hooks.js`), and keeps the person picked in view. The tabs stay, with People lit.
 - **Coach, Journal, Me, Goals** and onboarding sit in `.page-col`, a centred column 760 px
   wide.
 - **The tabs** stay at the bottom, the five centred in 660 px; the FAB sits at the window's

@@ -384,6 +384,15 @@ start.
 
 ## History
 
+### Second live test (after 1.0.30, not released yet)
+
+What you found trying it again on 2026-10-05, and what changed:
+
+- **People in a wide window** starts as the list on its own in the middle; picking
+  someone slides it to the left with their profile beside it, and closing the profile
+  slides it back. **Add person** is a big button first in the row, next to the search
+  box, and **A** on People does the same.
+
 ### The quick-add box (after 1.0.30, not released yet)
 
 **Ctrl+Shift+L** from anywhere in Windows opens a small box at the top of the screen.
