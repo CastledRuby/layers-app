@@ -97,7 +97,7 @@ describe('Planning', () => {
     const next = dialog('Plan another');
     expect(within(next).getByRole('status', { name: 'Added so far' }).textContent).toMatch(/Coffee with Morgan · \w{3} \d+, 10:00 AM/);
     await user.keyboard('6{Enter}'); // Study, nobody
-    await user.keyboard('rrr'); // Once -> Several days -> Every day -> Every week
+    await user.keyboard('rrrr'); // Once -> Several days -> Every day -> Every weekday -> Every week
     await user.click(screen.getByRole('button', { name: 'Mon–Fri' }));
     await user.keyboard('{Enter}');
     expect(queryDialog('Plan another')).toBeNull();
@@ -120,6 +120,50 @@ describe('Planning', () => {
     expect(events.map(e => e.date).sort()).toEqual([TODAY, TOMORROW, day(2)]);
     expect(events.every(e => e.kind === 'oneoff' && e.time === 540 && e.alert === 5)).toBe(true);
     expect(toasts()).toContain('3 plans saved');
+  });
+
+  it('"Every weekday" repeats Monday to Friday, and opens that way to edit', async () => {
+    seedState();
+    const { user } = renderApp();
+    await user.keyboard('p8{Enter}'); // Something else, nobody
+    await user.keyboard('rrr'); // Once -> Several days -> Every day -> Every weekday
+    expect(within(dialog('When?')).getByLabelText('Summary').textContent).toMatch(/^Every weekday from/);
+    await user.keyboard('{Enter}');
+    expect(savedState().events[0]).toMatchObject({ kind: 'recurring', weekdays: [1, 2, 3, 4, 5], from: TODAY });
+    expect(toasts()).toContain('Repeating plan saved');
+    // On the next weekday, it opens to edit as Every weekday.
+    const ahead = [0, 1, 2].find(n => ![0, 6].includes(new Date(`${day(n)}T00:00:00`).getDay()));
+    for (let i = 0; i < ahead; i++) await user.keyboard('{ArrowRight}');
+    await user.click(screen.getByRole('button', { name: 'Plans' }));
+    await user.keyboard('e');
+    expect(within(dialog('Edit plan')).getByRole('button', { name: 'Every weekday' }).getAttribute('aria-pressed')).toBe('true');
+  });
+
+  it('editing one of several copies: a copy is not an overlap, and making it repeat replaces the copies it covers', async () => {
+    const morgan = person('Morgan');
+    const copy = (id, n) => ({ id, title: 'Check in with Morgan', kind: 'oneoff', date: day(n), time: 910, duration: 15, alert: 15, personIds: [morgan.id], template: 'checkin' });
+    const dentist = { id: 'x', title: 'Dentist', kind: 'oneoff', date: day(4), time: 900, duration: 60, alert: 15, personIds: [], template: 'custom' };
+    seedState({ people: [morgan], events: [copy('a', 1), copy('b', 2), copy('c', 3), dentist] });
+    const { user } = renderApp();
+    await user.keyboard('{ArrowRight}');
+    await user.click(screen.getByRole('button', { name: 'Check in with Morgan' }));
+    await user.keyboard('e');
+    const sheet = () => dialog('Edit plan');
+    expect(within(sheet()).queryByRole('status')).toBeNull(); // nothing on its own day
+    await user.keyboard('3'); // onto the day after, which has a copy
+    expect(within(sheet()).getByText(/already has a copy of this plan/)).toBeTruthy();
+    expect(within(sheet()).queryByText(/Overlaps/)).toBeNull();
+    await user.keyboard('5'); // onto the dentist
+    expect(within(sheet()).getByText(/Overlaps Dentist/)).toBeTruthy();
+    await user.keyboard('2'); // back to tomorrow, then every day from there
+    await user.click(within(sheet()).getByRole('button', { name: 'Every day' }));
+    expect(within(sheet()).getByText(/Replaces its 2 copies on/)).toBeTruthy();
+    await user.keyboard('{Enter}');
+    expect(savedState().events.map(e => e.id).sort()).toEqual(['a', 'x']);
+    expect(savedState().events.find(e => e.id === 'a')).toMatchObject({ kind: 'recurring', weekdays: [0, 1, 2, 3, 4, 5, 6], from: TOMORROW });
+    expect(toasts()).toContain('Plan updated, and its 2 copies replaced');
+    await user.click(screen.getByRole('button', { name: 'Undo (Ctrl+Z)' }));
+    expect(savedState().events.map(e => e.id).sort()).toEqual(['a', 'b', 'c', 'x']);
   });
 
   it("a plan that hasn't started offers Edit and Plan it again, not Log it; C copies it to the next day", async () => {

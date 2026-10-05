@@ -409,6 +409,21 @@ start.
 
 ## History
 
+### Every weekday, and copies of a plan (after 1.0.31, not released yet)
+
+You found that editing a plan couldn't make it every weekday, and that it said it
+overlapped itself. Your five "Check in with Alexa" plans were five copies from **Several
+days** (Mon 5 to Fri 9); moving one onto another's day warned about the other copy.
+
+- **Repeat** has **Every weekday** (Monday to Friday), also when editing; R reaches it.
+  Plans already set to Mon–Fri open on it. Everywhere a plan's days are shown, Mon–Fri
+  reads "Every weekday".
+- Editing one of several copies (the same title, people and time), a copy on the same
+  day is called a copy, not an overlap.
+- Making that copy repeat replaces the copies on the days it now covers, so it's on each
+  day once. The sheet says so before you save, and the message has Undo. Copies already
+  ticked off stay.
+
 ### Initials and photos as avatars (after 1.0.31, not released yet)
 
 You said the emoji avatars still didn't look quite right, and picked initials and photos

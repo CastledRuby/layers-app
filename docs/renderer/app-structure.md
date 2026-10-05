@@ -224,8 +224,13 @@ Planning is three steps, one thing at a time, nearly all taps, and every tap has
    - **Time** (`T`): five times, All day, or **Other time**
    - **How long** (`L`)
    - **Repeat** (`R`): once, **several days** (pick as many days as you like; one plan
-     is saved for each), every day, or every week on chosen days (with a **Mon–Fri**
-     chip)
+     is saved for each), every day, **every weekday** (Monday to Friday), or every week
+     on chosen days (with a **Mon–Fri** chip)
+   - Above them, a warning when the plan overlaps one you already have. Editing one of
+     several copies of a plan (the same title, people and time, as several days saves
+     them), a copy on the same day is called a copy, not an overlap; and making it
+     repeat replaces the copies on the days it now covers (said in the sheet, with Undo
+     on the message), so it's never on a day twice
    - **Remind me** (`A`): none, at the time, or 5 minutes to 1 day before (the default
      is set in Me)
    - **Moves a goal** (`G`), with **+ New goal** (`+`) whenever someone's picked:

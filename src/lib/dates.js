@@ -29,6 +29,7 @@ const WEEKDAY_FULL = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'F
 export function formatWeekdays(days) {
   if (!days || days.length === 0) return '';
   if (days.length === 7) return 'Every day';
+  if (days.length === 5 && [1, 2, 3, 4, 5].every(d => days.includes(d))) return 'Every weekday';
   const sorted = [...days].sort((a, b) => a - b);
   let contiguous = true;
   for (let i = 1; i < sorted.length; i++) { if (sorted[i] !== sorted[i - 1] + 1) { contiguous = false; break; } }

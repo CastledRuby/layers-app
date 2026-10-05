@@ -586,15 +586,16 @@ function LayersApp() {
   // one (editingId). Clearing a field removes it, so an edited plan never
   // keeps a stale goal or start day. With `another` the sheet stays open for
   // the next plan and lists what's been added, so there's no toast or jump.
-  function handleSavePlan(fieldsOrList, editingId, { another = false, quick = false } = {}) {
+  // replaceIds: copies of an edited plan that it now repeats over.
+  function handleSavePlan(fieldsOrList, editingId, { another = false, quick = false, replaceIds = [] } = {}) {
     const snap = snapshot();
     const now = new Date().toISOString();
     const tidy = (ev) => { Object.keys(ev).forEach(k => { if (ev[k] === null || ev[k] === undefined) delete ev[k]; }); return ev; };
     const list = Array.isArray(fieldsOrList) ? fieldsOrList : [fieldsOrList];
     const fields = list[0];
     if (editingId) {
-      setEvents(prev => prev.map(e => e.id !== editingId ? e : tidy({ ...e, goalId: null, from: null, date: null, weekdays: null, allDay: null, ...fields, updatedAt: now })));
-      pushToast('Plan updated', { undo: snap });
+      setEvents(prev => prev.filter(e => !replaceIds.includes(e.id)).map(e => e.id !== editingId ? e : tidy({ ...e, goalId: null, from: null, date: null, weekdays: null, allDay: null, ...fields, updatedAt: now })));
+      pushToast(replaceIds.length ? `Plan updated, and ${replaceIds.length === 1 ? 'its copy' : `its ${replaceIds.length} copies`} replaced` : 'Plan updated', { undo: snap });
     } else {
       const created = toISODate(new Date());
       setEvents(prev => [...list.map(f => tidy({ id: uid(), defaultMeaningfulness: 3, ...f, createdAt: created, updatedAt: now })), ...prev]);

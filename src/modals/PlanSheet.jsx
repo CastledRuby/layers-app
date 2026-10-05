@@ -12,15 +12,18 @@
 //                                                   (QuickGoalSheet); Enter saves
 // Shift+Enter (or "Save + another") saves and starts the next plan in the same
 // sheet, for putting in a lot at once; what's been added shows on the first
-// step. "Several days" saves one plan for each day picked.
+// step. "Several days" saves one plan for each day picked; "Every weekday"
+// repeats Monday to Friday.
 // "When?" sums the plan up in a sentence and warns when it overlaps a plan
-// you already have.
+// you already have. Editing one of several copies of a plan (the same title,
+// people and time, as "Several days" saves them): a copy isn't an overlap, and
+// making it repeat replaces the copies on the days it now covers.
 // A plan started from a profile or an idea skips the steps it already knows;
 // editing opens straight on "when", and so does a copy (prefill.copyOf).
 // See docs/renderer/app-structure.md.
 
 import { useMemo, useRef, useState } from 'react';
-import { AlertTriangle, Check } from 'lucide-react';
+import { AlertTriangle, Check, Copy } from 'lucide-react';
 import { Sheet } from '../components/Sheet.jsx';
 import { isPlusKey, isTabbedToButton, isTyping } from '../components/sheetLayer.js';
 import { Kbd } from '../components/atoms.jsx';
@@ -35,8 +38,12 @@ import { COLORS } from '../theme.js';
 const TIMES = [9 * 60, 12 * 60 + 30, 15 * 60 + 30, 18 * 60, 20 * 60];
 const LENGTHS = [15, 30, 60, 120, 180];
 const ALERTS = [null, 0, 5, 15, 30, 60, 1440];
-const REPEATS = [['once', 'Once'], ['several', 'Several days'], ['daily', 'Every day'], ['weekly', 'Every week']];
+const REPEATS = [['once', 'Once'], ['several', 'Several days'], ['daily', 'Every day'], ['weekdays', 'Every weekday'], ['weekly', 'Every week']];
 const MON_FRI = [1, 2, 3, 4, 5];
+const ALL_WEEK = [0, 1, 2, 3, 4, 5, 6];
+const isMonFri = (days) => (days || []).length === 5 && MON_FRI.every(d => days.includes(d));
+// The weekdays a repeating plan falls on; null when it doesn't repeat.
+const repeatDaysOf = (repeat, weekdays) => (repeat === 'daily' ? ALL_WEEK : repeat === 'weekdays' ? MON_FRI : repeat === 'weekly' ? weekdays : null);
 const STEPS = ['what', 'who', 'when'];
 const AGAIN_KEYS = ['q', 'w', 'e', 'r'];
 const lengthLabel = (m) => (m < 60 ? `${m} min` : `${m / 60} h`);
@@ -44,6 +51,13 @@ const alertLabel = (a) => (a === null ? 'None' : a === 0 ? 'At the time' : a ===
 const namesText = (list) => (list.length <= 2 ? list.join(' and ') : `${list.slice(0, 2).join(', ')} and ${list.length - 2} more`);
 const addDays = (day, n) => { const d = parseISODay(day); return toISODate(new Date(d.getFullYear(), d.getMonth(), d.getDate() + n)); };
 const shortDay = (d) => `${WEEKDAY_SHORT[parseISODay(d).getDay()]} ${parseISODay(d).getDate()}`;
+const daysText = (list) => { const s = [...list].sort().map(shortDay); return s.length > 5 ? `${s.slice(0, 4).join(', ')} and ${s.length - 4} more` : s.length > 1 ? `${s.slice(0, -1).join(', ')} and ${s[s.length - 1]}` : s.join(''); };
+// Another copy of `of`, the plan being edited: a one-off with the same title,
+// people and time, as "Several days" saves them.
+function isCopyOf(ev, of) {
+  const ids = (x) => [...(x.personIds || [])].sort().join();
+  return ev.id !== of.id && ev.kind === 'oneoff' && ev.title === of.title && ids(ev) === ids(of) && !!ev.allDay === !!of.allDay && (!!ev.allDay || ev.time === of.time);
+}
 const autoTitleFor = (template, people, personIds) => (template || templateFor('custom')).title(namesText(personIds.map(id => (people.find(p => p.id === id) || {}).name).filter(Boolean)));
 
 // The next item in a list after `current` (with `back`, the one before),
@@ -83,7 +97,7 @@ function freshForm(start, people, today, defaultAlert) {
     allDay: source ? !!source.allDay : false,
     time: source && typeof source.time === 'number' ? source.time : template ? template.time : 18 * 60,
     duration: source ? durationOf(source) : template ? template.duration : DEFAULT_DURATION,
-    repeat: recurring ? (isDaily(source) ? 'daily' : 'weekly') : 'once',
+    repeat: recurring ? (isDaily(source) ? 'daily' : isMonFri(source.weekdays) ? 'weekdays' : 'weekly') : 'once',
     weekdays: recurring && !isDaily(source) ? source.weekdays : [parseISODay(day).getDay()],
     alert: source ? alertOf(source) : defaultAlert,
     goalId: source ? source.goalId || null : null,
@@ -125,10 +139,20 @@ export function PlanSheet({ people, events = [], today, prefill = {}, defaultAle
   const repeats = editing ? REPEATS.filter(([k]) => k !== 'several') : REPEATS;
   const nextDays = Array.from({ length: 7 }, (_, i) => addDays(today, i));
   const recent = useMemo(() => recentPlans(events), [events]);
-  // Plans already on the day (or days) that this one would overlap.
+  const repeatDays = repeatDaysOf(repeat, weekdays);
+  // Editing one of several copies into a repeat: the copies on the days it
+  // now covers (from its first day) go when it's saved, so it isn't on any
+  // day twice. Copies already ticked off stay.
+  const replaced = useMemo(() => (editing && repeatDays
+    ? events.filter(ev => isCopyOf(ev, editing) && !ev.doneAt && ev.date >= day && repeatDays.includes(parseISODay(ev.date).getDay()))
+    : []), [events, editing, repeatDays, day]);
+  // Plans already on the day (or days) that this one would overlap. A copy
+  // of the plan being edited is the same plan twice, so it's said that way.
   const clashes = useMemo(() => (allDay ? [] : (repeat === 'several' ? days : [day])
     .flatMap(d => clashesOn({ events, people }, d, time, duration, editing && editing.id).map(it => ({ day: d, it })))
-    .slice(0, 3)), [events, people, allDay, repeat, days, day, time, duration, editing]);
+    .filter(c => !replaced.includes(c.it.ev))), [events, people, allDay, repeat, days, day, time, duration, editing, replaced]);
+  const copyClashes = editing ? clashes.filter(c => isCopyOf(c.it.ev, editing)) : [];
+  const overlaps = clashes.filter(c => !copyClashes.includes(c)).slice(0, 3);
   const peopleKeys = usePeopleKeys(people, personIds, (id) => set(f => ({ personIds: f.personIds.includes(id) ? f.personIds.filter(x => x !== id) : [...f.personIds, id] })));
 
   function go(next) {
@@ -173,19 +197,19 @@ export function PlanSheet({ people, events = [], today, prefill = {}, defaultAle
     const at = allDay ? 'all day' : formatTime12(time);
     const when = repeat === 'once' ? `${day === today ? 'today' : shortDay(day)}, ${at}`
       : repeat === 'several' ? `${days.length} days, ${at}`
-        : repeat === 'daily' ? `every day, ${at}` : `${formatWeekdays(weekdays).replace(/^Every/, 'every')}, ${at}`;
+        : `${formatWeekdays(repeatDays).replace(/^Every/, 'every')}, ${at}`;
     return `${shownTitle.trim()} · ${when}`;
   }
   function save(another = false) {
     if (!canSave) return;
-    const kind = repeat === 'once' || repeat === 'several' ? 'oneoff' : 'recurring';
+    const kind = repeatDays ? 'recurring' : 'oneoff';
     const fields = {
       title: shownTitle.trim(),
       template: template ? template.key : 'custom',
       personIds,
       kind,
       date: kind === 'oneoff' ? day : null,
-      weekdays: kind === 'recurring' ? (repeat === 'daily' ? [0, 1, 2, 3, 4, 5, 6] : weekdays) : null,
+      weekdays: kind === 'recurring' ? [...repeatDays] : null,
       from: kind === 'recurring' ? (editing && editing.from && editing.from < day ? editing.from : day) : undefined,
       allDay,
       time: allDay ? null : time,
@@ -194,7 +218,7 @@ export function PlanSheet({ people, events = [], today, prefill = {}, defaultAle
       goalId: goals.some(g => g.id === goalId) ? goalId : null,
     };
     const next = !editing && another;
-    onSave(repeat === 'several' ? days.map(d => ({ ...fields, date: d })) : fields, editing ? editing.id : null, { another: next });
+    onSave(repeat === 'several' ? days.map(d => ({ ...fields, date: d })) : fields, editing ? editing.id : null, { another: next, replaceIds: replaced.map(ev => ev.id) });
     if (!next) return;
     // Start the next plan here: the same day, and the same person if the
     // plan came from their profile.
@@ -243,7 +267,7 @@ export function PlanSheet({ people, events = [], today, prefill = {}, defaultAle
   const whenText = [
     repeat === 'once' ? formatCalendarDate(parseISODay(day))
       : repeat === 'several' ? `${days.length} ${days.length === 1 ? 'day' : 'days'}: ${days.map(shortDay).join(', ')}`
-        : `${repeat === 'daily' ? 'Every day' : formatWeekdays(weekdays) || 'Every week'} from ${formatCalendarDate(parseISODay(day))}`,
+        : `${formatWeekdays(repeatDays) || 'Every week'} from ${formatCalendarDate(parseISODay(day))}`,
     allDay ? 'all day' : span(time, time + duration),
   ].join(', ') + ` · ${alert === null ? 'no reminder' : alert === 0 ? 'reminder at the time' : `reminder ${alertLabel(alert)}`}`;
   const isDayOn = (d) => (repeat === 'several' ? days.includes(d) : day === d);
@@ -321,10 +345,22 @@ export function PlanSheet({ people, events = [], today, prefill = {}, defaultAle
               <span style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }}><Kbd>{titleFocus ? 'Esc' : 'N'}</Kbd></span>
             </div>
             <p className="text-xs -mt-2 mb-2" style={{ color: COLORS.inkSoft }} aria-label="Summary">{whenText}</p>
-            {clashes.length > 0 && (
+            {overlaps.length > 0 && (
               <p className="text-xs mb-3 flex items-start gap-1.5 fade-anim" role="status" style={{ color: COLORS.warn }}>
                 <AlertTriangle size={13} className="shrink-0" style={{ marginTop: 1 }} />
-                <span>Overlaps {clashes.map(c => `${c.it.ev.title} (${repeat === 'several' ? `${shortDay(c.day)}, ` : ''}${span(c.it.start, c.it.end)})`).join(', ')}</span>
+                <span>Overlaps {overlaps.map(c => `${c.it.ev.title} (${repeat === 'several' ? `${shortDay(c.day)}, ` : ''}${span(c.it.start, c.it.end)})`).join(', ')}</span>
+              </p>
+            )}
+            {copyClashes.length > 0 && (
+              <p className="text-xs mb-3 flex items-start gap-1.5 fade-anim" role="status" style={{ color: COLORS.warn }}>
+                <AlertTriangle size={13} className="shrink-0" style={{ marginTop: 1 }} />
+                <span>{shortDay(copyClashes[0].day)} already has a copy of this plan, so it would be on there twice.</span>
+              </p>
+            )}
+            {replaced.length > 0 && (
+              <p className="text-xs mb-3 flex items-start gap-1.5 fade-anim" role="status" style={{ color: COLORS.inkSoft }}>
+                <Copy size={13} className="shrink-0" style={{ marginTop: 1 }} />
+                <span>Replaces its {replaced.length === 1 ? 'copy' : `${replaced.length} copies`} on {daysText(replaced.map(ev => ev.date))}, so it's on each day once.</span>
               </p>
             )}
             <div className="mb-2" />
