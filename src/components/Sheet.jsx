@@ -26,9 +26,11 @@ const animate = () => typeof window.matchMedia === 'function' && !window.matchMe
 //   In a sheet with keys, Esc or Tab in a text box leaves the box, so its
 //   keys work again; the next Esc closes the sheet.
 // - tall: a fixed 80% height, for sheets whose content changes (steps).
+// - top: drops down from the top with no title bar (the title still names
+//   it for screen readers), for the Ctrl+K box.
 // Closing by X, the backdrop or Esc slides the sheet away first; a parent
 // that unmounts it directly (after saving) closes it at once.
-export function Sheet({ title, onClose, onBack, onKey, children, footer, tall }) {
+export function Sheet({ title, onClose, onBack, onKey, children, footer, tall, top }) {
   const [closing, setClosing] = useState(false);
   const closingRef = useRef(false);
   const timer = useRef(null);
@@ -61,17 +63,17 @@ export function Sheet({ title, onClose, onBack, onKey, children, footer, tall })
 
   return (
     <SheetPortal>
-      <div className={`sheet${closing ? ' is-closing' : ''}`}>
+      <div className={`sheet${top ? ' sheet--top' : ''}${closing ? ' is-closing' : ''}`}>
         <div className="sheet-overlay" onClick={requestClose} />
         <div className={`sheet-panel sheet-anim${tall ? ' sheet-panel--tall' : ''}`} role="dialog" aria-modal="true" aria-label={title} data-keys={hasKeys ? '' : undefined}>
-          <div className="sheet-handle" aria-hidden="true" />
-          <div className="flex items-center gap-1.5 px-5 pt-3 pb-3">
+          {!top && <div className="sheet-handle" aria-hidden="true" />}
+          {!top && <div className="flex items-center gap-1.5 px-5 pt-3 pb-3">
             {onBack && (
               <button type="button" onClick={onBack} aria-label="Back" className="icon-btn -ml-2"><ChevronLeft size={20} color={COLORS.inkSoft} /></button>
             )}
             <p className="font-display sheet-title flex-1 min-w-0">{title}</p>
             <button type="button" onClick={requestClose} aria-label="Close" className="icon-btn -mr-2"><X size={19} color={COLORS.inkSoft} /></button>
-          </div>
+          </div>}
           <div className="sheet-body no-scrollbar">{children}</div>
           {footer && <div className="sheet-footer">{footer}</div>}
         </div>

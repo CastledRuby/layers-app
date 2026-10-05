@@ -37,7 +37,7 @@ and constant are in [../generated/code-map.md](../generated/code-map.md).
 | [`lib/achievements.js`](../../src/lib/achievements.js) | `achievementProgress` (how close you are to each one), `newlyUnlocked` and `progressText`. See [state-and-data.md](state-and-data.md#achievements). |
 | [`lib/hooks.js`](../../src/lib/hooks.js) | `useToday` (the local date, updated at midnight), `useDailyCheckIn` (the once-a-day check-in nudge) and `useCalendarNotifications` (hands the calendar's notifications to Windows, or shows them itself in a browser). The only React in `lib/`. |
 | [`components/`](../../src/components/) | `Sheet` + `SheetPortal`, `sheetLayer.js` (the portal context and the open-sheet stack Esc uses), `ErrorBoundary` (the "This screen hit a problem" fallback around the current screen), `PageTransition` (slides a new page in), `peopleKeys.js` (picking people by number or name), `atoms.jsx` (`CircularProgress`, `ProgressBar`, `LabeledBar`, `Avatar`, `LayerBadge`, `ChatBubble`, `Timeline`, `ConvStateBadge`), `rows.jsx` (`GoalRow`, `InfoItemRow`), `BottomNav`, `pickers.jsx` (`DateDropdown`, `TimeDropdown`, each with a compact chip form), `PersonPick.jsx` (`PersonPick`, `AvatarStack`), `illustrations.jsx` |
-| [`modals/`](../../src/modals/) | `ConfirmDialog`, `EditPersonModal`, `EditEntryModal` (edit or delete a journal entry), `EditProfileModal` (your name and focus), `LogInteractionModal` (with its detail sheets in `LogDetailSheets`), `PlanSheet`, `EventSheet`, `KeyDateSheet`, `GoalModal`, `TemplatePickerModal`, `QuickAddInterestModal`, `AddInfoModal`, `AddPersonModal`, `ShortcutsModal`, `StartOverSheet` (Delete my data and start over), `DaySheet` (one day in a popup), `PlanTipsSheet` (Coach tips for a plan), `QuickGoalSheet` (a new goal while planning or logging), `WeekReviewSheet` ("Your week": who you saw, plans done, goals moved, who to catch up with; Enter plans next week, 1–5 plans with someone) |
+| [`modals/`](../../src/modals/) | `ConfirmDialog`, `EditPersonModal`, `EditEntryModal` (edit or delete a journal entry), `EditProfileModal` (your name and focus), `LogInteractionModal` (with its detail sheets in `LogDetailSheets`), `PlanSheet`, `EventSheet`, `KeyDateSheet`, `GoalModal`, `TemplatePickerModal`, `QuickAddInterestModal`, `AddInfoModal`, `AddPersonModal`, `ShortcutsModal`, `StartOverSheet` (Delete my data and start over), `JumpSheet` (Ctrl+K), `DaySheet` (one day in a popup), `PlanTipsSheet` (Coach tips for a plan), `QuickGoalSheet` (a new goal while planning or logging), `WeekReviewSheet` ("Your week": who you saw, plans done, goals moved, who to catch up with; Enter plans next week, 1–5 plans with someone) |
 | [`views/`](../../src/views/) | `TodayView`, `PeopleView`, `PersonProfile` (with `AdjustSlider`, `PrepareTipsModal`), `GoalsView`, `JournalView`, `CoachView`, `MeView`, `OnboardingView` |
 | [`App.jsx`](../../src/App.jsx) | `LayersApp`, plus the small helpers it uses: `sampleData` and the sample-people checks (`SAMPLE_PERSON_IDS`, `SAMPLE_GOAL_IDS`, `skillsCameWithSamples`, `allSkillsZero`), `unlinkMissingPeople`, `addNotes` and `listNames` |
 
@@ -121,6 +121,7 @@ Every modal is a `Sheet` (or `ConfirmDialog`). Most are opened by a boolean flag
 | `EventSheet` | Tapping a plan on Today, or a notification's body | `LayersApp` (`eventView`) |
 | `WeekReviewSheet` | `W` on Today, Today's Sunday card, or the review and catch-up notifications (`layers://review`) | `LayersApp` (`weekReview`) |
 | `DaySheet` | Enter on Today, or tapping the day that's picked already | `LayersApp` (`dayView`) |
+| `JumpSheet` | Ctrl+K, anywhere (even over a sheet) | `LayersApp` (`jumpOpen`) |
 | `PlanTipsSheet` | **Coach tips** (`T`) on a plan in `DaySheet` or `EventSheet` | the sheet it's opened from |
 | `QuickGoalSheet` | **+ New goal** (`+`) on PlanSheet's "when" and the log's Goals sheet | `PlanSheet`, `LogInteractionModal` |
 | `KeyDateSheet` | A profile's **Add date** | `LayersApp` (`keyDateFor`) |
@@ -238,6 +239,32 @@ up on, what you last talked about and noted, their interests and plans), their k
 in the two weeks from the plan, a note to keep to lighter topics for Layers 1 and 2, and
 the goal the plan moves. `P` there opens Prepare in Coach for the first person.
 
+### Ctrl+K: jump to anything
+
+`JumpSheet` drops down from the top (`Sheet`'s `top`) with the cursor in its box. The
+rows come from `jumpResults` ([lib/jump.js](../../src/lib/jump.js)):
+
+- **Empty:** the next plan, the last four things you jumped to (kept in this computer's
+  browser storage, `layers-jump-recent`), then Log and Plan.
+- **Typing:** people, plans from two weeks back to four ahead (by title or who's in
+  them), pages (Today, Month, People, Coach, Journal, Me, Goals, Your week) and actions
+  (Log, Plan, Add a person, New goal, Light, Dark, Match Windows, Export, Restore, the
+  backups folder and updates when the build has them, Keyboard shortcuts, Start over).
+  The start of a name ranks first, then the start of any word, then initials, then
+  anywhere; pages and actions also match their other words ("settings" finds Me).
+- **"plan sam", "log sam", "prep sam":** that person's action comes first.
+- **A sentence** of two words or more that reads as a plan with nothing missing, or a log
+  with someone in it (`readSentence`, [lib/sentence.js](../../src/lib/sentence.js)),
+  comes first: "Plan: Coffee with Priya, Fri 9 Oct, 10:00 AM". Enter saves it
+  (`saveSentence`, with Undo on its message); Ctrl+Enter opens it in full instead
+  (PlanSheet's `draft` prefill, or the quick log filled in). A log with no rating always
+  opens.
+
+Keys, all in the box: ↑ ↓ move, Enter runs the row, → or Tab on a person shows Open, Log,
+Plan and Prepare, ← (or Backspace in an empty box) goes back, Esc closes. Numbers aren't
+row keys here, since they're part of what you type ("fri 10am"). `runJump` closes the
+sheets that were open before going somewhere; an action like Dark mode leaves them.
+
 ### Starting over
 
 **Delete my data and start over** in Me opens `StartOverSheet`, three steps:
@@ -264,6 +291,7 @@ These are defined once in `SHORTCUTS` (shown by `ShortcutsModal`) and implemente
 - **Modifiers:** single-key shortcuts (`N`, `D`, `/`, `?`, Backspace) ignore Ctrl, Alt and
   Win combinations, so Ctrl+N or Alt+D don't open anything. Ctrl+1–5 and Ctrl+Shift+A
   don't fire with Alt held.
+- **Ctrl+K** opens (or closes) `JumpSheet` from anywhere: over a sheet, or while typing.
 - **`/`** switches to People (or stays on Journal), then focuses that tab's search box once
   it has rendered, through the `searchFocus` state. It works from any tab.
 - **`Esc`** leaves a search box, or a text box in a sheet with keys (Tab does too, so

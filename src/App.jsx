@@ -35,6 +35,8 @@ import { QuickAddInterestModal } from './modals/QuickAddInterestModal.jsx';
 import { ShortcutsModal } from './modals/ShortcutsModal.jsx';
 import { StartOverSheet } from './modals/StartOverSheet.jsx';
 import { DaySheet } from './modals/DaySheet.jsx';
+import { JumpSheet } from './modals/JumpSheet.jsx';
+import { planFieldsOf } from './lib/sentence.js';
 import { TemplatePickerModal } from './modals/TemplatePickerModal.jsx';
 import { WeekReviewSheet } from './modals/WeekReviewSheet.jsx';
 import { COLORS, CSS, THEME_DARK, THEME_LIGHT } from './theme.js';
@@ -114,6 +116,7 @@ function LayersApp() {
   const [weekReview, setWeekReview] = useState(null); // a day in the week WeekReviewSheet shows
   const [eventView, setEventView] = useState(null); // { eventId, day } in EventSheet
   const [dayView, setDayView] = useState(null); // a day open in DaySheet
+  const [jumpOpen, setJumpOpen] = useState(false); // Ctrl+K, JumpSheet
   const [keyDateFor, setKeyDateFor] = useState(null); // person id, KeyDateSheet
   const [snoozes, setSnoozeList] = useState(() => getSnoozes());
   const [toasts, setToasts] = useState([]); // [{ id, text, undo? }]
@@ -289,6 +292,13 @@ function LayersApp() {
         if (top) top.close();
         return;
       }
+      // Ctrl+K opens (or closes) the jump box from anywhere, even over a sheet
+      // or while typing.
+      if ((e.ctrlKey || e.metaKey) && !e.altKey && !e.shiftKey && (e.key === 'k' || e.key === 'K') && onboarded) {
+        e.preventDefault();
+        setJumpOpen(o => !o);
+        return;
+      }
       // A focused slider or checkbox isn't typing; a text field is.
       const el = document.activeElement;
       const typing = !!el && (el.tagName === 'TEXTAREA' || el.isContentEditable || (el.tagName === 'INPUT' && !['range', 'checkbox', 'radio', 'button', 'submit'].includes(el.type)));
@@ -369,6 +379,61 @@ function LayersApp() {
   function backToTabs() { setScreen({ name: 'tabs' }); }
   function switchTab(tab) { setActiveTab(tab); setScreen({ name: 'tabs' }); }
   function openCoach(personId, tab) { setCoachInit({ personId: personId || null, tab: tab || 'prepare' }); setActiveTab('coach'); setScreen({ name: 'tabs' }); }
+  // Ctrl+K's row picked (JumpSheet, lib/jump.js). Going somewhere closes the
+  // sheets that were open; an action like Dark mode leaves them be.
+  function closeSheets() {
+    setLogOpen(false); setLogPrefill(null); setPlanState(null); setEventView(null); setDayView(null); setWeekReview(null);
+    setKeyDateFor(null); setGoalModalOpen(false); setAddInfoOpen(false); setQuickInterestOpen(false); setAddPersonOpen(false);
+    setShortcutsOpen(false); setStartOverOpen(false); setStandaloneDetailOpen(false); setEditPersonOpen(false);
+    setEditingEntryId(null); setEditProfileOpen(false);
+  }
+  function runJump(row, { full = false } = {}) {
+    const run = row.run;
+    setJumpOpen(false);
+    const go = (fn) => { closeSheets(); fn(); };
+    if (run.type === 'person') go(() => openPerson(run.id));
+    else if (run.type === 'personAction') {
+      go(() => ({ open: () => openPerson(run.id), log: () => openLog(run.id), plan: () => openPlan({ personIds: [run.id] }), prepare: () => openCoach(run.id, 'prepare') })[run.action]());
+    } else if (run.type === 'plan') go(() => { switchTab('today'); setSelectedDay(run.day === today ? null : run.day); setEventView({ eventId: run.eventId, day: run.day }); });
+    else if (run.type === 'tab') go(() => { switchTab(run.tab); if (run.mode) setCalendarMode(run.mode); });
+    else if (run.type === 'goals') go(openGoalsOverview);
+    else if (run.type === 'review') go(() => setWeekReview(today));
+    else if (run.type === 'sentence') go(() => saveSentence(row.sentence, full));
+    else if (run.type === 'action') {
+      const themes = { light: 'Light mode', dark: 'Dark mode', system: 'Matching Windows' };
+      if (themes[run.key]) { setThemeMode(run.key); pushToast(themes[run.key]); return; }
+      ({
+        log: () => go(() => openLog(null)),
+        plan: () => go(() => openPlan({ day: today })),
+        addPerson: () => go(() => setAddPersonOpen(true)),
+        goal: () => go(() => openGoalCreate()),
+        export: handleExportData,
+        restore: handleImportClick,
+        backups: handleOpenBackups,
+        updates: handleCheckForUpdates,
+        shortcuts: () => go(() => setShortcutsOpen(true)),
+        startOver: () => go(() => setStartOverOpen(true)),
+      })[run.key]();
+    }
+  }
+  // A plan or log typed as a sentence (lib/sentence.js), from Ctrl+K: saved
+  // straight away (with Undo on its message), or with `full` (Ctrl+Enter)
+  // opened in its sheet, filled in. A log with no rating yet opens too.
+  function saveSentence(r, full) {
+    if (r.kind === 'plan') {
+      const fields = planFieldsOf(r, notifySettings(profile).defaultAlert);
+      if (full) openPlan({ draft: fields });
+      else { switchTab('today'); handleSavePlan(fields, null); }
+      return;
+    }
+    if (!full && r.meaningfulness) {
+      handleLogSubmit({ personIds: r.personIds, type: r.type, meaningfulness: r.meaningfulness, notes: [], activeListening: [], summary: r.note || undefined, pickedDate: parseISODay(r.day) });
+      return;
+    }
+    setLogDefaultPerson(null);
+    setLogPrefill({ personIds: r.personIds, type: r.type, note: r.note, day: r.day, meaningfulness: r.meaningfulness || undefined });
+    setLogOpen(true);
+  }
   // "Prepare to talk" from Coach tips: off to Coach, closing the day and plan.
   function openPrepare(personId) { setDayView(null); setEventView(null); openCoach(personId, 'prepare'); }
 
@@ -1046,6 +1111,10 @@ function LayersApp() {
             )}
             {addPersonOpen && <AddPersonModal onClose={() => setAddPersonOpen(false)} onSave={handleAddPerson} />}
             {shortcutsOpen && <ShortcutsModal onClose={() => setShortcutsOpen(false)} />}
+            {jumpOpen && (
+              <JumpSheet people={people} events={events} today={today} has={{ bridge: hasSystemBridge, updater: hasUpdater }}
+                onRun={runJump} onClose={() => setJumpOpen(false)} />
+            )}
             {startOverOpen && <StartOverSheet counts={{ people: people.length, journal: journal.length, events: events.length, goals: generalGoals.length + people.reduce((n, p) => n + p.goals.length, 0) }} onExport={handleExportData} onClose={() => setStartOverOpen(false)} onConfirm={handleStartOver} />}
             {editProfileOpen && <EditProfileModal profile={profile} onClose={() => setEditProfileOpen(false)} onSave={(vals) => { setProfile(p => ({ ...p, ...vals })); setEditProfileOpen(false); pushToast('Profile updated'); }} />}
             {standaloneDetailOpen && (

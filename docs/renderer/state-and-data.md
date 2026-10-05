@@ -418,6 +418,19 @@ phone later. It's unit-tested in `src/calendar.test.js`.
 - **`weekSummary(state, day)`**: the Monday-to-Sunday week around `day` for the weekly
   review: who was seen, interactions logged, plans done of planned (not daily routines),
   goals with a history point that week, and next week's Monday and plans.
+- **`readSentence(text, { people, today, now })`** ([`lib/sentence.js`](../../src/lib/sentence.js)):
+  a typed plan or log, for Ctrl+K and the quick-add box. People by full or first name
+  (closest first when two share one), a template from its word (coffee, call, dinner or
+  lunch, hang out, study, check in, game or movie), days (today, tomorrow, a weekday,
+  "next fri", "in 3 days", "12 oct", "12/10" day first; a date gone by this year means
+  next year), times ("10am", "7:30pm", "19:00", "at 7" for 7 PM, noon, evening), how long
+  ("2h", "half an hour") and repeats ("every mon wed", "weekdays", "mondays", "every
+  day"). Other words stay in the title. Past-tense words ("talked", "called"), "log" or a
+  day gone by make it a log, with a rating word (brief to deep) or 1–5. It returns what it
+  understood with `unknown` names and `missing` ('when', 'who', 'rating');
+  `planFieldsOf` turns a plan into PlanSheet's saved fields.
+- **`jumpResults(query, …)`** ([`lib/jump.js`](../../src/lib/jump.js)): Ctrl+K's rows; see
+  [app-structure.md](app-structure.md#ctrlk-jump-to-anything).
 - **`planTips(ev, state, day)`** ([`lib/tips.js`](../../src/lib/tips.js)): Coach tips
   for a plan: `PLAN_TIPS` for its template, then for each person up to four of
   Prepare's hooks (`buildPotentialHooks`), their key dates from the plan's day to two

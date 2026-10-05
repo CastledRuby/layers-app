@@ -164,6 +164,14 @@ button:active:not(:disabled) { transform: scale(0.97); }
 @keyframes sheetUp { from { transform: translateY(40px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
 @keyframes sheetDown { from { transform: translateY(0); opacity: 1; } to { transform: translateY(40px); opacity: 0; } }
 .sheet-anim { animation: sheetUp .32s ${EASE}; }
+/* The Ctrl+K box drops down from the top instead (Sheet's top). */
+.sheet--top { align-items: flex-start; }
+.sheet--top .sheet-panel { border-radius: 0 0 26px 26px; max-height: 78%; box-shadow: 0 1px 0 color-mix(in srgb, ${COLORS.ink} 7%, transparent), 0 16px 40px rgba(10,12,20,0.28); }
+.sheet--top .sheet-body { padding-top: 16px; }
+.sheet--top .sheet-anim { animation: sheetDrop .26s ${EASE}; }
+.sheet--top.is-closing .sheet-panel { animation: sheetLift .17s cubic-bezier(0.4,0,1,1) forwards; }
+@keyframes sheetDrop { from { transform: translateY(-32px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+@keyframes sheetLift { from { transform: translateY(0); opacity: 1; } to { transform: translateY(-32px); opacity: 0; } }
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 @keyframes fadeOut { from { opacity: 1; } to { opacity: 0; } }
 .fade-anim { animation: fadeIn .25s ease-out; }
@@ -223,6 +231,8 @@ button:active:not(:disabled) { transform: scale(0.97); }
 input:not([type="range"]):not([type="checkbox"]):not([type="radio"]), textarea { color: ${COLORS.ink}; background-color: ${COLORS.paperRaised}; transition: border-color .16s ease, box-shadow .16s ease; }
 input::placeholder, textarea::placeholder { color: color-mix(in srgb, ${COLORS.inkSoft} 80%, transparent); }
 input:focus, textarea:focus { outline: none; border-color: ${COLORS.accent} !important; box-shadow: 0 0 0 3px color-mix(in srgb, ${COLORS.accent} 20%, transparent); }
+/* The Ctrl+K box's field sits inside its own outlined box (JumpSheet). */
+.jump-input:focus { box-shadow: none; }
 
 @keyframes levelUpScale { 0% { transform: scale(0.85); } 35% { transform: scale(1.08); } 60% { transform: scale(0.98); } 100% { transform: scale(1); } }
 @keyframes levelUpGlow { 0%, 100% { filter: drop-shadow(0 0 0 rgba(0,0,0,0)); } 40% { filter: drop-shadow(0 0 18px currentColor); } }

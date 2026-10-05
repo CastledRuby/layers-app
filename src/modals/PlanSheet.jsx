@@ -56,17 +56,19 @@ function cycle(list, current, back) {
 
 // What the sheet opens on. `start` is the prefill: { day, personIds,
 // template } for a new plan, { event } to edit one, { copyOf } to plan one
-// again (from the day after).
+// again (from the day after), or { draft } for a plan typed as a sentence
+// (Ctrl+K's "open it in full": the fields readSentence gave, on their day).
 function firstStep(start) {
-  return start.event || start.copyOf ? 'when' : !start.template ? 'what' : start.personIds ? 'when' : 'who';
+  return start.event || start.copyOf || start.draft ? 'when' : !start.template ? 'what' : start.personIds ? 'when' : 'who';
 }
 function freshForm(start, people, today, defaultAlert) {
   const editing = start.event || null;
-  const source = editing || start.copyOf || null;
+  const source = editing || start.copyOf || start.draft || null;
   const template = templateFor(source ? source.template : start.template);
   const day = editing ? (editing.kind === 'oneoff' ? editing.date : start.day || today)
-    : start.copyOf && start.copyOf.kind === 'oneoff' ? addDays(start.day && start.day > today ? start.day : today, 1)
-      : start.day || today;
+    : start.draft ? start.draft.date || start.draft.from || today
+      : start.copyOf && start.copyOf.kind === 'oneoff' ? addDays(start.day && start.day > today ? start.day : today, 1)
+        : start.day || today;
   const personIds = (source ? source.personIds || [] : start.personIds || []).filter(id => people.some(p => p.id === id));
   const recurring = source && source.kind === 'recurring';
   return {
@@ -74,7 +76,7 @@ function freshForm(start, people, today, defaultAlert) {
     personIds,
     title: source ? source.title : '',
     // A copy keeps a title that was typed, and follows the people otherwise.
-    titleTouched: !!editing || (!!start.copyOf && start.copyOf.title !== autoTitleFor(template, people, personIds)),
+    titleTouched: !!editing || (!!(start.copyOf || start.draft) && source.title !== autoTitleFor(template, people, personIds)),
     titleAgain: false, // the title came from "Plan again", not typed
     day,
     days: [day], // for "Several days"
@@ -114,7 +116,7 @@ export function PlanSheet({ people, events = [], today, prefill = {}, defaultAle
   const set = (patch) => setForm(f => ({ ...f, ...(typeof patch === 'function' ? patch(f) : patch) }));
 
   const editing = start.event || null;
-  const copyOf = !editing && start.copyOf ? start.copyOf : null;
+  const copyOf = !editing && (start.copyOf || start.draft) ? start.copyOf || start.draft : null;
   const { template, personIds, day, days, allDay, time, duration, repeat, weekdays, alert, goalId } = form;
   const picked = personIds.map(id => people.find(p => p.id === id)).filter(Boolean);
   const shownTitle = form.titleTouched ? form.title : autoTitleFor(template, people, personIds);
@@ -245,7 +247,7 @@ export function PlanSheet({ people, events = [], today, prefill = {}, defaultAle
     allDay ? 'all day' : span(time, time + duration),
   ].join(', ') + ` · ${alert === null ? 'no reminder' : alert === 0 ? 'reminder at the time' : `reminder ${alertLabel(alert)}`}`;
   const isDayOn = (d) => (repeat === 'several' ? days.includes(d) : day === d);
-  const titles = { what: added.length ? 'Plan another' : 'Plan something', who: 'Who with?', when: editing ? 'Edit plan' : copyOf ? 'Plan it again' : 'When?' };
+  const titles = { what: added.length ? 'Plan another' : 'Plan something', who: 'Who with?', when: editing ? 'Edit plan' : start.copyOf ? 'Plan it again' : 'When?' };
   const saveLabel = editing ? 'Save changes' : repeat === 'several' && days.length > 1 ? `Save ${days.length} plans` : 'Save plan';
   const footer = step === 'what'
     ? (added.length ? <button type="button" onClick={onClose} className="primary-btn">Done, {added.length} added</button> : null)

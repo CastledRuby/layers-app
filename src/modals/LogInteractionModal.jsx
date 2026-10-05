@@ -53,9 +53,9 @@ function Scale({ value, onChange, label, size = 'md' }) {
   );
 }
 
-// prefill (logging a plan from the calendar): { personIds, type, note, day,
-// goalIds } opens straight on the details, filled in; goalIds, when given,
-// are the only goals ticked.
+// prefill (logging a plan from the calendar, or a log typed in Ctrl+K):
+// { personIds, type, note, day, goalIds, meaningfulness } opens straight on
+// the details, filled in; goalIds, when given, are the only goals ticked.
 export function LogInteractionModal({ people, defaultPersonId, prefill, onClose, onSubmit, onPlan, onCreateGoal }) {
   const [step, setStep] = useState(prefill ? 'details' : 'kind'); // kind -> type -> who -> details
   const [dir, setDir] = useState(null); // 'in' | 'back': the slide for the step just shown
@@ -63,7 +63,7 @@ export function LogInteractionModal({ people, defaultPersonId, prefill, onClose,
   // Only preselect someone who still exists (Coach can pass a removed person).
   const startPerson = defaultPersonId && people.some(p => p.id === defaultPersonId) ? defaultPersonId : null;
   const [personIds, setPersonIds] = useState(() => prefill ? (prefill.personIds || []).filter(id => people.some(p => p.id === id)) : startPerson ? [startPerson] : []);
-  const [meaningfulness, setMeaningfulness] = useState(3);
+  const [meaningfulness, setMeaningfulness] = useState(() => (prefill && prefill.meaningfulness) || 3);
   const [al, setAl] = useState([]);
   const [quickNote, setQuickNote] = useState(prefill && prefill.note ? prefill.note : '');
   const [quickNoteTags, setQuickNoteTags] = useState([]);

@@ -69,6 +69,10 @@ interact.
   some things), setting up (people tapped or typed with how close they are, notification
   switches, Plan something first, Restore from a backup), and planning's Plan again and
   overlap warning.
+- `jump.test.jsx` covers Ctrl+K: finding a person and their actions, "plan sam", going
+  somewhere from over a sheet, Dark mode, and saving, opening or logging a typed sentence.
+  The matching itself is unit-tested in `src/jump.test.js`, and the sentence reader in
+  `src/sentence.test.js`.
 - `feedback.test.jsx` covers the owner's live-test feedback: picking from more than nine
   people, a plan's title after Plan again, leaving the title box, a new goal while
   planning or logging, and the day popup with Coach tips.

@@ -247,7 +247,7 @@ The three bigger quality-of-life pieces (2, 1 and 5 above), drafted on 2026-10-0
 your answers to four more questions (in bold). Each will be built and installed on its
 own, in this order. None of it is built yet; say if any of it should change.
 
-### Ctrl+K: jump to anything
+### Ctrl+K: jump to anything ✅ Built
 
 - **Ctrl+K** anywhere in Layers, even over a sheet, opens a box at the top with the
   cursor in it. `/` stays as the people and journal search.
@@ -265,8 +265,10 @@ own, in this order. None of it is built yet; say if any of it should change.
     Start over (which only opens its sheet).
   - **A sentence**, read the same way as the quick-add box below: "coffee with priya fri
     10am" offers "Plan: Coffee with Priya, Fri 9 Oct, 10:00 AM" as the top row.
-- **Keys**: ↑ and ↓ move, Enter picks, 1–9 pick a row, → shows a person's actions, ←
-  goes back, Esc closes.
+- **Keys**: ↑ and ↓ move, Enter picks, → shows a person's actions, ← goes back, Esc
+  closes. *(Changed while building: numbers don't pick rows, since they're part of what
+  you type, like "fri 10am".)* Enter saves a typed plan or a rated log at once, with Undo;
+  **Ctrl+Enter** opens it in full instead.
 
 ### Wider on desktop
 
@@ -380,6 +382,13 @@ start.
   privacy principle comes first.
 
 ## History
+
+### Ctrl+K: jump to anything (after 1.0.30, not released yet)
+
+People (→ for Log, Plan and Prepare), plans, pages and actions, "plan sam", and plans
+or logs typed as a sentence ("coffee with priya fri 10am", "log sam deep"), saved with
+Enter or opened in full with Ctrl+Enter. See
+[Ctrl+K](#ctrlk-jump-to-anything--built) above.
 
 ### Live-test feedback (after 1.0.30, not released yet)
 

@@ -141,6 +141,9 @@ log's date button sat in a `z-index: 20` wrapper and showed through "Add detail"
 about saved data that couldn't be read
 ([state-and-data.md](state-and-data.md#loading-saved-data)). Esc still dismisses it.
 
+`Sheet`'s `top` drops the panel down from the top with no title bar (the title still
+names it for screen readers): the Ctrl+K box.
+
 ### Esc and the open-sheet stack
 
 Every open `Sheet` and `ConfirmDialog` registers itself in a stack in

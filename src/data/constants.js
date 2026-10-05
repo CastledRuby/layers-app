@@ -35,6 +35,7 @@ export function categoryMeta(key) { return CATEGORIES.find(c => c.key === key) |
 export const TABS = ['coach', 'people', 'today', 'journal', 'me'];
 
 export const SHORTCUTS = [
+  { keys: ['Ctrl', 'K'], desc: 'Jump to anything: a person, plan, page or action, or type a plan ("coffee with Priya fri 10am") or a log ("log Sam deep")' },
   { keys: ['Ctrl', '1'], desc: 'Go to Coach' },
   { keys: ['Ctrl', '2'], desc: 'Go to People (the map of how close you are)' },
   { keys: ['Ctrl', '3'], desc: 'Go to Today (your day and the calendar)' },
