@@ -35,7 +35,14 @@ export const AVATAR_GROUPS = [
       ['🎧', 'Music'], ['✈️', 'Travel'], ['💎', 'Gem'], ['❤️', 'Heart'], ['🏄', 'Surfing'], ['🧗', 'Climbing'], ['🚴', 'Cycling'], ['🎭', 'Theatre'],
     ],
   },
-].map(g => ({ ...g, items: g.items.map(([emoji, name]) => ({ emoji, name })) }));
+].map(g => ({ ...g, items: g.items.map(([emoji, name]) => ({ emoji, name, tone: !!g.tone, words: `${name} ${g.label}`.toLowerCase() })) }));
+
+// The avatars whose name (or group) has every word typed: "red hair", "dog".
+export function findAvatars(query) {
+  const words = query.toLowerCase().split(/[\s,]+/).filter(Boolean);
+  if (!words.length) return [];
+  return AVATAR_GROUPS.flatMap(g => g.items).filter(it => words.every(w => it.words.includes(w)));
+}
 
 // The skin tones, as Fitzpatrick modifiers ('' is the default yellow), with
 // a swatch colour for the picker.

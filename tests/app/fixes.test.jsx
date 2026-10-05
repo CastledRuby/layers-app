@@ -69,8 +69,7 @@ describe('#1 Coach opened for someone who was then removed', () => {
     const { user } = renderApp();
     await user.click(nav('Coach'));
     await user.click(screen.getByRole('button', { name: 'Log this conversation' }));
-    await user.click(within(dialog('What are you logging?')).getByRole('button', { name: /^Interaction/ }));
-    await user.click(within(dialog('What did you do?')).getByRole('button', { name: /Talked/ }));
+    await user.click(within(dialog('What did you do?')).getByRole('button', { name: /Talked/ })); // someone's picked: straight to what you did
     expect(screen.getByRole('button', { name: 'Confirm (1 selected)' })).toBeTruthy(); // Riley, who exists
   });
 

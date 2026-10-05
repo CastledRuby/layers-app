@@ -45,11 +45,26 @@ describe('the avatar picker', () => {
     expect(savedPerson('Morgan').emoji).toBe('👩🏿');
   });
 
+  it('/ finds one by name; Enter picks the first match, then the arrows move through the matches', async () => {
+    seedState({ people: [person('Morgan')] });
+    const { user } = renderApp();
+    await user.keyboard('{Control>}{Shift>}a{/Shift}{/Control}Lou{Tab}/');
+    expect(document.activeElement).toBe(screen.getByLabelText('Find an avatar'));
+    await user.keyboard('red hair');
+    expect(within(dialog('Add someone new')).getByRole('group', { name: 'Matches' }).querySelectorAll('button')).toHaveLength(3);
+    await user.keyboard('{Enter}');
+    expect(pressed('Add someone new', 'Red hair')).toBe('true');
+    expect(dialog('Add someone new')).toBeTruthy(); // Enter in the find box doesn't go on
+    await user.keyboard('{ArrowRight}');
+    expect(pressed('Add someone new', 'Woman, red hair')).toBe('true');
+    await user.keyboard('l{Enter}');
+    expect(savedPerson('Lou').emoji).toBe('👩‍🦰');
+  });
+
   it('setting up: A (or tapping their avatar) opens the picker for the newest person', async () => {
     const { user } = renderApp();
     await user.type(screen.getByLabelText('Your name'), 'Sam{Enter}');
     await user.type(screen.getByLabelText("Person's name"), 'Ana{Enter}');
-    await user.keyboard('{Escape}'); // no questions this time
     await user.keyboard('{Escape}a'); // out of the name box, then A
     expect(dialog("Ana's avatar")).toBeTruthy();
     await user.keyboard('g{ArrowRight}{ArrowRight}{Enter}'); // Faces: the first, then the second

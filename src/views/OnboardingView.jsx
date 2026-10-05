@@ -4,11 +4,12 @@
 //           restore from a backup. Enter starts fresh; out of the name box
 //           (Esc or Tab), 1-4 pick what brings you here, E explores and R
 //           restores.
-//   people  who's in your circle: type a name (Enter) or tap a suggestion, and
+//   people  who's in your circle: type a name (Enter) or tap a suggestion.
 //           "How close are you two?" (QuizSheet) asks a few questions to place
-//           them; Esc skips it. Each card's layer can be tapped too, Q asks
-//           again for the newest and A picks their avatar (AvatarSheet).
-//           Enter on an empty box goes on.
+//           them when you want it: Shift+Enter adds someone and asks, Q (out
+//           of the name box) asks about the newest, or a card's Questions.
+//           A picks the newest one's avatar (AvatarSheet). Each card's layer
+//           can be tapped too. Enter on an empty box goes on.
 //   ready   the notifications you want and the keys worth knowing, then Go to
 //           Today (Enter) or Plan something first (P)
 // The example people skip "people". See docs/renderer/app-structure.md.
@@ -81,12 +82,12 @@ export function OnboardingView({ initialName, initialFocus, initialNotify = NOTI
   }));
   const canContinue = name.trim().length > 0;
 
-  // Added, then straight into how close you are.
-  function addDraftPerson(raw) {
+  // Added, and with `ask` (Shift+Enter) straight into how close you are.
+  function addDraftPerson(raw, ask = false) {
     const trimmed = (raw === undefined ? newName : raw).trim();
     if (!trimmed) return;
     setDraftPeople(prev => [...prev, { name: trimmed, emoji: PERSON_EMOJIS[prev.length % PERSON_EMOJIS.length], layer: 1, overall: null }]);
-    setQuizFor(draftPeople.length);
+    if (ask) setQuizFor(draftPeople.length);
     if (raw === undefined) setNewName('');
   }
   function closeQuiz() {
@@ -152,11 +153,11 @@ export function OnboardingView({ initialName, initialFocus, initialNotify = NOTI
         <Progress step="people" samples={false} />
         <button type="button" onClick={() => setStep('intro')} className="flex items-center gap-1 text-sm font-medium mb-3" style={{ color: COLORS.inkSoft }}><ChevronLeft size={18} /> Back</button>
         <p className="font-display" style={{ fontSize: 24, color: COLORS.ink }}>Who's in your circle?</p>
-        <p className="text-sm mt-2" style={{ color: COLORS.inkSoft }}>Type a name and press Enter, or tap one below. A few quick questions place them on how close you are (Esc skips them); you can change it any time. Enter on an empty box goes on.</p>
+        <p className="text-sm mt-2" style={{ color: COLORS.inkSoft }}>Type a name and press Enter, or tap one below, then tap how close you are. Shift+Enter adds someone and asks a few quick questions to place them instead. Out of the box (Esc), Q asks about the newest person and A picks their avatar. Enter on an empty box goes on.</p>
 
         <div className="flex items-center gap-2 mt-5">
           <input ref={nameRef} autoFocus value={newName} onChange={e => setNewName(e.target.value)}
-            onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); if (newName.trim()) addDraftPerson(); else if (!e.repeat) setStep('ready'); } }}
+            onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); if (newName.trim()) addDraftPerson(undefined, e.shiftKey); else if (!e.repeat) setStep('ready'); } }}
             placeholder="Someone's name" aria-label="Person's name" className="flex-1 text-sm rounded-xl px-3 py-2.5" style={{ border: `1px solid ${COLORS.line}` }} />
           <button type="button" onClick={() => addDraftPerson()} className="text-xs font-semibold rounded-full px-4 py-2.5" style={{ background: COLORS.accent, color: COLORS.onAccent }}>Add</button>
         </div>

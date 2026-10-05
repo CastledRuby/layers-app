@@ -71,7 +71,7 @@ function PrepareTipsModal({ person, journal, onClose, onOpenFullCoach }) {
   );
 }
 
-export function PersonProfile({ today, person, journal, onBack, onOpenLog, onOpenGoalCreate, onOpenGoalEdit, onDeleteGoal, onBumpGoal, onOpenAddInfo, onOpenQuickAddInterest, onSaveInfo, onDeleteInfo, onToggleTemporary, onToggleArchive, onAdjust, onOpenCoach, onEditPerson, onClearLevelUpFlag, onRemindFollowUp, onPlan, onAddKeyDate, onDeleteKeyDate }) {
+export function PersonProfile({ today, person, journal, onBack, onOpenLog, onOpenGoalCreate, onOpenGoalEdit, onDeleteGoal, onBumpGoal, onOpenAddInfo, onOpenQuickAddInterest, onSaveInfo, onDeleteInfo, onToggleTemporary, onToggleArchive, onAdjust, onOpenCoach, onEditPerson, onClearLevelUpFlag, onRemindFollowUp, onPlan, onAddKeyDate, onDeleteKeyDate, onRecheck }) {
   const [prepareOpen, setPrepareOpen] = useState(false);
   const [showAdjust, setShowAdjust] = useState(false);
   const [draft, setDraft] = useState(person.dims);
@@ -157,6 +157,7 @@ export function PersonProfile({ today, person, journal, onBack, onOpenLog, onOpe
       </div>
 
       <div className="text-center mt-3">
+        {onRecheck && !showAdjust && <button type="button" onClick={onRecheck} className="text-xs font-semibold mr-4" style={{ color: COLORS.accent }}>Where are we now?</button>}
         <button onClick={showAdjust ? saveAdjust : openAdjust} className="text-xs font-medium" style={{ color: COLORS.accent }}>{showAdjust ? 'Save changes' : 'Adjust manually'}</button>
         {showAdjust && <button onClick={() => setShowAdjust(false)} className="text-xs font-medium ml-3" style={{ color: COLORS.inkSoft }}>Cancel</button>}
       </div>

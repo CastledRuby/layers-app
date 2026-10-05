@@ -57,11 +57,13 @@ function Scale({ value, onChange, label, size = 'md' }) {
 // { personIds, type, note, day, goalIds, meaningfulness } opens straight on
 // the details, filled in; goalIds, when given, are the only goals ticked.
 export function LogInteractionModal({ people, defaultPersonId, prefill, onClose, onSubmit, onPlan, onCreateGoal }) {
-  const [step, setStep] = useState(prefill ? 'details' : 'kind'); // kind -> type -> who -> details
-  const [dir, setDir] = useState(null); // 'in' | 'back': the slide for the step just shown
-  const [type, setType] = useState(prefill ? prefill.type || 'other' : null);
   // Only preselect someone who still exists (Coach can pass a removed person).
   const startPerson = defaultPersonId && people.some(p => p.id === defaultPersonId) ? defaultPersonId : null;
+  // With someone already picked (their profile, Ctrl+K), it's an interaction,
+  // so it starts at what you did (Backspace still reaches "Plan something").
+  const [step, setStep] = useState(prefill ? 'details' : startPerson ? 'type' : 'kind'); // kind -> type -> who -> details
+  const [dir, setDir] = useState(null); // 'in' | 'back': the slide for the step just shown
+  const [type, setType] = useState(prefill ? prefill.type || 'other' : null);
   const [personIds, setPersonIds] = useState(() => prefill ? (prefill.personIds || []).filter(id => people.some(p => p.id === id)) : startPerson ? [startPerson] : []);
   const [meaningfulness, setMeaningfulness] = useState(() => (prefill && prefill.meaningfulness) || 3);
   const [al, setAl] = useState([]);

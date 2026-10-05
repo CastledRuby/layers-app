@@ -133,6 +133,13 @@ input, textarea { font-family: 'Manrope', ui-sans-serif, system-ui, sans-serif; 
 .people-split--solo .people-split-list { position: static; max-height: none; overflow: visible; border-right: none; }
 .people-split-detail > * { max-width: 760px; margin: 0 auto; }
 
+/* Today's getting-started list: a ring, filled once a step is done. */
+.first-step-check { width: 20px; height: 20px; border-radius: 50%; flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; border: 2px solid ${COLORS.line}; color: ${COLORS.onAccent}; transition: background-color .25s ease, border-color .25s ease; }
+.first-step-check--done { background: ${COLORS.good}; border-color: ${COLORS.good}; }
+
+/* The person ↑ ↓ have marked on People's list (PeopleView). */
+.row-cursor { background: ${COLORS.accentSoft}; box-shadow: inset 0 0 0 2px ${COLORS.accent}; }
+
 /* People's Add person button: big, first in the row, with its key. */
 .add-person-btn { display: inline-flex; align-items: center; gap: 8px; flex-shrink: 0; padding: 9px 10px 9px 9px; border-radius: 999px; font-size: 14px; font-weight: 700; background: ${COLORS.accent}; color: ${COLORS.onAccent}; box-shadow: 0 6px 16px color-mix(in srgb, ${COLORS.accent} 30%, transparent); transition: transform .15s ease, box-shadow .15s ease; }
 .add-person-btn:hover { transform: translateY(-1px); box-shadow: 0 8px 20px color-mix(in srgb, ${COLORS.accent} 38%, transparent); }
@@ -239,6 +246,7 @@ button:active:not(:disabled) { transform: scale(0.97); }
 .tile > .kbd { position: absolute; top: 9px; right: 9px; }
 /* The avatar picker (AvatarPicker.jsx): a grid of emoji, the one picked
    ringed, skin-tone swatches, and a big preview. */
+.avatar-picker input:focus { box-shadow: none; }
 .avatar-grid { display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 6px; }
 .avatar-choice { aspect-ratio: 1; display: flex; align-items: center; justify-content: center; font-size: 22px; line-height: 1; border-radius: 12px; border: 1.5px solid transparent; background: ${COLORS.paperRaised}; transition: transform .14s ease, border-color .14s ease, background-color .14s ease; }
 .avatar-choice:hover { transform: scale(1.12); background: ${COLORS.accentSoft}; }

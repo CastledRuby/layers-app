@@ -334,19 +334,19 @@ its own. Changes made while building are marked.
 
 ## Drafted next: after the second live test
 
-Not built yet. Drafted on 2026-10-05 from what the second live test showed; each would be
-built and installed on its own. Say which to do, and if any should change.
+Drafted on 2026-10-05 from what the second live test showed. You picked 1 to 4 to go in
+before 1.0.31, and they're built; 5 and 6 wait.
 
-1. **A getting-started list on Today**, for a new circle: add people (A), log your first
+1. ✅ **A getting-started list on Today**, for a new circle: add people (A), log your first
    chat (N), plan something (P), try Ctrl+K, try the quick-add box (Ctrl+Shift+L). Each
    ticks itself off from what you do, and the list goes once it's done, or with Hide. It
    would stand in for "Try this next" until then.
-2. **Arrow keys on the People list**: ↑ ↓ move through people, Enter opens them (beside
+2. ✅ **Arrow keys on the People list**: ↑ ↓ move through people, Enter opens them (beside
    the list in a wide window), / searches as now. The list is mouse-only today.
-3. **Logging with someone skips "What are you logging?"**: from Ctrl+K's L or a profile's
+3. ✅ **Logging with someone skips "What are you logging?"**: from Ctrl+K's L or a profile's
    "Log an interaction", the person is already picked, so it could open on "What did you
    do?".
-4. **The questions again from a profile**: "Where are we now?" asks the closeness
+4. ✅ **The questions again from a profile**: "Where are we now?" asks the closeness
    questions about someone already in your circle and moves them, recorded like Adjust,
    with Undo.
 5. **Key dates while setting up**: a birthday (or another date) on each person's card.
@@ -354,9 +354,8 @@ built and installed on its own. Say which to do, and if any should change.
    Add info, Edit person, Add detail's items (type to find one), and Coach's Prepare.
 7. **Release 1.0.31** with everything since 1.0.30, once you're happy with the live test.
 
-One thing to check while you set up: setting up now asks the closeness questions for each
-person you add (Esc skips them). The vision says setup shouldn't feel like a
-questionnaire. If it does with a lot of people, it could ask only when you press Q.
+Also from your answers: setting up asks the closeness questions only when you ask
+(Shift+Enter, or Q), and the avatar picker can find one by name (/).
 
 ## Next: smaller fixes
 
@@ -447,10 +446,21 @@ What you found trying it again on 2026-10-05, and what changed:
   people (with hair, ages, jobs), faces, animals and things, in groups (**G**), with skin
   tones for people (**T**) and the arrows to move through them, a big preview beside the
   name, and the grid shown in the tone you've picked. Avatars you already have are all
-  still there. While setting up, tapping someone's avatar (or **A** for the newest)
-  opens it.
-- **Setting up**: each person you add asks the same questions (Esc skips them), and their
-  card says where they landed, with **Questions** (Q) to ask again. The first screen has
+  still there. **/** finds one by name ("dog", "red hair"). While setting up, tapping
+  someone's avatar (or **A** for the newest) opens it.
+- **The People list from the keyboard**: ↑ ↓ mark people, closest first, and Enter opens
+  them; beside an open profile ↑ ↓ go straight to the next. In the search box, Enter opens
+  the first match.
+- **Logging with someone already picked** (their profile, Ctrl+K's L) starts at "What did
+  you do?".
+- **Where are we now?** on a profile (or **W** on someone in Ctrl+K) asks the closeness
+  questions again and moves them where the answers put them, with Undo.
+- **Getting started** on Today, for a new circle: add your first person, log your first
+  chat, plan your first thing, try Ctrl+K and the quick-add box. Each ticks itself off;
+  Hide puts "Try this next" back.
+- **Setting up**: **Shift+Enter** adds someone and asks the same questions (plain Enter
+  just adds them), their card says where they landed, and **Questions** (Q for the newest)
+  asks again. The first screen has
   keys too (Esc out of your name, then 1–4 for what brings you here, E to explore, R to
   restore), and the last one lists the keys worth knowing.
 

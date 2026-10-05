@@ -84,8 +84,14 @@ interact.
 - `feedback.test.jsx` covers the owner's live-test feedback: picking from more than nine
   people, a plan's title after Plan again, leaving the title box, a new goal while
   planning or logging, and the day popup with Coach tips.
+- `prerelease.test.jsx` covers what went in before 1.0.31: arrow keys and Enter on the
+  People list (and beside an open profile, and from the search box), logging with someone
+  starting at "What did you do?", "Where are we now?" (moving someone, with Undo, and W in
+  Ctrl+K), and Today's getting-started list (ticking off, Hide, and not for a circle with
+  a few logs).
 - `avatar.test.jsx` covers the avatar picker: arrows, skin tones and groups when adding
-  someone, keeping a tone when editing them, and A while setting up. `src/avatars.test.js`
+  someone, finding one by name (/), keeping a tone when editing them, and A while
+  setting up. `src/avatars.test.js`
   checks that tones go in and come out of an emoji cleanly, and that every older avatar is
   still offered.
 - `closeness.test.jsx` covers adding someone through "How close are you two?" from the

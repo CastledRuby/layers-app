@@ -2,7 +2,8 @@
 // come from jumpResults (lib/jump.js) and LayersApp runs the one picked
 // (onRun). Keys, all in the box: ↑ ↓ move, Enter runs the row (Ctrl+Enter
 // opens a typed plan or log in its full sheet instead of saving it), → or Tab
-// on a person shows Open, Log, Plan and Prepare, picked with O, L, P or R
+// on a person shows Open, Log, Plan, Prepare and Where are you now, picked
+// with O, L, P, R or W
 // (or ↑ ↓ and Enter), ← (or Backspace in an empty box) goes back, Esc closes.
 // What you jump to is remembered on this computer for next time (browser
 // storage, a convenience only).
@@ -98,7 +99,7 @@ export function JumpSheet({ people, events, today, has, onRun, onClose }) {
       <p className="text-xs mt-3 flex items-center gap-1 flex-wrap" style={{ color: COLORS.inkSoft }}>
         <Kbd>↑</Kbd><Kbd>↓</Kbd> move · <Kbd>↵</Kbd> go
         {current && current.group === 'sentence' && <> · <Kbd>Ctrl</Kbd><Kbd>↵</Kbd> open it in full</>}
-        {personFor && <> · <Kbd>O</Kbd><Kbd>L</Kbd><Kbd>P</Kbd><Kbd>R</Kbd> pick · <Kbd>←</Kbd> back</>}
+        {personFor && <> · <Kbd>O</Kbd><Kbd>L</Kbd><Kbd>P</Kbd><Kbd>R</Kbd><Kbd>W</Kbd> pick · <Kbd>←</Kbd> back</>}
       </p>
     </Sheet>
   );

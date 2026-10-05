@@ -47,6 +47,7 @@ import { MeView } from './views/MeView.jsx';
 import { OnboardingView } from './views/OnboardingView.jsx';
 import { PeopleView } from './views/PeopleView.jsx';
 import { PersonProfile } from './views/PersonProfile.jsx';
+import { QuizSheet } from './components/ClosenessQuiz.jsx';
 import { TodayView } from './views/TodayView.jsx';
 
 // The sample people, goals, journal and skills, dated as of today.
@@ -119,6 +120,7 @@ function LayersApp() {
   const [dayView, setDayView] = useState(null); // a day open in DaySheet
   const [jumpOpen, setJumpOpen] = useState(false); // Ctrl+K, JumpSheet
   const [keyDateFor, setKeyDateFor] = useState(null); // person id, KeyDateSheet
+  const [recheckFor, setRecheckFor] = useState(null); // person id, "Where are we now?" (QuizSheet)
   const [snoozes, setSnoozeList] = useState(() => getSnoozes());
   const [toasts, setToasts] = useState([]); // [{ id, text, undo? }]
   const lastUndo = useRef(null); // the newest toast that can still be undone
@@ -299,6 +301,7 @@ function LayersApp() {
       if ((e.ctrlKey || e.metaKey) && !e.altKey && !e.shiftKey && (e.key === 'k' || e.key === 'K') && onboarded) {
         e.preventDefault();
         setJumpOpen(o => !o);
+        markTried('jump');
         return;
       }
       // A focused slider or checkbox isn't typing; a text field is.
@@ -405,6 +408,9 @@ function LayersApp() {
   const selectedPerson = screen.name === 'person' ? people.find(p => p.id === screen.personId) : null;
 
   function openPerson(id) { setScreen({ name: 'person', personId: id }); }
+  // Today's getting-started list ticks these off: Ctrl+K and the quick-add
+  // box, tried at least once (profile.tried).
+  function markTried(key) { setProfile(p => (p.tried && p.tried[key] ? p : { ...p, tried: { ...(p.tried || {}), [key]: true } })); }
   function openGoalsOverview() { setScreen({ name: 'goals' }); }
   function backToTabs() { setScreen({ name: 'tabs' }); }
   function switchTab(tab) { setActiveTab(tab); setScreen({ name: 'tabs' }); }
@@ -413,7 +419,7 @@ function LayersApp() {
   // sheets that were open; an action like Dark mode leaves them be.
   function closeSheets() {
     setLogOpen(false); setLogPrefill(null); setPlanState(null); setEventView(null); setDayView(null); setWeekReview(null);
-    setKeyDateFor(null); setGoalModalOpen(false); setAddInfoOpen(false); setQuickInterestOpen(false); setAddPersonOpen(false);
+    setKeyDateFor(null); setRecheckFor(null); setGoalModalOpen(false); setAddInfoOpen(false); setQuickInterestOpen(false); setAddPersonOpen(false);
     setShortcutsOpen(false); setStartOverOpen(false); setStandaloneDetailOpen(false); setEditPersonOpen(false);
     setEditingEntryId(null); setEditProfileOpen(false);
   }
@@ -423,7 +429,7 @@ function LayersApp() {
     const go = (fn) => { closeSheets(); fn(); };
     if (run.type === 'person') go(() => openPerson(run.id));
     else if (run.type === 'personAction') {
-      go(() => ({ open: () => openPerson(run.id), log: () => openLog(run.id), plan: () => openPlan({ personIds: [run.id] }), prepare: () => openCoach(run.id, 'prepare') })[run.action]());
+      go(() => ({ open: () => openPerson(run.id), log: () => openLog(run.id), plan: () => openPlan({ personIds: [run.id] }), prepare: () => openCoach(run.id, 'prepare'), recheck: () => { openPerson(run.id); setRecheckFor(run.id); } })[run.action]());
     } else if (run.type === 'plan') go(() => { switchTab('today'); setSelectedDay(run.day === today ? null : run.day); setEventView({ eventId: run.eventId, day: run.day }); });
     else if (run.type === 'tab') go(() => { switchTab(run.tab); if (run.mode) setCalendarMode(run.mode); });
     else if (run.type === 'goals') go(openGoalsOverview);
@@ -477,6 +483,7 @@ function LayersApp() {
       if (msg.type === 'undo') { if (lastUndo.current) undoToast(lastUndo.current.id, lastUndo.current.undo); return; }
       if (msg.type === 'redo') { if (lastRedo.current) redoToast(lastRedo.current.id, lastRedo.current.redo); return; }
       if (!msg.sentence || !['plan', 'log'].includes(msg.sentence.kind)) return;
+      markTried('quick');
       if (msg.type === 'open') { closeSheets(); saveSentence(msg.sentence, true); }
       else if (msg.type === 'submit') saveSentence(msg.sentence, false, { quick: true });
     };
@@ -819,6 +826,27 @@ function LayersApp() {
     else if (layer < person.layer) pushToast(`${person.name} moved to Layer ${layer}: ${getLayer(layer).name}`);
     else pushToast('Progress updated');
   }
+  // "Where are we now?" (the closeness questions again, from a profile or
+  // Ctrl+K): moves them where the answers put them. Their dimensions all
+  // shift by the same amount, so how they compare stays; Undo puts it back.
+  function handleRecheck(personId, placement) {
+    setRecheckFor(null);
+    const person = people.find(p => p.id === personId);
+    if (!person) return;
+    const target = (placement.layer - 1) * 25 + (placement.overall === null ? 5 : placement.overall / 4);
+    const shift = target - computeOverall(person.dims);
+    let dims = Object.fromEntries(DIM_ORDER.map(k => [k, clamp(Math.round(person.dims[k] + shift), 0, 100)]));
+    let placed = placeOnLayers(computeOverall(dims));
+    if (placed.layer !== placement.layer) {
+      dims = Object.fromEntries(DIM_ORDER.map(k => [k, Math.round(target)]));
+      placed = placeOnLayers(computeOverall(dims));
+    }
+    if (placed.layer === person.layer && placed.overall === person.overall) { pushToast(`${person.name} is already there`); return; }
+    const snap = snapshot();
+    const why = placed.layer > person.layer ? [`Reached Layer ${placed.layer}: ${getLayer(placed.layer).name}`, 'You answered "Where are we now?"'] : ['You answered "Where are we now?"'];
+    setPeople(prev => prev.map(p => p.id !== personId ? p : movePerson(p, { layer: placed.layer, overall: placed.overall, at: toISODate(new Date()), why, extra: { dims } })));
+    pushToast(`${person.name}: Layer ${placed.layer}, ${placed.overall}%`, { undo: snap });
+  }
   function handleClearLevelUpFlag(personId) {
     setPeople(prev => prev.map(p => p.id !== personId ? p : { ...p, justLeveledUp: false }));
   }
@@ -1042,6 +1070,7 @@ function LayersApp() {
   function handleOnboardingComplete({ name, focus, startFresh, newPeople, notify = {}, then }) {
     setProfile(p => {
       const next = { ...p, name, focus };
+      delete next.gettingStartedHidden;
       Object.entries(notify).forEach(([k, v]) => { if (v === NOTIFY_DEFAULTS[k]) delete next[k]; else next[k] = v; });
       return next;
     });
@@ -1097,6 +1126,7 @@ function LayersApp() {
       onPlan={(personId) => openPlan({ personIds: [personId] })}
       onAddKeyDate={setKeyDateFor}
       onDeleteKeyDate={handleDeleteKeyDate}
+      onRecheck={() => setRecheckFor(selectedPerson.id)}
     />
   );
   useEffect(() => { if (scrollRef.current) scrollRef.current.scrollTop = 0; }, [pageKey]);
@@ -1132,7 +1162,7 @@ function LayersApp() {
                     )}
                     {screen.name === 'tabs' && (
                       <>
-                        {activeTab === 'today' && <TodayView wide={wide} today={today} selectedDay={selectedDay || today} onSelectDay={(d) => setSelectedDay(d === today ? null : d)} mode={calendarMode} onSetMode={setCalendarMode} people={people} journal={journal} events={events} generalGoals={generalGoals} skills={skills} profile={profile} onPlan={openPlan} onOpenEvent={(eventId, day) => setEventView({ eventId, day })} onLogEvent={openLogFromEvent} onTickEvent={(ev, day) => handleMarkEventDone(ev.id, day)} onOpenPerson={openPerson} onAddPerson={() => setAddPersonOpen(true)} onOpenLog={() => openLog(null)} onSwitchTab={switchTab} onOpenGoals={openGoalsOverview} onOpenReview={setWeekReview} onOpenDay={setDayView} />}
+                        {activeTab === 'today' && <TodayView wide={wide} today={today} selectedDay={selectedDay || today} onSelectDay={(d) => setSelectedDay(d === today ? null : d)} mode={calendarMode} onSetMode={setCalendarMode} people={people} journal={journal} events={events} generalGoals={generalGoals} skills={skills} profile={profile} onPlan={openPlan} onOpenEvent={(eventId, day) => setEventView({ eventId, day })} onLogEvent={openLogFromEvent} onTickEvent={(ev, day) => handleMarkEventDone(ev.id, day)} onOpenPerson={openPerson} onAddPerson={() => setAddPersonOpen(true)} onOpenLog={() => openLog(null)} onSwitchTab={switchTab} onOpenGoals={openGoalsOverview} onOpenReview={setWeekReview} onOpenDay={setDayView} onOpenJump={() => { setJumpOpen(true); markTried('jump'); }} onHideFirstSteps={() => setProfile(p => ({ ...p, gettingStartedHidden: true }))} />}
                         {activeTab === 'people' && <PeopleView people={people} journal={journal} onOpenPerson={openPerson} onAddPerson={() => setAddPersonOpen(true)} />}
                         {activeTab === 'coach' && <div className="page-col"><CoachView people={people} journal={journal} initialPersonId={coachInit.personId} initialTab={coachInit.tab} onOpenLog={openLog} onApproveInfo={handleApproveInfo} onLogFromAnalysis={handleLogFromAnalysis} onOpenPerson={openPerson} /></div>}
                         {activeTab === 'journal' && <div className="page-col"><JournalView today={today} people={people} journal={journal} onOpenPerson={openPerson} onEditEntry={setEditingEntryId} /></div>}
@@ -1176,6 +1206,10 @@ function LayersApp() {
                 onOpenEvent={(eventId, d) => setEventView({ eventId, day: d })} onPlan={openPlan} onPrepare={openPrepare} onClose={() => setDayView(null)} />
             )}
             {weekReview && <WeekReviewSheet day={weekReview} people={people} journal={journal} events={events} generalGoals={generalGoals} onClose={() => setWeekReview(null)} onPlan={openPlan} />}
+            {recheckFor && people.some(p => p.id === recheckFor) && (() => {
+              const p = people.find(x => x.id === recheckFor);
+              return <QuizSheet name={p.name} emoji={p.emoji} now={{ layer: p.layer, overall: p.overall }} onClose={() => setRecheckFor(null)} onDone={(placement) => handleRecheck(p.id, placement)} />;
+            })()}
             {keyDateFor && people.some(p => p.id === keyDateFor) && <KeyDateSheet personName={people.find(p => p.id === keyDateFor).name} onClose={() => setKeyDateFor(null)} onSave={(kd) => handleSaveKeyDate(keyDateFor, kd)} />}
             {goalModalOpen && <GoalModal people={people} defaultPersonId={goalModalDefaultPerson} editingGoal={goalEditing ? goalEditing.goal : null} editingPersonId={goalEditing ? goalEditing.personId : null} onClose={closeGoalModal} onSave={handleGoalSave} />}
             {addInfoOpen && addInfoTarget && (

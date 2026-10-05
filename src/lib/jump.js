@@ -46,6 +46,7 @@ export const PERSON_ACTIONS = [
   { action: 'log', key: 'L', label: (n) => `Log with ${n}`, emoji: '✍️' },
   { action: 'plan', key: 'P', label: (n) => `Plan with ${n}`, emoji: '📅' },
   { action: 'prepare', key: 'R', label: (n) => `Prepare to talk with ${n}`, emoji: '💬' },
+  { action: 'recheck', key: 'W', label: (n) => `Where are you now with ${n}?`, emoji: '🧭' },
 ];
 
 const addDays = (day, n) => { const d = parseISODay(day); return toISODate(new Date(d.getFullYear(), d.getMonth(), d.getDate() + n)); };

@@ -174,6 +174,8 @@ type Profile = {
   eveningHeadsUp?: boolean; eveningTime?: number;   // on, 8:00 PM
   askAfter?: boolean;                         // "How did it go?" when a plan with people ends; on
   checkInNotifications?: boolean;             // Me → Notifications; missing means on
+  tried?: { jump?: true; quick?: true };      // Ctrl+K and the quick-add box used at least once (Today's getting-started list)
+  gettingStartedHidden?: boolean;             // Hide on that list; cleared when you set up again
 };
 
 type KeyDate = {                              // Person.dates: birthdays and other days for the calendar

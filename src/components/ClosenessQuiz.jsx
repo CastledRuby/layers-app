@@ -58,7 +58,9 @@ export function QuizQuestion({ quiz, name, onDone }) {
 }
 
 // Where they're starting; 1-4 (or a tap) picks another layer.
-export function QuizResult({ quiz, name, emoji }) {
+// now: { layer, overall } where they are already (asking again from a
+// profile), shown under where the answers put them.
+export function QuizResult({ quiz, name, emoji, now = null }) {
   const { layer, overall } = quiz.placement;
   const l = getLayer(layer);
   return (
@@ -68,6 +70,7 @@ export function QuizResult({ quiz, name, emoji }) {
         <p className="font-display mt-2" style={{ fontSize: 22, color: COLORS.ink }}>{name}</p>
         <p className="text-sm font-bold mt-1" style={{ color: l.deep }}>Layer {l.id}: {l.fullName}{overall !== null ? ` · ${overall}% in` : ''}</p>
         <p className="text-xs mt-1.5" style={{ color: COLORS.inkSoft }}>{l.desc}</p>
+        {now && <p className="text-xs font-semibold mt-1.5" style={{ color: COLORS.ink }}>Now: Layer {now.layer}: {getLayer(now.layer).name} · {now.overall}%</p>}
         {quiz.fromQuiz && quiz.placement === quiz.fromQuiz && (
           <p className="text-xs mt-2" style={{ color: COLORS.inkSoft }}>From {quiz.answers.length} {quiz.answers.length === 1 ? 'answer' : 'answers'}. Time you log together moves you on from here.</p>
         )}
@@ -91,10 +94,11 @@ export function QuizResult({ quiz, name, emoji }) {
   );
 }
 
-// The quiz on its own sheet, for someone already named (setting up). The
-// result's Enter keeps it (onDone(placement)); Esc leaves them as they were.
-// Same keys as when adding someone, without the name step.
-export function QuizSheet({ name, emoji, onDone, onClose }) {
+// The quiz on its own sheet, for someone already named (setting up, or
+// "Where are we now?" with `now`, where they are already). The result's
+// Enter keeps it (onDone(placement)); Esc leaves them as they were. Same
+// keys as when adding someone, without the name step.
+export function QuizSheet({ name, emoji, now = null, onDone, onClose }) {
   const quiz = useCloseness();
   const [step, setStep] = useState('quiz');
   // The name box underneath would keep the keys (it's still focused).
@@ -114,9 +118,9 @@ export function QuizSheet({ name, emoji, onDone, onClose }) {
   }
   return (
     <Sheet title={step === 'quiz' ? `How close are you and ${name}?` : `Where you are with ${name}`} onClose={onClose} onKey={onKey} tall
-      footer={step === 'result' ? <button type="button" onClick={() => onDone(quiz.placement)} className="primary-btn">Keep this <Kbd onAccent>↵</Kbd></button> : null}>
+      footer={step === 'result' ? <button type="button" onClick={() => onDone(quiz.placement)} className="primary-btn">{now ? 'Move them here' : 'Keep this'} <Kbd onAccent>↵</Kbd></button> : null}>
       <div key={step} className="step-in">
-        {step === 'quiz' && quiz.at !== null ? <QuizQuestion quiz={quiz} name={name} onDone={() => setStep('result')} /> : <QuizResult quiz={quiz} name={name} emoji={emoji} />}
+        {step === 'quiz' && quiz.at !== null ? <QuizQuestion quiz={quiz} name={name} onDone={() => setStep('result')} /> : <QuizResult quiz={quiz} name={name} emoji={emoji} now={now} />}
       </div>
     </Sheet>
   );

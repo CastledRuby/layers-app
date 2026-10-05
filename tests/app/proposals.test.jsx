@@ -329,7 +329,7 @@ describe('P7 skills and Me', () => {
   });
 
   it('"Try this next" follows your focus', async () => {
-    seedState({ profile: { name: 'T', focus: 'new' } });
+    seedState({ profile: { name: 'T', focus: 'new', gettingStartedHidden: true } }); // a new circle sees "Getting started" here instead
     const { user } = renderApp();
     expect(screen.getByText('Try this next').parentElement.textContent).toContain("Add someone you'd like to get to know better.");
     await user.click(screen.getByRole('button', { name: 'Add a person' }));
@@ -337,7 +337,7 @@ describe('P7 skills and Me', () => {
   });
 
   it('"Try this next" for deepening opens your closest relationship', async () => {
-    seedState({ profile: { name: 'T', focus: 'deepen' }, people: [person('Morgan', { layer: 1 }), person('Riley', { layer: 3 })] });
+    seedState({ profile: { name: 'T', focus: 'deepen', gettingStartedHidden: true }, people: [person('Morgan', { layer: 1 }), person('Riley', { layer: 3 })] });
     const { user } = renderApp();
     await user.click(screen.getByRole('button', { name: 'Open Riley' }));
     expect(screen.getByText('Current relationship stage')).toBeTruthy();

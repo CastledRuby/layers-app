@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Plus, Search } from 'lucide-react';
 import { Avatar, Kbd, LayerBadge, ProgressBar } from '../components/atoms.jsx';
+import { hasOpenSheet, isTabbedToButton, isTyping } from '../components/sheetLayer.js';
 import { RingsEmpty } from '../components/illustrations.jsx';
 import { getLayer, LAYERS } from '../data/constants.js';
 import { sortHistory } from '../lib/dates.js';
@@ -13,9 +14,14 @@ import { COLORS } from '../theme.js';
 // picked and then beside their profile: it opens on the list, and the person
 // open there (selectedId) is highlighted and kept in view.
 // Add person (A) is the big button first in the row, by the search box.
+// Keys (not while typing or with a sheet open): ↑ ↓ move through the people,
+// closest first (the map switches to the list), and Enter opens the one
+// marked. Beside an open profile, ↑ ↓ open the one before or after. In the
+// search box, ↓ goes into the list and Enter opens the first match.
 export function PeopleView({ people, journal, onOpenPerson, onAddPerson, split = false, selectedId = null }) {
   const [view, setView] = useState(split ? 'list' : 'map');
   const [query, setQuery] = useState('');
+  const [cursor, setCursor] = useState(null); // the person ↑ ↓ have marked
   const filteredPeople = useMemo(() => {
     const q = query.trim().toLowerCase();
     return q ? people.filter(p => p.name.toLowerCase().includes(q)) : people;
@@ -42,11 +48,35 @@ export function PeopleView({ people, journal, onOpenPerson, onAddPerson, split =
     const needsAttention = getCheckInSuggestions(filteredPeople, journal || []);
     return { ranked: withTrend, avg, trendingUp, needsAttention };
   }, [filteredPeople, journal]);
+  // The order the list shows them in, which ↑ ↓ follow.
+  const ordered = useMemo(() => [...filteredPeople].sort((a, b) => (b.layer - a.layer) || (b.overall - a.overall)), [filteredPeople]);
+  const marked = selectedId || cursor;
+  function open(id) { setCursor(id); onOpenPerson(id); }
+  function step(by) {
+    if (!ordered.length) return;
+    if (view === 'map') setView('list');
+    const at = ordered.findIndex(p => p.id === marked);
+    const next = ordered[at < 0 ? 0 : Math.max(0, Math.min(ordered.length - 1, at + by))];
+    if (selectedId && split) open(next.id); else setCursor(next.id);
+  }
   useEffect(() => {
-    if (!selectedId) return;
-    const row = document.querySelector(`[data-person-row="${selectedId}"]`);
+    function onKey(e) {
+      if (e.ctrlKey || e.metaKey || e.altKey || e.defaultPrevented || hasOpenSheet() || isTyping()) return;
+      if (e.key === 'ArrowDown' || e.key === 'ArrowUp') { e.preventDefault(); step(e.key === 'ArrowDown' ? 1 : -1); }
+      else if (e.key === 'Enter' && cursor && !selectedId && !isTabbedToButton() && ordered.some(p => p.id === cursor)) { e.preventDefault(); open(cursor); }
+    }
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  });
+  useEffect(() => {
+    if (!marked) return;
+    const row = document.querySelector(`[data-person-row="${marked}"]`);
     if (row && typeof row.scrollIntoView === 'function') row.scrollIntoView({ block: 'nearest' });
-  }, [selectedId]);
+  }, [marked, view]);
+  function searchKey(e) {
+    if (e.key === 'ArrowDown' && ordered.length) { e.preventDefault(); e.currentTarget.blur(); if (view === 'map') setView('list'); setCursor(ordered[0].id); }
+    else if (e.key === 'Enter' && query.trim() && ordered.length) { e.preventDefault(); open(ordered[0].id); }
+  }
 
   return (
     <div className="px-5 pt-6 pb-4">
@@ -59,7 +89,7 @@ export function PeopleView({ people, journal, onOpenPerson, onAddPerson, split =
           </button>
           <div className="flex-1 min-w-0 flex items-center gap-2 rounded-xl px-3" style={{ border: `1px solid ${COLORS.line}` }}>
             <Search size={15} color={COLORS.inkSoft} className="shrink-0" />
-            <input id="people-search-input" value={query} onChange={e => setQuery(e.target.value)} placeholder="Search people..." aria-label="Search people" className="flex-1 min-w-0 text-sm py-2.5" style={{ background: 'transparent', border: 'none', outline: 'none' }} />
+            <input id="people-search-input" value={query} onChange={e => setQuery(e.target.value)} onKeyDown={searchKey} placeholder="Search people..." aria-label="Search people" className="flex-1 min-w-0 text-sm py-2.5" style={{ background: 'transparent', border: 'none', outline: 'none' }} />
             <Kbd>/</Kbd>
           </div>
         </div>
@@ -80,6 +110,7 @@ export function PeopleView({ people, journal, onOpenPerson, onAddPerson, split =
                 {v === 'map' ? 'Map view' : v === 'list' ? 'List view' : 'Overview'}
               </button>
             ))}
+            <span className="flex items-center gap-1 text-xs ml-auto" style={{ color: COLORS.inkSoft }}><Kbd>↑</Kbd><Kbd>↓</Kbd>{!selectedId && <> <Kbd>↵</Kbd></>}</span>
           </div>
 
           {filteredPeople.length === 0 ? (
@@ -113,7 +144,7 @@ export function PeopleView({ people, journal, onOpenPerson, onAddPerson, split =
                     const left = 50 + rPct * Math.cos(rad);
                     const top = 50 + rPct * Math.sin(rad);
                     return (
-                      <button key={p.id} onClick={() => onOpenPerson(p.id)} className="absolute flex flex-col items-center gap-1" style={{ left: `${left}%`, top: `${top}%`, transform: 'translate(-50%,-50%)', zIndex: 10 + i }}>
+                      <button key={p.id} onClick={() => open(p.id)} className="absolute flex flex-col items-center gap-1" style={{ left: `${left}%`, top: `${top}%`, transform: 'translate(-50%,-50%)', zIndex: 10 + i }}>
                         <Avatar emoji={p.emoji} size={avatarSize} ringColor={l.color} />
                         <span className="text-xs font-medium rounded-full px-1.5 truncate" style={{ color: COLORS.ink, background: COLORS.paperRaised, boxShadow: `0 1px 3px rgba(0,0,0,0.15)`, maxWidth: pillMaxWidth, fontSize: n > 5 ? 10 : 12 }}>{p.name}</span>
                       </button>
@@ -135,7 +166,7 @@ export function PeopleView({ people, journal, onOpenPerson, onAddPerson, split =
               {[...filteredPeople].sort((a, b) => (b.layer - a.layer) || (b.overall - a.overall)).map(p => {
                 const l = getLayer(p.layer);
                 return (
-                  <button key={p.id} data-person-row={p.id} onClick={() => onOpenPerson(p.id)} aria-current={p.id === selectedId ? 'true' : undefined} className={`w-full flex items-center gap-3 py-3${split ? ' px-2 rounded-xl' : ''}`} style={{ borderBottom: `1px solid ${COLORS.line}`, background: p.id === selectedId ? COLORS.accentSoft : undefined }}>
+                  <button key={p.id} data-person-row={p.id} onClick={() => open(p.id)} aria-current={p.id === selectedId ? 'true' : undefined} className={`w-full flex items-center gap-3 py-3 px-2 rounded-xl${p.id === cursor && !selectedId ? ' row-cursor' : ''}`} style={{ borderBottom: `1px solid ${COLORS.line}`, background: p.id === selectedId ? COLORS.accentSoft : undefined }}>
                     <Avatar emoji={p.emoji} size={44} ringColor={l.color} />
                     <div className="flex-1 min-w-0 text-left">
                       <p className="text-sm font-semibold" style={{ color: COLORS.ink }}>{p.name}</p>
@@ -168,7 +199,7 @@ export function PeopleView({ people, journal, onOpenPerson, onAddPerson, split =
               {overviewData.ranked.map(p => {
                 const l = getLayer(p.layer);
                 return (
-                  <button key={p.id} onClick={() => onOpenPerson(p.id)} className="w-full text-left mb-3.5">
+                  <button key={p.id} data-person-row={p.id} onClick={() => open(p.id)} className={`w-full text-left mb-3.5 rounded-xl px-2 py-1${p.id === cursor && !selectedId ? ' row-cursor' : ''}`}>
                     <div className="flex items-center gap-2 mb-1.5">
                       <Avatar emoji={p.emoji} size={28} ringColor={l.color} />
                       <span className="text-sm font-semibold flex-1" style={{ color: COLORS.ink }}>{p.name}</span>

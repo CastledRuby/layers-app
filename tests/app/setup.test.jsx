@@ -98,9 +98,8 @@ describe('setting up', () => {
     await user.type(screen.getByLabelText('Your name'), 'Sam{Enter}');
     expect(screen.getByText("Who's in your circle?")).toBeTruthy();
     await user.click(screen.getByRole('button', { name: '+ Mum' }));
-    expect(dialog('How close are you and Mum?')).toBeTruthy();
-    await user.keyboard('{Escape}'); // skips the questions: Mum stays at Orientation
-    await user.type(screen.getByLabelText("Person's name"), 'Ana{Enter}');
+    expect(screen.queryByRole('dialog')).toBeNull(); // no questions unless asked: Mum stays at Orientation
+    await user.type(screen.getByLabelText("Person's name"), 'Ana{Shift>}{Enter}{/Shift}'); // add and ask
     await user.keyboard('yyyyynnn'); // Layer 2, not Layer 3
     expect(screen.getByRole('status', { name: "Where you're starting" }).textContent).toMatch(/Layer 2: Exploratory · 40% in/);
     await user.keyboard('{Enter}');

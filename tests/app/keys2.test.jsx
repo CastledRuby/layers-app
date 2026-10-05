@@ -92,8 +92,8 @@ describe("Ctrl+K: a person's actions by letter", () => {
     await user.keyboard('{Control>}k{/Control}mor{Tab}');
     for (const k of ['O', 'L', 'P', 'R']) expect(within(dialog('Jump to')).getAllByText(k).length).toBeGreaterThan(0);
     await user.keyboard('l');
-    expect(dialog('What are you logging?')).toBeTruthy(); // a log with Morgan picked
-    await user.keyboard('11{Enter}'); // Morgan is already picked
+    expect(dialog('What did you do?')).toBeTruthy(); // an interaction with Morgan, already picked
+    await user.keyboard('1{Enter}');
     expect(logDetails()).toBeTruthy();
     await user.keyboard('{Escape}{Control>}k{/Control}mor{ArrowRight}p1'); // Plan with Morgan: a coffee
     expect(dialog('When?')).toBeTruthy();

@@ -148,7 +148,7 @@ function EventRow({ item, now, onOpen }) {
   );
 }
 
-export function TodayView({ today, selectedDay, onSelectDay, mode, onSetMode, people, journal, events, generalGoals, skills, profile, onPlan, onOpenEvent, onLogEvent, onTickEvent, onOpenPerson, onAddPerson, onOpenLog, onSwitchTab, onOpenGoals, onOpenReview, onOpenDay, wide = false }) {
+export function TodayView({ today, selectedDay, onSelectDay, mode, onSetMode, people, journal, events, generalGoals, skills, profile, onPlan, onOpenEvent, onLogEvent, onTickEvent, onOpenPerson, onAddPerson, onOpenLog, onSwitchTab, onOpenGoals, onOpenReview, onOpenDay, onOpenJump, onHideFirstSteps, wide = false }) {
   const state = useMemo(() => ({ people, journal, events, generalGoals }), [people, journal, events, generalGoals]);
   const day = selectedDay || today;
   const sel = parseISODay(day);
@@ -198,6 +198,18 @@ export function TodayView({ today, selectedDay, onSelectDay, mode, onSetMode, pe
   const hour = clock.getHours();
   const greeting = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
   const isEmpty = agenda.allDay.length === 0 && agenda.timed.length === 0;
+  // A new circle's first things to try, each ticked off by doing it. It
+  // stands in for "Try this next" until they're done or it's hidden, and
+  // doesn't show for a circle with a few logs already.
+  const tried = (profile && profile.tried) || {};
+  const firstSteps = [
+    { key: 'person', done: people.length > 0, label: 'Add your first person', keys: ['Ctrl', 'Shift', 'A'], run: onAddPerson },
+    { key: 'log', done: journal.length > 0, label: 'Log your first chat', keys: ['N'], run: onOpenLog },
+    { key: 'plan', done: events.length > 0, label: 'Plan your first thing', keys: ['P'], run: () => onPlan({ day }) },
+    { key: 'jump', done: !!tried.jump, label: 'Jump to anything, or type a plan', keys: ['Ctrl', 'K'], run: onOpenJump },
+    { key: 'quick', done: !!tried.quick, label: 'Add a plan from any app', keys: ['Ctrl', 'Shift', 'L'], run: null },
+  ];
+  const showFirstSteps = !!onHideFirstSteps && !(profile && profile.gettingStartedHidden) && journal.length < 5 && firstSteps.some(s => !s.done);
   const nowIndex = nowMinutes === null ? -1 : agenda.timed.findIndex(it => it.start > nowMinutes);
   function runSuggestion() {
     const a = suggestion.action;
@@ -314,11 +326,13 @@ export function TodayView({ today, selectedDay, onSelectDay, mode, onSetMode, pe
               <Kbd>W</Kbd>
             </button>
           )}
-          <div className="rounded-2xl p-3.5 mt-6" style={{ background: COLORS.accentSoft }}>
-            <p className="text-xs font-semibold" style={{ color: COLORS.accent }}>Try this next</p>
-            <p className="text-sm mt-1" style={{ color: COLORS.ink }}>{suggestion.text}</p>
-            <button type="button" onClick={runSuggestion} className="text-xs font-semibold rounded-full px-3 py-1.5 mt-2.5" style={{ background: COLORS.accent, color: COLORS.onAccent }}>{suggestion.button}</button>
-          </div>
+          {showFirstSteps ? <GettingStarted steps={firstSteps} onHide={onHideFirstSteps} /> : (
+            <div className="rounded-2xl p-3.5 mt-6" style={{ background: COLORS.accentSoft }}>
+              <p className="text-xs font-semibold" style={{ color: COLORS.accent }}>Try this next</p>
+              <p className="text-sm mt-1" style={{ color: COLORS.ink }}>{suggestion.text}</p>
+              <button type="button" onClick={runSuggestion} className="text-xs font-semibold rounded-full px-3 py-1.5 mt-2.5" style={{ background: COLORS.accent, color: COLORS.onAccent }}>{suggestion.button}</button>
+            </div>
+          )}
 
           <SectionTitle extra={<button type="button" onClick={onOpenGoals} className="text-xs font-medium" style={{ color: COLORS.accent }}>See all</button>}>Current goals</SectionTitle>
           {topGoals.length === 0 ? (
@@ -337,6 +351,34 @@ export function TodayView({ today, selectedDay, onSelectDay, mode, onSetMode, pe
       </div>
       {wide && <aside className="today-wide-side" aria-label="Month"><MonthGrid selected={day} today={today} marksFor={marksFor} onSelect={pickDay} /></aside>}
     </div>
+  );
+}
+
+// The getting-started list: each step ticks itself off; a step with a key
+// you press anywhere (the quick-add box) only says how.
+function GettingStarted({ steps, onHide }) {
+  const done = steps.filter(s => s.done).length;
+  return (
+    <section className="rounded-2xl p-4 mt-6 fade-anim" style={{ background: COLORS.paperRaised, border: `1px solid ${COLORS.line}` }} aria-label="Getting started">
+      <div className="flex items-center gap-2">
+        <p className="text-sm font-semibold flex-1" style={{ color: COLORS.ink }}>Getting started</p>
+        <span className="text-xs font-semibold" style={{ color: COLORS.accent }}>{done} of {steps.length}</span>
+        <button type="button" onClick={onHide} className="text-xs font-medium ml-2" style={{ color: COLORS.inkSoft }}>Hide</button>
+      </div>
+      <div className="mt-2 mb-1"><ProgressBar percent={(done / steps.length) * 100} height={5} /></div>
+      {steps.map(s => {
+        const body = (
+          <>
+            <span className={`first-step-check${s.done ? ' first-step-check--done' : ''}`} aria-hidden="true">{s.done && <Check size={12} strokeWidth={3} />}</span>
+            <span className="flex-1 min-w-0 text-sm" style={{ color: s.done ? COLORS.inkSoft : COLORS.ink, textDecoration: s.done ? 'line-through' : 'none' }}>{s.label}</span>
+            <span className="flex items-center gap-1 shrink-0">{s.keys.map(k => <Kbd key={k}>{k}</Kbd>)}</span>
+          </>
+        );
+        return s.run && !s.done
+          ? <button key={s.key} type="button" onClick={s.run} className="w-full flex items-center gap-2.5 py-2 text-left">{body}</button>
+          : <p key={s.key} className="flex items-center gap-2.5 py-2" aria-label={`${s.label}${s.done ? ', done' : ''}`}>{body}</p>;
+      })}
+    </section>
   );
 }
 
