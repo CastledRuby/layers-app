@@ -443,6 +443,12 @@ What you found trying it again on 2026-10-05, and what changed:
   stop being mostly yes, so an acquaintance takes two questions and a best friend eleven,
   then shows where that puts them (Layer 2, 60% in, say); **1–4** picks another layer,
   **Q** asks again, Enter adds them there. **L** skips the questions.
+- **A better avatar picker**, when adding or editing someone and while setting up: 40
+  people (with hair, ages, jobs), faces, animals and things, in groups (**G**), with skin
+  tones for people (**T**) and the arrows to move through them, a big preview beside the
+  name, and the grid shown in the tone you've picked. Avatars you already have are all
+  still there. While setting up, tapping someone's avatar (or **A** for the newest)
+  opens it.
 - **Setting up**: each person you add asks the same questions (Esc skips them), and their
   card says where they landed, with **Questions** (Q) to ask again. The first screen has
   keys too (Esc out of your name, then 1–4 for what brings you here, E to explore, R to

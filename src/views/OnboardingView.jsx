@@ -7,7 +7,8 @@
 //   people  who's in your circle: type a name (Enter) or tap a suggestion, and
 //           "How close are you two?" (QuizSheet) asks a few questions to place
 //           them; Esc skips it. Each card's layer can be tapped too, Q asks
-//           again for the newest. Enter on an empty box goes on.
+//           again for the newest and A picks their avatar (AvatarSheet).
+//           Enter on an empty box goes on.
 //   ready   the notifications you want and the keys worth knowing, then Go to
 //           Today (Enter) or Plan something first (P)
 // The example people skip "people". See docs/renderer/app-structure.md.
@@ -16,6 +17,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Bell, ChevronLeft, Keyboard, Upload, X } from 'lucide-react';
 import { Kbd } from '../components/atoms.jsx';
 import { QuizSheet } from '../components/ClosenessQuiz.jsx';
+import { AvatarSheet } from '../components/AvatarPicker.jsx';
 import { isTyping } from '../components/sheetLayer.js';
 import { RingsWelcome } from '../components/illustrations.jsx';
 import { FOCUS_OPTIONS, LAYERS, PERSON_EMOJIS } from '../data/constants.js';
@@ -70,6 +72,7 @@ export function OnboardingView({ initialName, initialFocus, initialNotify = NOTI
   const [draftPeople, setDraftPeople] = useState([]); // [{ name, emoji, layer, overall }]
   const [newName, setNewName] = useState('');
   const [quizFor, setQuizFor] = useState(null); // the draft person the quiz is asking about
+  const [avatarFor, setAvatarFor] = useState(null); // the draft person whose avatar is being picked
   const nameRef = useRef(null);
   const [notify, setNotify] = useState(() => ({
     reminderNotifications: initialNotify.reminderNotifications,
@@ -90,6 +93,10 @@ export function OnboardingView({ initialName, initialFocus, initialNotify = NOTI
     setQuizFor(null);
     if (nameRef.current) nameRef.current.focus();
   }
+  function closeAvatar() {
+    setAvatarFor(null);
+    if (nameRef.current) nameRef.current.focus();
+  }
   const updateDraft = (i, changes) => setDraftPeople(prev => prev.map((p, idx) => idx === i ? { ...p, ...changes } : p));
   const removeDraftPerson = (i) => setDraftPeople(prev => prev.filter((_, idx) => idx !== i));
   function startFresh() { if (canContinue) { setSamples(false); setStep('people'); } }
@@ -104,7 +111,7 @@ export function OnboardingView({ initialName, initialFocus, initialNotify = NOTI
   useEffect(() => {
     if (step === 'ready') return undefined;
     function onKey(e) {
-      if (e.ctrlKey || e.metaKey || e.altKey || e.defaultPrevented || quizFor !== null) return;
+      if (e.ctrlKey || e.metaKey || e.altKey || e.defaultPrevented || quizFor !== null || avatarFor !== null) return;
       const el = document.activeElement;
       if (e.key === 'Escape' && isTyping()) { el.blur(); return; }
       if (isTyping() || (el && el.tagName === 'BUTTON' && e.key === 'Enter')) return;
@@ -116,6 +123,7 @@ export function OnboardingView({ initialName, initialFocus, initialNotify = NOTI
         else if (key === 'r' && onRestore) { e.preventDefault(); onRestore(); }
       } else if (step === 'people') {
         if (key === 'q' && draftPeople.length) { e.preventDefault(); setQuizFor(draftPeople.length - 1); }
+        else if (key === 'a' && draftPeople.length) { e.preventDefault(); setAvatarFor(draftPeople.length - 1); }
         else if (key === 'n' && nameRef.current) { e.preventDefault(); nameRef.current.focus(); }
       }
     }
@@ -163,7 +171,8 @@ export function OnboardingView({ initialName, initialFocus, initialNotify = NOTI
             {draftPeople.map((p, i) => (
               <div key={i} className="rounded-2xl p-3 chip-in" style={{ background: COLORS.paperRaised, border: `1px solid ${COLORS.line}` }}>
                 <div className="flex items-center gap-2">
-                  <button type="button" onClick={() => updateDraft(i, { emoji: PERSON_EMOJIS[(PERSON_EMOJIS.indexOf(p.emoji) + 1) % PERSON_EMOJIS.length] })} aria-label={`Change ${p.name}'s emoji`} style={{ fontSize: 22, lineHeight: 1 }}>{p.emoji}</button>
+                  <button type="button" onClick={() => setAvatarFor(i)} aria-label={`Change ${p.name}'s avatar`} title="Change avatar" className="avatar-choice shrink-0" style={{ width: 36, fontSize: 21 }}>{p.emoji}</button>
+                  {i === draftPeople.length - 1 && <Kbd>A</Kbd>}
                   <span className="flex-1 min-w-0 text-sm font-semibold truncate" style={{ color: COLORS.ink }}>{p.name}{p.overall !== null && p.overall !== undefined && <span className="text-xs font-medium" style={{ color: COLORS.inkSoft }}> · {p.overall}% into Layer {p.layer}</span>}</span>
                   <button type="button" onClick={() => setQuizFor(i)} className="chip" style={{ padding: '3px 6px 3px 9px', fontSize: 11.5 }}>Questions{i === draftPeople.length - 1 && <Kbd>Q</Kbd>}</button>
                   <button type="button" onClick={() => removeDraftPerson(i)} aria-label={`Remove ${p.name}`} className="icon-btn"><X size={15} color={COLORS.inkSoft} /></button>
@@ -178,6 +187,9 @@ export function OnboardingView({ initialName, initialFocus, initialNotify = NOTI
           </div>
         )}
 
+        {avatarFor !== null && draftPeople[avatarFor] && (
+          <AvatarSheet name={draftPeople[avatarFor].name} value={draftPeople[avatarFor].emoji} onChange={(emoji) => updateDraft(avatarFor, { emoji })} onClose={closeAvatar} />
+        )}
         {quizFor !== null && draftPeople[quizFor] && (
           <QuizSheet key={quizFor} name={draftPeople[quizFor].name} emoji={draftPeople[quizFor].emoji} onClose={closeQuiz}
             onDone={(placement) => { updateDraft(quizFor, placement); closeQuiz(); }} />

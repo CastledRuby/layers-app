@@ -237,6 +237,17 @@ button:active:not(:disabled) { transform: scale(0.97); }
 .kbd { display: inline-flex; align-items: center; justify-content: center; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 5px; font: 600 10px/1 ui-monospace, 'Cascadia Mono', Consolas, monospace; color: ${COLORS.inkSoft}; background: color-mix(in srgb, ${COLORS.ink} 5%, transparent); border: 1px solid ${COLORS.line}; border-bottom-width: 2px; flex-shrink: 0; }
 .kbd--on-accent { color: ${COLORS.onAccent}; background: color-mix(in srgb, ${COLORS.onAccent} 16%, transparent); border-color: color-mix(in srgb, ${COLORS.onAccent} 35%, transparent); }
 .tile > .kbd { position: absolute; top: 9px; right: 9px; }
+/* The avatar picker (AvatarPicker.jsx): a grid of emoji, the one picked
+   ringed, skin-tone swatches, and a big preview. */
+.avatar-grid { display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 6px; }
+.avatar-choice { aspect-ratio: 1; display: flex; align-items: center; justify-content: center; font-size: 22px; line-height: 1; border-radius: 12px; border: 1.5px solid transparent; background: ${COLORS.paperRaised}; transition: transform .14s ease, border-color .14s ease, background-color .14s ease; }
+.avatar-choice:hover { transform: scale(1.12); background: ${COLORS.accentSoft}; }
+.avatar-choice--on { border-color: ${COLORS.accent}; background: ${COLORS.accentSoft}; box-shadow: 0 0 0 3px color-mix(in srgb, ${COLORS.accent} 22%, transparent); }
+.tone-swatch { width: 22px; height: 22px; border-radius: 50%; border: 2px solid ${COLORS.paperRaised}; box-shadow: 0 0 0 1px ${COLORS.line}; transition: transform .14s ease, box-shadow .14s ease; }
+.tone-swatch:hover { transform: scale(1.12); }
+.tone-swatch--on { box-shadow: 0 0 0 2px ${COLORS.accent}; transform: scale(1.12); }
+.avatar-preview { width: 64px; height: 64px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 34px; background: ${COLORS.paperRaised}; border: 2px solid ${COLORS.line}; }
+
 /* The closeness quiz (ClosenessQuiz.jsx): a dot per question, and the
    question's card in its layer's colours. */
 .quiz-dot { width: 100%; max-width: 26px; height: 6px; border-radius: 6px; border: 1.5px solid; transition: background-color .25s ease, opacity .25s ease; }
