@@ -81,13 +81,13 @@ export function movePerson(p, { layer, overall, at, why, extra = {} }) {
 // opening Adjust and saving without changes leaves them exactly where they are.
 // `overall` (0-100, from the closeness quiz) starts them that far into their
 // layer; without it they start at the layer's usual place.
-export function makePerson({ name, emoji, layer, overall: startAt = null }) {
+export function makePerson({ name, emoji, avatar = null, layer, overall: startAt = null }) {
   const start = layer || 1;
   const baseVal = typeof startAt === 'number' ? Math.round((start - 1) * 25 + clamp(startAt, 0, 95) / 4) : (LAYER_BASE_DIMS[start] || LAYER_BASE_DIMS[1]);
   const dims = { depth: baseVal, trust: baseVal, reciprocity: baseVal, interaction: baseVal, sharedExperiences: baseVal, listening: baseVal };
   const { overall } = placeOnLayers(computeOverall(dims));
   const today = new Date();
-  return { id: uid(), name, emoji, layer: start, dims, overall, interests: [], preferences: [], plans: [], experiences: [], important: [], goals: [], history: [{ date: formatAbsoluteDate(today), at: toISODate(today), value: overall, layer: start }], timeline: [{ label: 'First met', at: toISODate(today) }] };
+  return { id: uid(), name, emoji, ...(avatar ? { avatar } : {}), layer: start, dims, overall, interests: [], preferences: [], plans: [], experiences: [], important: [], goals: [], history: [{ date: formatAbsoluteDate(today), at: toISODate(today), value: overall, layer: start }], timeline: [{ label: 'First met', at: toISODate(today) }] };
 }
 
 export function generateGoalDescription(preset, person) {

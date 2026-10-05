@@ -44,6 +44,37 @@ export function findAvatars(query) {
   return AVATAR_GROUPS.flatMap(g => g.items).filter(it => words.every(w => it.words.includes(w)));
 }
 
+// Initials on a colour: the other kind of avatar (person.avatar =
+// { style: 'initials', color }). 'layer' uses their layer's colours, so it
+// changes as they move; the others are fixed, with white letters.
+export const INITIAL_COLORS = [
+  { key: 'layer', name: 'Their layer' },
+  { key: 'sky', name: 'Sky', bg: '#4F82AE' },
+  { key: 'teal', name: 'Teal', bg: '#2F8A7E' },
+  { key: 'sage', name: 'Sage', bg: '#6A8F4E' },
+  { key: 'amber', name: 'Amber', bg: '#C07A32' },
+  { key: 'coral', name: 'Coral', bg: '#C55A50' },
+  { key: 'rose', name: 'Rose', bg: '#AE5A86' },
+  { key: 'violet', name: 'Violet', bg: '#7660B8' },
+  { key: 'slate', name: 'Slate', bg: '#56627A' },
+];
+// The picker's Initials group: one choice per colour.
+export const INITIALS_GROUP = {
+  key: 'initials', label: 'Initials', cols: 5,
+  items: INITIAL_COLORS.map(c => ({ color: c.key, name: c.name, words: `${c.name} initials letters`.toLowerCase() })),
+};
+export function isInitials(avatar) {
+  return !!avatar && typeof avatar === 'object' && avatar.style === 'initials' && INITIAL_COLORS.some(c => c.key === avatar.color);
+}
+// "Ethan M" -> "EM"; one name -> its first two letters ("Isla" -> "Is").
+export function initialsOf(name) {
+  const words = String(name || '').trim().split(/\s+/).filter(Boolean);
+  if (!words.length) return '?';
+  const first = [...words[0]];
+  if (words.length === 1) return first[0].toUpperCase() + (first[1] || '').toLowerCase();
+  return (first[0] + [...words[words.length - 1]][0]).toUpperCase();
+}
+
 // The skin tones, as Fitzpatrick modifiers ('' is the default yellow), with
 // a swatch colour for the picker.
 export const SKIN_TONES = [

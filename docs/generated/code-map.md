@@ -4,21 +4,21 @@
 > Run `npm run docs:map` after changing anything under `src/`, `electron/*.cjs` or `package.json` scripts.
 > Hand-written explanations live in the other files under [`docs/`](../README.md).
 
-Package: `layers-web` v1.0.31 · `src/`: 67 files, 10301 lines, 92 components, 221 top-level functions, 128 constants.
+Package: `layers-web` v1.0.31 · `src/`: 67 files, 10390 lines, 92 components, 223 top-level functions, 131 constants.
 
 ## Source files
 
 | File | Lines | Declares | Imports from |
 |---|---|---|---|
 | [main.jsx](../../src/main.jsx) | 16 | quick | — |
-| [App.jsx](../../src/App.jsx) | 1262 | sampleData, SAMPLE_PERSON_IDS, SAMPLE_GOAL_IDS, skillsCameWithSamples, allSkillsZero, listNames, unlinkMissingPeople, addNotes, LayersApp | `components/BottomNav`, `components/ErrorBoundary`, `components/PageTransition`, `components/sheetLayer`, `data/constants`, `data/seed`, `lib/dates`, `lib/achievements`, `lib/progress`, `lib/backup`, `lib/calendar`, `lib/hooks`, `lib/reminders`, `lib/storage`, `lib/util`, `modals/AddInfoModal`, `modals/AddPersonModal`, `modals/ConfirmDialog`, `modals/EditEntryModal`, `modals/EditPersonModal`, `modals/EditProfileModal`, `modals/EventSheet`, `modals/GoalModal`, `modals/KeyDateSheet`, `modals/LogInteractionModal`, `modals/PlanSheet`, `modals/QuickAddInterestModal`, `modals/ShortcutsModal`, `modals/StartOverSheet`, `modals/DaySheet`, `modals/JumpSheet`, `lib/sentence`, `modals/TemplatePickerModal`, `modals/WeekReviewSheet`, `theme`, `views/CoachView`, `views/GoalsView`, `views/JournalView`, `views/MeView`, `views/OnboardingView`, `views/PeopleView`, `views/PersonProfile`, `components/ClosenessQuiz`, `views/TodayView` |
-| [theme.js](../../src/theme.js) | 327 | THEME_LIGHT, THEME_DARK, COLORS, cssVarBlock, EASE, CSS | `fonts` |
-| [data/avatars.js](../../src/data/avatars.js) | 97 | AVATAR_COLS, AVATAR_GROUPS, findAvatars, SKIN_TONES, TONE_RE, withTone, plain, ALL, splitTone, groupOf, … (+1) | — |
+| [App.jsx](../../src/App.jsx) | 1267 | sampleData, SAMPLE_PERSON_IDS, SAMPLE_GOAL_IDS, skillsCameWithSamples, allSkillsZero, listNames, unlinkMissingPeople, addNotes, LayersApp | `components/BottomNav`, `components/ErrorBoundary`, `components/PageTransition`, `components/sheetLayer`, `data/constants`, `data/seed`, `lib/dates`, `lib/achievements`, `lib/progress`, `lib/backup`, `lib/calendar`, `lib/hooks`, `lib/reminders`, `lib/storage`, `lib/util`, `modals/AddInfoModal`, `modals/AddPersonModal`, `modals/ConfirmDialog`, `modals/EditEntryModal`, `modals/EditPersonModal`, `modals/EditProfileModal`, `modals/EventSheet`, `modals/GoalModal`, `modals/KeyDateSheet`, `modals/LogInteractionModal`, `modals/PlanSheet`, `modals/QuickAddInterestModal`, `modals/ShortcutsModal`, `modals/StartOverSheet`, `modals/DaySheet`, `modals/JumpSheet`, `lib/sentence`, `modals/TemplatePickerModal`, `modals/WeekReviewSheet`, `theme`, `views/CoachView`, `views/GoalsView`, `views/JournalView`, `views/MeView`, `views/OnboardingView`, `views/PeopleView`, `views/PersonProfile`, `components/ClosenessQuiz`, `views/TodayView` |
+| [theme.js](../../src/theme.js) | 332 | THEME_LIGHT, THEME_DARK, COLORS, cssVarBlock, EASE, CSS | `fonts` |
+| [data/avatars.js](../../src/data/avatars.js) | 128 | AVATAR_COLS, AVATAR_GROUPS, findAvatars, INITIAL_COLORS, INITIALS_GROUP, isInitials, initialsOf, SKIN_TONES, TONE_RE, withTone, … (+5) | — |
 | [data/constants.js](../../src/data/constants.js) | 317 | LAYERS, getLayer, DIM_ORDER, DIM_LABELS, DIM_COLORS, LAYER_BASE_DIMS, CATEGORIES, categoryMeta, TABS, SHORTCUTS, … (+26) | `theme` |
 | [data/scenarios.js](../../src/data/scenarios.js) | 115 | SCENARIOS | — |
 | [data/seed.js](../../src/data/seed.js) | 176 | INITIAL_PEOPLE, INITIAL_GENERAL_GOALS, INITIAL_JOURNAL, INITIAL_SKILLS, EMPTY_SKILLS | — |
 | [lib/achievements.js](../../src/lib/achievements.js) | 37 | achievementProgress, newlyUnlocked, progressText | `data/constants` |
-| [lib/backup.js](../../src/lib/backup.js) | 195 | BACKUP_VERSION, MAX_BACKUP_BYTES, createBackup, isObject, isText, isISODay, num, count, cleanHistory, cleanGoal, … (+5) | `lib/calendar`, `data/constants`, `data/seed`, `lib/util` |
+| [lib/backup.js](../../src/lib/backup.js) | 201 | BACKUP_VERSION, MAX_BACKUP_BYTES, createBackup, isObject, isText, isISODay, num, count, cleanHistory, cleanGoal, … (+5) | `lib/calendar`, `data/constants`, `data/seed`, `data/avatars`, `lib/util` |
 | [lib/calendar.js](../../src/lib/calendar.js) | 414 | WEEKDAY_NAMES, DEFAULT_DURATION, EVENT_TEMPLATES, templateFor, DATE_KINDS, dateKind, NOTIFY_DEFAULTS, notifySettings, dayDate, addDays, … (+27) | `lib/dates` |
 | [lib/closeness.js](../../src/lib/closeness.js) | 64 | QUIZ, ANSWERS, REACHED, inLayer, share, nextQuestion, quizPlacement | — |
 | [lib/dates.js](../../src/lib/dates.js) | 282 | parseDaysAgo, startOfDay, WEEKDAY_SHORT, WEEKDAY_FULL, formatWeekdays, MONTH_NAMES, dateToRelativeLabel, formatCalendarDate, toISODate, formatAbsoluteDate, … (+23) | `data/constants` |
@@ -31,12 +31,12 @@ Package: `layers-web` v1.0.31 · `src/`: 67 files, 10301 lines, 92 components, 2
 | [lib/text.js](../../src/lib/text.js) | 168 | summaryFor, updateStatusText, homeGoalTitle, generateSuggestions, getCheckInSuggestions, checkInReminder, HOOKS, buildPotentialHooks, focusSuggestion | `data/constants`, `lib/dates` |
 | [lib/tips.js](../../src/lib/tips.js) | 47 | SOON_DAYS, addDays, datesAround, planTips | `data/constants`, `lib/calendar`, `lib/dates`, `lib/text` |
 | [lib/util.js](../../src/lib/util.js) | 9 | clamp, uidCounter, uid | — |
-| [components/atoms.jsx](../../src/components/atoms.jsx) | 132 | CircularProgress, ProgressBar, LabeledBar, Avatar, LayerBadge, ChatBubble, Timeline, ConvStateBadge, Kbd, KeyedField | `data/constants`, `lib/dates`, `lib/util`, `theme` |
-| [components/avatarKeys.js](../../src/components/avatarKeys.js) | 80 | useAvatarPicker | `data/avatars` |
-| [components/AvatarPicker.jsx](../../src/components/AvatarPicker.jsx) | 71 | AvatarPicker, AvatarSheet | `components/Sheet`, `components/sheetLayer`, `components/avatarKeys`, `components/atoms`, `data/avatars`, `theme` |
+| [components/atoms.jsx](../../src/components/atoms.jsx) | 148 | CircularProgress, ProgressBar, LabeledBar, Avatar, LayerBadge, ChatBubble, Timeline, ConvStateBadge, Kbd, KeyedField | `data/constants`, `data/avatars`, `lib/dates`, `lib/util`, `theme` |
+| [components/avatarKeys.js](../../src/components/avatarKeys.js) | 91 | PICKER_GROUPS, useAvatarPicker | `data/avatars` |
+| [components/AvatarPicker.jsx](../../src/components/AvatarPicker.jsx) | 83 | AvatarPicker, AvatarSheet | `components/Sheet`, `components/sheetLayer`, `components/avatarKeys`, `components/atoms`, `data/avatars`, `theme` |
 | [components/BottomNav.jsx](../../src/components/BottomNav.jsx) | 40 | ITEMS, BottomNav | `data/constants` |
 | [components/closenessKeys.js](../../src/components/closenessKeys.js) | 40 | useCloseness, quizKey | `lib/closeness` |
-| [components/ClosenessQuiz.jsx](../../src/components/ClosenessQuiz.jsx) | 128 | ANSWER_EMOJI, QuizDots, QuizQuestion, QuizResult, QuizSheet | `components/Sheet`, `components/sheetLayer`, `components/atoms`, `data/constants`, `components/closenessKeys`, `lib/closeness`, `theme` |
+| [components/ClosenessQuiz.jsx](../../src/components/ClosenessQuiz.jsx) | 129 | ANSWER_EMOJI, QuizDots, QuizQuestion, QuizResult, QuizSheet | `components/Sheet`, `components/sheetLayer`, `components/atoms`, `data/constants`, `components/closenessKeys`, `lib/closeness`, `theme` |
 | [components/ErrorBoundary.jsx](../../src/components/ErrorBoundary.jsx) | 39 | — | `theme` |
 | [components/illustrations.jsx](../../src/components/illustrations.jsx) | 41 | LAYER, TINT, RingsEmpty, RingsWelcome | `theme` |
 | [components/PageTransition.jsx](../../src/components/PageTransition.jsx) | 18 | PageTransition | — |
@@ -55,7 +55,7 @@ Package: `layers-web` v1.0.31 · `src/`: 67 files, 10301 lines, 92 components, 2
 | [modals/EditProfileModal.jsx](../../src/modals/EditProfileModal.jsx) | 30 | EditProfileModal | `components/Sheet`, `data/constants`, `theme` |
 | [modals/EventSheet.jsx](../../src/modals/EventSheet.jsx) | 93 | Row, hasStarted, EventSheet | `components/Sheet`, `components/sheetLayer`, `components/atoms`, `components/PersonPick`, `lib/calendar`, `lib/dates`, `modals/PlanTipsSheet`, `theme` |
 | [modals/GoalModal.jsx](../../src/modals/GoalModal.jsx) | 163 | GoalModal | `components/Sheet`, `components/atoms`, `components/pickers`, `data/constants`, `lib/dates`, `lib/progress`, `lib/util`, `theme` |
-| [modals/JumpSheet.jsx](../../src/modals/JumpSheet.jsx) | 107 | RECENT_KEY, GROUP_LABEL, loadRecent, saveRecent, JumpSheet | `components/Sheet`, `components/atoms`, `lib/jump`, `theme` |
+| [modals/JumpSheet.jsx](../../src/modals/JumpSheet.jsx) | 109 | RECENT_KEY, GROUP_LABEL, loadRecent, saveRecent, JumpSheet | `components/Sheet`, `components/atoms`, `lib/jump`, `theme` |
 | [modals/KeyDateSheet.jsx](../../src/modals/KeyDateSheet.jsx) | 59 | KeyDateSheet | `components/Sheet`, `components/sheetLayer`, `components/atoms`, `components/pickers`, `lib/calendar`, `lib/dates`, `theme` |
 | [modals/LogDetailSheets.jsx](../../src/modals/LogDetailSheets.jsx) | 251 | DoneButton, enterCloses, Pick, sectionLabel, INTEREST_GROUPS, CheckRow, RateSheet, ListeningSheet, NewInfoSheet, GoalsSheet, … (+1) | `components/Sheet`, `components/sheetLayer`, `components/atoms`, `data/constants`, `theme` |
 | [modals/LogInteractionModal.jsx](../../src/modals/LogInteractionModal.jsx) | 305 | ML_LABELS, STEP_ORDER, DETAIL_TITLE, namesText, SectionLabel, optional, Scale, LogInteractionModal | `components/Sheet`, `components/sheetLayer`, `components/atoms`, `components/pickers`, `components/PersonPick`, `components/peopleKeys`, `data/constants`, `lib/dates`, `modals/LogDetailSheets`, `modals/QuickGoalSheet`, `modals/TemplatePickerModal`, `theme` |
@@ -83,23 +83,23 @@ Package: `layers-web` v1.0.31 · `src/`: 67 files, 10301 lines, 92 components, 2
 | Component | Defined | Props | Rendered by |
 |---|---|---|---|
 | `LayersApp` | [App.jsx:94](../../src/App.jsx#L94) | — | — |
-| `CircularProgress` | [atoms.jsx:9](../../src/components/atoms.jsx#L9) | `percent`, `size`, `stroke`, `color`, `track`, `label` | `PersonProfile` |
-| `ProgressBar` | [atoms.jsx:29](../../src/components/atoms.jsx#L29) | `percent`, `color`, `height`, `track` | `LabeledBar`, `GoalRow`, `PeopleView`, `TodayView`, `GettingStarted` |
-| `LabeledBar` | [atoms.jsx:37](../../src/components/atoms.jsx#L37) | `label`, `percent`, `color`, `size` | `CoachView`, `MeView`, `PersonProfile` |
-| `Avatar` | [atoms.jsx:49](../../src/components/atoms.jsx#L49) | `emoji`, `size`, `ringColor`, `bg` | `QuizResult`, `PersonPick`, `AvatarStack`, `GoalModal`, `LogInteractionModal`, `PlanTipsSheet`, `QuickGoalSheet`, `CoachView`, `GoalsView`, `PeopleView`, `PersonProfile` |
-| `LayerBadge` | [atoms.jsx:57](../../src/components/atoms.jsx#L57) | `layerId` | `CoachView`, `PeopleView`, `PersonProfile` |
-| `ChatBubble` | [atoms.jsx:67](../../src/components/atoms.jsx#L67) | `who`, `text` | `CoachView` |
-| `Timeline` | [atoms.jsx:78](../../src/components/atoms.jsx#L78) | `steps` | `PersonProfile` |
-| `ConvStateBadge` | [atoms.jsx:97](../../src/components/atoms.jsx#L97) | `stateKey` | `CoachView` |
-| `Kbd` | [atoms.jsx:112](../../src/components/atoms.jsx#L112) | `children`, `onAccent` | `KeyedField`, `AvatarPicker`, `AvatarSheet`, `QuizQuestion`, `QuizResult`, `QuizSheet`, `PeopleGrid`, `AddPersonModal`, `DaySheet`, `EditEntryModal`, `EditPersonModal`, `EventSheet`, `JumpSheet`, `KeyDateSheet`, `DoneButton`, `CheckRow`, `RateSheet`, `NewInfoSheet`, `GoalsSheet`, `LogInteractionModal`, `Section`, `PlanSheet`, `PlanTipsSheet`, `QuickGoalSheet`, `StartOverSheet`, `TemplatePickerModal`, `WeekReviewSheet`, `OnboardingView`, `PeopleView`, `TodayView`, `GettingStarted`, `QuickAdd` |
-| `KeyedField` | [atoms.jsx:120](../../src/components/atoms.jsx#L120) | `letter`, `multiline`, `wrapClassName`, `style`, `onFocus`, `onBlur`, `...props` | `EditEntryModal`, `NewInfoSheet`, `ReflectionSheet`, `LogInteractionModal`, `QuickGoalSheet`, `TemplatePickerModal` |
-| `AvatarPicker` | [AvatarPicker.jsx:16](../../src/components/AvatarPicker.jsx#L16) | `picker` | `AvatarSheet`, `AddPersonModal`, `EditPersonModal` |
-| `AvatarSheet` | [AvatarPicker.jsx:56](../../src/components/AvatarPicker.jsx#L56) | `name`, `value`, `onChange`, `onClose` | `OnboardingView` |
+| `CircularProgress` | [atoms.jsx:10](../../src/components/atoms.jsx#L10) | `percent`, `size`, `stroke`, `color`, `track`, `label` | `PersonProfile` |
+| `ProgressBar` | [atoms.jsx:30](../../src/components/atoms.jsx#L30) | `percent`, `color`, `height`, `track` | `LabeledBar`, `GoalRow`, `PeopleView`, `TodayView`, `GettingStarted` |
+| `LabeledBar` | [atoms.jsx:38](../../src/components/atoms.jsx#L38) | `label`, `percent`, `color`, `size` | `CoachView`, `MeView`, `PersonProfile` |
+| `Avatar` | [atoms.jsx:53](../../src/components/atoms.jsx#L53) | `person`, `emoji`, `size`, `ringColor`, `bg` | `AvatarPicker`, `AvatarSheet`, `QuizResult`, `PersonPick`, `AvatarStack`, `AddPersonModal`, `EditPersonModal`, `GoalModal`, `JumpSheet`, `LogInteractionModal`, `PlanTipsSheet`, `QuickGoalSheet`, `CoachView`, `GoalsView`, `OnboardingView`, `PeopleView`, `PersonProfile` |
+| `LayerBadge` | [atoms.jsx:73](../../src/components/atoms.jsx#L73) | `layerId` | `CoachView`, `PeopleView`, `PersonProfile` |
+| `ChatBubble` | [atoms.jsx:83](../../src/components/atoms.jsx#L83) | `who`, `text` | `CoachView` |
+| `Timeline` | [atoms.jsx:94](../../src/components/atoms.jsx#L94) | `steps` | `PersonProfile` |
+| `ConvStateBadge` | [atoms.jsx:113](../../src/components/atoms.jsx#L113) | `stateKey` | `CoachView` |
+| `Kbd` | [atoms.jsx:128](../../src/components/atoms.jsx#L128) | `children`, `onAccent` | `KeyedField`, `AvatarPicker`, `AvatarSheet`, `QuizQuestion`, `QuizResult`, `QuizSheet`, `PeopleGrid`, `AddPersonModal`, `DaySheet`, `EditEntryModal`, `EditPersonModal`, `EventSheet`, `JumpSheet`, `KeyDateSheet`, `DoneButton`, `CheckRow`, `RateSheet`, `NewInfoSheet`, `GoalsSheet`, `LogInteractionModal`, `Section`, `PlanSheet`, `PlanTipsSheet`, `QuickGoalSheet`, `StartOverSheet`, `TemplatePickerModal`, `WeekReviewSheet`, `OnboardingView`, `PeopleView`, `TodayView`, `GettingStarted`, `QuickAdd` |
+| `KeyedField` | [atoms.jsx:136](../../src/components/atoms.jsx#L136) | `letter`, `multiline`, `wrapClassName`, `style`, `onFocus`, `onBlur`, `...props` | `EditEntryModal`, `NewInfoSheet`, `ReflectionSheet`, `LogInteractionModal`, `QuickGoalSheet`, `TemplatePickerModal` |
+| `AvatarPicker` | [AvatarPicker.jsx:18](../../src/components/AvatarPicker.jsx#L18) | `picker`, `name`, `layer` | `AvatarSheet`, `AddPersonModal`, `EditPersonModal` |
+| `AvatarSheet` | [AvatarPicker.jsx:68](../../src/components/AvatarPicker.jsx#L68) | `person`, `onChange`, `onClose` | `OnboardingView` |
 | `BottomNav` | [BottomNav.jsx:21](../../src/components/BottomNav.jsx#L21) | `active`, `onChange` | `LayersApp` |
 | `QuizDots` | [ClosenessQuiz.jsx:21](../../src/components/ClosenessQuiz.jsx#L21) | `answers`, `at` | `QuizQuestion` |
 | `QuizQuestion` | [ClosenessQuiz.jsx:33](../../src/components/ClosenessQuiz.jsx#L33) | `quiz`, `name`, `onDone` | `QuizSheet`, `AddPersonModal` |
-| `QuizResult` | [ClosenessQuiz.jsx:63](../../src/components/ClosenessQuiz.jsx#L63) | `quiz`, `name`, `emoji`, `now` | `QuizSheet`, `AddPersonModal` |
-| `QuizSheet` | [ClosenessQuiz.jsx:101](../../src/components/ClosenessQuiz.jsx#L101) | `name`, `emoji`, `now`, `onDone`, `onClose` | `LayersApp`, `OnboardingView` |
+| `QuizResult` | [ClosenessQuiz.jsx:64](../../src/components/ClosenessQuiz.jsx#L64) | `quiz`, `name`, `person`, `now` | `QuizSheet`, `AddPersonModal` |
+| `QuizSheet` | [ClosenessQuiz.jsx:102](../../src/components/ClosenessQuiz.jsx#L102) | `name`, `person`, `now`, `onDone`, `onClose` | `LayersApp`, `OnboardingView` |
 | `RingsEmpty` | [illustrations.jsx:13](../../src/components/illustrations.jsx#L13) | `width` | `PeopleView` |
 | `RingsWelcome` | [illustrations.jsx:27](../../src/components/illustrations.jsx#L27) | `width` | `OnboardingView` |
 | `PageTransition` | [PageTransition.jsx:9](../../src/components/PageTransition.jsx#L9) | `pageKey`, `order`, `children` | `LayersApp` |
@@ -188,30 +188,32 @@ Package: `layers-web` v1.0.31 · `src/`: 67 files, 10301 lines, 92 components, 2
 | `addNotes` | [App.jsx:82](../../src/App.jsx#L82) |  |  |
 | `cssVarBlock` | [theme.js:60](../../src/theme.js#L60) |  |  |
 | `findAvatars` | [avatars.js:41](../../src/data/avatars.js#L41) | ✓ |  |
-| `withTone` | [avatars.js:61](../../src/data/avatars.js#L61) | ✓ | ✓ |
-| `plain` | [avatars.js:70](../../src/data/avatars.js#L70) |  |  |
-| `splitTone` | [avatars.js:75](../../src/data/avatars.js#L75) | ✓ | ✓ |
-| `groupOf` | [avatars.js:84](../../src/data/avatars.js#L84) | ✓ | ✓ |
-| `avatarName` | [avatars.js:91](../../src/data/avatars.js#L91) | ✓ | ✓ |
+| `isInitials` | [avatars.js:66](../../src/data/avatars.js#L66) | ✓ | ✓ |
+| `initialsOf` | [avatars.js:70](../../src/data/avatars.js#L70) | ✓ | ✓ |
+| `withTone` | [avatars.js:92](../../src/data/avatars.js#L92) | ✓ | ✓ |
+| `plain` | [avatars.js:101](../../src/data/avatars.js#L101) |  |  |
+| `splitTone` | [avatars.js:106](../../src/data/avatars.js#L106) | ✓ | ✓ |
+| `groupOf` | [avatars.js:115](../../src/data/avatars.js#L115) | ✓ | ✓ |
+| `avatarName` | [avatars.js:122](../../src/data/avatars.js#L122) | ✓ | ✓ |
 | `getLayer` | [constants.js:13](../../src/data/constants.js#L13) | ✓ |  |
 | `categoryMeta` | [constants.js:32](../../src/data/constants.js#L32) | ✓ |  |
 | `presetMeta` | [constants.js:221](../../src/data/constants.js#L221) | ✓ |  |
 | `achievementProgress` | [achievements.js:9](../../src/lib/achievements.js#L9) | ✓ |  |
 | `newlyUnlocked` | [achievements.js:29](../../src/lib/achievements.js#L29) | ✓ |  |
 | `progressText` | [achievements.js:34](../../src/lib/achievements.js#L34) | ✓ |  |
-| `createBackup` | [backup.js:16](../../src/lib/backup.js#L16) | ✓ | ✓ |
-| `isObject` | [backup.js:20](../../src/lib/backup.js#L20) |  |  |
-| `isText` | [backup.js:21](../../src/lib/backup.js#L21) |  |  |
-| `isISODay` | [backup.js:22](../../src/lib/backup.js#L22) |  |  |
-| `num` | [backup.js:23](../../src/lib/backup.js#L23) |  |  |
-| `count` | [backup.js:24](../../src/lib/backup.js#L24) |  |  |
-| `cleanHistory` | [backup.js:26](../../src/lib/backup.js#L26) |  |  |
-| `cleanGoal` | [backup.js:32](../../src/lib/backup.js#L32) |  |  |
-| `cleanPerson` | [backup.js:47](../../src/lib/backup.js#L47) |  |  |
-| `cleanEntry` | [backup.js:81](../../src/lib/backup.js#L81) |  |  |
-| `cleanEvent` | [backup.js:102](../../src/lib/backup.js#L102) |  |  |
-| `cleanSkills` | [backup.js:128](../../src/lib/backup.js#L128) |  |  |
-| `validateBackup` | [backup.js:140](../../src/lib/backup.js#L140) | ✓ | ✓ |
+| `createBackup` | [backup.js:17](../../src/lib/backup.js#L17) | ✓ | ✓ |
+| `isObject` | [backup.js:21](../../src/lib/backup.js#L21) |  |  |
+| `isText` | [backup.js:22](../../src/lib/backup.js#L22) |  |  |
+| `isISODay` | [backup.js:23](../../src/lib/backup.js#L23) |  |  |
+| `num` | [backup.js:24](../../src/lib/backup.js#L24) |  |  |
+| `count` | [backup.js:25](../../src/lib/backup.js#L25) |  |  |
+| `cleanHistory` | [backup.js:27](../../src/lib/backup.js#L27) |  |  |
+| `cleanGoal` | [backup.js:33](../../src/lib/backup.js#L33) |  |  |
+| `cleanPerson` | [backup.js:48](../../src/lib/backup.js#L48) |  |  |
+| `cleanEntry` | [backup.js:87](../../src/lib/backup.js#L87) |  |  |
+| `cleanEvent` | [backup.js:108](../../src/lib/backup.js#L108) |  |  |
+| `cleanSkills` | [backup.js:134](../../src/lib/backup.js#L134) |  |  |
+| `validateBackup` | [backup.js:146](../../src/lib/backup.js#L146) | ✓ | ✓ |
 | `templateFor` | [calendar.js:39](../../src/lib/calendar.js#L39) | ✓ |  |
 | `dateKind` | [calendar.js:49](../../src/lib/calendar.js#L49) | ✓ |  |
 | `notifySettings` | [calendar.js:68](../../src/lib/calendar.js#L68) | ✓ |  |
@@ -350,7 +352,7 @@ Package: `layers-web` v1.0.31 · `src/`: 67 files, 10301 lines, 92 components, 2
 | `clamp` | [util.js:4](../../src/lib/util.js#L4) | ✓ | ✓ |
 | `uidCounter` | [util.js:6](../../src/lib/util.js#L6) |  |  |
 | `uid` | [util.js:8](../../src/lib/util.js#L8) | ✓ |  |
-| `useAvatarPicker` | [avatarKeys.js:16](../../src/components/avatarKeys.js#L16) | ✓ |  |
+| `useAvatarPicker` | [avatarKeys.js:21](../../src/components/avatarKeys.js#L21) | ✓ |  |
 | `useCloseness` | [closenessKeys.js:10](../../src/components/closenessKeys.js#L10) | ✓ |  |
 | `quizKey` | [closenessKeys.js:33](../../src/components/closenessKeys.js#L33) | ✓ |  |
 | `startsWord` | [peopleKeys.js:15](../../src/components/peopleKeys.js#L15) |  |  |
@@ -414,9 +416,11 @@ Package: `layers-web` v1.0.31 · `src/`: 67 files, 10301 lines, 92 components, 2
 | `CSS` | [theme.js:67](../../src/theme.js#L67) |
 | `AVATAR_COLS` | [avatars.js:6](../../src/data/avatars.js#L6) |
 | `AVATAR_GROUPS` | [avatars.js:8](../../src/data/avatars.js#L8) |
-| `SKIN_TONES` | [avatars.js:49](../../src/data/avatars.js#L49) |
-| `TONE_RE` | [avatars.js:57](../../src/data/avatars.js#L57) |
-| `ALL` | [avatars.js:71](../../src/data/avatars.js#L71) |
+| `INITIAL_COLORS` | [avatars.js:50](../../src/data/avatars.js#L50) |
+| `INITIALS_GROUP` | [avatars.js:62](../../src/data/avatars.js#L62) |
+| `SKIN_TONES` | [avatars.js:80](../../src/data/avatars.js#L80) |
+| `TONE_RE` | [avatars.js:88](../../src/data/avatars.js#L88) |
+| `ALL` | [avatars.js:102](../../src/data/avatars.js#L102) |
 | `LAYERS` | [constants.js:6](../../src/data/constants.js#L6) |
 | `DIM_ORDER` | [constants.js:15](../../src/data/constants.js#L15) |
 | `DIM_LABELS` | [constants.js:17](../../src/data/constants.js#L17) |
@@ -456,8 +460,8 @@ Package: `layers-web` v1.0.31 · `src/`: 67 files, 10301 lines, 92 components, 2
 | `INITIAL_JOURNAL` | [seed.js:149](../../src/data/seed.js#L149) |
 | `INITIAL_SKILLS` | [seed.js:159](../../src/data/seed.js#L159) |
 | `EMPTY_SKILLS` | [seed.js:168](../../src/data/seed.js#L168) |
-| `BACKUP_VERSION` | [backup.js:12](../../src/lib/backup.js#L12) |
-| `MAX_BACKUP_BYTES` | [backup.js:14](../../src/lib/backup.js#L14) |
+| `BACKUP_VERSION` | [backup.js:13](../../src/lib/backup.js#L13) |
+| `MAX_BACKUP_BYTES` | [backup.js:15](../../src/lib/backup.js#L15) |
 | `WEEKDAY_NAMES` | [calendar.js:23](../../src/lib/calendar.js#L23) |
 | `DEFAULT_DURATION` | [calendar.js:25](../../src/lib/calendar.js#L25) |
 | `EVENT_TEMPLATES` | [calendar.js:29](../../src/lib/calendar.js#L29) |
@@ -496,6 +500,7 @@ Package: `layers-web` v1.0.31 · `src/`: 67 files, 10301 lines, 92 components, 2
 | `SNOOZES_KEY` | [storage.js:113](../../src/lib/storage.js#L113) |
 | `HOOKS` | [text.js:78](../../src/lib/text.js#L78) |
 | `SOON_DAYS` | [tips.js:13](../../src/lib/tips.js#L13) |
+| `PICKER_GROUPS` | [avatarKeys.js:19](../../src/components/avatarKeys.js#L19) |
 | `ITEMS` | [BottomNav.jsx:13](../../src/components/BottomNav.jsx#L13) |
 | `ANSWER_EMOJI` | [ClosenessQuiz.jsx:18](../../src/components/ClosenessQuiz.jsx#L18) |
 | `LAYER` | [illustrations.jsx:7](../../src/components/illustrations.jsx#L7) |

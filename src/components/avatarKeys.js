@@ -1,51 +1,63 @@
 // The avatar picker's state and keys (components/AvatarPicker.jsx shows
-// it). The avatar itself is the sheet's (value / onChange); this keeps which
-// group is showing and the skin tone to use for people.
-//   ← → ↑ ↓  pick the next avatar in the group (it's picked as you move)
+// it). The avatar itself is the sheet's: a look, { emoji, avatar }, where
+// avatar is null for the emoji or { style: 'initials', color } for initials
+// (data/avatars.js); onChange(look) sets it. This keeps which group is
+// showing and the skin tone to use for people.
+//   ← → ↑ ↓  pick the next one in the group (it's picked as you move)
 //   T        the next skin tone (Shift+T the one before), for people
-//   G        the next group (Shift+G the one before)
-//   /        find one by typing ("dog", "red hair"): Enter or ↓ picks the
-//            first match and leaves the box, the arrows then move through
-//            the matches
+//   G        the next group (Shift+G the one before): Initials, People,
+//            Faces, Animals, Things
+//   /        find one by typing ("dog", "red hair", "initials"): Enter or ↓
+//            picks the first match and leaves the box, the arrows then move
+//            through the matches
 // handleKey(e) returns true when it used the key. The sheet calls it only
 // while you're not typing.
 
 import { useCallback, useRef, useState } from 'react';
-import { AVATAR_COLS, AVATAR_GROUPS, findAvatars, groupOf, SKIN_TONES, splitTone, withTone } from '../data/avatars.js';
+import { AVATAR_COLS, AVATAR_GROUPS, findAvatars, groupOf, INITIALS_GROUP, isInitials, SKIN_TONES, splitTone, withTone } from '../data/avatars.js';
 
-export function useAvatarPicker(value, onChange) {
-  const [group, setGroup] = useState(() => groupOf(value));
-  const [tone, setTone] = useState(() => splitTone(value).mod);
+export const PICKER_GROUPS = [INITIALS_GROUP, ...AVATAR_GROUPS];
+
+export function useAvatarPicker(look, onChange) {
+  const initials = isInitials(look.avatar);
+  const [group, setGroup] = useState(() => (initials ? 0 : groupOf(look.emoji) + 1));
+  const [tone, setTone] = useState(() => splitTone(look.emoji).mod);
   const [query, setQuery] = useState('');
   const findRef = useRef(null);
   const attachFind = useCallback((el) => { findRef.current = el; }, []);
-  const { base } = splitTone(value);
+  const { base } = splitTone(look.emoji);
   const finding = query.trim().length > 0;
+  const words = query.toLowerCase().split(/[\s,]+/).filter(Boolean);
   // What the grid shows: the matches while finding, or the group.
-  const shown = finding ? { key: 'found', label: 'Matches', tone: true, items: findAvatars(query) } : AVATAR_GROUPS[group];
+  const shown = finding
+    ? { key: 'found', label: 'Matches', items: [...INITIALS_GROUP.items.filter(it => words.every(w => it.words.includes(w))), ...findAvatars(query)] }
+    : PICKER_GROUPS[group];
 
-  function pick(emoji, mod = tone) {
-    const inPeople = AVATAR_GROUPS[0].items.some(it => it.emoji === emoji);
-    onChange(inPeople ? withTone(emoji, mod) : emoji);
+  // Whether a choice is the one picked.
+  function isOn(it) { return it.color ? initials && look.avatar.color === it.color : !initials && it.emoji === base; }
+  function pick(it, mod = tone) {
+    if (it.color) onChange({ emoji: look.emoji, avatar: { style: 'initials', color: it.color } });
+    else onChange({ emoji: it.tone ? withTone(it.emoji, mod) : it.emoji, avatar: null });
   }
-  function showGroupAndClear(i) { setQuery(''); setGroup((i + AVATAR_GROUPS.length) % AVATAR_GROUPS.length); }
+  function showGroup(i) { setQuery(''); setGroup((i + PICKER_GROUPS.length) % PICKER_GROUPS.length); }
   // The find box's own keys: Enter or ↓ picks the first match and leaves it.
   function findKey(e) {
     if ((e.key === 'Enter' || e.key === 'ArrowDown') && shown.items.length) {
       e.preventDefault();
       e.stopPropagation();
-      pick(shown.items[0].emoji);
+      pick(shown.items[0]);
       e.currentTarget.blur();
     }
   }
   function chooseTone(mod) {
     setTone(mod);
-    if (AVATAR_GROUPS[0].items.some(it => it.emoji === base)) onChange(withTone(base, mod));
+    if (!initials && AVATAR_GROUPS[0].items.some(it => it.emoji === base)) onChange({ emoji: withTone(base, mod), avatar: null });
   }
 
   function handleKey(e) {
     if (e.ctrlKey || e.metaKey || e.altKey) return false;
-    const moves = { ArrowLeft: -1, ArrowRight: 1, ArrowUp: -AVATAR_COLS, ArrowDown: AVATAR_COLS };
+    const cols = shown.cols || AVATAR_COLS;
+    const moves = { ArrowLeft: -1, ArrowRight: 1, ArrowUp: -cols, ArrowDown: cols };
     const key = e.key.toLowerCase();
     if (e.key === '/') {
       e.preventDefault();
@@ -56,9 +68,8 @@ export function useAvatarPicker(value, onChange) {
       e.preventDefault();
       const items = shown.items;
       if (!items.length) return true;
-      const at = items.findIndex(it => it.emoji === base);
-      const next = at < 0 ? 0 : Math.max(0, Math.min(items.length - 1, at + moves[e.key]));
-      pick(items[next].emoji);
+      const at = items.findIndex(isOn);
+      pick(items[at < 0 ? 0 : Math.max(0, Math.min(items.length - 1, at + moves[e.key]))]);
       return true;
     }
     if (key === 't') {
@@ -69,11 +80,11 @@ export function useAvatarPicker(value, onChange) {
     }
     if (key === 'g') {
       e.preventDefault();
-      showGroupAndClear(group + (e.shiftKey ? -1 : 1));
+      showGroup(group + (e.shiftKey ? -1 : 1));
       return true;
     }
     return false;
   }
 
-  return { group, shown, tone, base, finding, query, setQuery, attachFind, findKey, pick, chooseTone, showGroup: showGroupAndClear, handleKey };
+  return { group, shown, tone, finding, query, setQuery, attachFind, findKey, isOn, pick, chooseTone, showGroup, handleKey };
 }

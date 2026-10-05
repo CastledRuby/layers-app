@@ -90,7 +90,7 @@ export function QuickGoalSheet({ people, forIds, today, onClose, onCreate }) {
           <div className="flex flex-wrap gap-1.5">
             {forPeople.map(p => (
               <button key={p.id} type="button" onClick={() => setPersonId(p.id)} aria-pressed={p.id === personId} className={`chip${p.id === personId ? ' chip--on' : ''}`} style={{ padding: '4px 10px 4px 4px' }}>
-                <Avatar emoji={p.emoji} size={22} ringColor={getLayer(p.layer).color} />{p.name}
+                <Avatar person={p} size={22} ringColor={getLayer(p.layer).color} />{p.name}
               </button>
             ))}
           </div>

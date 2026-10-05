@@ -60,13 +60,14 @@ export function QuizQuestion({ quiz, name, onDone }) {
 // Where they're starting; 1-4 (or a tap) picks another layer.
 // now: { layer, overall } where they are already (asking again from a
 // profile), shown under where the answers put them.
-export function QuizResult({ quiz, name, emoji, now = null }) {
+// person: { emoji, avatar } as picked, so it shows as it will look.
+export function QuizResult({ quiz, name, person, now = null }) {
   const { layer, overall } = quiz.placement;
   const l = getLayer(layer);
   return (
     <>
       <div className="rounded-3xl p-5 text-center pop" style={{ background: l.tint }} role="status" aria-label="Where you're starting">
-        <div className="flex justify-center"><Avatar emoji={emoji} size={58} ringColor={l.color} /></div>
+        <div className="flex justify-center"><Avatar person={{ ...person, name, layer }} size={58} ringColor={l.color} /></div>
         <p className="font-display mt-2" style={{ fontSize: 22, color: COLORS.ink }}>{name}</p>
         <p className="text-sm font-bold mt-1" style={{ color: l.deep }}>Layer {l.id}: {l.fullName}{overall !== null ? ` · ${overall}% in` : ''}</p>
         <p className="text-xs mt-1.5" style={{ color: COLORS.inkSoft }}>{l.desc}</p>
@@ -98,7 +99,7 @@ export function QuizResult({ quiz, name, emoji, now = null }) {
 // "Where are we now?" with `now`, where they are already). The result's
 // Enter keeps it (onDone(placement)); Esc leaves them as they were. Same
 // keys as when adding someone, without the name step.
-export function QuizSheet({ name, emoji, now = null, onDone, onClose }) {
+export function QuizSheet({ name, person, now = null, onDone, onClose }) {
   const quiz = useCloseness();
   const [step, setStep] = useState('quiz');
   // The name box underneath would keep the keys (it's still focused).
@@ -120,7 +121,7 @@ export function QuizSheet({ name, emoji, now = null, onDone, onClose }) {
     <Sheet title={step === 'quiz' ? `How close are you and ${name}?` : `Where you are with ${name}`} onClose={onClose} onKey={onKey} tall
       footer={step === 'result' ? <button type="button" onClick={() => onDone(quiz.placement)} className="primary-btn">{now ? 'Move them here' : 'Keep this'} <Kbd onAccent>↵</Kbd></button> : null}>
       <div key={step} className="step-in">
-        {step === 'quiz' && quiz.at !== null ? <QuizQuestion quiz={quiz} name={name} onDone={() => setStep('result')} /> : <QuizResult quiz={quiz} name={name} emoji={emoji} now={now} />}
+        {step === 'quiz' && quiz.at !== null ? <QuizQuestion quiz={quiz} name={name} onDone={() => setStep('result')} /> : <QuizResult quiz={quiz} name={name} person={person} now={now} />}
       </div>
     </Sheet>
   );

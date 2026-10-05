@@ -62,7 +62,7 @@ export function GoalModal({ people, defaultPersonId, editingGoal, editingPersonI
       <p className="text-sm font-semibold mb-2" style={{ color: COLORS.ink }}>Who is this goal for?</p>
       {isEdit ? (
         <div className="flex items-center gap-2 mb-5">
-          {editingPerson ? (<><Avatar emoji={editingPerson.emoji} size={36} ringColor={COLORS.accent} /><span className="text-sm font-semibold" style={{ color: COLORS.ink }}>{editingPerson.name}</span></>) : (<><Avatar emoji="🎯" size={36} ringColor={COLORS.accent} /><span className="text-sm font-semibold" style={{ color: COLORS.ink }}>My skills (general)</span></>)}
+          {editingPerson ? (<><Avatar person={editingPerson} size={36} ringColor={COLORS.accent} /><span className="text-sm font-semibold" style={{ color: COLORS.ink }}>{editingPerson.name}</span></>) : (<><Avatar emoji="🎯" size={36} ringColor={COLORS.accent} /><span className="text-sm font-semibold" style={{ color: COLORS.ink }}>My skills (general)</span></>)}
         </div>
       ) : (
         <div style={{ display: 'flex', flexWrap: 'wrap', columnGap: 8, rowGap: 12, paddingBottom: 4, marginBottom: 20, maxHeight: 168, overflowY: 'auto' }}>
@@ -74,7 +74,7 @@ export function GoalModal({ people, defaultPersonId, editingGoal, editingPersonI
             const active = personId === p.id; const l = getLayer(p.layer);
             return (
               <button key={p.id} onClick={() => choosePerson(p.id)} className="flex flex-col items-center gap-1 shrink-0" style={{ width: 56 }}>
-                <Avatar emoji={p.emoji} size={44} ringColor={active ? COLORS.accent : l.color} />
+                <Avatar person={p} size={44} ringColor={active ? COLORS.accent : l.color} />
                 <span className="text-xs truncate" style={{ maxWidth: 56, color: active ? COLORS.accent : COLORS.inkSoft, fontWeight: active ? 700 : 500 }}>{p.name}</span>
               </button>
             );

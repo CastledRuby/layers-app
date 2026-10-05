@@ -898,8 +898,8 @@ function LayersApp() {
     pushToast(`Logged and updated ${person.name}'s progress`);
   }
 
-  function handleAddPerson({ name, emoji, layer, overall }) {
-    const newPerson = makePerson({ name, emoji, layer, overall });
+  function handleAddPerson({ name, emoji, avatar, layer, overall }) {
+    const newPerson = makePerson({ name, emoji, avatar, layer, overall });
     setPeople(prev => [...prev, newPerson]);
     pushToast(`${name} added at Layer ${newPerson.layer}: ${getLayer(newPerson.layer).name}`);
     setAddPersonOpen(false);
@@ -907,8 +907,13 @@ function LayersApp() {
 
   function openEditPerson() { setEditPersonOpen(true); }
   function closeEditPerson() { setEditPersonOpen(false); }
-  function handleSavePersonEdit(personId, { name, emoji }) {
-    setPeople(prev => prev.map(p => p.id !== personId ? p : { ...p, name, emoji }));
+  function handleSavePersonEdit(personId, { name, emoji, avatar }) {
+    setPeople(prev => prev.map(p => {
+      if (p.id !== personId) return p;
+      const next = { ...p, name, emoji };
+      if (avatar) next.avatar = avatar; else delete next.avatar;
+      return next;
+    }));
     pushToast('Person updated');
     setEditPersonOpen(false);
   }
@@ -1076,7 +1081,7 @@ function LayersApp() {
     });
     quietAchievements.current = true;
     if (startFresh) {
-      setPeople((newPeople || []).map(p => makePerson({ name: p.name, emoji: p.emoji, layer: p.layer || 1, overall: p.overall })));
+      setPeople((newPeople || []).map(p => makePerson({ name: p.name, emoji: p.emoji, avatar: p.avatar, layer: p.layer || 1, overall: p.overall })));
       setJournal([]); setGeneralGoals([]); setSkills(EMPTY_SKILLS);
     } else {
       const sample = sampleData();
@@ -1208,7 +1213,7 @@ function LayersApp() {
             {weekReview && <WeekReviewSheet day={weekReview} people={people} journal={journal} events={events} generalGoals={generalGoals} onClose={() => setWeekReview(null)} onPlan={openPlan} />}
             {recheckFor && people.some(p => p.id === recheckFor) && (() => {
               const p = people.find(x => x.id === recheckFor);
-              return <QuizSheet name={p.name} emoji={p.emoji} now={{ layer: p.layer, overall: p.overall }} onClose={() => setRecheckFor(null)} onDone={(placement) => handleRecheck(p.id, placement)} />;
+              return <QuizSheet name={p.name} person={p} now={{ layer: p.layer, overall: p.overall }} onClose={() => setRecheckFor(null)} onDone={(placement) => handleRecheck(p.id, placement)} />;
             })()}
             {keyDateFor && people.some(p => p.id === keyDateFor) && <KeyDateSheet personName={people.find(p => p.id === keyDateFor).name} onClose={() => setKeyDateFor(null)} onSave={(kd) => handleSaveKeyDate(keyDateFor, kd)} />}
             {goalModalOpen && <GoalModal people={people} defaultPersonId={goalModalDefaultPerson} editingGoal={goalEditing ? goalEditing.goal : null} editingPersonId={goalEditing ? goalEditing.personId : null} onClose={closeGoalModal} onSave={handleGoalSave} />}

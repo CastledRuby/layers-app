@@ -61,6 +61,34 @@ describe('the avatar picker', () => {
     expect(savedPerson('Lou').emoji).toBe('👩‍🦰');
   });
 
+  it('initials: Shift+G from People, the arrows pick a colour, and they show everywhere', async () => {
+    seedState({ people: [person('Morgan')] });
+    const { user } = renderApp();
+    await user.keyboard('{Control>}{Shift>}a{/Shift}{/Control}Ethan M{Tab}{Shift>}g{/Shift}');
+    const sheet = () => dialog('Add someone new');
+    expect(within(sheet()).getByRole('group', { name: 'Initials' })).toBeTruthy();
+    expect(within(sheet()).getAllByText('EM').length).toBeGreaterThan(0);
+    await user.keyboard('{ArrowRight}{ArrowRight}'); // Their layer, then Sky
+    expect(pressed('Add someone new', 'Initials, sky')).toBe('true');
+    await user.keyboard('l{Enter}');
+    expect(savedPerson('Ethan M').avatar).toEqual({ style: 'initials', color: 'sky' });
+    await user.click(nav('People'));
+    await user.click(screen.getByRole('button', { name: 'List view' }));
+    expect(screen.getAllByText('EM').length).toBeGreaterThan(0);
+  });
+
+  it('going back to an emoji drops the initials', async () => {
+    seedState({ people: [person('Morgan', { avatar: { style: 'initials', color: 'rose' } })] });
+    const { user } = renderApp();
+    await user.click(nav('People'));
+    await user.click(screen.getAllByText('Morgan')[0]);
+    await user.click(screen.getByRole('button', { name: /^Edit/ }));
+    expect(pressed('Edit person', 'Initials, rose')).toBe('true');
+    await user.keyboard('{Tab}g{ArrowRight}{Enter}'); // People: the first one
+    expect('avatar' in savedPerson('Morgan')).toBe(false);
+    expect(savedPerson('Morgan').emoji).toBe('🧑');
+  });
+
   it('setting up: A (or tapping their avatar) opens the picker for the newest person', async () => {
     const { user } = renderApp();
     await user.type(screen.getByLabelText('Your name'), 'Sam{Enter}');

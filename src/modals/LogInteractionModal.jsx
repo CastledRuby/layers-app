@@ -242,7 +242,7 @@ export function LogInteractionModal({ people, defaultPersonId, prefill, onClose,
               <DateDropdown compact value={logDate} onChange={setLogDate} maxDate={new Date()} />
               <div className="flex items-center" aria-hidden="true">
                 {loggedPeople.slice(0, 4).map((p, i) => (
-                  <span key={p.id} style={{ marginLeft: i ? -8 : 0, borderRadius: '50%', boxShadow: `0 0 0 2px ${COLORS.paperRaised}` }}><Avatar emoji={p.emoji} size={30} ringColor={getLayer(p.layer).color} /></span>
+                  <span key={p.id} style={{ marginLeft: i ? -8 : 0, borderRadius: '50%', boxShadow: `0 0 0 2px ${COLORS.paperRaised}` }}><Avatar person={p} size={30} ringColor={getLayer(p.layer).color} /></span>
                 ))}
               </div>
             </div>

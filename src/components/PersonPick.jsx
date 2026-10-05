@@ -15,7 +15,7 @@ export function PersonPick({ person, active, onClick, size = 48, hint, cursor })
     <button type="button" onClick={onClick} aria-pressed={active} className={`flex flex-col items-center gap-1 shrink-0 rounded-2xl py-1.5${cursor ? ' pick-cursor' : ''}`} style={{ width: 64 }}>
       <span style={{ position: 'relative', display: 'inline-block' }} className={active ? 'pop' : ''}>
         {hint && <span className="pick-key" aria-hidden="true">{hint}</span>}
-        <Avatar emoji={person.emoji} size={size} ringColor={active ? COLORS.accent : l.color} />
+        <Avatar person={person} size={size} ringColor={active ? COLORS.accent : l.color} />
         {active && (
           <span style={{ position: 'absolute', bottom: -2, right: -2, width: 18, height: 18, borderRadius: '50%', background: COLORS.accent, display: 'flex', alignItems: 'center', justifyContent: 'center', border: `2px solid ${COLORS.paperRaised}` }}>
             <Check size={10} color={COLORS.onAccent} strokeWidth={3} />
@@ -58,7 +58,7 @@ export function AvatarStack({ people, size = 24, max = 4 }) {
     <span className="flex items-center" aria-hidden="true">
       {people.slice(0, max).map((p, i) => (
         <span key={p.id} style={{ marginLeft: i ? -7 : 0, borderRadius: '50%', boxShadow: `0 0 0 2px ${COLORS.paperRaised}` }}>
-          <Avatar emoji={p.emoji} size={size} ringColor={getLayer(p.layer).color} />
+          <Avatar person={p} size={size} ringColor={getLayer(p.layer).color} />
         </span>
       ))}
     </span>

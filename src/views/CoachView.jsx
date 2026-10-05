@@ -88,7 +88,7 @@ export function CoachView({ people, journal, initialPersonId, initialTab, onOpen
               const active = !!preparePerson && preparePerson.id === p.id; const l = getLayer(p.layer);
               return (
                 <button key={p.id} onClick={() => setPreparePersonId(p.id)} className="flex flex-col items-center gap-1 shrink-0" style={{ width: 56 }}>
-                  <Avatar emoji={p.emoji} size={44} ringColor={active ? COLORS.accent : l.color} />
+                  <Avatar person={p} size={44} ringColor={active ? COLORS.accent : l.color} />
                   <span className="text-xs truncate" style={{ maxWidth: 56, color: active ? COLORS.accent : COLORS.inkSoft, fontWeight: active ? 700 : 500 }}>{p.name}</span>
                 </button>
               );
@@ -208,7 +208,7 @@ export function CoachView({ people, journal, initialPersonId, initialTab, onOpen
                   const l = getLayer(p.layer);
                   return (
                     <button key={p.id} onClick={() => setAnalysisPersonId(p.id)} className="flex flex-col items-center gap-1 shrink-0" style={{ width: 56 }}>
-                      <Avatar emoji={p.emoji} size={44} ringColor={l.color} />
+                      <Avatar person={p} size={44} ringColor={l.color} />
                       <span className="text-xs truncate" style={{ maxWidth: 56, color: COLORS.inkSoft }}>{p.name}</span>
                     </button>
                   );
@@ -220,7 +220,7 @@ export function CoachView({ people, journal, initialPersonId, initialTab, onOpen
               {step === 'pick' && (
                 <>
                   <div className="flex items-center gap-2 mb-3">
-                    <Avatar emoji={scenarioPerson.emoji} size={30} ringColor={getLayer(scenarioPerson.layer).color} />
+                    <Avatar person={scenarioPerson} size={30} ringColor={getLayer(scenarioPerson.layer).color} />
                     <p className="text-sm" style={{ color: COLORS.inkSoft }}>Analysing a conversation with <span className="font-semibold" style={{ color: COLORS.ink }}>{scenarioPerson.name}</span></p>
                   </div>
                   <p className="text-xs rounded-xl p-3 mb-4" style={{ background: COLORS.accentSoft, color: COLORS.accent }}>🔒 Only analyse conversations you're allowed to share. This is a prototype. Try a sample conversation below to see how analysis works.</p>

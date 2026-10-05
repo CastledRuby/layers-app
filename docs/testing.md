@@ -90,10 +90,12 @@ interact.
   Ctrl+K), and Today's getting-started list (ticking off, Hide, and not for a circle with
   a few logs).
 - `avatar.test.jsx` covers the avatar picker: arrows, skin tones and groups when adding
-  someone, finding one by name (/), keeping a tone when editing them, and A while
+  someone, initials (picking a colour, showing them, and going back to an emoji), finding
+  one by name (/), keeping a tone when editing them, and A while
   setting up. `src/avatars.test.js`
-  checks that tones go in and come out of an emoji cleanly, and that every older avatar is
-  still offered.
+  checks that tones go in and come out of an emoji cleanly, that every older avatar is
+  still offered, how initials are worked out, and that saved data keeps only initials it
+  knows.
 - `closeness.test.jsx` covers adding someone through "How close are you two?" from the
   keyboard: the questions in order, stopping early, Backspace, picking a layer by hand,
   asking again (Q) and the avatar arrows; `setup.test.jsx` covers the quiz while setting

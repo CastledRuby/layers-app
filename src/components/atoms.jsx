@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { CONV_STATES, getLayer } from '../data/constants.js';
+import { INITIAL_COLORS, initialsOf, isInitials } from '../data/avatars.js';
 import { timelineDateLabel } from '../lib/dates.js';
 import { clamp } from '../lib/util.js';
 import { COLORS } from '../theme.js';
@@ -46,10 +47,25 @@ export function LabeledBar({ label, percent, color, size = 'sm' }) {
   );
 }
 
-export function Avatar({ emoji, size = 44, ringColor, bg = COLORS.paperRaised }) {
+// A person's avatar (pass `person`): their emoji, or their initials on a
+// colour when person.avatar says so (data/avatars.js). `emoji` alone draws
+// just that emoji.
+export function Avatar({ person, emoji, size = 44, ringColor, bg = COLORS.paperRaised }) {
+  const box = { width: size, height: size, border: `2px solid ${ringColor || COLORS.line}` };
+  if (person && isInitials(person.avatar)) {
+    const text = initialsOf(person.name);
+    const c = INITIAL_COLORS.find(x => x.key === person.avatar.color);
+    const l = getLayer(person.layer);
+    const colors = c.bg ? { background: c.bg, color: '#FFFFFF' } : { background: l.tint, color: l.deep };
+    return (
+      <div className="flex items-center justify-center rounded-full shrink-0 font-display avatar-initials" style={{ ...box, ...colors, fontSize: size * (text.length > 1 ? 0.4 : 0.48) }}>
+        {text}
+      </div>
+    );
+  }
   return (
-    <div className="flex items-center justify-center rounded-full shrink-0" style={{ width: size, height: size, background: bg, border: `2px solid ${ringColor || COLORS.line}`, fontSize: size * 0.46 }}>
-      {emoji}
+    <div className="flex items-center justify-center rounded-full shrink-0" style={{ ...box, background: bg, fontSize: size * 0.46 }}>
+      {person ? person.emoji : emoji}
     </div>
   );
 }

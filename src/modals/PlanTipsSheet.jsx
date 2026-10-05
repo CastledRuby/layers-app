@@ -38,7 +38,7 @@ export function PlanTipsSheet({ ev, day, people, journal, generalGoals, onClose,
 
       {tips.people.map(({ person, hooks, dates, lighter }) => (
         <div key={person.id}>
-          <Heading><Avatar emoji={person.emoji} size={20} ringColor={getLayer(person.layer).color} /> {person.name}</Heading>
+          <Heading><Avatar person={person} size={20} ringColor={getLayer(person.layer).color} /> {person.name}</Heading>
           {hooks.length === 0 && dates.length === 0 && (
             <p className="text-sm" style={{ color: COLORS.inkSoft }}>Nothing saved about {person.name} yet. When you log, add what you talked about, and it shows up here.</p>
           )}

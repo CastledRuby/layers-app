@@ -65,7 +65,7 @@ export const SHORTCUTS = [
   { keys: ['Ctrl', 'Shift', 'A'], desc: 'Add a new person' },
   { keys: ['A'], desc: 'People: add a new person' },
   { keys: ['↑', '↓', '↵'], desc: 'People: move through the list, closest first, and open the one marked (beside a profile, ↑ ↓ open the next)' },
-  { keys: ['←', '→', 'T', 'G', '/'], desc: 'Picking an avatar (out of the name box): arrows pick, T the skin tone, G the group, / find one by name' },
+  { keys: ['←', '→', 'T', 'G', '/'], desc: 'Picking an avatar (out of the name box): arrows pick, T the skin tone, G the group (Shift+G from People: Initials), / find one by name' },
   { keys: ['Shift', '↵'], desc: 'Setting up: add someone and ask how close you are (Q asks about the newest, A picks their avatar)' },
   { keys: ['/'], desc: 'Jump to search (People or Journal)' },
   { keys: ['Backspace'], desc: 'Go back from a person or goals screen' },

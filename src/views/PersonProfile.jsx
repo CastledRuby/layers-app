@@ -108,7 +108,7 @@ export function PersonProfile({ today, person, journal, onBack, onOpenLog, onOpe
       </div>
 
       <div className="flex flex-col items-center text-center">
-        <Avatar emoji={person.emoji} size={72} ringColor={l.color} />
+        <Avatar person={person} size={72} ringColor={l.color} />
         <p className="font-display mt-3" style={{ fontSize: 24, color: COLORS.ink }}>{person.name}</p>
         <p className="text-xs mt-1" style={{ color: COLORS.inkSoft }}>Current relationship stage</p>
         <div className="mt-1.5"><LayerBadge layerId={person.layer} /></div>

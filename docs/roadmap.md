@@ -409,6 +409,13 @@ start.
 
 ## History
 
+### Initials as avatars (after 1.0.31, not released yet)
+
+You said the emoji avatars still didn't look quite right. Anyone can now have their
+**initials** instead ("EM" for Ethan M, "Is" for Isla), in their layer's colours (which
+change as they move) or one of eight others. It's the first group in the avatar picker
+(Shift+G from People), and shows everywhere the emoji did. Older avatars are unchanged.
+
 ### Second live test (1.0.31)
 
 What you found trying it again on 2026-10-05, and what changed:

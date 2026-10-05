@@ -254,6 +254,11 @@ button:active:not(:disabled) { transform: scale(0.97); }
 .tone-swatch { width: 22px; height: 22px; border-radius: 50%; border: 2px solid ${COLORS.paperRaised}; box-shadow: 0 0 0 1px ${COLORS.line}; transition: transform .14s ease, box-shadow .14s ease; }
 .tone-swatch:hover { transform: scale(1.12); }
 .tone-swatch--on { box-shadow: 0 0 0 2px ${COLORS.accent}; transform: scale(1.12); }
+.avatar-grid--initials { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+.avatar-choice--initials { aspect-ratio: auto; flex-direction: column; gap: 4px; padding: 8px 2px 6px; }
+.avatar-choice--initials:hover { transform: translateY(-2px); }
+.avatar-choice-name { font-size: 10.5px; font-weight: 600; color: ${COLORS.inkSoft}; }
+.avatar-initials { font-weight: 600; letter-spacing: -0.01em; line-height: 1; }
 .avatar-preview { width: 64px; height: 64px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 34px; background: ${COLORS.paperRaised}; border: 2px solid ${COLORS.line}; }
 
 /* The closeness quiz (ClosenessQuiz.jsx): a dot per question, and the

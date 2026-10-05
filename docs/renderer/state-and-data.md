@@ -84,7 +84,8 @@ These shapes are inferred from the seed data and handlers. There are no runtime 
 
 ```ts
 type Person = {
-  id: string; name: string; emoji: string;
+  id: string; name: string; emoji: string;    // the emoji, with any skin tone in it
+  avatar?: { style: 'initials'; color: string }; // their initials instead (INITIAL_COLORS key; 'layer' follows their layer). Kept only if valid
   layer: 1 | 2 | 3 | 4;                       // see LAYERS
   overall: number;                            // 0–100 progress *within the current layer*
   dims: Record<'depth'|'trust'|'reciprocity'|'interaction'|'sharedExperiences'|'listening', number>; // each 0–100

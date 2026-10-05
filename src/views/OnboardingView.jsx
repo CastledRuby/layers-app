@@ -16,7 +16,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { Bell, ChevronLeft, Keyboard, Upload, X } from 'lucide-react';
-import { Kbd } from '../components/atoms.jsx';
+import { Avatar, Kbd } from '../components/atoms.jsx';
 import { QuizSheet } from '../components/ClosenessQuiz.jsx';
 import { AvatarSheet } from '../components/AvatarPicker.jsx';
 import { isTyping } from '../components/sheetLayer.js';
@@ -70,7 +70,7 @@ export function OnboardingView({ initialName, initialFocus, initialNotify = NOTI
   const [samples, setSamples] = useState(false);
   const [name, setName] = useState(initialName || '');
   const [focus, setFocus] = useState(initialFocus || null);
-  const [draftPeople, setDraftPeople] = useState([]); // [{ name, emoji, layer, overall }]
+  const [draftPeople, setDraftPeople] = useState([]); // [{ name, emoji, avatar, layer, overall }]
   const [newName, setNewName] = useState('');
   const [quizFor, setQuizFor] = useState(null); // the draft person the quiz is asking about
   const [avatarFor, setAvatarFor] = useState(null); // the draft person whose avatar is being picked
@@ -86,7 +86,7 @@ export function OnboardingView({ initialName, initialFocus, initialNotify = NOTI
   function addDraftPerson(raw, ask = false) {
     const trimmed = (raw === undefined ? newName : raw).trim();
     if (!trimmed) return;
-    setDraftPeople(prev => [...prev, { name: trimmed, emoji: PERSON_EMOJIS[prev.length % PERSON_EMOJIS.length], layer: 1, overall: null }]);
+    setDraftPeople(prev => [...prev, { name: trimmed, emoji: PERSON_EMOJIS[prev.length % PERSON_EMOJIS.length], avatar: null, layer: 1, overall: null }]);
     if (ask) setQuizFor(draftPeople.length);
     if (raw === undefined) setNewName('');
   }
@@ -172,7 +172,7 @@ export function OnboardingView({ initialName, initialFocus, initialNotify = NOTI
             {draftPeople.map((p, i) => (
               <div key={i} className="rounded-2xl p-3 chip-in" style={{ background: COLORS.paperRaised, border: `1px solid ${COLORS.line}` }}>
                 <div className="flex items-center gap-2">
-                  <button type="button" onClick={() => setAvatarFor(i)} aria-label={`Change ${p.name}'s avatar`} title="Change avatar" className="avatar-choice shrink-0" style={{ width: 36, fontSize: 21 }}>{p.emoji}</button>
+                  <button type="button" onClick={() => setAvatarFor(i)} aria-label={`Change ${p.name}'s avatar`} title="Change avatar" className="shrink-0 rounded-full"><Avatar person={p} size={36} /></button>
                   {i === draftPeople.length - 1 && <Kbd>A</Kbd>}
                   <span className="flex-1 min-w-0 text-sm font-semibold truncate" style={{ color: COLORS.ink }}>{p.name}{p.overall !== null && p.overall !== undefined && <span className="text-xs font-medium" style={{ color: COLORS.inkSoft }}> · {p.overall}% into Layer {p.layer}</span>}</span>
                   <button type="button" onClick={() => setQuizFor(i)} className="chip" style={{ padding: '3px 6px 3px 9px', fontSize: 11.5 }}>Questions{i === draftPeople.length - 1 && <Kbd>Q</Kbd>}</button>
@@ -189,10 +189,10 @@ export function OnboardingView({ initialName, initialFocus, initialNotify = NOTI
         )}
 
         {avatarFor !== null && draftPeople[avatarFor] && (
-          <AvatarSheet name={draftPeople[avatarFor].name} value={draftPeople[avatarFor].emoji} onChange={(emoji) => updateDraft(avatarFor, { emoji })} onClose={closeAvatar} />
+          <AvatarSheet person={draftPeople[avatarFor]} onChange={(look) => updateDraft(avatarFor, look)} onClose={closeAvatar} />
         )}
         {quizFor !== null && draftPeople[quizFor] && (
-          <QuizSheet key={quizFor} name={draftPeople[quizFor].name} emoji={draftPeople[quizFor].emoji} onClose={closeQuiz}
+          <QuizSheet key={quizFor} name={draftPeople[quizFor].name} person={draftPeople[quizFor]} onClose={closeQuiz}
             onDone={(placement) => { updateDraft(quizFor, placement); closeQuiz(); }} />
         )}
 

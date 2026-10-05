@@ -11,7 +11,7 @@
 import { useMemo, useRef, useState } from 'react';
 import { ChevronRight, Search } from 'lucide-react';
 import { Sheet } from '../components/Sheet.jsx';
-import { Kbd } from '../components/atoms.jsx';
+import { Avatar, Kbd } from '../components/atoms.jsx';
 import { jumpResults, personActionRows } from '../lib/jump.js';
 import { COLORS } from '../theme.js';
 
@@ -80,10 +80,12 @@ export function JumpSheet({ people, events, today, has, onRun, onClose }) {
         {rows.length === 0 && <p className="text-sm px-2 py-3" style={{ color: COLORS.inkSoft }}>Nothing matches “{query}”.</p>}
         {rows.map((row, i) => {
           const on = i === at;
+          // A person's own avatar (their initials, say), for their rows.
+          const who = row.group === 'person' || (row.run && row.run.type === 'personAction') ? people.find(p => p.id === row.run.id) : null;
           return (
             <button key={row.id} type="button" role="option" aria-selected={on} onClick={() => run(row)} onMouseMove={() => { if (!on) setActive(i); }}
               className="w-full flex items-center gap-2.5 rounded-xl px-2.5 py-2 text-left" style={{ background: on ? COLORS.accentSoft : 'transparent' }}>
-              <span className="shrink-0 text-center" style={{ width: 24, fontSize: 17 }} aria-hidden="true">{row.emoji}</span>
+              <span className="shrink-0 flex justify-center" style={{ width: 24, fontSize: 17 }} aria-hidden="true">{who && row.group === 'person' ? <Avatar person={who} size={24} ringColor="transparent" /> : row.emoji}</span>
               <span className="flex-1 min-w-0">
                 <span className="block text-sm font-semibold truncate" style={{ color: COLORS.ink }}>{row.label}</span>
                 {row.sub && <span className="block text-xs truncate" style={{ color: COLORS.inkSoft }}>{row.sub}</span>}

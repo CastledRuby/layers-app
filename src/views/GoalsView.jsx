@@ -11,7 +11,7 @@ export function GoalsView({ today, people, generalGoals, onBack, onOpenPerson, o
   const [filter, setFilter] = useState('active');
   const groups = useMemo(() => {
     const passFilter = g => filter === 'all' ? true : filter === 'active' ? g.progress < 100 : g.progress >= 100;
-    const g1 = people.map(p => ({ id: p.id, name: p.name, emoji: p.emoji, color: getLayer(p.layer).color, goals: p.goals.filter(passFilter) })).filter(g => g.goals.length > 0);
+    const g1 = people.map(p => ({ id: p.id, name: p.name, person: p, color: getLayer(p.layer).color, goals: p.goals.filter(passFilter) })).filter(g => g.goals.length > 0);
     const gen = generalGoals.filter(passFilter);
     const g2 = gen.length > 0 ? [{ id: null, name: 'My skills', emoji: '🎯', color: COLORS.accent, goals: gen }] : [];
     return [...g1, ...g2];
@@ -47,7 +47,7 @@ export function GoalsView({ today, people, generalGoals, onBack, onOpenPerson, o
         ) : groups.map(grp => (
           <div key={grp.id || 'general'} className="mb-5">
             <button onClick={() => grp.id && onOpenPerson(grp.id)} className="flex items-center gap-2 mb-2">
-              <Avatar emoji={grp.emoji} size={26} ringColor={grp.color} />
+              <Avatar person={grp.person} size={26} ringColor={grp.color} />
               <span className="text-sm font-semibold" style={{ color: COLORS.ink }}>{grp.name}</span>
             </button>
             {grp.goals.map(g => (

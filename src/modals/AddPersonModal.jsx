@@ -11,7 +11,7 @@
 import { useState } from 'react';
 import { Sheet } from '../components/Sheet.jsx';
 import { isTabbedToButton, isTyping } from '../components/sheetLayer.js';
-import { Kbd } from '../components/atoms.jsx';
+import { Avatar, Kbd } from '../components/atoms.jsx';
 import { AvatarPicker } from '../components/AvatarPicker.jsx';
 import { useAvatarPicker } from '../components/avatarKeys.js';
 import { QuizQuestion, QuizResult } from '../components/ClosenessQuiz.jsx';
@@ -24,17 +24,17 @@ const STEP_ORDER = ['name', 'quiz', 'result'];
 export function AddPersonModal({ onClose, onSave }) {
   const [step, setStep] = useState('name');
   const [dir, setDir] = useState(null); // the slide for the step just shown
-  const [emoji, setEmoji] = useState(PERSON_EMOJIS[0]);
+  const [look, setLook] = useState({ emoji: PERSON_EMOJIS[0], avatar: null }); // the avatar: an emoji, or initials
   const [name, setName] = useState('');
   const quiz = useCloseness();
-  const picker = useAvatarPicker(emoji, setEmoji);
+  const picker = useAvatarPicker(look, setLook);
   const who = name.trim();
   const canGo = who.length > 0;
 
   function go(next) { setDir(STEP_ORDER.indexOf(next) >= STEP_ORDER.indexOf(step) ? 'in' : 'back'); setStep(next); }
   function startQuiz() { if (canGo) { quiz.restart(); go('quiz'); } }
   function pickOwn() { if (canGo) go('result'); }
-  function save() { if (canGo) onSave({ name: who, emoji, layer: quiz.placement.layer, overall: quiz.placement.overall }); }
+  function save() { if (canGo) onSave({ name: who, emoji: look.emoji, avatar: look.avatar, layer: quiz.placement.layer, overall: quiz.placement.overall }); }
   // Back a step: from the result to the last question (or the name, if
   // the questions were skipped), and question by question to the name.
   function goBack() {
@@ -79,7 +79,7 @@ export function AddPersonModal({ onClose, onSave }) {
         {step === 'name' && (
           <>
             <div className="flex items-center gap-3 mb-5">
-              <span className="avatar-preview shrink-0" aria-hidden="true">{emoji}</span>
+              <span className="shrink-0" aria-hidden="true"><Avatar person={{ ...look, name: who || '?', layer: quiz.placement.layer }} size={64} /></span>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-semibold mb-1.5" style={{ color: COLORS.ink }}>Name</p>
                 <input id="add-person-name" autoFocus value={name} onChange={e => setName(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); startQuiz(); } }}
@@ -87,12 +87,12 @@ export function AddPersonModal({ onClose, onSave }) {
               </div>
             </div>
             <p className="text-sm font-semibold mb-2 flex items-center justify-between gap-2" style={{ color: COLORS.ink }}>Their avatar<span className="text-xs font-medium" style={{ color: COLORS.inkSoft }}>Tab out of the name for its keys</span></p>
-            <AvatarPicker picker={picker} />
+            <AvatarPicker picker={picker} name={who} layer={quiz.placement.layer} />
             <p className="text-xs mt-5" style={{ color: COLORS.inkSoft }}>Next, a few quick questions about how close you are, from saying hi in a corridor to watching a movie together. They place {who || 'them'} on the right layer.</p>
           </>
         )}
         {step === 'quiz' && quiz.at !== null && <QuizQuestion quiz={quiz} name={who} onDone={() => go('result')} />}
-        {step === 'result' && <QuizResult quiz={quiz} name={who} emoji={emoji} />}
+        {step === 'result' && <QuizResult quiz={quiz} name={who} person={look} />}
       </div>
     </Sheet>
   );

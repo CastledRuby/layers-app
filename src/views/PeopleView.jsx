@@ -145,7 +145,7 @@ export function PeopleView({ people, journal, onOpenPerson, onAddPerson, split =
                     const top = 50 + rPct * Math.sin(rad);
                     return (
                       <button key={p.id} onClick={() => open(p.id)} className="absolute flex flex-col items-center gap-1" style={{ left: `${left}%`, top: `${top}%`, transform: 'translate(-50%,-50%)', zIndex: 10 + i }}>
-                        <Avatar emoji={p.emoji} size={avatarSize} ringColor={l.color} />
+                        <Avatar person={p} size={avatarSize} ringColor={l.color} />
                         <span className="text-xs font-medium rounded-full px-1.5 truncate" style={{ color: COLORS.ink, background: COLORS.paperRaised, boxShadow: `0 1px 3px rgba(0,0,0,0.15)`, maxWidth: pillMaxWidth, fontSize: n > 5 ? 10 : 12 }}>{p.name}</span>
                       </button>
                     );
@@ -167,7 +167,7 @@ export function PeopleView({ people, journal, onOpenPerson, onAddPerson, split =
                 const l = getLayer(p.layer);
                 return (
                   <button key={p.id} data-person-row={p.id} onClick={() => open(p.id)} aria-current={p.id === selectedId ? 'true' : undefined} className={`w-full flex items-center gap-3 py-3 px-2 rounded-xl${p.id === cursor && !selectedId ? ' row-cursor' : ''}`} style={{ borderBottom: `1px solid ${COLORS.line}`, background: p.id === selectedId ? COLORS.accentSoft : undefined }}>
-                    <Avatar emoji={p.emoji} size={44} ringColor={l.color} />
+                    <Avatar person={p} size={44} ringColor={l.color} />
                     <div className="flex-1 min-w-0 text-left">
                       <p className="text-sm font-semibold" style={{ color: COLORS.ink }}>{p.name}</p>
                       <div className="mt-1"><LayerBadge layerId={p.layer} /></div>
@@ -201,7 +201,7 @@ export function PeopleView({ people, journal, onOpenPerson, onAddPerson, split =
                 return (
                   <button key={p.id} data-person-row={p.id} onClick={() => open(p.id)} className={`w-full text-left mb-3.5 rounded-xl px-2 py-1${p.id === cursor && !selectedId ? ' row-cursor' : ''}`}>
                     <div className="flex items-center gap-2 mb-1.5">
-                      <Avatar emoji={p.emoji} size={28} ringColor={l.color} />
+                      <Avatar person={p} size={28} ringColor={l.color} />
                       <span className="text-sm font-semibold flex-1" style={{ color: COLORS.ink }}>{p.name}</span>
                       {p.trend === 'up' && <span aria-label="trending up" className="text-sm font-semibold" style={{ color: COLORS.good }}>↑</span>}
                       {p.trend === 'down' && <span aria-label="trending down" className="text-sm font-semibold" style={{ color: COLORS.alert }}>↓</span>}
