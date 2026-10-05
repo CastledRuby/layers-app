@@ -3,11 +3,11 @@
 // as you go: Done (or Enter, or Esc) just closes them. See
 // docs/renderer/app-structure.md (LogInteractionModal).
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Check, X } from 'lucide-react';
 import { Sheet } from '../components/Sheet.jsx';
 import { isPlusKey, isTabbedToButton, isTyping } from '../components/sheetLayer.js';
-import { Kbd } from '../components/atoms.jsx';
+import { KeyedField, Kbd } from '../components/atoms.jsx';
 import { AL_ITEMS, CATEGORIES, categoryMeta, DIM_COLORS, DIM_ORDER, DIM_QUESTIONS, INFO_TEMPLATES, NOTE_TEMPLATE_CATEGORY, NOTE_TEMPLATES, REFLECTION_TEMPLATES } from '../data/constants.js';
 import { COLORS } from '../theme.js';
 
@@ -133,6 +133,7 @@ export function ListeningSheet({ al, toggle, onClose }) {
 // the category.
 export function NewInfoSheet({ personName, items, setItems, category, setCategory, text, setText, onClose }) {
   const [group, setGroup] = useState(null); // an interest topic group, opened to show its items
+  const textRef = useRef(null);
   const has = (cat, t) => items.some(n => n.category === cat && n.text === t);
   function toggle(cat, t, emoji) {
     setItems(prev => has(cat, t) ? prev.filter(n => !(n.category === cat && n.text === t)) : [...prev, emoji ? { category: cat, text: t, emoji } : { category: cat, text: t }]);
@@ -147,6 +148,7 @@ export function NewInfoSheet({ personName, items, setItems, category, setCategor
   function onKey(e) {
     if (e.ctrlKey || e.metaKey || e.altKey) return;
     if (enterCloses(e, onClose)) return;
+    if (!isTyping() && !e.ctrlKey && !e.metaKey && !e.altKey && (e.key === 'n' || e.key === 'N')) { e.preventDefault(); if (textRef.current) textRef.current.focus(); return; }
     const i = Number(e.key) - 1;
     if (!isTyping() && i >= 0 && i < CATEGORIES.length) { e.preventDefault(); setCategory(CATEGORIES[i].key); }
   }
@@ -180,7 +182,7 @@ export function NewInfoSheet({ personName, items, setItems, category, setCategor
       )}
 
       <div className="flex items-center gap-2 mt-1">
-        <input value={text} onChange={e => setText(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); if (!add()) onClose(); } }} placeholder={`Or type your own: ${categoryMeta(category).placeholder.replace(/^e\.g\. /, '')}`} aria-label="Something new" className="flex-1 text-sm rounded-xl px-3 py-2.5" style={{ border: `1px solid ${COLORS.line}` }} />
+        <KeyedField letter="N" ref={textRef} wrapClassName="flex-1 min-w-0" value={text} onChange={e => setText(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); if (!add()) onClose(); } }} placeholder={`Or type your own: ${categoryMeta(category).placeholder.replace(/^e\.g\. /, '')}`} aria-label="Something new" className="w-full text-sm rounded-xl px-3 py-2.5" style={{ border: `1px solid ${COLORS.line}` }} />
         <button type="button" onClick={add} disabled={!text.trim()} className="chip" style={{ opacity: text.trim() ? 1 : 0.5 }}>Add</button>
       </div>
       {items.length > 0 && (
@@ -223,11 +225,13 @@ export function GoalsSheet({ goals, unticked, toggle, showNames, onNewGoal, onCl
 }
 // "How did it feel?": a reflection for the journal, mostly by tapping. The
 // picked phrases come first in the saved reflection, then anything typed.
-// Ctrl+Enter closes.
+// N goes into the text box, Esc or Tab leaves it, and Ctrl+Enter closes.
 export function ReflectionSheet({ tags, toggleTag, value, setValue, onClose }) {
+  const textRef = useRef(null);
   function onKey(e) {
     if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); onClose(); return; }
     if (e.ctrlKey || e.metaKey || e.altKey) return;
+    if (!isTyping() && (e.key === 'n' || e.key === 'N')) { e.preventDefault(); if (textRef.current) textRef.current.focus(); return; }
     enterCloses(e, onClose);
   }
   return (
@@ -240,7 +244,7 @@ export function ReflectionSheet({ tags, toggleTag, value, setValue, onClose }) {
       <div className="flex flex-wrap gap-1.5 mb-4">
         {REFLECTION_TEMPLATES.next.map(t => <Pick key={t} on={tags.includes(t)} onClick={() => toggleTag(t)}>{t}</Pick>)}
       </div>
-      <textarea value={value} onChange={e => setValue(e.target.value)} rows={2} aria-label="Reflection" placeholder="Anything else? (optional)" className="w-full text-sm rounded-xl px-3 py-2.5" style={{ border: `1px solid ${COLORS.line}`, resize: 'vertical' }} />
+      <KeyedField letter="N" multiline ref={textRef} value={value} onChange={e => setValue(e.target.value)} rows={2} aria-label="Reflection" placeholder="Anything else? (optional)" className="w-full text-sm rounded-xl px-3 py-2.5" style={{ border: `1px solid ${COLORS.line}`, resize: 'vertical' }} />
     </Sheet>
   );
 }

@@ -279,7 +279,8 @@ rows come from `jumpResults` ([lib/jump.js](../../src/lib/jump.js)):
   opens.
 
 Keys, all in the box: ↑ ↓ move, Enter runs the row, → or Tab on a person shows Open, Log,
-Plan and Prepare, ← (or Backspace in an empty box) goes back, Esc closes. Numbers aren't
+Plan and Prepare, picked with their letters O, L, P and R (`PERSON_ACTIONS` in
+`lib/jump.js`), ← (or Backspace in an empty box) goes back, Esc closes. Numbers aren't
 row keys here, since they're part of what you type ("fri 10am"). `runJump` closes the
 sheets that were open before going somewhere; an action like Dark mode leaves them.
 

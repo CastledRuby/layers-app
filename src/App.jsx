@@ -122,6 +122,7 @@ function LayersApp() {
   const [snoozes, setSnoozeList] = useState(() => getSnoozes());
   const [toasts, setToasts] = useState([]); // [{ id, text, undo? }]
   const lastUndo = useRef(null); // the newest toast that can still be undone
+  const lastRedo = useRef(null); // after an Undo, while "Undone" shows: what Redo puts back
   const [coachInit, setCoachInit] = useState({ personId: null, tab: 'prepare' });
   const [updateStatus, setUpdateStatus] = useState(null);
   const hasUpdater = typeof window !== 'undefined' && !!window.layersUpdater;
@@ -326,6 +327,11 @@ function LayersApp() {
         undoToast(lastUndo.current.id, lastUndo.current.undo);
         return;
       }
+      if (ctrlOnly && ((!e.shiftKey && (e.key === 'y' || e.key === 'Y')) || (e.shiftKey && (e.key === 'z' || e.key === 'Z'))) && lastRedo.current) {
+        e.preventDefault();
+        redoToast(lastRedo.current.id, lastRedo.current.redo);
+        return;
+      }
       if (ctrlOnly && !e.shiftKey && ['1', '2', '3', '4', '5'].includes(e.key)) {
         e.preventDefault();
         switchTab(TABS[Number(e.key) - 1]);
@@ -350,28 +356,50 @@ function LayersApp() {
   }, [onboarded, activeTab, screen.name, selectedDay, today]);
 
   // `undo`: a snapshot() from just before the change; the toast then offers
-  // Undo (or Ctrl+Z) while it's showing.
-  function pushToast(text, { undo } = {}) {
+  // Undo (or Ctrl+Z) while it's showing. `redo` (only "Undone" has one)
+  // offers Redo (or Ctrl+Y) the same way.
+  function pushToast(text, { undo, redo } = {}) {
     const id = uid();
-    setToasts(t => [...t, { id, text, undo }]);
-    if (undo) lastUndo.current = { id, undo };
+    setToasts(t => [...t, { id, text, undo, redo }]);
+    if (undo) { lastUndo.current = { id, undo }; lastRedo.current = null; }
+    if (redo) lastRedo.current = { id, redo };
     // Longer messages (import errors) stay up long enough to read, and ones
-    // with Undo long enough to reach it.
+    // with Undo or Redo long enough to reach it.
     setTimeout(() => {
       setToasts(t => t.filter(x => x.id !== id));
       if (lastUndo.current && lastUndo.current.id === id) lastUndo.current = null;
-    }, undo ? 7000 : Math.max(2600, text.length * 55));
+      if (lastRedo.current && lastRedo.current.id === id) lastRedo.current = null;
+    }, undo || redo ? 7000 : Math.max(2600, text.length * 55));
   }
   // Undo puts the saved data back as it was just before a change: people,
-  // journal, plans, goals, skills, achievements and your profile.
+  // journal, plans, goals, skills, achievements and your profile. Redo puts
+  // back what the Undo took away, if nothing has changed since.
   function snapshot() { return { people, journal, events, generalGoals, skills, achievements, profile }; }
-  function undoToast(id, snap) {
+  // The data as it is now, for Undo and Redo pressed in the key handler
+  // (which sees the data from when it was set up).
+  const liveData = useRef(null);
+  useEffect(() => { liveData.current = snapshot(); });
+  function restoreData(snap) {
     quietAchievements.current = true;
     setPeople(snap.people); setJournal(snap.journal); setEvents(snap.events); setGeneralGoals(snap.generalGoals);
     setSkills(snap.skills); setAchievements(snap.achievements); setProfile(snap.profile);
-    setToasts(t => t.filter(x => x.id !== id));
+  }
+  function dropToast(id) { setToasts(t => t.filter(x => x.id !== id)); }
+  function undoToast(id, snap) {
+    const before = liveData.current || snapshot();
+    restoreData(snap);
+    dropToast(id);
     if (lastUndo.current && lastUndo.current.id === id) lastUndo.current = null;
-    pushToast('Undone');
+    pushToast('Undone', { redo: { data: before, undone: snap } });
+  }
+  function redoToast(id, redo) {
+    const now = liveData.current || snapshot();
+    dropToast(id);
+    if (lastRedo.current && lastRedo.current.id === id) lastRedo.current = null;
+    // Only straight after the Undo: a change since would be lost.
+    if (!['people', 'journal', 'events', 'generalGoals', 'skills', 'profile'].every(k => now[k] === redo.undone[k])) { pushToast('Nothing to redo: something changed since'); return; }
+    restoreData(redo.data);
+    pushToast('Redone', { undo: now });
   }
 
   const selectedPerson = screen.name === 'person' ? people.find(p => p.id === screen.personId) : null;
@@ -447,6 +475,7 @@ function LayersApp() {
     quickAddRef.current = (msg) => {
       if (!msg) return;
       if (msg.type === 'undo') { if (lastUndo.current) undoToast(lastUndo.current.id, lastUndo.current.undo); return; }
+      if (msg.type === 'redo') { if (lastRedo.current) redoToast(lastRedo.current.id, lastRedo.current.redo); return; }
       if (!msg.sentence || !['plan', 'log'].includes(msg.sentence.kind)) return;
       if (msg.type === 'open') { closeSheets(); saveSentence(msg.sentence, true); }
       else if (msg.type === 'submit') saveSentence(msg.sentence, false, { quick: true });
@@ -1125,9 +1154,10 @@ function LayersApp() {
 
             <div className="toast-stack">
               {toasts.map(t => (
-                <div key={t.id} className={`toast${t.undo ? ' toast--undo' : ''}`}>
+                <div key={t.id} className={`toast${t.undo || t.redo ? ' toast--undo' : ''}`}>
                   <span className="toast-text">{t.text}</span>
                   {t.undo && <button type="button" onClick={() => undoToast(t.id, t.undo)} className="toast-undo" aria-label="Undo (Ctrl+Z)">Undo</button>}
+                  {t.redo && <button type="button" onClick={() => redoToast(t.id, t.redo)} className="toast-undo" aria-label="Redo (Ctrl+Y)">Redo</button>}
                 </div>
               ))}
             </div>

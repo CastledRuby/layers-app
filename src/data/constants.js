@@ -67,6 +67,9 @@ export const SHORTCUTS = [
   { keys: ['/'], desc: 'Jump to search (People or Journal)' },
   { keys: ['Backspace'], desc: 'Go back from a person or goals screen' },
   { keys: ['Ctrl', 'Z'], desc: 'Undo what you just did, while its message shows (a delete, tick, log or saved plan)' },
+  { keys: ['Ctrl', 'Y'], desc: 'Redo what you just undid, while "Undone" shows (Ctrl+Shift+Z too)' },
+  { keys: ['N'], desc: 'In a log (and editing one), the note: type in it; Esc or Tab leaves it. Other text boxes show their letter the same way' },
+  { keys: ['O', 'L', 'P', 'R'], or: true, desc: 'Ctrl+K, on a person after → or Tab: Open them, Log, Plan, or Prepare to talk' },
   { keys: ['Esc'], desc: 'Close the open sheet/dialog, or leave the search box or a text box you’re typing in (Tab too)' },
   { keys: ['?'], desc: 'Show this shortcuts list' },
 ];

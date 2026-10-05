@@ -40,11 +40,12 @@ export const ACTIONS = [
 ];
 // "plan priya": the verbs that go straight to a person's action.
 const VERBS = { plan: 'plan', log: 'log', prep: 'prepare', prepare: 'prepare', open: 'open', see: 'open' };
+// Each has a key, pressed once its person's actions show (→ or Tab).
 export const PERSON_ACTIONS = [
-  { action: 'open', label: (n) => `Open ${n}`, emoji: '👤' },
-  { action: 'log', label: (n) => `Log with ${n}`, emoji: '✍️' },
-  { action: 'plan', label: (n) => `Plan with ${n}`, emoji: '📅' },
-  { action: 'prepare', label: (n) => `Prepare to talk with ${n}`, emoji: '💬' },
+  { action: 'open', key: 'O', label: (n) => `Open ${n}`, emoji: '👤' },
+  { action: 'log', key: 'L', label: (n) => `Log with ${n}`, emoji: '✍️' },
+  { action: 'plan', key: 'P', label: (n) => `Plan with ${n}`, emoji: '📅' },
+  { action: 'prepare', key: 'R', label: (n) => `Prepare to talk with ${n}`, emoji: '💬' },
 ];
 
 const addDays = (day, n) => { const d = parseISODay(day); return toISODate(new Date(d.getFullYear(), d.getMonth(), d.getDate() + n)); };
@@ -68,7 +69,7 @@ export function personRow(p) {
   return { id: `person:${p.id}`, group: 'person', label: p.name, sub: `Layer ${p.layer} · ${getLayer(p.layer).name}`, emoji: p.emoji, person: p, run: { type: 'person', id: p.id } };
 }
 export function personActionRows(p) {
-  return PERSON_ACTIONS.map(a => ({ id: `${a.action}:${p.id}`, group: 'action', label: a.label(p.name), emoji: a.emoji, person: p, run: { type: 'personAction', action: a.action, id: p.id } }));
+  return PERSON_ACTIONS.map(a => ({ id: `${a.action}:${p.id}`, group: 'action', key: a.key, label: a.label(p.name), emoji: a.emoji, person: p, run: { type: 'personAction', action: a.action, id: p.id } }));
 }
 
 // Plans from two weeks back to four ahead, each on its next (or last) day.

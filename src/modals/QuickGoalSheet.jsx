@@ -11,7 +11,7 @@ import { useState } from 'react';
 import { Target } from 'lucide-react';
 import { Sheet } from '../components/Sheet.jsx';
 import { isTabbedToButton, isTyping } from '../components/sheetLayer.js';
-import { Avatar, Kbd } from '../components/atoms.jsx';
+import { Avatar, KeyedField, Kbd } from '../components/atoms.jsx';
 import { getLayer, PRESET_VARIANTS, presetMeta, PRESETS } from '../data/constants.js';
 import { formatAbsoluteDate, parseISODay, toISODate } from '../lib/dates.js';
 import { generateGoalDescription } from '../lib/progress.js';
@@ -111,9 +111,9 @@ export function QuickGoalSheet({ people, forIds, today, onClose, onCreate }) {
         })}
       </div>
 
-      {label('Or in your own words', <Kbd>N</Kbd>)}
-      <input id="quick-goal-own" value={own} onChange={e => setOwn(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); create(); } }}
-        aria-label="Your own goal" placeholder="e.g. Meet their family" className="w-full text-sm rounded-xl px-3 py-2.5 mb-4" style={{ border: `1px solid ${COLORS.line}` }} />
+      {label('Or in your own words')}
+      <KeyedField letter="N" id="quick-goal-own" wrapClassName="mb-4" value={own} onChange={e => setOwn(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); create(); } }}
+        aria-label="Your own goal" placeholder="e.g. Meet their family" className="w-full text-sm rounded-xl px-3 py-2.5" style={{ border: `1px solid ${COLORS.line}` }} />
 
       {title && (
         <div className="rounded-2xl p-3 flex items-start gap-2.5 mb-4 fade-anim" style={{ background: COLORS.accentSoft }} role="status" aria-label="New goal">

@@ -392,6 +392,17 @@ What you found trying it again on 2026-10-05, and what changed:
   someone slides it to the left with their profile beside it, and closing the profile
   slides it back. **Add person** is a big button first in the row, next to the search
   box, and **A** on People does the same.
+- **A key into every note box, and out again**: the quick note shows **N** on its right,
+  and **Esc** once you're in (Tab leaves too). The same goes for editing a journal entry
+  (N for the note, F for how it felt, 1 to 5, Enter saves), How it felt, Something new,
+  and Add detail, which now has keys too: 1 to 9 and 0 for its topics, N for your own
+  words, Backspace back.
+- **Redo**: **Ctrl+Y** (or Ctrl+Shift+Z) puts back what Ctrl+Z took away, while "Undone"
+  shows, which now has a Redo button too. It won't redo once something else has changed,
+  since that would be lost.
+- **Ctrl+K, a person's actions by letter**: after → or Tab on someone, **O** opens them,
+  **L** logs, **P** plans and **R** prepares to talk. The highlighted person says "log,
+  plan, prepare →".
 
 ### The quick-add box (after 1.0.30, not released yet)
 

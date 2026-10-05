@@ -1,5 +1,6 @@
 // Small presentational building blocks.
 
+import { useState } from 'react';
 import { CONV_STATES, getLayer } from '../data/constants.js';
 import { timelineDateLabel } from '../lib/dates.js';
 import { clamp } from '../lib/util.js';
@@ -110,4 +111,21 @@ export function ConvStateBadge({ stateKey }) {
 // (the button's own label says what it does), so it never changes a name.
 export function Kbd({ children, onAccent }) {
   return <span className={`kbd${onAccent ? ' kbd--on-accent' : ''}`} aria-hidden="true">{children}</span>;
+}
+
+// A text box with its key on the right: the letter the sheet's keys use to
+// get into it (N for a note), then Esc once you're in, which leaves it again
+// (Sheet.jsx; Tab too). Takes <input> props, or <textarea> ones with
+// `multiline`; `wrapClassName` spaces it from what's around it.
+export function KeyedField({ letter, multiline = false, wrapClassName = '', style, onFocus, onBlur, ...props }) {
+  const [focused, setFocused] = useState(false);
+  const Tag = multiline ? 'textarea' : 'input';
+  return (
+    <div className={`keyed-field${multiline ? ' keyed-field--multi' : ''}${wrapClassName ? ` ${wrapClassName}` : ''}`}>
+      <Tag {...props} style={{ ...style, paddingRight: 48 }}
+        onFocus={(e) => { setFocused(true); if (onFocus) onFocus(e); }}
+        onBlur={(e) => { setFocused(false); if (onBlur) onBlur(e); }} />
+      <span className="keyed-field-key"><Kbd>{focused ? 'Esc' : letter}</Kbd></span>
+    </div>
+  );
 }

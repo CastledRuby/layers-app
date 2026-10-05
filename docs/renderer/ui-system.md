@@ -179,6 +179,12 @@ keyboard handler in `LayersApp` uses the stack in two ways:
   otherwise it calls `topSheet().close()`. Tab in such a text box leaves it too
   (`Sheet`), rather than landing on the next button. A picker opened inside a sheet closes by itself, and the
   sheet underneath keeps what you typed.
+- **A text box shows its key** with `KeyedField` (`components/atoms.jsx`): the letter
+  the sheet uses to get into it on its right (N for a note), and Esc once you're in.
+  It's a plain `<input>` (or `<textarea>` with `multiline`) otherwise; the sheet's own
+  `onKey` does the focusing. The quick log's note, editing a journal entry (N and F),
+  Something new, How it felt, Add detail's own words, a new goal's own words and a plan's
+  title all work this way.
 - **Shortcuts are off while any sheet is open** (`hasOpenSheet()`).
 
 This covers sheets owned by a screen, such as "Prepare to talk" in `PersonProfile`, the
@@ -245,7 +251,11 @@ plan off, a log, a saved or edited plan, and clearing some things when starting 
 `undo: snapshot()`: the people, journal, plans, goals, skills, achievements and profile as
 they were just before. That toast shows an **Undo** button for 7 s, and **Ctrl+Z** undoes
 the newest one (not while typing or with a sheet open). Undo puts the snapshot back and
-says "Undone".
+says "Undone", with **Redo** (or **Ctrl+Y**, or Ctrl+Shift+Z) for 7 s: `pushToast(text,
+{ redo })`, holding the data from just before the Undo. Redo only works if nothing has
+changed since (it compares the data by reference); then it says "Redone", with Undo
+again. The key handler reads the data through `liveData`, a ref kept current after
+every render, because its own copy is from when it was set up.
 
 ## Switches, disclosures and chips
 

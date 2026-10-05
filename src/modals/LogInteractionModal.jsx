@@ -10,7 +10,7 @@ import { useRef, useState } from 'react';
 import { Calendar, Check, Ear, Gauge, MessageCircle, PenLine, Plus, Sparkles, Target, X } from 'lucide-react';
 import { Sheet } from '../components/Sheet.jsx';
 import { isTabbedToButton, isTyping } from '../components/sheetLayer.js';
-import { Avatar, Kbd } from '../components/atoms.jsx';
+import { Avatar, KeyedField, Kbd } from '../components/atoms.jsx';
 import { DateDropdown } from '../components/pickers.jsx';
 import { PeopleGrid } from '../components/PersonPick.jsx';
 import { usePeopleKeys } from '../components/peopleKeys.js';
@@ -265,7 +265,7 @@ export function LogInteractionModal({ people, defaultPersonId, prefill, onClose,
                 ))}
               </div>
             )}
-            <input ref={noteRef} value={quickNote} onChange={e => setQuickNote(e.target.value)} onKeyDown={e => { if (e.key === 'Enter' && !e.ctrlKey) { e.preventDefault(); handleSave(); } }} aria-label="Quick note" placeholder="e.g. Caught up after school, good chat" className="w-full text-sm rounded-xl px-3 py-2.5" style={{ border: `1px solid ${COLORS.line}` }} />
+            <KeyedField letter="N" ref={noteRef} value={quickNote} onChange={e => setQuickNote(e.target.value)} onKeyDown={e => { if (e.key === 'Enter' && !e.ctrlKey) { e.preventDefault(); handleSave(); } }} aria-label="Quick note" placeholder="e.g. Caught up after school, good chat" className="w-full text-sm rounded-xl px-3 py-2.5" style={{ border: `1px solid ${COLORS.line}` }} />
             {profileNotes.length > 0 && loggedPerson && (
               <p className="text-xs mt-2" style={{ color: COLORS.inkSoft }}>Topics are also saved to {loggedPerson.name}'s profile.</p>
             )}

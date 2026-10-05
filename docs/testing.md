@@ -83,6 +83,9 @@ interact.
 - `feedback.test.jsx` covers the owner's live-test feedback: picking from more than nine
   people, a plan's title after Plan again, leaving the title box, a new goal while
   planning or logging, and the day popup with Coach tips.
+- `keys2.test.jsx` covers the second live test's keys: N into a note box and Esc out
+  (the quick log, Add detail, editing a journal entry), Redo with Ctrl+Y and
+  Ctrl+Shift+Z (and not once something else changed), and Ctrl+K's O, L, P and R.
 - `qol.test.jsx` covers the quality-of-life batches: Undo from a toast and with
   Ctrl+Z, a birthday reminder's Plan something, daily backups (a fake bridge), Match
   Windows, rating a plan from its notification, and the weekly review. `src/backups.test.js` checks `electron/backups.cjs` on a temporary folder:

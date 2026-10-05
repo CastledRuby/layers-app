@@ -2,8 +2,8 @@
 // come from jumpResults (lib/jump.js) and LayersApp runs the one picked
 // (onRun). Keys, all in the box: ↑ ↓ move, Enter runs the row (Ctrl+Enter
 // opens a typed plan or log in its full sheet instead of saving it), → or Tab
-// on a person shows Open, Log, Plan and Prepare, ← (or Backspace in an empty
-// box) goes back, Esc closes.
+// on a person shows Open, Log, Plan and Prepare, picked with O, L, P or R
+// (or ↑ ↓ and Enter), ← (or Backspace in an empty box) goes back, Esc closes.
 // What you jump to is remembered on this computer for next time (browser
 // storage, a convenience only).
 
@@ -51,6 +51,11 @@ export function JumpSheet({ people, events, today, has, onRun, onClose }) {
 
   function onKeyDown(e) {
     const caretAtEnd = e.target.selectionStart === e.target.value.length;
+    // A person's actions: their letter picks one, rather than being typed.
+    if (personFor && !e.ctrlKey && !e.metaKey && !e.altKey && e.key.length === 1) {
+      const row = rows.find(r => r.key && r.key === e.key.toUpperCase());
+      if (row) { e.preventDefault(); run(row); return; }
+    }
     if (e.key === 'ArrowDown') { e.preventDefault(); setActive(Math.min(at + 1, rows.length - 1)); }
     else if (e.key === 'ArrowUp') { e.preventDefault(); setActive(Math.max(at - 1, 0)); }
     else if (e.key === 'Enter') { e.preventDefault(); run(current, e.ctrlKey || e.metaKey); }
@@ -82,8 +87,8 @@ export function JumpSheet({ people, events, today, has, onRun, onClose }) {
                 <span className="block text-sm font-semibold truncate" style={{ color: COLORS.ink }}>{row.label}</span>
                 {row.sub && <span className="block text-xs truncate" style={{ color: COLORS.inkSoft }}>{row.sub}</span>}
               </span>
-              {row.group === 'person' && !personFor && on && <span className="flex items-center gap-1 text-xs shrink-0" style={{ color: COLORS.inkSoft }}>more <Kbd>→</Kbd></span>}
-              {row.group !== 'person' && <span className="text-xs shrink-0" style={{ color: COLORS.inkSoft }}>{GROUP_LABEL[row.group]}</span>}
+              {row.group === 'person' && !personFor && on && <span className="flex items-center gap-1 text-xs shrink-0" style={{ color: COLORS.inkSoft }}>log, plan, prepare <Kbd>→</Kbd></span>}
+              {personFor && row.key ? <Kbd>{row.key}</Kbd> : row.group !== 'person' && <span className="text-xs shrink-0" style={{ color: COLORS.inkSoft }}>{GROUP_LABEL[row.group]}</span>}
               {on && <ChevronRight size={15} color={COLORS.accent} className="shrink-0" />}
             </button>
           );
@@ -93,7 +98,7 @@ export function JumpSheet({ people, events, today, has, onRun, onClose }) {
       <p className="text-xs mt-3 flex items-center gap-1 flex-wrap" style={{ color: COLORS.inkSoft }}>
         <Kbd>↑</Kbd><Kbd>↓</Kbd> move · <Kbd>↵</Kbd> go
         {current && current.group === 'sentence' && <> · <Kbd>Ctrl</Kbd><Kbd>↵</Kbd> open it in full</>}
-        {personFor && <> · <Kbd>←</Kbd> back</>}
+        {personFor && <> · <Kbd>O</Kbd><Kbd>L</Kbd><Kbd>P</Kbd><Kbd>R</Kbd> pick · <Kbd>←</Kbd> back</>}
       </p>
     </Sheet>
   );
