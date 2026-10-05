@@ -1,7 +1,7 @@
 # Roadmap
 
 Where Layers stands against [vision.md](vision.md), what was decided along the way, and
-what comes next. Last updated 2026-10-04, with 1.0.28.
+what comes next. Last updated 2026-10-05, after 1.0.30.
 
 **How it got here:**
 
@@ -225,7 +225,8 @@ the calendar's data is portable and ready to sync:
 ## Next big task: quality of life (decided 2026-10-05)
 
 Your answers to ten quality-of-life questions. The quick wins (3, 8, 9 and 10) and the
-notifications (4, 6 and 7) are built; the bigger pieces (2, 1 and 5) are next.
+notifications (4, 6 and 7) are built. The bigger pieces (2, 1 and 5) are
+[drafted below](#drafted-next-ctrlk-the-wide-layout-and-the-quick-add-box).
 
 | | Question | Your answer |
 |---|---|---|
@@ -240,13 +241,101 @@ notifications (4, 6 and 7) are built; the bigger pieces (2, 1 and 5) are next.
 | 9 | Automatic backups? | **Daily, keeping the last 14**, in a Layers backups folder. ✅ Built: Documents\Layers backups, shown in Me |
 | 10 | Light and dark mode | **Follow Windows**, changing when it does. ✅ Built: "Match Windows" is the default, Light and Dark still in Me |
 
+## Drafted next: Ctrl+K, the wide layout and the quick-add box
+
+The three bigger quality-of-life pieces (2, 1 and 5 above), drafted on 2026-10-05 with
+your answers to four more questions (in bold). Each will be built and installed on its
+own, in this order. None of it is built yet; say if any of it should change.
+
+### Ctrl+K: jump to anything
+
+- **Ctrl+K** anywhere in Layers, even over a sheet, opens a box at the top with the
+  cursor in it. `/` stays as the people and journal search.
+- **Empty**, it lists your next plan, the last few things you jumped to, and Log and
+  Plan.
+- **Typing** shows the best matches first, up to eight:
+  - **People**, by any part of the name or by initials. **Enter opens their profile; →
+    or Tab shows Log, Plan and Prepare** for them. "plan priya", "log sam" and "prep
+    alex" go straight there.
+  - **Plans** from two weeks back to four weeks ahead, by title or person. Enter opens
+    the plan on its day.
+  - **Pages**: Today, Month, People, Coach, Journal, Me, Goals and Your week.
+  - **Actions**: Log, Plan, Add a person, Add a key date, Light, Dark, Match Windows,
+    Export a backup, Open the backups folder, Check for updates, Keyboard shortcuts, and
+    Start over (which only opens its sheet).
+  - **A sentence**, read the same way as the quick-add box below: "coffee with priya fri
+    10am" offers "Plan: Coffee with Priya, Fri 9 Oct, 10:00 AM" as the top row.
+- **Keys**: ↑ and ↓ move, Enter picks, 1–9 pick a row, → shows a person's actions, ←
+  goes back, Esc closes.
+
+### Wider on desktop
+
+- When the window is about **900 px wide or more** (maximised, or dragged wider),
+  Layers fills the window instead of the phone-shaped card. Narrower, it stays exactly
+  as now.
+- **Today**: your day on the left and the **month grid always on the right**. Clicking a
+  day in the month shows it on the left, so M isn't needed (it still works).
+- **People**: the **list on the left and the open profile on the right**. The list stays
+  while you go from person to person; Backspace closes the profile.
+- **Coach, Journal and Me**: one centred column about 720 px wide, so lines don't get
+  too long to read.
+- **The tabs stay as the bottom bar**, with the sliding pill.
+- **Sheets** open as a centred panel about 520 px wide, rather than across the whole
+  window from the bottom. Their keys don't change.
+
+### The quick-add box: Ctrl+Shift+L
+
+- **Ctrl+Shift+L** anywhere in Windows opens a small box at the top of the screen, over
+  whatever you're doing, without bringing up the Layers window. Layers has to be
+  running, in the tray, as it is after login.
+- **Type a sentence**; a preview underneath shows exactly what will be saved, and
+  **Enter saves it**. Esc, or clicking somewhere else, closes the box without saving.
+- **Plans**: "coffee with priya fri 10am", "dinner with sam and alex tomorrow 7pm 2h",
+  "gym every mon wed fri 7am", "call mum sunday".
+  - **Who**: the names of people in Layers; a first name is enough. A name Layers
+    doesn't know stays in the title, and the preview says so.
+  - **What**: coffee, call, dinner or lunch, hang out, study and check in pick that
+    template. Anything else ("gym") becomes the title.
+  - **When**: today, tomorrow, a weekday (the next one), "next fri", "12 oct" or "12/10"
+    (day first). Times like "10am", "7:30pm", "19:00" or "noon". Without a time, the
+    template's usual one (coffee 10:00 AM, call 6:00 PM, dinner 6:30 PM).
+  - **How long**: "2h" or "90m", or the template's usual length.
+  - **Repeats**: "every day", "weekdays" or "every mon wed".
+- **Logs** start with "log" or say what happened: "log priya deep", "talked to sam",
+  "coffee with alex yesterday good". A rating word (brief, casual, good, personal, deep)
+  or 1–5 sets how meaningful it was; without one, the preview asks for a number. It's
+  saved as a quick log, like rating from a notification.
+- After saving, the box shows "Saved" with what was added, then closes. **Ctrl+Z**, in
+  the box or in Layers, undoes it.
+- **Ctrl+Enter opens it in Layers** instead: the full plan or log sheet, filled in, for
+  anything a sentence can't say.
+- **Ctrl+Alt+L opens Layers itself**, which is what Ctrl+Shift+L does now. Me lists both
+  shortcuts, and says if another app already uses either.
+
+**Defaults chosen** (each is easy to change):
+- the 900 px width
+- Ctrl+Alt+L to open Layers
+- dates read day first, as in New Zealand
+- a log without a rating asks for one rather than guessing
+
+**How it'll be built**, so each piece stays contained:
+- **Ctrl+K**: `lib/jump.js` finds and ranks the matches, and `JumpSheet` shows them.
+- **Wide layout**: a CSS breakpoint, plus a `useWide()` hook for the two split pages. The
+  narrow layout's code is left alone.
+- **Quick-add**: `lib/sentence.js` reads the sentences (shared with Ctrl+K, with many
+  unit tests). A second small window (frameless, on top, kept off the taskbar) loads the
+  same page in quick-add mode. It hands what you typed to the main window, which saves it
+  as if you'd done it there.
+- **Tests**: app tests for all three, and end-to-end tests for the wide window and the
+  quick-add box in the packaged app, with a temporary data folder as always.
+
 ## Next: smaller fixes
 
 These are small and contained, so they can go in the next batch.
 
 1. ~~**A version number on saved data.**~~ Done with P3 (`dataVersion: 2`).
-2. **Undo for deletes.** Removing a person, an entry, a goal or a reminder shows a toast
-   with "Undo" for a few seconds. It's safer than a confirm dialog alone.
+2. ~~**Undo for deletes.**~~ Done with the quick wins: deletes, ticks, logs and saved
+   plans all have Undo, or Ctrl+Z.
 3. **Keyboard and screen-reader pass.**
    - Make the goal-variant chevron reachable by keyboard.
    - Move focus into a sheet when it opens and back when it closes.
