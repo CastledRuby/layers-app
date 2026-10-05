@@ -84,6 +84,11 @@ interact.
 - `feedback.test.jsx` covers the owner's live-test feedback: picking from more than nine
   people, a plan's title after Plan again, leaving the title box, a new goal while
   planning or logging, and the day popup with Coach tips.
+- `closeness.test.jsx` covers adding someone through "How close are you two?" from the
+  keyboard: the questions in order, stopping early, Backspace, picking a layer by hand,
+  asking again (Q) and the avatar arrows; `setup.test.jsx` covers the quiz while setting
+  up. `src/closeness.test.js` checks which questions are asked and where the answers
+  place someone.
 - `keys2.test.jsx` covers the second live test's keys: N into a note box and Esc out
   (the quick log, Add detail, editing a journal entry), Redo with Ctrl+Y and
   Ctrl+Shift+Z (and not once something else changed), and Ctrl+K's O, L, P and R.

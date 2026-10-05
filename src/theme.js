@@ -237,6 +237,11 @@ button:active:not(:disabled) { transform: scale(0.97); }
 .kbd { display: inline-flex; align-items: center; justify-content: center; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 5px; font: 600 10px/1 ui-monospace, 'Cascadia Mono', Consolas, monospace; color: ${COLORS.inkSoft}; background: color-mix(in srgb, ${COLORS.ink} 5%, transparent); border: 1px solid ${COLORS.line}; border-bottom-width: 2px; flex-shrink: 0; }
 .kbd--on-accent { color: ${COLORS.onAccent}; background: color-mix(in srgb, ${COLORS.onAccent} 16%, transparent); border-color: color-mix(in srgb, ${COLORS.onAccent} 35%, transparent); }
 .tile > .kbd { position: absolute; top: 9px; right: 9px; }
+/* The closeness quiz (ClosenessQuiz.jsx): a dot per question, and the
+   question's card in its layer's colours. */
+.quiz-dot { width: 100%; max-width: 26px; height: 6px; border-radius: 6px; border: 1.5px solid; transition: background-color .25s ease, opacity .25s ease; }
+.quiz-card { border: 1.5px solid; border-radius: 22px; padding: 18px 18px 20px; min-height: 132px; }
+
 /* KeyedField (atoms.jsx): the key that gets you into a text box, on its right. */
 .keyed-field { position: relative; }
 .keyed-field-key { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); display: flex; pointer-events: none; }

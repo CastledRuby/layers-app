@@ -79,9 +79,11 @@ export function movePerson(p, { layer, overall, at, why, extra = {} }) {
 
 // New people start where Adjust would put their starting dimensions, so
 // opening Adjust and saving without changes leaves them exactly where they are.
-export function makePerson({ name, emoji, layer }) {
+// `overall` (0-100, from the closeness quiz) starts them that far into their
+// layer; without it they start at the layer's usual place.
+export function makePerson({ name, emoji, layer, overall: startAt = null }) {
   const start = layer || 1;
-  const baseVal = LAYER_BASE_DIMS[start] || LAYER_BASE_DIMS[1];
+  const baseVal = typeof startAt === 'number' ? Math.round((start - 1) * 25 + clamp(startAt, 0, 95) / 4) : (LAYER_BASE_DIMS[start] || LAYER_BASE_DIMS[1]);
   const dims = { depth: baseVal, trust: baseVal, reciprocity: baseVal, interaction: baseVal, sharedExperiences: baseVal, listening: baseVal };
   const { overall } = placeOnLayers(computeOverall(dims));
   const today = new Date();

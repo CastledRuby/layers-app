@@ -1,7 +1,7 @@
 # Roadmap
 
 Where Layers stands against [vision.md](vision.md), what was decided along the way, and
-what comes next. Last updated 2026-10-05, after 1.0.30.
+what comes next. Last updated 2026-10-05, after 1.0.30 and the second live test.
 
 **How it got here:**
 
@@ -332,6 +332,32 @@ its own. Changes made while building are marked.
 - **Tests**: app tests for all three, and an end-to-end test that opens the real quick-add
   box in the packaged app, with a temporary data folder as always.
 
+## Drafted next: after the second live test
+
+Not built yet. Drafted on 2026-10-05 from what the second live test showed; each would be
+built and installed on its own. Say which to do, and if any should change.
+
+1. **A getting-started list on Today**, for a new circle: add people (A), log your first
+   chat (N), plan something (P), try Ctrl+K, try the quick-add box (Ctrl+Shift+L). Each
+   ticks itself off from what you do, and the list goes once it's done, or with Hide. It
+   would stand in for "Try this next" until then.
+2. **Arrow keys on the People list**: ↑ ↓ move through people, Enter opens them (beside
+   the list in a wide window), / searches as now. The list is mouse-only today.
+3. **Logging with someone skips "What are you logging?"**: from Ctrl+K's L or a profile's
+   "Log an interaction", the person is already picked, so it could open on "What did you
+   do?".
+4. **The questions again from a profile**: "Where are we now?" asks the closeness
+   questions about someone already in your circle and moves them, recorded like Adjust,
+   with Undo.
+5. **Key dates while setting up**: a birthday (or another date) on each person's card.
+6. **Keys for the sheets that still need the mouse**: the full goal editor, key dates,
+   Add info, Edit person, Add detail's items (type to find one), and Coach's Prepare.
+7. **Release 1.0.31** with everything since 1.0.30, once you're happy with the live test.
+
+One thing to check while you set up: setting up now asks the closeness questions for each
+person you add (Esc skips them). The vision says setup shouldn't feel like a
+questionnaire. If it does with a lot of people, it could ask only when you press Q.
+
 ## Next: smaller fixes
 
 These are small and contained, so they can go in the next batch.
@@ -410,6 +436,17 @@ What you found trying it again on 2026-10-05, and what changed:
   seconds the empty box says what was just saved, so Ctrl+Z still undoes it.
 - **Ctrl+Alt+L sends Layers back** when it's already in front (minimised, so the app you
   were in comes back), and brings it forward otherwise.
+- **"How close are you two?"**: adding someone asks a few quick questions, from "Would
+  they say hi if you passed in a corridor?" to "Would you watch a movie together, just
+  the two of you?" and "Could you sit in silence and it still feel comfortable?". **Y**,
+  **S** or **N** answers (Yes, Sort of, No), Backspace goes back. It stops once the answers
+  stop being mostly yes, so an acquaintance takes two questions and a best friend eleven,
+  then shows where that puts them (Layer 2, 60% in, say); **1–4** picks another layer,
+  **Q** asks again, Enter adds them there. **L** skips the questions.
+- **Setting up**: each person you add asks the same questions (Esc skips them), and their
+  card says where they landed, with **Questions** (Q) to ask again. The first screen has
+  keys too (Esc out of your name, then 1–4 for what brings you here, E to explore, R to
+  restore), and the last one lists the keys worth knowing.
 
 ### The quick-add box (after 1.0.30, not released yet)
 

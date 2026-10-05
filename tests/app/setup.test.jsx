@@ -98,7 +98,14 @@ describe('setting up', () => {
     await user.type(screen.getByLabelText('Your name'), 'Sam{Enter}');
     expect(screen.getByText("Who's in your circle?")).toBeTruthy();
     await user.click(screen.getByRole('button', { name: '+ Mum' }));
+    expect(dialog('How close are you and Mum?')).toBeTruthy();
+    await user.keyboard('{Escape}'); // skips the questions: Mum stays at Orientation
     await user.type(screen.getByLabelText("Person's name"), 'Ana{Enter}');
+    await user.keyboard('yyyyynnn'); // Layer 2, not Layer 3
+    expect(screen.getByRole('status', { name: "Where you're starting" }).textContent).toMatch(/Layer 2: Exploratory · 40% in/);
+    await user.keyboard('{Enter}');
+    expect(screen.getByText(/40% into Layer 2/)).toBeTruthy();
+    expect(document.activeElement).toBe(screen.getByLabelText("Person's name")); // ready for the next name
     await user.click(within(screen.getByRole('group', { name: 'How close are you to Ana?' })).getByRole('button', { name: 'Close' }));
     await user.click(screen.getByRole('button', { name: 'Continue with 2 people' }));
     expect(screen.getByText("You're all set, Sam")).toBeTruthy();

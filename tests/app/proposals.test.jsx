@@ -144,7 +144,8 @@ describe('P4 sample people', () => {
     await user.click(screen.getByRole('button', { name: 'Go to Today' }));
     await user.keyboard('{Control>}{Shift>}a{/Shift}{/Control}');
     await user.type(screen.getByPlaceholderText('Their name'), 'Morgan');
-    await user.click(screen.getByRole('button', { name: 'Add to my circle' }));
+    await user.click(screen.getByRole('button', { name: /Skip the questions/ }));
+    await user.click(screen.getByRole('button', { name: /Add Morgan to my circle/ }));
     await user.click(nav('Me'));
     await user.click(screen.getByRole('button', { name: 'Remove sample people' }));
     const confirm = screen.getByRole('alertdialog', { name: 'Remove the sample people?' });

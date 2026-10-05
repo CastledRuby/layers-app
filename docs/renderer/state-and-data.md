@@ -370,6 +370,18 @@ new person starts at 20% of their layer, exactly where Adjust would place them. 
 sample people in [`data/seed.js`](../../src/data/seed.js) are set the same way, and
 `src/progress.test.js` checks that they are.
 
+**The closeness quiz** ([`lib/closeness.js`](../../src/lib/closeness.js)) places someone
+you add, or add while setting up. It asks up to eleven questions, from "Would they say hi
+if you passed each other in a corridor?" to "Could you sit in silence and it still feel
+comfortable?", each Yes (1), Sort of (0.5) or No (0), and each belonging to a layer. A
+layer is reached when its answers average 0.6 or more (more yes than sort of), and the
+next layer's questions only come once it is, so it can stop after two. The placement is
+the deepest layer reached, and how far into it: 40% of how sure that layer is plus 60%
+of how much of the next one is there (for Layer 4, 10–90% by how sure it is), kept
+between 5% and 90%. `makePerson({ …, overall })` then sets every dimension to
+`(layer − 1) × 25 + overall / 4`, so Adjust would place them there too. Picking a
+layer by hand instead (or skipping the questions) starts them at the usual 20%.
+
 ### Dimensions stay inside the layer
 
 Adjust places people by their dimension average (25-point bands), but logging grows the

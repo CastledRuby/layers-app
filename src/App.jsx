@@ -870,10 +870,10 @@ function LayersApp() {
     pushToast(`Logged and updated ${person.name}'s progress`);
   }
 
-  function handleAddPerson({ name, emoji, layer }) {
-    const newPerson = makePerson({ name, emoji, layer });
+  function handleAddPerson({ name, emoji, layer, overall }) {
+    const newPerson = makePerson({ name, emoji, layer, overall });
     setPeople(prev => [...prev, newPerson]);
-    pushToast(`${name} added to your circle`);
+    pushToast(`${name} added at Layer ${newPerson.layer}: ${getLayer(newPerson.layer).name}`);
     setAddPersonOpen(false);
   }
 
@@ -1047,7 +1047,7 @@ function LayersApp() {
     });
     quietAchievements.current = true;
     if (startFresh) {
-      setPeople((newPeople || []).map(p => makePerson({ name: p.name, emoji: p.emoji, layer: p.layer || 1 })));
+      setPeople((newPeople || []).map(p => makePerson({ name: p.name, emoji: p.emoji, layer: p.layer || 1, overall: p.overall })));
       setJournal([]); setGeneralGoals([]); setSkills(EMPTY_SKILLS);
     } else {
       const sample = sampleData();
