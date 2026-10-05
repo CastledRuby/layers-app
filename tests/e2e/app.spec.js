@@ -155,3 +155,22 @@ test('a daily backup is saved a few seconds after starting, in the data folder f
   expect(backup.people.map(p => p.name)).toContain('Alex');
   await quit(app);
 });
+
+test('the quick-add box saves a typed plan through the main window, then hides', async () => {
+  const dataDir = tempDataDir();
+  const { app, page } = await launch(dataDir);
+  await onboard(page, 'Sam');
+  // The real Ctrl+Shift+L belongs to the Layers already running on this
+  // computer, so the test opens the box the way the shortcut does.
+  const opened = app.waitForEvent('window');
+  await app.evaluate(({ app: electronApp }) => electronApp.layersShowQuickAdd());
+  const box = await opened;
+  await box.waitForSelector('.quick-box');
+  const input = box.getByLabel('Plan or log');
+  await input.fill('coffee with priya tomorrow 10am');
+  await expect(box.getByRole('status', { name: 'Preview' })).toContainText('Coffee with Priya');
+  await input.press('Enter');
+  await expect.poll(() => page.evaluate(() => JSON.parse(localStorage.getItem('layers-app-state-v1')).events.map(e => e.title)), { timeout: 10000 }).toContain('Coffee with Priya');
+  await expect.poll(() => app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows().filter(w => w.isVisible()).length), { timeout: 10000 }).toBe(1);
+  await quit(app);
+});

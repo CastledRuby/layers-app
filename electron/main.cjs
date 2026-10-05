@@ -38,6 +38,7 @@ let mainWindow = null;
 let tray = null;
 let isQuitting = false;
 let shortcutRegistered = null;
+let openShortcutRegistered = null;
 
 // --- Single instance lock -------------------------------------------------
 // Without this, every double-click on the exe (or every login-item launch)
@@ -88,6 +89,7 @@ if (!gotSingleInstanceLock || quitRequested) {
     setupWindowIpc();
     setupCalendar();
     setupBackups();
+    setupQuickAdd();
     registerGlobalShortcut();
 
     app.on('activate', () => {
@@ -383,13 +385,108 @@ function setupAutoLaunch() {
   });
 }
 
-// --- Global shortcut: Ctrl+Shift+L brings Layers to the foreground ---
+// --- Global shortcuts: Ctrl+Shift+L the quick-add box, Ctrl+Alt+L Layers ---
 // register() returns false when another app already owns the combination;
 // the Me tab asks (get-shortcut-status) and says so instead of it silently
 // doing nothing.
 function registerGlobalShortcut() {
-  shortcutRegistered = globalShortcut.register('CommandOrControl+Shift+L', showWindow);
-  ipcMain.handle('get-shortcut-status', () => ({ accelerator: 'Ctrl+Shift+L', registered: shortcutRegistered }));
+  shortcutRegistered = globalShortcut.register('CommandOrControl+Shift+L', toggleQuickAdd);
+  openShortcutRegistered = globalShortcut.register('CommandOrControl+Alt+L', showWindow);
+  ipcMain.handle('get-shortcut-status', () => ({
+    accelerator: 'Ctrl+Shift+L', registered: shortcutRegistered,
+    open: { accelerator: 'Ctrl+Alt+L', registered: openShortcutRegistered },
+  }));
+}
+
+// --- Quick add: a small box over whatever you're doing -------------------
+// Ctrl+Shift+L shows it at the top of the screen the mouse is on, without the
+// Layers window (src/QuickAdd.jsx, the page's #quick). It's made the first
+// time it's wanted, then hidden rather than closed: by Esc, by clicking
+// somewhere else, or once something is saved. What's typed goes to the main
+// window (quick-add), which saves it as if it were done there, so the box
+// itself never writes your data.
+const QUICK_WIDTH = 560;
+let quickWindow = null;
+const pendingQuick = [];
+
+function createQuickWindow() {
+  quickWindow = new BrowserWindow({
+    width: QUICK_WIDTH,
+    height: 170,
+    show: false,
+    frame: false,
+    resizable: false,
+    minimizable: false,
+    maximizable: false,
+    fullscreenable: false,
+    skipTaskbar: true,
+    alwaysOnTop: true,
+    backgroundColor: BACKGROUNDS[savedTheme()],
+    title: 'Layers quick add',
+    webPreferences: {
+      contextIsolation: true,
+      nodeIntegration: false,
+      preload: path.join(__dirname, 'preload.cjs'),
+    },
+  });
+  quickWindow.loadFile(path.join(__dirname, 'app', 'index.html'), { hash: 'quick' });
+  quickWindow.on('blur', hideQuickAdd);
+  quickWindow.on('close', (event) => { if (!isQuitting) { event.preventDefault(); hideQuickAdd(); } });
+  quickWindow.on('closed', () => { quickWindow = null; });
+}
+
+function quickShowing() {
+  return !!quickWindow && !quickWindow.isDestroyed() && quickWindow.isVisible();
+}
+
+function showQuickAdd() {
+  if (!quickWindow || quickWindow.isDestroyed()) createQuickWindow();
+  const { screen } = require('electron'); // only usable once the app is ready
+  const area = screen.getDisplayNearestPoint(screen.getCursorScreenPoint()).workArea;
+  quickWindow.setPosition(Math.round(area.x + (area.width - QUICK_WIDTH) / 2), Math.round(area.y + area.height * 0.18));
+  const reveal = () => {
+    if (!quickWindow || quickWindow.isDestroyed()) return;
+    quickWindow.show();
+    quickWindow.focus();
+    quickWindow.webContents.focus();
+    quickWindow.webContents.send('quick-add-show');
+  };
+  if (quickWindow.webContents.isLoading()) quickWindow.webContents.once('did-finish-load', reveal);
+  else reveal();
+}
+
+function hideQuickAdd() {
+  if (quickShowing()) quickWindow.hide();
+}
+
+function toggleQuickAdd() {
+  if (quickShowing()) hideQuickAdd();
+  else showQuickAdd();
+}
+
+// What the box sends: submit (save it), open (in Layers, full), undo, hide,
+// and resize (the box is as tall as what's in it). Only the box may send.
+function setupQuickAdd() {
+  ipcMain.on('quick-add', (event, msg) => {
+    if (!quickWindow || event.sender !== quickWindow.webContents || !msg || typeof msg !== 'object') return;
+    if (msg.type === 'hide') { hideQuickAdd(); return; }
+    if (msg.type === 'resize') {
+      if (Number.isFinite(msg.height)) quickWindow.setContentSize(QUICK_WIDTH, Math.max(110, Math.min(420, Math.round(msg.height))));
+      return;
+    }
+    if (!['submit', 'open', 'undo'].includes(msg.type)) return;
+    sendQuick({ type: msg.type, sentence: msg.sentence || null });
+    if (msg.type === 'open') { hideQuickAdd(); showWindow(); }
+  });
+  // For the end-to-end tests, which can't press a global shortcut that the
+  // Layers already running on the computer owns.
+  app.layersShowQuickAdd = showQuickAdd;
+}
+
+// To the main window, or once its page is ready.
+function sendQuick(msg) {
+  if (rendererReady && mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send('quick-add', msg);
+  else pendingQuick.push(msg);
 }
 
 // --- Calendar: scheduled notifications and their buttons -----------------
@@ -432,7 +529,12 @@ function setupBackups() {
 function setupCalendar() {
   if (STARTUP_ACTION) pendingActions.push(STARTUP_ACTION);
   ipcMain.handle('schedule-notifications', (_event, list) => scheduler.run(list));
-  ipcMain.handle('calendar-ready', () => { rendererReady = true; return pendingActions.splice(0); });
+  ipcMain.handle('calendar-ready', () => {
+    rendererReady = true;
+    // Anything typed in the quick-add box while the page was loading.
+    setTimeout(() => { while (pendingQuick.length) sendQuick(pendingQuick.shift()); }, 1000);
+    return pendingActions.splice(0);
+  });
   // The installer registers layers:// for this copy; this keeps it pointing
   // here if Layers was moved. Never from a test run (it would take over the
   // installed app's links) or the portable build.

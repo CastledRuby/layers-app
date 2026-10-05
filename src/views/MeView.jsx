@@ -185,9 +185,12 @@ export function MeView({ people, journal, skills, profile, generalGoals = [], on
             {autoLaunch ? 'Launching at login' : 'Launch at login'}
           </button>
           {shortcutStatus && shortcutStatus.registered === false && (
-            <p className="text-xs mt-2.5 font-medium" style={{ color: COLORS.alert }}>Another app is already using Ctrl+Shift+L, so it won't bring Layers forward. Close that app or change its shortcut, then restart Layers.</p>
+            <p className="text-xs mt-2.5 font-medium" style={{ color: COLORS.alert }}>Another app is already using Ctrl+Shift+L, so the quick-add box won't open. Close that app or change its shortcut, then restart Layers.</p>
           )}
-          <p className="text-xs mt-2.5" style={{ color: COLORS.inkSoft }}>Global shortcut: <span style={{ fontWeight: 600, color: COLORS.ink }}>Ctrl+Shift+L</span> brings Layers to the foreground from anywhere, even while minimized. In-app, press <span style={{ fontWeight: 600, color: COLORS.ink }}>N</span> to quick-log an interaction, and <span style={{ fontWeight: 600, color: COLORS.ink }}>Esc</span> to close any open dialog.</p>
+          {shortcutStatus && shortcutStatus.open && shortcutStatus.open.registered === false && (
+            <p className="text-xs mt-2.5 font-medium" style={{ color: COLORS.alert }}>Another app is already using Ctrl+Alt+L, so it won't bring Layers forward. Close that app or change its shortcut, then restart Layers.</p>
+          )}
+          <p className="text-xs mt-2.5" style={{ color: COLORS.inkSoft }}>From anywhere in Windows: <span style={{ fontWeight: 600, color: COLORS.ink }}>Ctrl+Shift+L</span> opens the quick-add box (type a plan or a log, like "coffee with Priya fri 10am"), and <span style={{ fontWeight: 600, color: COLORS.ink }}>Ctrl+Alt+L</span> brings Layers to the front. In-app, press <span style={{ fontWeight: 600, color: COLORS.ink }}>Ctrl+K</span> to jump to anything, <span style={{ fontWeight: 600, color: COLORS.ink }}>N</span> to quick-log an interaction, and <span style={{ fontWeight: 600, color: COLORS.ink }}>Esc</span> to close any open dialog.</p>
         </div>
       )}
 

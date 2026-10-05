@@ -69,6 +69,10 @@ interact.
   some things), setting up (people tapped or typed with how close they are, notification
   switches, Plan something first, Restore from a backup), and planning's Plan again and
   overlap warning.
+- `quickadd.test.jsx` covers the quick-add box (its preview, what it sends, what a log
+  still needs, Ctrl+Z, Ctrl+Enter and Esc, with a fake `window.layersQuick`) and the main
+  window saving what it sends. The end-to-end tests open the real box in the packaged app
+  and check the plan reaches the main window's saved data.
 - `wide.test.jsx` covers a wide window: the month beside the day, and the people list
   beside a profile. `tests/setup.js`'s `matchMedia` says the window is narrow unless a
   test sets `window.__layersWide`.

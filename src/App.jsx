@@ -420,10 +420,13 @@ function LayersApp() {
   // A plan or log typed as a sentence (lib/sentence.js), from Ctrl+K: saved
   // straight away (with Undo on its message), or with `full` (Ctrl+Enter)
   // opened in its sheet, filled in. A log with no rating yet opens too.
-  function saveSentence(r, full) {
+  // From the quick-add box (`quick`), a plan is saved without touching
+  // what's open in the window, which may be hidden.
+  function saveSentence(r, full, { quick = false } = {}) {
     if (r.kind === 'plan') {
       const fields = planFieldsOf(r, notifySettings(profile).defaultAlert);
       if (full) openPlan({ draft: fields });
+      else if (quick) handleSavePlan(fields, null, { quick: true });
       else { switchTab('today'); handleSavePlan(fields, null); }
       return;
     }
@@ -435,6 +438,24 @@ function LayersApp() {
     setLogPrefill({ personIds: r.personIds, type: r.type, note: r.note, day: r.day, meaningfulness: r.meaningfulness || undefined });
     setLogOpen(true);
   }
+  // The quick-add box (Ctrl+Shift+L, its own window; QuickAdd.jsx) sends
+  // what was typed here: "submit" saves it (with Undo), "open" opens it in
+  // full, and "undo" takes back the last thing saved.
+  const quickAddRef = useRef(null);
+  useEffect(() => {
+    quickAddRef.current = (msg) => {
+      if (!msg) return;
+      if (msg.type === 'undo') { if (lastUndo.current) undoToast(lastUndo.current.id, lastUndo.current.undo); return; }
+      if (!msg.sentence || !['plan', 'log'].includes(msg.sentence.kind)) return;
+      if (msg.type === 'open') { closeSheets(); saveSentence(msg.sentence, true); }
+      else if (msg.type === 'submit') saveSentence(msg.sentence, false, { quick: true });
+    };
+  });
+  useEffect(() => {
+    const sys = window.layersSystem;
+    if (!sys || !sys.onQuickAdd) return undefined;
+    return sys.onQuickAdd((msg) => { if (quickAddRef.current) quickAddRef.current(msg); });
+  }, []);
   // "Prepare to talk" from Coach tips: off to Coach, closing the day and plan.
   function openPrepare(personId) { setDayView(null); setEventView(null); openCoach(personId, 'prepare'); }
 
@@ -528,7 +549,7 @@ function LayersApp() {
   // one (editingId). Clearing a field removes it, so an edited plan never
   // keeps a stale goal or start day. With `another` the sheet stays open for
   // the next plan and lists what's been added, so there's no toast or jump.
-  function handleSavePlan(fieldsOrList, editingId, { another = false } = {}) {
+  function handleSavePlan(fieldsOrList, editingId, { another = false, quick = false } = {}) {
     const snap = snapshot();
     const now = new Date().toISOString();
     const tidy = (ev) => { Object.keys(ev).forEach(k => { if (ev[k] === null || ev[k] === undefined) delete ev[k]; }); return ev; };
@@ -542,7 +563,7 @@ function LayersApp() {
       setEvents(prev => [...list.map(f => tidy({ id: uid(), defaultMeaningfulness: 3, ...f, createdAt: created, updatedAt: now })), ...prev]);
       if (!another) pushToast(list.length > 1 ? `${list.length} plans saved` : fields.kind === 'recurring' ? 'Repeating plan saved' : 'Plan saved', { undo: snap });
     }
-    if (another) return;
+    if (another || quick) return;
     setPlanState(null);
     if (fields.kind === 'oneoff' && fields.date) setSelectedDay(fields.date === today ? null : fields.date);
   }

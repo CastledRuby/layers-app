@@ -256,8 +256,10 @@ button:active:not(:disabled) { transform: scale(0.97); }
 input:not([type="range"]):not([type="checkbox"]):not([type="radio"]), textarea { color: ${COLORS.ink}; background-color: ${COLORS.paperRaised}; transition: border-color .16s ease, box-shadow .16s ease; }
 input::placeholder, textarea::placeholder { color: color-mix(in srgb, ${COLORS.inkSoft} 80%, transparent); }
 input:focus, textarea:focus { outline: none; border-color: ${COLORS.accent} !important; box-shadow: 0 0 0 3px color-mix(in srgb, ${COLORS.accent} 20%, transparent); }
-/* The Ctrl+K box's field sits inside its own outlined box (JumpSheet). */
-.jump-input:focus { box-shadow: none; }
+/* The Ctrl+K box's field sits inside its own outlined box (JumpSheet), and
+   the quick-add box's field is the whole window's top row (QuickAdd.jsx). */
+.jump-input:focus, .quick-input:focus { box-shadow: none; }
+.quick-box { width: 100%; }
 
 @keyframes levelUpScale { 0% { transform: scale(0.85); } 35% { transform: scale(1.08); } 60% { transform: scale(0.98); } 100% { transform: scale(1); } }
 @keyframes levelUpGlow { 0%, 100% { filter: drop-shadow(0 0 0 rgba(0,0,0,0)); } 40% { filter: drop-shadow(0 0 18px currentColor); } }

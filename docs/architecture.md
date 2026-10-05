@@ -19,7 +19,8 @@ flowchart LR
   subgraph Main["Electron main process — electron/main.cjs"]
     W[BrowserWindow<br/>420×860 default, state persisted]
     T[Tray icon + menu]
-    G[Global shortcut<br/>Ctrl+Shift+L]
+    G[Global shortcuts<br/>Ctrl+Shift+L quick add<br/>Ctrl+Alt+L open]
+    Q[Quick-add window<br/>the page as #quick]
     U[electron-updater<br/>GitHub Releases]
     A[Login item<br/>auto-launch]
   end

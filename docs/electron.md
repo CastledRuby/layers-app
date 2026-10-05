@@ -14,7 +14,8 @@ channel are in [generated/code-map.md](generated/code-map.md#electron-ipc).
 | Close → tray | `mainWindow.on('close')` | Closing hides the window unless `isQuitting` is set. Quit through the tray menu, the updater or `before-quit`. `query-session-end` and `session-end` also set `isQuitting`, so hiding to the tray doesn't hold up a Windows shutdown, restart or sign-out. The page keeps running while hidden, so its [notifications](#notifications) still fire. |
 | Crash recovery | `webContents.on('render-process-gone')` | If the page's process dies (any reason except `clean-exit`), the window reloads instead of staying blank. Everything is saved as it changes, so nothing is lost. A page that keeps crashing is left alone after 3 reloads in a minute. |
 | Tray | `createTray()`, `trayImage()`, `taskbarIsDark()` | Menu has **Open Layers** and **Quit**. A click calls `showWindow()`. The icon follows the taskbar, which Windows themes separately from apps: `tray-icon-light.png` on a dark taskbar, `tray-icon-dark.png` on a light one. `taskbarIsDark()` reads `SystemUsesLightTheme` under `HKCU\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize` with `reg query`, and assumes dark (the Windows default) if it's missing. Other platforms use `nativeTheme.shouldUseDarkColors`. The icon is picked again on `nativeTheme`'s `updated` event and every 15 minutes, because a change to only the taskbar's mode doesn't always notify apps. Destroyed on `will-quit`. |
-| Global shortcut | `registerGlobalShortcut()` | **Ctrl+Shift+L** calls `showWindow()`. `register()` returns false when another app already owns the combination; the result is kept and reported through `get-shortcut-status`, so the Me tab can say so. Unregistered on `will-quit`. |
+| Global shortcuts | `registerGlobalShortcut()` | **Ctrl+Shift+L** shows or hides the quick-add box (`toggleQuickAdd`), and **Ctrl+Alt+L** calls `showWindow()`. `register()` returns false when another app already owns a combination; both results are kept and reported through `get-shortcut-status`, so the Me tab can say so. Unregistered on `will-quit`. |
+| Quick add | `setupQuickAdd()`, `showQuickAdd()` | A second, small window (560 px wide, frameless, always on top, kept off the taskbar) loading the same page as `#quick` (`src/QuickAdd.jsx`). It's made the first time it's wanted and placed at the top of the screen the mouse is on, then hidden rather than closed: on Esc, when it loses focus, or after saving. It sends `quick-add` messages (only it may): `submit`, `open` and `undo` go on to the main window (queued until its page is ready), `open` also shows Layers, and `resize` makes the window as tall as the box. It never writes data itself. `app.layersShowQuickAdd` lets the end-to-end tests open it, since the real shortcut belongs to the Layers already running. |
 | Auto-update | `setupAutoUpdate()` | See [Auto-update](#auto-update) below. |
 | Launch at login | `setupAutoLaunch()`, `loginItem()` | Registers `{ path, args: ['--hidden'] }`, so a login launch starts in the tray. (`openAsHidden` only works on macOS.) `path` is the portable `.exe` (`PORTABLE_EXECUTABLE_FILE`) when running portable, because `process.execPath` is a temporary folder that's deleted on exit; otherwise `process.execPath`. `get-auto-launch` upgrades an entry from before 1.0.27 (same path, no `--hidden`) in place, and turning it off removes both kinds. |
 | Daily backups | `setupBackups()`, [`backups.cjs`](../electron/backups.cjs) | The page sends one backup a day (`save-daily-backup`); it's saved as `layers-backup-YYYY-MM-DD.json` in **Documents\Layers backups** (`Backups` in the data folder when `LAYERS_USER_DATA_DIR` is set). A day's file is never overwritten, so it holds the data as it was when Layers first ran that day, and only the newest 14 are kept. Files with other names are left alone. `backups-info` and `open-backups-folder` serve Me's **Automatic backups** row. |
@@ -144,7 +145,7 @@ The renderer turns these statuses into toasts and the Me-tab update row
 | `getAutoLaunch()` | `invoke('get-auto-launch')` | Whether the login item (`loginItem()`) is set, upgrading a pre-1.0.27 entry |
 | `setAutoLaunch(enabled)` | `invoke('set-auto-launch')` | Sets the login item and returns the new value |
 | `getVersion()` | `invoke('get-app-version')` | `app.getVersion()` |
-| `getShortcutStatus()` | `invoke('get-shortcut-status')` | `{ accelerator: 'Ctrl+Shift+L', registered }`. Me shows a warning when `registered` is false. |
+| `getShortcutStatus()` | `invoke('get-shortcut-status')` | `{ accelerator: 'Ctrl+Shift+L', registered, open: { accelerator: 'Ctrl+Alt+L', registered } }`. Me shows a warning for each one another app owns. |
 | `showWindow()` | `send('show-window')` | `showWindow()`: restores, shows and focuses the window. Clicking a desktop notification calls it ([below](#notifications)). |
 | `scheduleNotifications(list)` | `invoke('schedule-notifications')` | Replaces Layers' scheduled Windows toasts with `list` (`toasts.cjs`); resolves `{ scheduled }` or `{ error }` |
 | `calendarReady()` | `invoke('calendar-ready')` | Marks the page ready and returns the `layers://` links that arrived before it was |
@@ -153,10 +154,22 @@ The renderer turns these statuses into toasts and the Me-tab update row
 | `saveDailyBackup(day, json)` | `invoke('save-daily-backup')` | Saves the day's backup unless it has one, keeps the newest 14; resolves `{ saved, dir, count, latest }` or `{ error }` |
 | `getBackupsInfo()` | `invoke('backups-info')` | `{ dir, count, latest }` for Me |
 | `openBackupsFolder()` | `invoke('open-backups-folder')` | Opens the backups folder in Explorer, creating it if needed |
+| `onQuickAdd(cb)` | `on('quick-add')` | Calls `cb({ type, sentence })` for what the quick-add box sends: `submit` (save it, as Ctrl+K would, with Undo), `open` (open it in its full sheet) or `undo`. Returns an unsubscribe function. |
 
-Ctrl+Shift+L doesn't message the renderer. Up to 1.0.23 it also sent
-`trigger-log-interaction` to open the log sheet. That channel and its
-`onTriggerLog` bridge were removed in 1.0.24.
+### `window.layersQuick`
+
+For the quick-add box's page (`src/QuickAdd.jsx`); the main window doesn't use it.
+
+| Method | IPC | Main side |
+|---|---|---|
+| `submit(sentence)`, `open(sentence)`, `undo()` | `send('quick-add')` | Passed on to the main window's `onQuickAdd`; `open` also shows Layers |
+| `hide()` | `send('quick-add')` | Hides the box |
+| `resize(height)` | `send('quick-add')` | Sets the box's height (110 to 420 px) |
+| `onShow(cb)` | `on('quick-add-show')` | Calls `cb()` each time the box is shown, so it starts clean with the people Layers last saved |
+
+Up to 1.0.23 Ctrl+Shift+L also sent `trigger-log-interaction` to open the log sheet.
+That channel and its `onTriggerLog` bridge were removed in 1.0.24; from 1.0.31 the
+shortcut opens the quick-add box instead, and Ctrl+Alt+L brings Layers forward.
 
 ## Adding a new IPC capability
 

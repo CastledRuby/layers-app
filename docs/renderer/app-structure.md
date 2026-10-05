@@ -48,6 +48,18 @@ Where new code goes: anything without React goes in `lib/` (and gets a unit test
 needs that, and it's why `SheetLayerContext` and the open-sheet stack live in their own
 `sheetLayer.js`.
 
+## The quick-add box
+
+`src/main.jsx` renders `QuickAdd` instead of `App` when the page is opened as `#quick`:
+the small window Electron shows for **Ctrl+Shift+L** from anywhere in Windows
+([electron.md](../electron.md)). It reads your people from what Layers last saved, and
+`readSentence` ([lib/sentence.js](../../src/lib/sentence.js)) turns what's typed into a
+plan or a log, previewed exactly as it will be saved, with what's still missing ("When?",
+"How was it?") in its place. Enter sends it to the main window (`layersQuick.submit`),
+which saves it through `saveSentence` as Ctrl+K would, with Undo, and without touching
+anything open in that window; the box shows "Saved" and closes. Ctrl+Z there undoes it,
+Ctrl+Enter opens it in Layers in its full sheet, and Esc closes the box.
+
 ## Navigation model
 
 In a wide window (900 px or more) People shows the list beside the open profile

@@ -31,4 +31,25 @@ contextBridge.exposeInMainWorld('layersSystem', {
     ipcRenderer.on('calendar-action', listener);
     return () => ipcRenderer.removeListener('calendar-action', listener);
   },
+  // What the quick-add box sends to be saved, opened or undone (main.cjs).
+  onQuickAdd: (callback) => {
+    const listener = (_event, msg) => callback(msg);
+    ipcRenderer.on('quick-add', listener);
+    return () => ipcRenderer.removeListener('quick-add', listener);
+  },
+});
+
+// The quick-add box (src/QuickAdd.jsx, in its own small window): hand what
+// was typed to the main window, and hear when the box is shown again.
+contextBridge.exposeInMainWorld('layersQuick', {
+  submit: (sentence) => ipcRenderer.send('quick-add', { type: 'submit', sentence }),
+  open: (sentence) => ipcRenderer.send('quick-add', { type: 'open', sentence }),
+  undo: () => ipcRenderer.send('quick-add', { type: 'undo' }),
+  hide: () => ipcRenderer.send('quick-add', { type: 'hide' }),
+  resize: (height) => ipcRenderer.send('quick-add', { type: 'resize', height }),
+  onShow: (callback) => {
+    const listener = () => callback();
+    ipcRenderer.on('quick-add-show', listener);
+    return () => ipcRenderer.removeListener('quick-add-show', listener);
+  },
 });

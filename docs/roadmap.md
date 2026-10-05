@@ -224,9 +224,9 @@ the calendar's data is portable and ready to sync:
 
 ## Next big task: quality of life (decided 2026-10-05)
 
-Your answers to ten quality-of-life questions. The quick wins (3, 8, 9 and 10) and the
-notifications (4, 6 and 7) are built. The bigger pieces (2, 1 and 5) are
-[drafted below](#drafted-next-ctrlk-the-wide-layout-and-the-quick-add-box).
+Your answers to ten quality-of-life questions. All ten are built: the quick wins (3, 8,
+9 and 10), the notifications (4, 6 and 7), and the bigger pieces (2, 1 and 5)
+[described below](#drafted-next-ctrlk-the-wide-layout-and-the-quick-add-box).
 
 | | Question | Your answer |
 |---|---|---|
@@ -244,8 +244,8 @@ notifications (4, 6 and 7) are built. The bigger pieces (2, 1 and 5) are
 ## Drafted next: Ctrl+K, the wide layout and the quick-add box
 
 The three bigger quality-of-life pieces (2, 1 and 5 above), drafted on 2026-10-05 with
-your answers to four more questions (in bold). Each will be built and installed on its
-own, in this order. None of it is built yet; say if any of it should change.
+your answers to four more questions (in bold), and built the same day, each installed on
+its own. Changes made while building are marked.
 
 ### Ctrl+K: jump to anything ✅ Built
 
@@ -285,7 +285,7 @@ own, in this order. None of it is built yet; say if any of it should change.
 - **Sheets** open as a centred panel about 520 px wide, rather than across the whole
   window from the bottom. Their keys don't change.
 
-### The quick-add box: Ctrl+Shift+L
+### The quick-add box: Ctrl+Shift+L ✅ Built
 
 - **Ctrl+Shift+L** anywhere in Windows opens a small box at the top of the screen, over
   whatever you're doing, without bringing up the Layers window. Layers has to be
@@ -382,6 +382,13 @@ start.
   privacy principle comes first.
 
 ## History
+
+### The quick-add box (after 1.0.30, not released yet)
+
+**Ctrl+Shift+L** from anywhere in Windows opens a small box at the top of the screen.
+Type a plan or a log ("coffee with priya fri 10am", "log sam deep"), check the preview,
+and Enter saves it (Ctrl+Z undoes it); Ctrl+Enter opens it in Layers instead.
+**Ctrl+Alt+L** now brings Layers forward.
 
 ### Wider on desktop (after 1.0.30, not released yet)
 

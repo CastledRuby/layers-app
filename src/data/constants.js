@@ -35,6 +35,8 @@ export function categoryMeta(key) { return CATEGORIES.find(c => c.key === key) |
 export const TABS = ['coach', 'people', 'today', 'journal', 'me'];
 
 export const SHORTCUTS = [
+  { keys: ['Ctrl', 'Shift', 'L'], desc: 'From anywhere in Windows: the quick-add box, to type a plan or a log without opening Layers' },
+  { keys: ['Ctrl', 'Alt', 'L'], desc: 'From anywhere in Windows: bring Layers to the front' },
   { keys: ['Ctrl', 'K'], desc: 'Jump to anything: a person, plan, page or action, or type a plan ("coffee with Priya fri 10am") or a log ("log Sam deep")' },
   { keys: ['Ctrl', '1'], desc: 'Go to Coach' },
   { keys: ['Ctrl', '2'], desc: 'Go to People (the map of how close you are)' },
