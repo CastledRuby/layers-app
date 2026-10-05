@@ -260,9 +260,10 @@ its own. Changes made while building are marked.
   - **Plans** from two weeks back to four weeks ahead, by title or person. Enter opens
     the plan on its day.
   - **Pages**: Today, Month, People, Coach, Journal, Me, Goals and Your week.
-  - **Actions**: Log, Plan, Add a person, Add a key date, Light, Dark, Match Windows,
-    Export a backup, Open the backups folder, Check for updates, Keyboard shortcuts, and
-    Start over (which only opens its sheet).
+  - **Actions**: Log, Plan, Add a person, New goal, Light, Dark, Match Windows, Export a
+    backup, Restore from a backup, Open the backups folder, Check for updates, Keyboard
+    shortcuts, and Start over (which only opens its sheet). *(Changed while building: New
+    goal and Restore in place of Add a key date, which needs a person first.)*
   - **A sentence**, read the same way as the quick-add box below: "coffee with priya fri
     10am" offers "Plan: Coffee with Priya, Fri 9 Oct, 10:00 AM" as the top row.
 - **Keys**: ↑ and ↓ move, Enter picks, → shows a person's actions, ← goes back, Esc
@@ -279,11 +280,11 @@ its own. Changes made while building are marked.
   day in the month shows it on the left, so M isn't needed (it still works).
 - **People**: the **list on the left and the open profile on the right**. The list stays
   while you go from person to person; Backspace closes the profile.
-- **Coach, Journal and Me**: one centred column about 720 px wide, so lines don't get
-  too long to read.
+- **Coach, Journal and Me** (and Goals): one centred column 760 px wide, so lines don't
+  get too long to read.
 - **The tabs stay as the bottom bar**, with the sliding pill.
-- **Sheets** open as a centred panel about 520 px wide, rather than across the whole
-  window from the bottom. Their keys don't change.
+- **Sheets** open as a centred panel 540 px wide, rather than across the whole window
+  from the bottom. Their keys don't change.
 
 ### The quick-add box: Ctrl+Shift+L ✅ Built
 
@@ -311,8 +312,8 @@ its own. Changes made while building are marked.
   the box or in Layers, undoes it.
 - **Ctrl+Enter opens it in Layers** instead: the full plan or log sheet, filled in, for
   anything a sentence can't say.
-- **Ctrl+Alt+L opens Layers itself**, which is what Ctrl+Shift+L does now. Me lists both
-  shortcuts, and says if another app already uses either.
+- **Ctrl+Alt+L opens Layers itself**, which is what Ctrl+Shift+L used to do. Me lists
+  both shortcuts, and says if another app already uses either.
 
 **Defaults chosen** (each is easy to change):
 - the 900 px width
@@ -320,7 +321,7 @@ its own. Changes made while building are marked.
 - dates read day first, as in New Zealand
 - a log without a rating asks for one rather than guessing
 
-**How it'll be built**, so each piece stays contained:
+**How it's built**, so each piece stays contained:
 - **Ctrl+K**: `lib/jump.js` finds and ranks the matches, and `JumpSheet` shows them.
 - **Wide layout**: a CSS breakpoint, plus a `useWide()` hook for the two split pages. The
   narrow layout's code is left alone.
@@ -328,8 +329,8 @@ its own. Changes made while building are marked.
   unit tests). A second small window (frameless, on top, kept off the taskbar) loads the
   same page in quick-add mode. It hands what you typed to the main window, which saves it
   as if you'd done it there.
-- **Tests**: app tests for all three, and end-to-end tests for the wide window and the
-  quick-add box in the packaged app, with a temporary data folder as always.
+- **Tests**: app tests for all three, and an end-to-end test that opens the real quick-add
+  box in the packaged app, with a temporary data folder as always.
 
 ## Next: smaller fixes
 
