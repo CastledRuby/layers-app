@@ -1,7 +1,7 @@
 # Roadmap
 
 Where Layers stands against [vision.md](vision.md), what was decided along the way, and
-what comes next. Last updated 2026-10-05, after 1.0.30 and the second live test.
+what comes next. Last updated 2026-10-05, after 1.0.31.
 
 **How it got here:**
 
@@ -352,7 +352,7 @@ before 1.0.31, and they're built; 5 and 6 wait.
 5. **Key dates while setting up**: a birthday (or another date) on each person's card.
 6. **Keys for the sheets that still need the mouse**: the full goal editor, key dates,
    Add info, Edit person, Add detail's items (type to find one), and Coach's Prepare.
-7. **Release 1.0.31** with everything since 1.0.30, once you're happy with the live test.
+7. ✅ **Release 1.0.31** with everything since 1.0.30: published and installed on 2026-10-05.
 
 Also from your answers: setting up asks the closeness questions only when you ask
 (Shift+Enter, or Q), and the avatar picker can find one by name (/).
@@ -409,7 +409,7 @@ start.
 
 ## History
 
-### Second live test (after 1.0.30, not released yet)
+### Second live test (1.0.31)
 
 What you found trying it again on 2026-10-05, and what changed:
 
@@ -464,28 +464,28 @@ What you found trying it again on 2026-10-05, and what changed:
   keys too (Esc out of your name, then 1–4 for what brings you here, E to explore, R to
   restore), and the last one lists the keys worth knowing.
 
-### The quick-add box (after 1.0.30, not released yet)
+### The quick-add box (1.0.31)
 
 **Ctrl+Shift+L** from anywhere in Windows opens a small box at the top of the screen.
 Type a plan or a log ("coffee with priya fri 10am", "log sam deep"), check the preview,
 and Enter saves it (Ctrl+Z undoes it); Ctrl+Enter opens it in Layers instead.
 **Ctrl+Alt+L** now brings Layers forward.
 
-### Wider on desktop (after 1.0.30, not released yet)
+### Wider on desktop (1.0.31)
 
 From 900 px wide (maximised, or dragged wider), Layers fills the window: Today has the
 month beside the day, People the list beside the open profile, the other pages a
 readable centred column, and sheets open as a centred panel. The tabs stay at the
 bottom. Narrower, it's the phone-shaped card as before.
 
-### Ctrl+K: jump to anything (after 1.0.30, not released yet)
+### Ctrl+K: jump to anything (1.0.31)
 
 People (→ for Log, Plan and Prepare), plans, pages and actions, "plan sam", and plans
 or logs typed as a sentence ("coffee with priya fri 10am", "log sam deep"), saved with
 Enter or opened in full with Ctrl+Enter. See
 [Ctrl+K](#ctrlk-jump-to-anything--built) above.
 
-### Live-test feedback (after 1.0.30, not released yet)
+### Live-test feedback (1.0.31)
 
 What you found trying it on 2026-10-05, and what changed:
 
@@ -506,7 +506,7 @@ What you found trying it on 2026-10-05, and what changed:
   talked about and noted, their interests), their key dates around it, and the goal it
   moves. An open plan has Coach tips too.
 
-### Quality of life: notifications (after 1.0.30, not released yet)
+### Quality of life: notifications (1.0.31)
 
 - **Rate a plan from "How did it go?"**: Casual, Good, Personal or Deep logs it without
   opening Layers and ticks it off; Log it… opens the full log.
@@ -515,7 +515,7 @@ What you found trying it on 2026-10-05, and what changed:
 - **Sunday review** at 7:00 PM: who you saw, plans done, goals moved, who to catch up
   with, then Plan next week. W on Today opens it any day.
 
-### Quality of life: the quick wins (after 1.0.30, not released yet)
+### Quality of life: the quick wins (1.0.31)
 
 - **Undo** on the message after a delete, a tick, a log or a saved plan, or Ctrl+Z.
 - **Birthdays and key dates** remind you a week before, the evening before and on the
@@ -524,7 +524,7 @@ What you found trying it on 2026-10-05, and what changed:
   and opens the folder.
 - **Match Windows**: light or dark follows Windows, as it changes.
 
-### Clearer pages, starting over, setting up (after 1.0.30, not released yet)
+### Clearer pages, starting over, setting up (1.0.31)
 
 You asked for the page you're on to stand out, a visual effect when opening a page, easier
 plan setup, and a more thorough, easier "Delete my data and start over".
