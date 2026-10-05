@@ -1,7 +1,7 @@
 // Reads a typed sentence into a plan or a log, for the quick-add box
-// (Ctrl+Shift+L) and Ctrl+K: "coffee with priya fri 10am", "dinner with sam
+// (Ctrl+Shift+L) and Ctrl+K: "coffee w priya fri 10am", "dinner with sam
 // and alex tomorrow 7pm 2h", "gym every mon wed fri 7am", "log sam deep",
-// "talked to alex yesterday". Dates are read day first ("12/10" is 12
+// "talked to alex yesterday". "w" (or "w/") is short for "with". Dates are read day first ("12/10" is 12
 // October), as in New Zealand. Nothing is saved here: readSentence returns
 // what it understood, and the caller shows it before saving.
 //
@@ -66,10 +66,12 @@ function clock(h, m, ampm) {
 }
 
 function tokenize(text) {
-  const raw = text.trim().replace(/[,;!?]+/g, ' ').split(/\s+/).filter(Boolean);
+  // "w/sam" is "w/ sam".
+  const raw = text.trim().replace(/[,;!?]+/g, ' ').replace(/(^|\s)w\/(?=\S)/gi, '$1w/ ').split(/\s+/).filter(Boolean);
   const out = [];
   for (let i = 0; i < raw.length; i++) {
     const low = raw[i].toLowerCase().replace(/'s$/, '');
+    if (low === 'w' || low === 'w/') { out.push({ raw: 'with', low: 'with' }); continue; }
     const next = (raw[i + 1] || '').toLowerCase();
     // Two-word phrases read as one.
     if ((low === 'check' && next === 'in') || (low === 'hang' && next === 'out') || ((low === 'catch' || low === 'caught') && next === 'up')) {
@@ -249,6 +251,9 @@ export function readSentence(text, { people = [], today, now = new Date() } = {}
   const meaningful = words.filter(tok => !tok.person && !FILLERS.has(tok.low));
   let title;
   if (!meaningful.length) title = (template || templateFor('custom')).title(listNames([...who, ...unknown]));
+  // A word that stands for an activity or studying ("movie", "games",
+  // "revise") names it, rather than the template's general title.
+  else if (meaningful.length === 1 && tWord && meaningful[0] === tWord && !mealWord && ['activity', 'study'].includes(template.key) && tWord.low !== template.key) title = [cap(tWord.raw), listNames([...who, ...unknown])].filter(Boolean).join(' with ');
   else if (meaningful.length === 1 && tWord && meaningful[0] === tWord && !mealWord) title = template.title(listNames([...who, ...unknown]));
   else title = cap(words.map(tok => (tok.person ? tok.person.name : tok.raw)).join(' '));
 

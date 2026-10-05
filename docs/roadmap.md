@@ -403,6 +403,13 @@ What you found trying it again on 2026-10-05, and what changed:
 - **Ctrl+K, a person's actions by letter**: after → or Tab on someone, **O** opens them,
   **L** logs, **P** plans and **R** prepares to talk. The highlighted person says "log,
   plan, prepare →".
+- **Quick add**: **w** is short for **with** ("coffee w priya fri 10am", "movie w sam sat
+  7pm"; "w/sam" works too), and a word like movie, games or revise names the plan
+  ("Movie with Sam") rather than "Activity with Sam". The box closes 40% sooner after
+  saving (under a second). **Ctrl+Y** redoes an undo there, and opened again within a few
+  seconds the empty box says what was just saved, so Ctrl+Z still undoes it.
+- **Ctrl+Alt+L sends Layers back** when it's already in front (minimised, so the app you
+  were in comes back), and brings it forward otherwise.
 
 ### The quick-add box (after 1.0.30, not released yet)
 

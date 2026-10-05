@@ -70,7 +70,7 @@ export function JumpSheet({ people, events, today, has, onRun, onClose }) {
         <Search size={17} color={COLORS.accent} className="shrink-0" />
         {personFor && <span className="chip chip--on shrink-0" style={{ padding: '1px 8px', fontSize: 12 }}>{personFor.name}</span>}
         <input ref={inputRef} autoFocus value={query} onChange={e => { setQuery(e.target.value); setActive(0); setPersonFor(null); }} onKeyDown={onKeyDown}
-          aria-label="Jump to" placeholder={personFor ? 'Pick what to do' : 'A person, plan or page, or type a plan'} className="jump-input flex-1 min-w-0 text-sm"
+          aria-label="Jump to" placeholder={personFor ? 'Pick what to do' : 'A person, plan or page, or type a plan: coffee w Sam fri 10am'} className="jump-input flex-1 min-w-0 text-sm"
           style={{ background: 'transparent', border: 'none', outline: 'none', color: COLORS.ink }} />
         <Kbd>Esc</Kbd>
       </div>

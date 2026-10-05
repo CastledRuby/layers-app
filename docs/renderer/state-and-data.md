@@ -420,7 +420,9 @@ phone later. It's unit-tested in `src/calendar.test.js`.
   goals with a history point that week, and next week's Monday and plans.
 - **`readSentence(text, { people, today, now })`** ([`lib/sentence.js`](../../src/lib/sentence.js)):
   a typed plan or log, for Ctrl+K and the quick-add box. People by full or first name
-  (closest first when two share one), a template from its word (coffee, call, dinner or
+  (closest first when two share one), after "with" or its short "w" (or "w/"), a template
+  from its word (an activity or study word like "movie" or "revise" names the plan:
+  "Movie with Sam") (coffee, call, dinner or
   lunch, hang out, study, check in, game or movie), days (today, tomorrow, a weekday,
   "next fri", "in 3 days", "12 oct", "12/10" day first; a date gone by this year means
   next year), times ("10am", "7:30pm", "19:00", "at 7" for 7 PM, noon, evening), how long

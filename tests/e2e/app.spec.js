@@ -174,3 +174,22 @@ test('the quick-add box saves a typed plan through the main window, then hides',
   await expect.poll(() => app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows().filter(w => w.isVisible()).length), { timeout: 10000 }).toBe(1);
   await quit(app);
 });
+
+test('Ctrl+Alt+L sends Layers back when it is in front, and brings it forward again', async () => {
+  const { app, page } = await launch(tempDataDir());
+  await onboard(page, 'Sam');
+  // The real shortcut belongs to the Layers already running on this
+  // computer, so the test does what it does.
+  const main = () => app.evaluate(({ BrowserWindow }) => {
+    const w = BrowserWindow.getAllWindows()[0];
+    return { minimized: w.isMinimized(), visible: w.isVisible(), focused: w.isFocused() };
+  });
+  const toggle = () => app.evaluate(({ app: electronApp }) => electronApp.layersToggleWindow());
+  await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].focus());
+  await expect.poll(async () => (await main()).focused, { timeout: 5000 }).toBe(true);
+  await toggle();
+  await expect.poll(async () => (await main()).minimized, { timeout: 5000 }).toBe(true);
+  await toggle();
+  await expect.poll(async () => { const s = await main(); return s.visible && !s.minimized; }, { timeout: 5000 }).toBe(true);
+  await quit(app);
+});

@@ -5,7 +5,8 @@
 //   Enter       hands it to the main window, which saves it as Ctrl+K would
 //               (with Undo there), then the box closes
 //   Ctrl+Enter  opens it in Layers instead, in its full sheet
-//   Ctrl+Z      undoes what was just saved, while the box still shows it
+//   Ctrl+Z      undoes what was just saved, while the box still shows it or
+//               in the empty box opened again soon after; Ctrl+Y redoes it
 //   Esc         closes the box, as does clicking somewhere else
 // The box only reads your people from what Layers last saved; the main window
 // does all the saving (window.layersQuick, preload.cjs).
@@ -20,7 +21,8 @@ import { STORAGE_KEY } from './lib/storage.js';
 import { COLORS, CSS } from './theme.js';
 
 const RATING_LABELS = ['Very brief', 'Casual', 'Good', 'Personal', 'Deep'];
-const SAVED_MS = 1600;
+const SAVED_MS = 960; // how long "Saved" shows before the box closes
+const UNDO_MS = 6500; // Layers' own Undo lasts 7 s
 
 function readSaved() {
   try {
@@ -47,6 +49,8 @@ export function QuickAdd() {
   const [saved, setSaved] = useState(readSaved);
   const [text, setText] = useState('');
   const [done, setDone] = useState(null); // { line, undone } once saved
+  const lastSave = useRef(null); // { line, at }: what the box saved last
+  const [recent, setRecent] = useState(null); // that, if it can still be undone
   const inputRef = useRef(null);
   const rootRef = useRef(null);
   const timer = useRef(null);
@@ -64,6 +68,7 @@ export function QuickAdd() {
     setSaved(readSaved());
     setText('');
     setDone(null);
+    setRecent(lastSave.current && Date.now() - lastSave.current.at < UNDO_MS ? lastSave.current : null);
     if (inputRef.current) inputRef.current.focus();
   }
   // Each time the box is shown: what Layers saved last, and a clean box.
@@ -83,16 +88,30 @@ export function QuickAdd() {
   function save() {
     if (!ready || !bridge) return;
     bridge.submit(r);
-    setDone({ line: r.kind === 'plan' ? `${r.title} · ${whenText(r)}` : `Logged ${listNames(who)}`, undone: false });
+    const line = r.kind === 'plan' ? `${r.title} · ${whenText(r)}` : `Logged ${listNames(who)}`;
+    lastSave.current = { line, at: Date.now() };
+    setDone({ line, undone: false });
     closeSoon(SAVED_MS);
   }
   function onKeyDown(e) {
     if (e.key === 'Escape') { e.preventDefault(); close(); reset(); return; }
-    if ((e.ctrlKey || e.metaKey) && (e.key === 'z' || e.key === 'Z') && done && !done.undone) {
+    const ctrl = e.ctrlKey || e.metaKey;
+    const key = e.key.toLowerCase();
+    // Ctrl+Z: what was just saved, or (in the empty box) the last one.
+    const undoable = done ? !done.undone : !text && recent;
+    if (ctrl && !e.shiftKey && key === 'z' && undoable && bridge) {
       e.preventDefault();
       bridge.undo();
-      setDone(d => ({ ...d, undone: true }));
-      closeSoon(900);
+      setDone({ line: done ? done.line : recent.line, undone: true });
+      setRecent(null);
+      closeSoon(1500);
+      return;
+    }
+    if (ctrl && (key === 'y' || (e.shiftKey && key === 'z')) && done && done.undone && bridge && bridge.redo) {
+      e.preventDefault();
+      bridge.redo();
+      setDone(d => ({ ...d, undone: false }));
+      closeSoon(SAVED_MS);
       return;
     }
     if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); if (r && bridge) { bridge.open(r); reset(); } return; }
@@ -106,7 +125,7 @@ export function QuickAdd() {
         <div className="flex items-center gap-2.5 px-4 py-3" style={{ borderBottom: `1px solid ${COLORS.line}` }}>
           <Sparkles size={18} color={COLORS.accent} className="shrink-0" />
           <input ref={inputRef} autoFocus value={text} readOnly={!!done} onChange={e => setText(e.target.value)} onKeyDown={onKeyDown}
-            aria-label="Plan or log" placeholder="coffee with Priya fri 10am · log Sam deep" className="quick-input flex-1 min-w-0 text-base"
+            aria-label="Plan or log" placeholder="coffee w Priya fri 10am · log Sam deep" className="quick-input flex-1 min-w-0 text-base"
             style={{ background: 'transparent', border: 'none', outline: 'none', color: COLORS.ink }} />
           <Kbd>Esc</Kbd>
         </div>
@@ -115,13 +134,14 @@ export function QuickAdd() {
           {done ? (
             <p className="text-sm flex items-center gap-2" style={{ color: COLORS.ink }}>
               <Check size={16} color={COLORS.good} strokeWidth={3} className="shrink-0" />
-              {done.undone ? 'Undone' : <span><b>Saved:</b> {done.line} <span style={{ color: COLORS.inkSoft }}>· <Kbd>Ctrl</Kbd><Kbd>Z</Kbd> undo</span></span>}
+              {done.undone ? <span><b>Undone</b> <span style={{ color: COLORS.inkSoft }}>· <Kbd>Ctrl</Kbd><Kbd>Y</Kbd> redo</span></span> : <span><b>Saved:</b> {done.line} <span style={{ color: COLORS.inkSoft }}>· <Kbd>Ctrl</Kbd><Kbd>Z</Kbd> undo</span></span>}
             </p>
           ) : !r ? (
             <div className="text-xs flex flex-col gap-1" style={{ color: COLORS.inkSoft }}>
-              <p>Type a plan, like <b style={{ color: COLORS.ink }}>dinner with Sam tomorrow 7pm</b> or <b style={{ color: COLORS.ink }}>gym every mon wed 7am</b>,</p>
+              {recent && <p className="mb-1" style={{ color: COLORS.ink }}>Just saved: {recent.line} · <Kbd>Ctrl</Kbd><Kbd>Z</Kbd> undo</p>}
+              <p>Type a plan, like <b style={{ color: COLORS.ink }}>movie w Sam sat 7pm</b> or <b style={{ color: COLORS.ink }}>gym every mon wed 7am</b>,</p>
               <p>or a log, like <b style={{ color: COLORS.ink }}>log Priya deep</b> or <b style={{ color: COLORS.ink }}>called Alex yesterday good</b>.</p>
-              <p className="mt-1">Ctrl+Alt+L opens Layers itself.</p>
+              <p className="mt-1">Ctrl+Alt+L brings Layers to the front, and sends it back again.</p>
             </div>
           ) : (
             <div className="flex items-start gap-2.5">

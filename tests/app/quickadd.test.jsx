@@ -16,7 +16,7 @@ afterEach(() => { delete window.layersQuick; vi.restoreAllMocks(); });
 function fakeQuick() {
   const shows = [];
   window.layersQuick = {
-    submit: vi.fn(), open: vi.fn(), undo: vi.fn(), hide: vi.fn(), resize: vi.fn(),
+    submit: vi.fn(), open: vi.fn(), undo: vi.fn(), redo: vi.fn(), hide: vi.fn(), resize: vi.fn(),
     onShow: (cb) => { shows.push(cb); return () => shows.splice(shows.indexOf(cb), 1); },
     show: () => act(async () => { shows.forEach(cb => cb()); }),
   };
@@ -29,19 +29,19 @@ function renderBox() {
 }
 
 describe('the quick-add box', () => {
-  it('previews a typed plan, and Enter sends it to be saved, then closes', async () => {
+  it('previews a typed plan, and Enter sends it to be saved, then closes within a second', async () => {
     const morgan = person('Morgan');
     seedState({ people: [morgan] });
     const quick = fakeQuick();
     const { user, input } = renderBox();
-    await user.type(input, 'coffee with morgan tomorrow 10am');
+    await user.type(input, 'coffee w morgan tomorrow 10am');
     const preview = screen.getByRole('status', { name: 'Preview' });
     expect(preview.textContent).toMatch(/Coffee with Morgan/);
     expect(preview.textContent).toMatch(/10:00 AM to 11:00 AM/);
     await user.keyboard('{Enter}');
     expect(quick.submit).toHaveBeenCalledWith(expect.objectContaining({ kind: 'plan', title: 'Coffee with Morgan', personIds: [morgan.id], day: day(1), time: 600 }));
     expect(preview.textContent).toMatch(/Saved/);
-    await act(async () => { await wait(1700); });
+    await act(async () => { await wait(1000); });
     expect(quick.hide).toHaveBeenCalled();
   });
 
@@ -70,6 +70,23 @@ describe('the quick-add box', () => {
     await user.keyboard('{Escape}');
     expect(quick.hide).toHaveBeenCalled();
   });
+
+  it('Ctrl+Y redoes what Ctrl+Z undid, and Ctrl+Z still works in the empty box opened again soon after', async () => {
+    seedState({ people: [person('Morgan')] });
+    const quick = fakeQuick();
+    const { user, input } = renderBox();
+    await user.type(input, 'log morgan deep{Enter}');
+    await user.keyboard('{Control>}z{/Control}');
+    expect(quick.undo).toHaveBeenCalledTimes(1);
+    await user.keyboard('{Control>}y{/Control}');
+    expect(quick.redo).toHaveBeenCalledTimes(1);
+    expect(screen.getByRole('status', { name: 'Preview' }).textContent).toMatch(/Saved/);
+    await quick.show(); // opened again: empty, but it can still undo that
+    expect(screen.getByText(/Just saved/)).toBeTruthy();
+    await user.keyboard('{Control>}z{/Control}');
+    expect(quick.undo).toHaveBeenCalledTimes(2);
+    expect(screen.getByText('Undone')).toBeTruthy();
+  });
 });
 
 describe('the main window, saving what the box sends', () => {
@@ -96,6 +113,19 @@ describe('the main window, saving what the box sends', () => {
     expect(toasts()).toContain('Plan saved');
     await sys.send({ type: 'undo' });
     expect(savedState().events).toEqual([]);
+  });
+
+  it('"redo" puts back what "undo" took', async () => {
+    const morgan = person('Morgan');
+    seedState({ people: [morgan] });
+    const sys = fakeSystem();
+    renderApp();
+    await wait(50);
+    await sys.send({ type: 'submit', sentence: readSentence('coffee w morgan tomorrow 10am', { people: [morgan] }) });
+    await sys.send({ type: 'undo' });
+    expect(savedState().events).toEqual([]);
+    await sys.send({ type: 'redo' });
+    expect(savedState().events).toEqual([expect.objectContaining({ title: 'Coffee with Morgan' })]);
   });
 
   it('"open" opens a typed plan in full', async () => {

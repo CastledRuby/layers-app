@@ -57,8 +57,10 @@ the small window Electron shows for **Ctrl+Shift+L** from anywhere in Windows
 plan or a log, previewed exactly as it will be saved, with what's still missing ("When?",
 "How was it?") in its place. Enter sends it to the main window (`layersQuick.submit`),
 which saves it through `saveSentence` as Ctrl+K would, with Undo, and without touching
-anything open in that window; the box shows "Saved" and closes. Ctrl+Z there undoes it,
-Ctrl+Enter opens it in Layers in its full sheet, and Esc closes the box.
+anything open in that window; the box shows "Saved" and closes a second later. Ctrl+Z
+there undoes it and Ctrl+Y redoes it; opened again within a few seconds, the empty box
+says what was just saved, and Ctrl+Z still undoes it. Ctrl+Enter opens it in Layers in
+its full sheet, and Esc closes the box. "w" is short for "with": "movie w sam sat 7pm".
 
 ## Navigation model
 

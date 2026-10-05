@@ -36,8 +36,8 @@ export const TABS = ['coach', 'people', 'today', 'journal', 'me'];
 
 export const SHORTCUTS = [
   { keys: ['Ctrl', 'Shift', 'L'], desc: 'From anywhere in Windows: the quick-add box, to type a plan or a log without opening Layers' },
-  { keys: ['Ctrl', 'Alt', 'L'], desc: 'From anywhere in Windows: bring Layers to the front' },
-  { keys: ['Ctrl', 'K'], desc: 'Jump to anything: a person, plan, page or action, or type a plan ("coffee with Priya fri 10am") or a log ("log Sam deep")' },
+  { keys: ['Ctrl', 'Alt', 'L'], desc: 'From anywhere in Windows: bring Layers to the front, or send it back when it’s already there' },
+  { keys: ['Ctrl', 'K'], desc: 'Jump to anything: a person, plan, page or action, or type a plan ("coffee w Priya fri 10am"; w is short for with) or a log ("log Sam deep")' },
   { keys: ['Ctrl', '1'], desc: 'Go to Coach' },
   { keys: ['Ctrl', '2'], desc: 'Go to People (the map of how close you are)' },
   { keys: ['Ctrl', '3'], desc: 'Go to Today (your day and the calendar)' },

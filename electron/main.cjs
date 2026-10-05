@@ -117,6 +117,13 @@ function showWindow() {
   mainWindow.focus();
 }
 
+// Ctrl+Alt+L: to the front, or back if it's already in front.
+function toggleWindow() {
+  if (!mainWindow || mainWindow.isDestroyed()) return;
+  if (mainWindow.isVisible() && !mainWindow.isMinimized() && mainWindow.isFocused()) mainWindow.minimize();
+  else showWindow();
+}
+
 function sendStatus(status) {
   if (mainWindow && !mainWindow.isDestroyed()) {
     mainWindow.webContents.send('update-status', status);
@@ -386,12 +393,14 @@ function setupAutoLaunch() {
 }
 
 // --- Global shortcuts: Ctrl+Shift+L the quick-add box, Ctrl+Alt+L Layers ---
+// Ctrl+Alt+L brings Layers to the front or, when it's already there, sends
+// it back (minimised, so the app you were in comes back).
 // register() returns false when another app already owns the combination;
 // the Me tab asks (get-shortcut-status) and says so instead of it silently
 // doing nothing.
 function registerGlobalShortcut() {
   shortcutRegistered = globalShortcut.register('CommandOrControl+Shift+L', toggleQuickAdd);
-  openShortcutRegistered = globalShortcut.register('CommandOrControl+Alt+L', showWindow);
+  openShortcutRegistered = globalShortcut.register('CommandOrControl+Alt+L', toggleWindow);
   ipcMain.handle('get-shortcut-status', () => ({
     accelerator: 'Ctrl+Shift+L', registered: shortcutRegistered,
     open: { accelerator: 'Ctrl+Alt+L', registered: openShortcutRegistered },
@@ -464,7 +473,7 @@ function toggleQuickAdd() {
   else showQuickAdd();
 }
 
-// What the box sends: submit (save it), open (in Layers, full), undo, hide,
+// What the box sends: submit (save it), open (in Layers, full), undo, redo, hide,
 // and resize (the box is as tall as what's in it). Only the box may send.
 function setupQuickAdd() {
   ipcMain.on('quick-add', (event, msg) => {
@@ -474,13 +483,14 @@ function setupQuickAdd() {
       if (Number.isFinite(msg.height)) quickWindow.setContentSize(QUICK_WIDTH, Math.max(110, Math.min(420, Math.round(msg.height))));
       return;
     }
-    if (!['submit', 'open', 'undo'].includes(msg.type)) return;
+    if (!['submit', 'open', 'undo', 'redo'].includes(msg.type)) return;
     sendQuick({ type: msg.type, sentence: msg.sentence || null });
     if (msg.type === 'open') { hideQuickAdd(); showWindow(); }
   });
   // For the end-to-end tests, which can't press a global shortcut that the
   // Layers already running on the computer owns.
   app.layersShowQuickAdd = showQuickAdd;
+  app.layersToggleWindow = toggleWindow;
 }
 
 // To the main window, or once its page is ready.

@@ -24,6 +24,14 @@ describe('plans', () => {
     expect(read('priya fri')).toMatchObject({ title: 'Plans with Priya', allDay: true, day: '2026-10-09' });
   });
 
+  it('reads "w" (or "w/") as "with", and names an activity by its own word', () => {
+    expect(read('coffee w priya fri 10am')).toMatchObject({ title: 'Coffee with Priya', template: 'coffee', personIds: ['p'], day: '2026-10-09', time: at(10) });
+    expect(read('movie w sam sat 7pm')).toMatchObject({ title: 'Movie with Sam', template: 'activity', personIds: ['s'], day: '2026-10-10', time: at(19) });
+    expect(read('gym w/alex wed 7am')).toMatchObject({ title: 'Gym with Alex', personIds: ['a'], day: '2026-10-07', time: at(7) });
+    expect(read('games w Jo fri')).toMatchObject({ title: 'Games with Jo', unknown: ['Jo'] });
+    expect(read('study w sam tomorrow')).toMatchObject({ title: 'Study with Sam' });
+  });
+
   it('notes names that are not in Layers', () => {
     expect(read('movie night with sam and Jo sat 8pm')).toMatchObject({ title: 'Movie night with Sam and Jo', personIds: ['s'], unknown: ['Jo'], day: '2026-10-10', time: at(20) });
   });
