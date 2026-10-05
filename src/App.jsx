@@ -11,11 +11,11 @@ import { PageTransition } from './components/PageTransition.jsx';
 import { hasOpenSheet, SheetLayerContext, topSheet } from './components/sheetLayer.js';
 import { ACHIEVEMENTS, categoryMeta, DIM_LABELS, DIM_ORDER, getLayer, TABS } from './data/constants.js';
 import { EMPTY_SKILLS, INITIAL_GENERAL_GOALS, INITIAL_JOURNAL, INITIAL_PEOPLE, INITIAL_SKILLS } from './data/seed.js';
-import { backfillJournalDates, backfillPeopleDates, backfillSkillDates, formatAbsoluteDate, formatCalendarDate, pushHistoryPoint, toISODate } from './lib/dates.js';
+import { backfillJournalDates, backfillPeopleDates, backfillSkillDates, formatAbsoluteDate, formatCalendarDate, parseISODay, pushHistoryPoint, toISODate } from './lib/dates.js';
 import { achievementProgress, newlyUnlocked } from './lib/achievements.js';
 import { advanceLayer, advanceSkillGoals, bumpSkills, chartDay, computeOverall, dimBumps, dimsEqual, goalBumpFor, keepDimsInLayer, makePerson, migrateDimsToLayers, movePerson, placeOnLayers, raisedSkills } from './lib/progress.js';
 import { MAX_BACKUP_BYTES, createBackup, validateBackup } from './lib/backup.js';
-import { NOTIFY_DEFAULTS, notifySettings, parseActionUrl, snoozeUntil, templateFor } from './lib/calendar.js';
+import { NOTIFY_DEFAULTS, isDoneOn, notifySettings, parseActionUrl, snoozeUntil, templateFor } from './lib/calendar.js';
 import { useCalendarNotifications, useDailyBackup, useDailyCheckIn, useSystemDark, useToday } from './lib/hooks.js';
 import { followUpEvent, markDone } from './lib/reminders.js';
 import { getSnoozes, loadSavedState, persistState, setSnoozes } from './lib/storage.js';
@@ -35,6 +35,7 @@ import { QuickAddInterestModal } from './modals/QuickAddInterestModal.jsx';
 import { ShortcutsModal } from './modals/ShortcutsModal.jsx';
 import { StartOverSheet } from './modals/StartOverSheet.jsx';
 import { TemplatePickerModal } from './modals/TemplatePickerModal.jsx';
+import { WeekReviewSheet } from './modals/WeekReviewSheet.jsx';
 import { COLORS, CSS, THEME_DARK, THEME_LIGHT } from './theme.js';
 import { CoachView } from './views/CoachView.jsx';
 import { GoalsView } from './views/GoalsView.jsx';
@@ -109,6 +110,7 @@ function LayersApp() {
   const [selectedDay, setSelectedDay] = useState(null);
   const [calendarMode, setCalendarMode] = useState('day');
   const [planState, setPlanState] = useState(null); // PlanSheet's prefill while it's open
+  const [weekReview, setWeekReview] = useState(null); // a day in the week WeekReviewSheet shows
   const [eventView, setEventView] = useState(null); // { eventId, day } in EventSheet
   const [keyDateFor, setKeyDateFor] = useState(null); // person id, KeyDateSheet
   const [snoozes, setSnoozeList] = useState(() => getSnoozes());
@@ -381,7 +383,7 @@ function LayersApp() {
   }
   // prefill: { day, personIds, template }, { event } to edit one, or
   // { copyOf, day } to plan one again.
-  function openPlan(prefill = {}) { setLogOpen(false); setEventView(null); setPlanState(prefill); }
+  function openPlan(prefill = {}) { setLogOpen(false); setEventView(null); setWeekReview(null); setPlanState(prefill); }
 
   // From the log sheet. Its optional More details add: `ratings` (a 1-5
   // rating per dimension, each driving that dimension's growth), `goalIds`
@@ -487,6 +489,18 @@ function LayersApp() {
   function linkedGoalIds(ev) {
     return ev.goalId && people.some(p => p.goals.some(g => g.id === ev.goalId)) ? [ev.goalId] : undefined;
   }
+  // A rating pressed on "How did it go?" (Casual 2 to Deep 5): a quick log of
+  // the plan, made without opening Layers, and the plan ticked off for the day.
+  const rated = useRef(new Set()); // plans rated this session, so a repeated press logs once
+  function handleRateEvent(ev, day, rating) {
+    if (isDoneOn(ev, day) || rated.current.has(`${ev.id}:${day}`)) return;
+    rated.current.add(`${ev.id}:${day}`);
+    const personIds = (ev.personIds || []).filter(id => people.some(p => p.id === id));
+    if (!personIds.length) { handleMarkEventDone(ev.id, day); return; }
+    const template = templateFor(ev.template);
+    handleLogSubmit({ personIds, type: template ? template.type : 'other', meaningfulness: rating, notes: [], activeListening: [], summary: ev.title, pickedDate: parseISODay(day), goalIds: linkedGoalIds(ev) });
+    handleMarkEventDone(ev.id, day, { quiet: true });
+  }
   // A one-off is done for good; a weekly reminder for that day only.
   function handleMarkEventDone(eventId, day, { quiet = false } = {}) {
     const snap = snapshot();
@@ -514,6 +528,8 @@ function LayersApp() {
     if (a.action === 'done' && ev) handleMarkEventDone(ev.id, day);
     else if (a.action === 'snooze' && ev) handleSnooze(ev.id, day, a.minutes);
     else if (a.action === 'log' && ev) { switchTab('today'); setSelectedDay(day === today ? null : day); openLogFromEvent(ev, day); }
+    else if (a.action === 'rate' && ev) handleRateEvent(ev, day, a.rating || 3);
+    else if (a.action === 'review') { switchTab('today'); setWeekReview(a.day || today); }
     else if (a.action === 'plan') {
       // A key date's "Plan something": with that person, on the day (or today, if it's passed).
       const on = day < today ? today : day;
@@ -965,7 +981,7 @@ function LayersApp() {
                     )}
                     {screen.name === 'tabs' && (
                       <>
-                        {activeTab === 'today' && <TodayView today={today} selectedDay={selectedDay || today} onSelectDay={(d) => setSelectedDay(d === today ? null : d)} mode={calendarMode} onSetMode={setCalendarMode} people={people} journal={journal} events={events} generalGoals={generalGoals} skills={skills} profile={profile} onPlan={openPlan} onOpenEvent={(eventId, day) => setEventView({ eventId, day })} onLogEvent={openLogFromEvent} onTickEvent={(ev, day) => handleMarkEventDone(ev.id, day)} onOpenPerson={openPerson} onAddPerson={() => setAddPersonOpen(true)} onOpenLog={() => openLog(null)} onSwitchTab={switchTab} onOpenGoals={openGoalsOverview} />}
+                        {activeTab === 'today' && <TodayView today={today} selectedDay={selectedDay || today} onSelectDay={(d) => setSelectedDay(d === today ? null : d)} mode={calendarMode} onSetMode={setCalendarMode} people={people} journal={journal} events={events} generalGoals={generalGoals} skills={skills} profile={profile} onPlan={openPlan} onOpenEvent={(eventId, day) => setEventView({ eventId, day })} onLogEvent={openLogFromEvent} onTickEvent={(ev, day) => handleMarkEventDone(ev.id, day)} onOpenPerson={openPerson} onAddPerson={() => setAddPersonOpen(true)} onOpenLog={() => openLog(null)} onSwitchTab={switchTab} onOpenGoals={openGoalsOverview} onOpenReview={setWeekReview} />}
                         {activeTab === 'people' && <PeopleView people={people} journal={journal} onOpenPerson={openPerson} onAddPerson={() => setAddPersonOpen(true)} />}
                         {activeTab === 'coach' && <CoachView people={people} journal={journal} initialPersonId={coachInit.personId} initialTab={coachInit.tab} onOpenLog={openLog} onApproveInfo={handleApproveInfo} onLogFromAnalysis={handleLogFromAnalysis} onOpenPerson={openPerson} />}
                         {activeTab === 'journal' && <JournalView today={today} people={people} journal={journal} onOpenPerson={openPerson} onEditEntry={setEditingEntryId} />}
@@ -1002,6 +1018,7 @@ function LayersApp() {
               const ev = events.find(e => e.id === eventView.eventId);
               return <EventSheet ev={ev} day={eventView.day} today={today} people={people} goals={[...people.flatMap(p => p.goals), ...generalGoals]} onClose={() => setEventView(null)} onLog={() => openLogFromEvent(ev, eventView.day)} onDone={() => { handleMarkEventDone(ev.id, eventView.day); setEventView(null); }} onEdit={() => openPlan({ event: ev, day: eventView.day })} onCopy={() => openPlan({ copyOf: ev, day: eventView.day })} onDelete={() => handleDeleteEvent(ev.id)} />;
             })()}
+            {weekReview && <WeekReviewSheet day={weekReview} people={people} journal={journal} events={events} generalGoals={generalGoals} onClose={() => setWeekReview(null)} onPlan={openPlan} />}
             {keyDateFor && people.some(p => p.id === keyDateFor) && <KeyDateSheet personName={people.find(p => p.id === keyDateFor).name} onClose={() => setKeyDateFor(null)} onSave={(kd) => handleSaveKeyDate(keyDateFor, kd)} />}
             {goalModalOpen && <GoalModal people={people} defaultPersonId={goalModalDefaultPerson} editingGoal={goalEditing ? goalEditing.goal : null} editingPersonId={goalEditing ? goalEditing.personId : null} onClose={closeGoalModal} onSave={handleGoalSave} />}
             {addInfoOpen && addInfoTarget && (

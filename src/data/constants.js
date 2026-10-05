@@ -47,6 +47,7 @@ export const SHORTCUTS = [
   { keys: ['T'], desc: 'Today: back to today' },
   { keys: ['L', 'J'], or: true, desc: 'Today: Log it, or Just tick it, for the first "How did it go?"' },
   { keys: ['I'], desc: 'Today: plan the first idea' },
+  { keys: ['W'], desc: 'Today: your week in review, then plan next week' },
   { keys: ['1–9'], desc: 'Picking people (log or plan): press their number, or type a name' },
   { keys: ['T', 'L', 'R', 'A'], or: true, desc: 'Planning "When?": step through time, length, repeat, reminder (1–7 picks the day)' },
   { keys: ['Shift', '↵'], desc: 'Planning: save and plan another straight away' },

@@ -43,7 +43,12 @@ when Layers is closed:
    - Reminders (before a plan, or as it starts) use the `reminder` scenario, so they
      stay on screen, with **10 min**, **1 hour** and **Tomorrow**. They have no Log it
      or Done: the plan hasn't happened yet.
-   - "How did it go?" (when a plan with people ends) has **Log it** and **Just tick it**.
+   - "How did it go?" (when a plan with people ends) is rated right there: **Casual**,
+     **Good**, **Personal** or **Deep** (`layers://rate?…&r=2` to `5`), a quick log made
+     without opening Layers that ticks the plan off; or **Log it…** for the full log.
+   - Someone close gone quiet has **Plan something**; the weekly catch-up list has **Plan
+     with** each of up to three people; the Sunday review has **Review my week**. Clicking
+     the catch-up list or the review opens the week review (`layers://review`).
    - A birthday or key date coming up has **Plan something** (`layers://plan?p=<person>&d=<day>`), which opens planning with that person on that day.
    - Every button and the toast body are `layers://` links.
 3. It replaces Layers' scheduled toasts (group `layers`) through Windows PowerShell and
@@ -55,8 +60,8 @@ when Layers is closed:
    protocol (`build.protocols`), and `setupCalendar()` re-registers it if the app moved.
    It never does this for test runs or the portable build.
 2. If Layers is already running, the link reaches it through `second-instance`.
-   Otherwise it starts with the link, in the tray for Just tick it and Snooze, or with
-   its window for Log it and the body.
+   Otherwise it starts with the link, in the tray for Just tick it, Snooze and a rating
+   (`quietLink`), or with its window for everything else.
 3. Links wait in `pendingActions` until the page asks for them (`calendar-ready`), then
    go out as `calendar-action`.
 

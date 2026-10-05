@@ -22,10 +22,15 @@ const link = (action, params) => `layers://${action}?${new URLSearchParams(Objec
 //   1 hour or until tomorrow. Nothing has happened yet, so there's no Log it
 //   or Done; those wait for "How did it go?". It uses the reminder scenario,
 //   so it stays on screen.
-// - "How did it go?" (after): Log it, or Just tick it.
-// - A birthday or key date coming up (date): Plan something, with them on
-//   that day.
+// - "How did it go?" (after): rate it (Casual, Good, Personal, Deep: a quick
+//   log, without opening Layers), or Log it for the full log.
+// - A birthday or key date coming up (date), or someone close gone quiet
+//   (quiet): Plan something, with them.
+// - The weekly catch-up list (catchup): Plan with each of up to three people;
+//   clicking it opens the week review, like the review itself (review).
 // - Summaries (morning, evening): clicking opens that day.
+const RATINGS = [['Casual', 2], ['Good', 3], ['Personal', 4], ['Deep', 5]];
+
 function toastXml(n) {
   const ids = { e: n.eventId, d: n.day };
   const button = (content, action, extra = {}) => `<action content="${esc(content)}" activationType="protocol" arguments="${esc(link(action, { ...ids, ...extra }))}"/>`;
@@ -35,11 +40,16 @@ function toastXml(n) {
     scenario = ' scenario="reminder"';
     actions = button('10 min', 'snooze', { m: '10' }) + button('1 hour', 'snooze', { m: '60' }) + button('Tomorrow', 'snooze', { m: 'tomorrow' });
   } else if (n.kind === 'after' && n.eventId) {
-    actions = button('Log it', 'log') + button('Just tick it', 'done');
-  } else if (n.kind === 'date' && n.personId) {
+    actions = RATINGS.map(([label, r]) => button(label, 'rate', { r: String(r) })).join('') + button('Log it…', 'log');
+  } else if ((n.kind === 'date' || n.kind === 'quiet') && n.personId) {
     actions = button('Plan something', 'plan', { p: n.personId });
+  } else if (n.kind === 'catchup' && Array.isArray(n.people)) {
+    actions = n.people.slice(0, 3).map(p => button(`Plan with ${p.name}`, 'plan', { p: p.id })).join('');
+  } else if (n.kind === 'review') {
+    actions = button('Review my week', 'review');
   }
-  return `<toast activationType="protocol" launch="${esc(link('open', ids))}"${scenario}>`
+  const launch = n.kind === 'catchup' || n.kind === 'review' ? link('review', { d: n.day }) : link('open', ids);
+  return `<toast activationType="protocol" launch="${esc(launch)}"${scenario}>`
     + `<visual><binding template="ToastGeneric"><text>${esc(n.title)}</text><text>${esc(n.body)}</text></binding></visual>`
     + (actions ? `<actions>${actions}</actions>` : '')
     + '</toast>';

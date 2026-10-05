@@ -4,7 +4,9 @@
 //
 // Keys (not while typing or with a sheet open): M switches Day and Month,
 // the arrows move a day, T comes back to today. L and J answer the first
-// "How did it go?" (Log it, Just tick it), and I plans the first idea. P
+// "How did it go?" (Log it, Just tick it), I plans the first idea, and W
+// opens the week's review (shown as a card on Sundays; on a Monday, last
+// week's). P
 // (anywhere) plans something on the day shown; that one lives in App.jsx.
 
 import { useEffect, useMemo } from 'react';
@@ -142,7 +144,7 @@ function EventRow({ item, now, onOpen }) {
   );
 }
 
-export function TodayView({ today, selectedDay, onSelectDay, mode, onSetMode, people, journal, events, generalGoals, skills, profile, onPlan, onOpenEvent, onLogEvent, onTickEvent, onOpenPerson, onAddPerson, onOpenLog, onSwitchTab, onOpenGoals }) {
+export function TodayView({ today, selectedDay, onSelectDay, mode, onSetMode, people, journal, events, generalGoals, skills, profile, onPlan, onOpenEvent, onLogEvent, onTickEvent, onOpenPerson, onAddPerson, onOpenLog, onSwitchTab, onOpenGoals, onOpenReview }) {
   const state = useMemo(() => ({ people, journal, events, generalGoals }), [people, journal, events, generalGoals]);
   const day = selectedDay || today;
   const sel = parseISODay(day);
@@ -177,10 +179,12 @@ export function TodayView({ today, selectedDay, onSelectDay, mode, onSetMode, pe
       else if ((e.key === 'l' || e.key === 'L') && waiting[0]) { e.preventDefault(); onLogEvent(waiting[0].ev, day); }
       else if ((e.key === 'j' || e.key === 'J') && waiting[0]) { e.preventDefault(); onTickEvent(waiting[0].ev, day); }
       else if ((e.key === 'i' || e.key === 'I') && ideas[0]) { e.preventDefault(); onPlan({ day, personIds: [ideas[0].person.id], template: ideas[0].template }); }
+      // On a Monday the week has barely begun, so W shows the one just gone.
+      else if ((e.key === 'w' || e.key === 'W') && onOpenReview) { e.preventDefault(); onOpenReview(sel.getDay() === 1 ? addDays(day, -1) : day); }
     }
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [mode, day, today, waiting, ideas, onSetMode, onSelectDay, onLogEvent, onTickEvent, onPlan]);
+  }, [mode, day, today, waiting, ideas, onSetMode, onSelectDay, onLogEvent, onTickEvent, onPlan, onOpenReview]);
 
   const hour = clock.getHours();
   const greeting = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
@@ -288,6 +292,16 @@ export function TodayView({ today, selectedDay, onSelectDay, mode, onSetMode, pe
 
       {day === today && (
         <>
+          {sel.getDay() === 0 && onOpenReview && (
+            <button type="button" onClick={() => onOpenReview(day)} className="w-full text-left rounded-2xl p-3.5 mt-6 flex items-center gap-3" style={{ background: COLORS.paperRaised, border: `1px solid ${COLORS.line}` }}>
+              <span style={{ fontSize: 22 }} aria-hidden="true">🗓️</span>
+              <span className="flex-1">
+                <span className="block text-sm font-semibold" style={{ color: COLORS.ink }}>Your week in review</span>
+                <span className="block text-xs mt-0.5" style={{ color: COLORS.inkSoft }}>Who you saw, what got done, and next week planned in one go.</span>
+              </span>
+              <Kbd>W</Kbd>
+            </button>
+          )}
           <div className="rounded-2xl p-3.5 mt-6" style={{ background: COLORS.accentSoft }}>
             <p className="text-xs font-semibold" style={{ color: COLORS.accent }}>Try this next</p>
             <p className="text-sm mt-1" style={{ color: COLORS.ink }}>{suggestion.text}</p>

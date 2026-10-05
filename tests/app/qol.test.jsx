@@ -23,7 +23,7 @@ function fakeBridge(extra = {}) {
     showWindow: () => {},
     scheduleNotifications: () => Promise.resolve({ scheduled: 0 }),
     calendarReady: () => Promise.resolve([]),
-    onCalendarAction: (cb) => { listeners.push(cb); return () => {}; },
+    onCalendarAction: (cb) => { listeners.push(cb); return () => { listeners.splice(listeners.indexOf(cb), 1); }; },
     press: (link) => act(async () => { listeners.forEach(cb => cb(link)); }),
     ...extra,
   };
@@ -104,5 +104,53 @@ describe('Match Windows', () => {
     await user.click(screen.getByRole('button', { name: 'Dark' }));
     expect(document.querySelector('.layers-root').classList.contains('dark')).toBe(true);
     expect(savedState().themeMode).toBe('dark');
+  });
+});
+
+describe('rating a plan from its notification', () => {
+  it('"Personal" logs it (4) without opening anything, and ticks the plan off', async () => {
+    const morgan = person('Morgan');
+    const bridge = fakeBridge();
+    seedState({ people: [morgan], events: [{ id: 'c', title: 'Coffee with Morgan', kind: 'oneoff', date: TODAY, time: 0, duration: 60, personIds: [morgan.id], template: 'coffee' }] });
+    renderApp();
+    await wait(50);
+    await bridge.press(`layers://rate?e=c&d=${TODAY}&r=4`);
+    const s = savedState();
+    expect(s.journal).toEqual([expect.objectContaining({ personId: morgan.id, at: TODAY, meaningfulness: 4, type: 'hangout', summary: 'Coffee with Morgan' })]);
+    expect(s.events[0].doneAt).toBe(TODAY);
+    expect(screen.queryByRole('dialog')).toBeNull();
+    await bridge.press(`layers://rate?e=c&d=${TODAY}&r=4`); // pressed twice: logged once
+    expect(savedState().journal).toHaveLength(1);
+  });
+});
+
+describe('the weekly review', () => {
+  it('opens from its notification; Plan next week plans on next Monday, 1 plans with someone to catch up with', async () => {
+    const morgan = person('Morgan', { layer: 3 });
+    const bridge = fakeBridge();
+    seedState({ people: [morgan], journal: [{ id: 'j', personId: morgan.id, at: day(-30), type: 'talked', meaningfulness: 3, added: [], activeListening: [] }] });
+    const { user } = renderApp();
+    await wait(50);
+    await bridge.press(`layers://review?d=${TODAY}`);
+    const sheet = dialog('Your week');
+    expect(within(sheet).getByText(/You haven't seen Morgan in/)).toBeTruthy();
+    await user.keyboard('1');
+    const when = dialog('When?');
+    expect(within(when).getByLabelText('Title').value).toBe('Coffee with Morgan');
+  });
+
+  it('W on Today opens it, the arrows move a week, and Enter plans next week', async () => {
+    seedState();
+    const { user } = renderApp();
+    await user.keyboard('w');
+    const sheet = dialog('Your week');
+    const range = () => within(sheet).getByText(/ to /).textContent;
+    const first = range();
+    await user.keyboard('{ArrowLeft}');
+    expect(range()).not.toBe(first);
+    await user.keyboard('{ArrowRight}');
+    expect(range()).toBe(first);
+    await user.keyboard('{Enter}');
+    expect(dialog('Plan something')).toBeTruthy();
   });
 });

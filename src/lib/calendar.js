@@ -59,6 +59,11 @@ export const NOTIFY_DEFAULTS = {
   eveningTime: 20 * 60,
   askAfter: true, // "How did it go?" when an event with people ends
   keyDateReminders: true, // birthdays and key dates: a week before, the evening before, the morning of
+  catchUpWeekly: true, // a weekly list of who you haven't seen, at morningTime
+  catchUpDay: 6, // 0 = Sunday ... 6 = Saturday
+  quietNudges: true, // when someone Personal or Close goes quieter than usual
+  weeklyReview: true, // "Your week", Sundays at reviewTime
+  reviewTime: 19 * 60,
 };
 export function notifySettings(profile) {
   const p = profile || {};
@@ -202,6 +207,48 @@ export function planIdeas({ people = [], journal = [], events = [] }, now = new 
     .slice(0, max)
     .map(x => ({ ...x, template: x.person.layer >= 3 ? 'coffee' : 'checkin', text: `You haven't seen ${x.person.name} in ${sinceText(x.days)}.` }));
 }
+// How long you usually go between seeing someone: the middle of the gaps
+// between their last seven logged days. Null with fewer than three.
+export function usualGap(personId, journal = []) {
+  const days = [...new Set(journal.filter(j => j.personId === personId && j.at).map(j => j.at))].sort().slice(-7);
+  if (days.length < 3) return null;
+  const gaps = days.slice(1).map((d, i) => Math.round((dayDate(d) - dayDate(days[i])) / 86400000)).sort((a, b) => a - b);
+  return gaps[Math.floor(gaps.length / 2)];
+}
+
+// When someone counts as gone quiet: half as long again as your usual gap
+// (7 to 60 days), or their layer's QUIET_DAYS until there's enough history.
+// { day, limit, last, usual }, or null if nothing's been logged with them.
+export function quietDay(person, journal = []) {
+  const days = journal.filter(j => j.personId === person.id && j.at).map(j => j.at).sort();
+  if (!days.length) return null;
+  const usual = usualGap(person.id, journal);
+  const limit = usual === null ? (QUIET_DAYS[person.layer] || 21) : Math.min(60, Math.max(7, Math.round(usual * 1.5)));
+  const last = days[days.length - 1];
+  return { day: toISODate(addDays(dayDate(last), limit)), limit, last, usual };
+}
+
+// One week, Monday to Sunday, around `day`: the weekly review. Daily
+// routines aren't counted as plans, so they don't drown out the rest.
+export function weekSummary({ people = [], journal = [], events = [], generalGoals = [] }, day) {
+  const d = dayDate(day);
+  const monday = addDays(d, -((d.getDay() + 6) % 7));
+  const days = Array.from({ length: 7 }, (_, i) => toISODate(addDays(monday, i)));
+  const next = Array.from({ length: 7 }, (_, i) => toISODate(addDays(monday, 7 + i)));
+  const inWeek = (iso) => iso >= days[0] && iso <= days[6];
+  const logs = journal.filter(j => j.at && inWeek(j.at));
+  const seen = [...new Set(logs.map(j => j.personId))].map(id => people.find(p => p.id === id)).filter(Boolean);
+  let planned = 0;
+  let done = 0;
+  let nextPlanned = 0;
+  events.filter(ev => !isDaily(ev)).forEach(ev => {
+    days.forEach(x => { if (occursOn(ev, x)) { planned++; if (isDoneOn(ev, x)) done++; } });
+    next.forEach(x => { if (occursOn(ev, x)) nextPlanned++; });
+  });
+  const goalsMoved = [...people.flatMap(p => p.goals || []), ...generalGoals].filter(g => (g.history || []).some(h => h.at && inWeek(h.at)));
+  return { from: days[0], to: days[6], seen, logs: logs.length, planned, done, goalsMoved, nextMonday: next[0], nextPlanned };
+}
+
 function sinceText(days) {
   if (days < 14) return `${days} days`;
   if (days < 60) return `${Math.round(days / 7)} weeks`;
@@ -222,8 +269,12 @@ function alertWhen(alert) {
 }
 
 // Every notification due between `from` and `to` (ms), oldest first:
-//   { tag, at, kind: 'alert' | 'after' | 'morning' | 'evening' | 'snooze' | 'date',
-//     title, body, eventId?, personId?, day? }
+//   { tag, at, kind: 'alert' | 'after' | 'morning' | 'evening' | 'snooze' | 'date'
+//                   | 'catchup' | 'quiet' | 'review',
+//     title, body, eventId?, personId?, day?, people? }
+// The weekly catch-up list (catchup, on catchUpDay at morningTime) carries up
+// to three `people` for its Plan buttons; "gone quiet" (quiet) is at noon on
+// quietDay(); the weekly review (review) is on Sundays at reviewTime.
 // A key date (kind 'date') reminds you a week before and on the morning (at
 // morningTime), and the evening before (at eveningTime); its day is the key
 // date's.
@@ -286,11 +337,43 @@ export function plannedNotifications(state, settings, from, to, snoozes = []) {
         });
       }));
     }
+    if (s.catchUpWeekly && d.getDay() === s.catchUpDay) {
+      const ideas = planIdeas(state, d, 5);
+      if (ideas.length) {
+        out.push({
+          tag: `c:${day}`, at: at(day, s.morningTime), kind: 'catchup', day,
+          people: ideas.slice(0, 3).map(x => ({ id: x.person.id, name: x.person.name })),
+          title: ideas.length === 1 ? `Catch up with ${ideas[0].person.name}?` : `Catch up this week: ${ideas.length} people`,
+          body: ideas.map(x => `${x.person.name} (${sinceText(x.days)})`).join(' · '),
+        });
+      }
+    }
+    if (s.weeklyReview && d.getDay() === 0) {
+      out.push({ tag: `r:${day}`, at: at(day, s.reviewTime), kind: 'review', day, title: 'Your week', body: 'Who you saw and what got done, then next week planned in one go.' });
+    }
     const tomorrow = toISODate(addDays(d, 1));
     const next = summaryLine(dayAgenda(state, tomorrow));
     if (s.eveningHeadsUp && next.length) {
       out.push({ tag: `e:${tomorrow}`, at: at(day, s.eveningTime), kind: 'evening', day: tomorrow, title: `Tomorrow: ${next.length === 1 ? '1 thing' : `${next.length} things`}`, body: next.join(' · ') });
     }
+  }
+  // Someone Personal or Close going quieter than usual: once, at noon on the
+  // day it happens, unless something with them is planned (or done) between.
+  if (s.quietNudges) {
+    (state.people || []).filter(p => p.layer >= 3).forEach(p => {
+      const q = quietDay(p, state.journal || []);
+      if (!q) return;
+      const withThem = (state.events || []).filter(ev => (ev.personIds || []).includes(p.id));
+      for (let x = addDays(dayDate(q.last), 1); x <= addDays(dayDate(q.day), 7); x = addDays(x, 1)) {
+        const iso = toISODate(x);
+        if (withThem.some(ev => occursOn(ev, iso))) return;
+      }
+      out.push({
+        tag: `q:${p.id}:${q.day}`, at: at(q.day, 12 * 60), kind: 'quiet', personId: p.id, day: q.day,
+        title: `It's been a while since you saw ${p.name}`,
+        body: `${sinceText(q.limit)}${q.usual === null ? '' : ', longer than usual for you two'}. Plan something?`,
+      });
+    });
   }
   const eventsById = Object.fromEntries((state.events || []).map(ev => [ev.id, ev]));
   snoozes.forEach(sn => {
@@ -319,10 +402,11 @@ export function parseActionUrl(url) {
     const u = new URL(url);
     if (u.protocol !== 'layers:') return null;
     const action = (u.hostname || u.pathname.replace(/^\/+/, '')).replace(/\/+$/, '');
-    if (!['done', 'log', 'snooze', 'open', 'plan'].includes(action)) return null;
+    if (!['done', 'log', 'snooze', 'open', 'plan', 'rate', 'review'].includes(action)) return null;
     const p = u.searchParams;
     const day = p.get('d');
-    return { action, eventId: p.get('e') || null, personId: p.get('p') || null, day: day && /^\d{4}-\d{2}-\d{2}$/.test(day) ? day : null, minutes: p.get('m') || null };
+    const rating = Number(p.get('r'));
+    return { action, eventId: p.get('e') || null, personId: p.get('p') || null, day: day && /^\d{4}-\d{2}-\d{2}$/.test(day) ? day : null, minutes: p.get('m') || null, rating: rating >= 1 && rating <= 5 ? rating : null };
   } catch {
     return null;
   }

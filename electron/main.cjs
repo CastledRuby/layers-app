@@ -28,8 +28,8 @@ const PORTABLE_EXE = process.env.PORTABLE_EXECUTABLE_FILE || null;
 // as a new launch or, when Layers is running, through 'second-instance'.
 const actionLink = (argv) => (argv || []).find(a => typeof a === 'string' && a.startsWith('layers://') && a.length < 500) || null;
 const STARTUP_ACTION = actionLink(process.argv);
-// Done and snooze need no window, so Layers does them from the tray.
-const quietLink = (link) => /^layers:\/\/(done|snooze)\b/.test(link || '');
+// Done, snooze and a rating need no window, so Layers does them from the tray.
+const quietLink = (link) => /^layers:\/\/(done|snooze|rate)\b/.test(link || '');
 // "Launch at login" starts Layers with --hidden, straight into the tray.
 const START_HIDDEN = process.argv.includes('--hidden') || quietLink(STARTUP_ACTION);
 const RELEASES_URL = 'https://github.com/CastledRuby/layers-app/releases/latest';

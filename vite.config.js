@@ -29,5 +29,8 @@ export default defineConfig({
     exclude: [...configDefaults.exclude, '.claude/**', 'tests/e2e/**'],
     // Unit tests run in Node; tests/app/ opts into jsdom per file.
     setupFiles: ['tests/setup.js'],
+    // The app tests drive the whole app, and a busy laptop (a game running,
+    // say) can slow one past Vitest's 5 s default without anything being wrong.
+    testTimeout: 15000,
   },
 })

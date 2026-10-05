@@ -16,8 +16,15 @@ describe('Windows toasts', () => {
     ]);
   });
 
-  it('"How did it go?" offers Log it or Just tick it; summaries just open the day', () => {
-    expect(toastXml({ kind: 'after', title: 'How did it go?', body: '', eventId: 'e1', day: '2026-10-04' })).toMatch(/content="Log it".*content="Just tick it"/);
+  it('"How did it go?" is rated right there, or logged; summaries just open the day', () => {
+    const after = toastXml({ kind: 'after', title: 'How did it go?', body: '', eventId: 'e1', day: '2026-10-04' });
+    expect([...after.matchAll(/content="([^"]+)" activationType="protocol" arguments="([^"]+)"/g)].map(m => [m[1], m[2]])).toEqual([
+      ['Casual', 'layers://rate?e=e1&amp;d=2026-10-04&amp;r=2'],
+      ['Good', 'layers://rate?e=e1&amp;d=2026-10-04&amp;r=3'],
+      ['Personal', 'layers://rate?e=e1&amp;d=2026-10-04&amp;r=4'],
+      ['Deep', 'layers://rate?e=e1&amp;d=2026-10-04&amp;r=5'],
+      ['Log it…', 'layers://log?e=e1&amp;d=2026-10-04'],
+    ]);
     const morning = toastXml({ kind: 'morning', title: 'Today: 2 things', body: 'x', day: '2026-10-04' });
     expect(morning).not.toContain('<actions>');
     expect(morning).toContain('launch="layers://open?d=2026-10-04"');
@@ -27,6 +34,14 @@ describe('Windows toasts', () => {
     const xml = toastXml({ kind: 'date', title: "🎂 Priya's birthday is in a week", body: '', personId: 'p1', day: '2026-10-05' });
     expect([...xml.matchAll(/arguments="([^"]+)"/g)].map(m => m[1])).toEqual(['layers://plan?d=2026-10-05&amp;p=p1']);
     expect(xml).toContain('content="Plan something"');
+  });
+
+  it('the catch-up list plans with each person, and it and the review open the week review', () => {
+    const catchup = toastXml({ kind: 'catchup', title: 'Catch up', body: '', day: '2026-10-03', people: [{ id: 'a', name: 'Ana' }, { id: 'b', name: 'Ben' }] });
+    expect(catchup).toContain('launch="layers://review?d=2026-10-03"');
+    expect([...catchup.matchAll(/content="([^"]+)"/g)].map(m => m[1])).toEqual(['Plan with Ana', 'Plan with Ben']);
+    expect(toastXml({ kind: 'review', title: 'Your week', body: '', day: '2026-10-04' })).toMatch(/content="Review my week".*arguments="layers:\/\/review\?d=2026-10-04"/);
+    expect(toastXml({ kind: 'quiet', title: 'x', body: '', personId: 'p', day: '2026-10-06' })).toContain('arguments="layers://plan?d=2026-10-06&amp;p=p"');
   });
 
   it('only schedules well-formed, future notifications', () => {

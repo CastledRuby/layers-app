@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { clashesOn, dayAgenda, keyDateOn, monthMarks, needsAnswer, occursOn, parseActionUrl, planIdeas, plannedNotifications, recentPlans, snoozeUntil } from './lib/calendar.js';
+import { clashesOn, dayAgenda, keyDateOn, monthMarks, needsAnswer, occursOn, parseActionUrl, planIdeas, plannedNotifications, quietDay, recentPlans, snoozeUntil, usualGap, weekSummary } from './lib/calendar.js';
 
 // Sunday 4 October 2026.
 const DAY = '2026-10-04';
@@ -65,7 +65,7 @@ describe('plannedNotifications', () => {
   const window = [local(DAY, 0), local(DAY, 23, 59)];
 
   it('reminds ahead, asks how it went, and sums up the morning and the evening before', () => {
-    const list = plannedNotifications(state, {}, ...window);
+    const list = plannedNotifications(state, { weeklyReview: false }, ...window);
     expect(list.map(n => [n.kind, new Date(n.at).getHours(), new Date(n.at).getMinutes()])).toEqual([
       ['morning', 8, 0], ['alert', 9, 45], ['after', 11, 0], ['date', 20, 0], ['evening', 20, 0],
     ]);
@@ -75,7 +75,7 @@ describe('plannedNotifications', () => {
   });
 
   it('reminds of birthdays a week before, the evening before and on the morning', () => {
-    const quiet = { morningSummary: false, eveningHeadsUp: false, askAfter: false, reminderNotifications: false };
+    const quiet = { morningSummary: false, eveningHeadsUp: false, askAfter: false, reminderNotifications: false, weeklyReview: false };
     const weekBefore = '2026-09-28';
     const list = plannedNotifications({ people: [priya] }, quiet, local(weekBefore, 0), local('2026-10-05', 23, 59));
     expect(list.map(n => [n.tag, new Date(n.at).getDate(), new Date(n.at).getHours(), n.title])).toEqual([
@@ -88,16 +88,16 @@ describe('plannedNotifications', () => {
   });
 
   it('follows the settings, skips done events, and adds snoozes', () => {
-    const quiet = plannedNotifications(state, { morningSummary: false, eveningHeadsUp: false, askAfter: false, keyDateReminders: false }, ...window);
+    const quiet = plannedNotifications(state, { morningSummary: false, eveningHeadsUp: false, askAfter: false, keyDateReminders: false, weeklyReview: false }, ...window);
     expect(quiet.map(n => n.kind)).toEqual(['alert']);
-    expect(plannedNotifications({ ...state, events: [{ ...coffee, doneAt: DAY }] }, { morningSummary: false, eveningHeadsUp: false, keyDateReminders: false }, ...window)).toEqual([]);
-    const snoozed = plannedNotifications(state, { reminderNotifications: false, morningSummary: false, eveningHeadsUp: false, askAfter: false, keyDateReminders: false }, ...window, [{ id: 's1', eventId: 'c', day: DAY, at: local(DAY, 10, 10) }]);
+    expect(plannedNotifications({ ...state, events: [{ ...coffee, doneAt: DAY }] }, { morningSummary: false, eveningHeadsUp: false, keyDateReminders: false, weeklyReview: false }, ...window)).toEqual([]);
+    const snoozed = plannedNotifications(state, { reminderNotifications: false, morningSummary: false, eveningHeadsUp: false, askAfter: false, keyDateReminders: false, weeklyReview: false }, ...window, [{ id: 's1', eventId: 'c', day: DAY, at: local(DAY, 10, 10) }]);
     expect(snoozed.map(n => [n.kind, n.tag])).toEqual([['snooze', 's:s1']]);
   });
 
   it('reminders made before 1.0.30 (no alert) still come at their time', () => {
     const old = { id: 'o', title: 'Call Gran', kind: 'oneoff', date: DAY, time: 600, personIds: [] };
-    const list = plannedNotifications({ events: [old] }, { morningSummary: false, eveningHeadsUp: false }, ...window);
+    const list = plannedNotifications({ events: [old] }, { morningSummary: false, eveningHeadsUp: false, weeklyReview: false }, ...window);
     expect(list.map(n => [n.kind, new Date(n.at).getHours(), n.body])).toEqual([['alert', 10, 'Starting now · 10:00 AM']]);
   });
 });
@@ -114,8 +114,11 @@ describe('planIdeas', () => {
 
 describe('notification actions', () => {
   it('reads layers:// links from notification buttons', () => {
-    expect(parseActionUrl('layers://done?e=c&d=2026-10-04')).toEqual({ action: 'done', eventId: 'c', personId: null, day: '2026-10-04', minutes: null });
+    expect(parseActionUrl('layers://done?e=c&d=2026-10-04')).toEqual({ action: 'done', eventId: 'c', personId: null, day: '2026-10-04', minutes: null, rating: null });
     expect(parseActionUrl('layers://plan?p=p&d=2026-10-05')).toMatchObject({ action: 'plan', personId: 'p', day: '2026-10-05' });
+    expect(parseActionUrl('layers://rate?e=c&d=2026-10-04&r=4')).toMatchObject({ action: 'rate', eventId: 'c', rating: 4 });
+    expect(parseActionUrl('layers://rate?e=c&r=9').rating).toBeNull();
+    expect(parseActionUrl('layers://review?d=2026-10-04')).toMatchObject({ action: 'review', day: '2026-10-04' });
     expect(parseActionUrl('layers://snooze?e=c&d=2026-10-04&m=tomorrow').minutes).toBe('tomorrow');
     expect(parseActionUrl('layers://format-disk')).toBeNull();
     expect(parseActionUrl('https://example.com')).toBeNull();
@@ -143,5 +146,48 @@ describe('planning helpers', () => {
     expect(clashesOn(state, DAY, 660, 30)).toEqual([]);
     expect(clashesOn(state, DAY, 400, 300).map(it => it.ev.id)).toEqual(['g', 'c']);
     expect(clashesOn(state, DAY, 630, 60, 'c')).toEqual([]);
+  });
+});
+
+describe('keeping in touch', () => {
+  const off = { morningSummary: false, eveningHeadsUp: false, askAfter: false, reminderNotifications: false, keyDateReminders: false, weeklyReview: false, quietNudges: false, catchUpWeekly: false };
+  const log = (personId, at) => ({ id: `${personId}-${at}`, personId, at, type: 'talked', meaningfulness: 3 });
+
+  it('usualGap is the middle gap between logged days; quietDay is half as long again', () => {
+    const journal = ['2026-09-01', '2026-09-08', '2026-09-15', '2026-09-25'].map(at => log('p', at));
+    expect(usualGap('p', journal)).toBe(7); // gaps 7, 7, 10
+    expect(quietDay(priya, journal)).toMatchObject({ last: '2026-09-25', limit: 11, day: '2026-10-06', usual: 7 });
+    expect(quietDay(priya, journal.slice(0, 2))).toMatchObject({ limit: 7, usual: null }); // too little history: Layer 4's 7 days
+    expect(quietDay(priya, [])).toBeNull();
+  });
+
+  it('nudges once, at noon on the day someone close goes quiet, unless something with them is planned', () => {
+    const journal = ['2026-09-01', '2026-09-08', '2026-09-15', '2026-09-25'].map(at => log('p', at));
+    const range = [local('2026-10-01', 0), local('2026-10-12', 0)];
+    const list = plannedNotifications({ people: [priya], journal }, { ...off, quietNudges: true }, ...range);
+    expect(list.map(n => [n.kind, n.tag, new Date(n.at).getDate(), new Date(n.at).getHours()])).toEqual([['quiet', 'q:p:2026-10-06', 6, 12]]);
+    expect(list[0]).toMatchObject({ personId: 'p', title: "It's been a while since you saw Priya", body: '11 days, longer than usual for you two. Plan something?' });
+    const planned = [{ id: 'x', title: 'Coffee', kind: 'oneoff', date: '2026-10-09', time: 600, personIds: ['p'] }];
+    expect(plannedNotifications({ people: [priya], journal, events: planned }, { ...off, quietNudges: true }, ...range)).toEqual([]);
+    expect(plannedNotifications({ people: [{ ...priya, layer: 2 }], journal }, { ...off, quietNudges: true }, ...range)).toEqual([]);
+  });
+
+  it('lists who to catch up with on the chosen day, and reviews the week on Sundays', () => {
+    const journal = [log('p', '2026-09-01')];
+    const range = [local('2026-10-01', 0), local('2026-10-07', 23, 59)];
+    const list = plannedNotifications({ people: [priya], journal }, { ...off, catchUpWeekly: true, catchUpDay: 6, weeklyReview: true }, ...range);
+    expect(list.map(n => [n.kind, n.day, new Date(n.at).getHours()])).toEqual([['catchup', '2026-10-03', 8], ['review', '2026-10-04', 19]]);
+    expect(list[0]).toMatchObject({ title: 'Catch up with Priya?', body: 'Priya (5 weeks)', people: [{ id: 'p', name: 'Priya' }] });
+  });
+
+  it('weekSummary: who you saw, plans done (not daily routines), goals moved and next week', () => {
+    const state = {
+      people: [{ ...priya, goals: [{ id: 'g1', title: 'x', progress: 30, history: [{ at: '2026-09-30', value: 30 }] }] }],
+      journal: [log('p', '2026-10-01'), log('p', '2026-10-03'), log('p', '2026-09-27')],
+      events: [{ ...coffee, doneAt: DAY }, gym, { ...coffee, id: 'n', date: '2026-10-07', doneAt: undefined }],
+    };
+    expect(weekSummary(state, DAY)).toMatchObject({ from: '2026-09-28', to: '2026-10-04', logs: 2, planned: 1, done: 1, nextMonday: '2026-10-05', nextPlanned: 1 });
+    expect(weekSummary(state, DAY).seen.map(p => p.name)).toEqual(['Priya']);
+    expect(weekSummary(state, DAY).goalsMoved.map(g => g.id)).toEqual(['g1']);
   });
 });

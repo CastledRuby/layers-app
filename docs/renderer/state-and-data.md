@@ -411,6 +411,13 @@ phone later. It's unit-tested in `src/calendar.test.js`.
   days stand out.
 - **`needsAnswer`**: plans with people that have ended and aren't done, for **How did it
   go?** (**Log it** or **Just tick it**).
+- **`usualGap`** and **`quietDay`**: how long you usually go between logs with someone
+  (the middle of the gaps between their last seven logged days), and the day they count as
+  gone quiet: half as long again (7 to 60 days), or their layer's quiet days (below) until
+  there are three logged days.
+- **`weekSummary(state, day)`**: the Monday-to-Sunday week around `day` for the weekly
+  review: who was seen, interactions logged, plans done of planned (not daily routines),
+  goals with a history point that week, and next week's Monday and plans.
 - **`planIdeas`**: people it's been a while since you logged with, sooner the closer
   they are: 35 days for Layer 1, 21 for Layer 2, 14 for Layer 3, 7 for Layer 4. Only
   people with nothing planned in the next week.
@@ -434,6 +441,9 @@ in a time window, oldest first. Each has a `tag` (unique per plan and day), a ti
 | `morning` | `morningTime`, on days with something on | "Today: 3 things", and each in a line |
 | `evening` | `eveningTime`, the night before a day with something on | "Tomorrow: …" |
 | `snooze` | A snoozed reminder's time | The title, "Snoozed reminder" |
+| `catchup` | `catchUpDay` (Saturday) at `morningTime`, when anyone's due a catch-up (`planIdeas`) | "Catch up this week: 3 people", "Priya (3 weeks) · …", with up to three people for Plan buttons |
+| `quiet` | Noon on `quietDay()` for someone Personal or Close, unless something with them is planned or done in between | "It's been a while since you saw Priya": "11 days, longer than usual for you two" |
+| `review` | Sundays at `reviewTime` (7:00 PM) | "Your week" |
 | `date` | A person's key date: a week before and on the day (`morningTime`), and the evening before (`eveningTime`), unless `keyDateReminders` is off | "🎂 Priya's birthday is in a week", "🎂 Tomorrow: …", "🎂 Today: …" |
 
 `useCalendarNotifications` in [`lib/hooks.js`](../../src/lib/hooks.js) delivers them:

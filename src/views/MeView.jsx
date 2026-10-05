@@ -156,7 +156,7 @@ export function MeView({ people, journal, skills, profile, generalGoals = [], on
 
       <div className="mt-4 rounded-2xl p-4" style={{ background: COLORS.paperRaised, border: `1px solid ${COLORS.line}` }}>
         <p className="text-sm font-semibold" style={{ color: COLORS.ink }}>Notifications</p>
-        <p className="text-xs mt-1.5" style={{ color: COLORS.inkSoft }}>{hasSystemBridge ? 'Windows delivers these on time, even when Layers is closed. Their buttons tick a plan off, log it or snooze it.' : 'Small desktop nudges while Layers is open.'}</p>
+        <p className="text-xs mt-1.5" style={{ color: COLORS.inkSoft }}>{hasSystemBridge ? 'Windows delivers these on time, even when Layers is closed. Their buttons snooze a reminder, rate or log a plan, and plan something.' : 'Small desktop nudges while Layers is open.'}</p>
         <Toggle on={notify.reminderNotifications} onChange={(v) => onUpdateProfile({ reminderNotifications: v })} label="Reminders before plans" hint="Each plan has its own; this is the one new plans start with.">
           {[[null, 'None'], [0, 'At the time'], [5, '5 min'], [15, '15 min'], [30, '30 min'], [60, '1 hour']].map(([v, l]) => <Pick key={l} on={notify.defaultAlert === v} onClick={() => onUpdateProfile({ defaultAlert: v })}>{l}</Pick>)}
         </Toggle>
@@ -167,7 +167,12 @@ export function MeView({ people, journal, skills, profile, generalGoals = [], on
         <Toggle on={notify.eveningHeadsUp} onChange={(v) => onUpdateProfile({ eveningHeadsUp: v })} label="Evening heads-up" hint="Tomorrow's plans, the night before.">
           {[19 * 60, 20 * 60, 21 * 60].map(t => <Pick key={t} on={notify.eveningTime === t} onClick={() => onUpdateProfile({ eveningTime: t })}>{formatTime12(t)}</Pick>)}
         </Toggle>
-        <Toggle on={notify.askAfter} onChange={(v) => onUpdateProfile({ askAfter: v })} label="Ask how it went" hint="When a plan with someone ends: log it, or just tick it off." />
+        <Toggle on={notify.askAfter} onChange={(v) => onUpdateProfile({ askAfter: v })} label="Ask how it went" hint="When a plan with someone ends: rate it right there (Casual to Deep), or Log it." />
+        <Toggle on={notify.catchUpWeekly} onChange={(v) => onUpdateProfile({ catchUpWeekly: v })} label="Weekly catch-up list" hint={`Who you haven't seen in a while, with Plan buttons, at ${formatTime12(notify.morningTime)}.`}>
+          {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((w, i) => <Pick key={w} on={notify.catchUpDay === i} onClick={() => onUpdateProfile({ catchUpDay: i })}>{w}</Pick>)}
+        </Toggle>
+        <Toggle on={notify.quietNudges} onChange={(v) => onUpdateProfile({ quietNudges: v })} label="When someone close goes quiet" hint="Personal and Close people, once it's been longer than usual." />
+        <Toggle on={notify.weeklyReview} onChange={(v) => onUpdateProfile({ weeklyReview: v })} label="Sunday review" hint={`Your week, then next week planned in one go, Sundays at ${formatTime12(notify.reviewTime)}.`} />
         <Toggle on={!profile || profile.checkInNotifications !== false} onChange={(v) => onUpdateProfile({ checkInNotifications: v })} label="Daily check-in nudge" hint="When you haven't logged with someone for two weeks." />
       </div>
 

@@ -224,18 +224,18 @@ the calendar's data is portable and ready to sync:
 
 ## Next big task: quality of life (decided 2026-10-05)
 
-Your answers to ten quality-of-life questions. The quick wins (3, 8, 9 and 10) are
-built; the rest are next, notifications first (4, 6, 7), then the bigger pieces (2, 1, 5).
+Your answers to ten quality-of-life questions. The quick wins (3, 8, 9 and 10) and the
+notifications (4, 6 and 7) are built; the bigger pieces (2, 1 and 5) are next.
 
 | | Question | Your answer |
 |---|---|---|
 | 1 | Use more of the laptop screen? | **Wider on desktop**: when the window is wide, the month grid beside your day and the people list beside a profile; still phone-sized when narrow |
 | 2 | A Ctrl+K box to jump anywhere? | **Yes, everything**: people, plans, pages and actions ("plan coffee", "dark mode", "export") |
 | 3 | Undo after deleting, ticking or logging? | **Undo on all of them**, for a few seconds, on the message at the bottom. ✅ Built: 7 s, or Ctrl+Z |
-| 4 | Rate a plan from its "How did it go?" notification? | **Both**: rate 1–5 right in the notification (saved as a quick log), or Log it for the full log |
+| 4 | Rate a plan from its "How did it go?" notification? | **Both**: rate 1–5 right in the notification (saved as a quick log), or Log it for the full log. ✅ Built: Casual, Good, Personal and Deep (2 to 5; Windows allows five buttons, so "very brief" is left to the full log), and Log it… |
 | 5 | Ctrl+Shift+L from anywhere in Windows | **A tiny quick-add box**: log or plan in a few keys without the full window |
-| 6 | Nudges to keep in touch | **A weekly catch-up list** (who you haven't seen, with Plan buttons) and **a notification when someone close goes quiet** (Personal or Close, past their usual gap) |
-| 7 | A weekly review? | **Sunday evening**: a notification opens your week (who you saw, plans done, goals moved), then plan next week in one go |
+| 6 | Nudges to keep in touch | **A weekly catch-up list** (who you haven't seen, with Plan buttons) and **a notification when someone close goes quiet** (Personal or Close, past their usual gap). ✅ Built: the list on Saturday mornings (the day can be changed in Me); "gone quiet" once, at noon, when it's been half as long again as usual |
+| 7 | A weekly review? | **Sunday evening**: a notification opens your week (who you saw, plans done, goals moved), then plan next week in one go. ✅ Built: Sundays at 7:00 PM, an hour before the evening heads-up; W on Today opens it any day |
 | 8 | How early for birthdays and key dates? | **A week before, the day before, and on the morning**. ✅ Built, with a Plan something button; a switch in Me |
 | 9 | Automatic backups? | **Daily, keeping the last 14**, in a Layers backups folder. ✅ Built: Documents\Layers backups, shown in Me |
 | 10 | Light and dark mode | **Follow Windows**, changing when it does. ✅ Built: "Match Windows" is the default, Light and Dark still in Me |
@@ -291,6 +291,15 @@ start.
   privacy principle comes first.
 
 ## History
+
+### Quality of life: notifications (after 1.0.30, not released yet)
+
+- **Rate a plan from "How did it go?"**: Casual, Good, Personal or Deep logs it without
+  opening Layers and ticks it off; Log it… opens the full log.
+- **Weekly catch-up list** (Saturday mornings) with Plan buttons, and a **"gone quiet"**
+  nudge for Personal and Close people when it's been longer than usual.
+- **Sunday review** at 7:00 PM: who you saw, plans done, goals moved, who to catch up
+  with, then Plan next week. W on Today opens it any day.
 
 ### Quality of life: the quick wins (after 1.0.30, not released yet)
 
