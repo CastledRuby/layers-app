@@ -16,7 +16,7 @@ import { achievementProgress, newlyUnlocked } from './lib/achievements.js';
 import { advanceLayer, advanceSkillGoals, bumpSkills, chartDay, computeOverall, dimBumps, dimsEqual, goalBumpFor, keepDimsInLayer, makePerson, migrateDimsToLayers, movePerson, placeOnLayers, raisedSkills } from './lib/progress.js';
 import { MAX_BACKUP_BYTES, createBackup, validateBackup } from './lib/backup.js';
 import { NOTIFY_DEFAULTS, isDoneOn, notifySettings, parseActionUrl, snoozeUntil, templateFor } from './lib/calendar.js';
-import { useCalendarNotifications, useDailyBackup, useDailyCheckIn, useSystemDark, useToday } from './lib/hooks.js';
+import { useCalendarNotifications, useDailyBackup, useDailyCheckIn, useSystemDark, useToday, useWide } from './lib/hooks.js';
 import { followUpEvent, markDone } from './lib/reminders.js';
 import { getSnoozes, loadSavedState, persistState, setSnoozes } from './lib/storage.js';
 import { clamp, uid } from './lib/util.js';
@@ -104,6 +104,7 @@ function LayersApp() {
   // 'system' follows Windows' light or dark mode; `theme` is what's showing.
   const [themeMode, setThemeMode] = useState(() => (saved && saved.themeMode) || 'system');
   const systemDark = useSystemDark();
+  const wide = useWide(); // the desktop layout, 900 px wide or more
   const theme = themeMode === 'system' ? (systemDark ? 'dark' : 'light') : themeMode;
   // { key: 'YYYY-MM-DD' } for each achievement reached; null until worked out.
   const [achievements, setAchievements] = useState(() => (saved && saved.achievements) || null);
@@ -1006,63 +1007,82 @@ function LayersApp() {
     if (then === 'plan') openPlan({ day: today });
   }
 
+  // A wide window shows People as the list beside the open profile, with the
+  // tabs still showing; going from person to person doesn't slide the page.
+  const peopleSplit = wide && onboarded && ((screen.name === 'person' && !!selectedPerson) || (screen.name === 'tabs' && activeTab === 'people'));
+  const showNav = onboarded && (screen.name === 'tabs' || peopleSplit);
   // Which page is showing, for PageTransition: tabs by their place in the
   // bar, and a person or goals screen as a step further in.
-  const pageKey = !onboarded ? 'welcome' : screen.name === 'tabs' ? activeTab : `${screen.name}:${screen.personId || ''}`;
-  const pageOrder = !onboarded ? -1 : screen.name === 'tabs' ? TABS.indexOf(activeTab) : TABS.length;
+  const pageKey = !onboarded ? 'welcome' : peopleSplit ? 'people' : screen.name === 'tabs' ? activeTab : `${screen.name}:${screen.personId || ''}`;
+  const pageOrder = !onboarded ? -1 : peopleSplit ? TABS.indexOf('people') : screen.name === 'tabs' ? TABS.indexOf(activeTab) : TABS.length;
+  const profileView = selectedPerson && (
+    <PersonProfile
+      today={today}
+      person={selectedPerson}
+      journal={journal}
+      onBack={backToTabs}
+      onOpenLog={openLog}
+      onOpenGoalCreate={openGoalCreate}
+      onOpenGoalEdit={openGoalEdit}
+      onDeleteGoal={handleDeleteGoal}
+      onBumpGoal={handleBumpGoal}
+      onOpenAddInfo={openAddInfo}
+      onOpenQuickAddInterest={openQuickAddInterest}
+      onSaveInfo={handleSaveInfoItem}
+      onDeleteInfo={handleDeleteInfoItem}
+      onToggleTemporary={handleToggleTemporary}
+      onToggleArchive={handleToggleArchive}
+      onAdjust={(dims) => handleAdjust(selectedPerson.id, dims)}
+      onOpenCoach={(pid) => openCoach(pid, 'prepare')}
+      onEditPerson={openEditPerson}
+      onClearLevelUpFlag={handleClearLevelUpFlag}
+      onRemindFollowUp={handleRemindFollowUp}
+      onPlan={(personId) => openPlan({ personIds: [personId] })}
+      onAddKeyDate={setKeyDateFor}
+      onDeleteKeyDate={handleDeleteKeyDate}
+    />
+  );
   useEffect(() => { if (scrollRef.current) scrollRef.current.scrollTop = 0; }, [pageKey]);
 
   return (
     <SheetLayerContext.Provider value={sheetLayer}>
-      <div className={`layers-root${theme === 'dark' ? ' dark' : ''}`} style={{ background: COLORS.paper, minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <div className={`layers-root${theme === 'dark' ? ' dark' : ''}${wide ? ' is-wide' : ''}`} style={{ background: COLORS.paper, minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <style>{CSS}</style>
         <div className="app-shell">
           <div className="phone-frame">
-            <div ref={scrollRef} className="scroll-area no-scrollbar" style={{ paddingBottom: (!onboarded || screen.name !== 'tabs') ? 30 : 110 }}>
+            <div ref={scrollRef} className="scroll-area no-scrollbar" style={{ paddingBottom: showNav ? 110 : 30 }}>
               <PageTransition pageKey={pageKey} order={pageOrder}>
               {/* A crash while rendering a screen shows a way out instead of a blank window. */}
-              <ErrorBoundary key={`${onboarded}-${screen.name}-${screen.personId || ''}-${activeTab}`} onHome={() => switchTab('today')}>
+              <ErrorBoundary key={`${onboarded}-${peopleSplit ? 'people-split' : `${screen.name}-${screen.personId || ''}-${activeTab}`}`} onHome={() => switchTab('today')}>
                 {!onboarded ? (
-                  <OnboardingView initialName={profile.name} initialFocus={profile.focus} initialNotify={notifySettings(profile)} onComplete={handleOnboardingComplete} onRestore={handleImportClick} />
+                  <div className="page-col"><OnboardingView initialName={profile.name} initialFocus={profile.focus} initialNotify={notifySettings(profile)} onComplete={handleOnboardingComplete} onRestore={handleImportClick} /></div>
+                ) : peopleSplit ? (
+                  <div className="people-split">
+                    <div className="people-split-list">
+                      <PeopleView people={people} journal={journal} onOpenPerson={openPerson} onAddPerson={() => setAddPersonOpen(true)} split selectedId={selectedPerson ? selectedPerson.id : null} />
+                    </div>
+                    <div className="people-split-detail">
+                      {selectedPerson ? <div key={selectedPerson.id} className="fade-anim">{profileView}</div> : (
+                        <div className="text-center px-6" style={{ paddingTop: '22vh', color: COLORS.inkSoft }}>
+                          <p className="font-display" style={{ fontSize: 20, color: COLORS.ink }}>Pick someone</p>
+                          <p className="text-sm mt-1.5">Their profile opens here, beside the list.</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
                 ) : (
                   <>
-                    {screen.name === 'person' && selectedPerson && (
-                      <PersonProfile
-                        today={today}
-                        person={selectedPerson}
-                        journal={journal}
-                        onBack={backToTabs}
-                        onOpenLog={openLog}
-                        onOpenGoalCreate={openGoalCreate}
-                        onOpenGoalEdit={openGoalEdit}
-                        onDeleteGoal={handleDeleteGoal}
-                        onBumpGoal={handleBumpGoal}
-                        onOpenAddInfo={openAddInfo}
-                        onOpenQuickAddInterest={openQuickAddInterest}
-                        onSaveInfo={handleSaveInfoItem}
-                        onDeleteInfo={handleDeleteInfoItem}
-                        onToggleTemporary={handleToggleTemporary}
-                        onToggleArchive={handleToggleArchive}
-                        onAdjust={(dims) => handleAdjust(selectedPerson.id, dims)}
-                        onOpenCoach={(pid) => openCoach(pid, 'prepare')}
-                        onEditPerson={openEditPerson}
-                        onClearLevelUpFlag={handleClearLevelUpFlag}
-                        onRemindFollowUp={handleRemindFollowUp}
-                        onPlan={(personId) => openPlan({ personIds: [personId] })}
-                        onAddKeyDate={setKeyDateFor}
-                        onDeleteKeyDate={handleDeleteKeyDate}
-                      />
-                    )}
+                    {screen.name === 'person' && <div className="page-col">{profileView}</div>}
                     {screen.name === 'goals' && (
-                      <GoalsView today={today} people={people} generalGoals={generalGoals} onBack={backToTabs} onOpenPerson={openPerson} onOpenGoalCreate={openGoalCreate} onOpenGoalEdit={openGoalEdit} onDeleteGoal={handleDeleteGoal} onBumpGoal={handleBumpGoal} />
+                      <div className="page-col"><GoalsView today={today} people={people} generalGoals={generalGoals} onBack={backToTabs} onOpenPerson={openPerson} onOpenGoalCreate={openGoalCreate} onOpenGoalEdit={openGoalEdit} onDeleteGoal={handleDeleteGoal} onBumpGoal={handleBumpGoal} /></div>
                     )}
                     {screen.name === 'tabs' && (
                       <>
-                        {activeTab === 'today' && <TodayView today={today} selectedDay={selectedDay || today} onSelectDay={(d) => setSelectedDay(d === today ? null : d)} mode={calendarMode} onSetMode={setCalendarMode} people={people} journal={journal} events={events} generalGoals={generalGoals} skills={skills} profile={profile} onPlan={openPlan} onOpenEvent={(eventId, day) => setEventView({ eventId, day })} onLogEvent={openLogFromEvent} onTickEvent={(ev, day) => handleMarkEventDone(ev.id, day)} onOpenPerson={openPerson} onAddPerson={() => setAddPersonOpen(true)} onOpenLog={() => openLog(null)} onSwitchTab={switchTab} onOpenGoals={openGoalsOverview} onOpenReview={setWeekReview} onOpenDay={setDayView} />}
+                        {activeTab === 'today' && <TodayView wide={wide} today={today} selectedDay={selectedDay || today} onSelectDay={(d) => setSelectedDay(d === today ? null : d)} mode={calendarMode} onSetMode={setCalendarMode} people={people} journal={journal} events={events} generalGoals={generalGoals} skills={skills} profile={profile} onPlan={openPlan} onOpenEvent={(eventId, day) => setEventView({ eventId, day })} onLogEvent={openLogFromEvent} onTickEvent={(ev, day) => handleMarkEventDone(ev.id, day)} onOpenPerson={openPerson} onAddPerson={() => setAddPersonOpen(true)} onOpenLog={() => openLog(null)} onSwitchTab={switchTab} onOpenGoals={openGoalsOverview} onOpenReview={setWeekReview} onOpenDay={setDayView} />}
                         {activeTab === 'people' && <PeopleView people={people} journal={journal} onOpenPerson={openPerson} onAddPerson={() => setAddPersonOpen(true)} />}
-                        {activeTab === 'coach' && <CoachView people={people} journal={journal} initialPersonId={coachInit.personId} initialTab={coachInit.tab} onOpenLog={openLog} onApproveInfo={handleApproveInfo} onLogFromAnalysis={handleLogFromAnalysis} onOpenPerson={openPerson} />}
-                        {activeTab === 'journal' && <JournalView today={today} people={people} journal={journal} onOpenPerson={openPerson} onEditEntry={setEditingEntryId} />}
-                        {activeTab === 'me' && <MeView people={people} journal={journal} skills={skills} generalGoals={generalGoals} profile={profile} onAddSample={handleAddSample} onRemoveSample={handleRemoveSample} hasSamplePeople={people.some(p => SAMPLE_PERSON_IDS.has(p.id))} canAddSample={INITIAL_PEOPLE.some(sp => !people.some(p => p.id === sp.id))} onStartOver={() => setStartOverOpen(true)} onExport={handleExportData} onImportClick={handleImportClick} backupInfo={backupInfo} onOpenBackups={handleOpenBackups} hasUpdater={hasUpdater} updateStatus={updateStatus} onCheckForUpdates={handleCheckForUpdates} onInstallUpdate={handleInstallUpdate} onOpenDownloadPage={handleOpenDownloadPage} shortcutStatus={shortcutStatus} themeMode={themeMode} onSetTheme={setThemeMode} onUpdateProfile={(changes) => setProfile(p => ({ ...p, ...changes }))} onEditProfile={() => setEditProfileOpen(true)} achievements={achievements || {}} hasSystemBridge={hasSystemBridge} autoLaunch={autoLaunch} onToggleAutoLaunch={handleToggleAutoLaunch} onOpenShortcuts={() => setShortcutsOpen(true)} appVersion={appVersion} />}
+                        {activeTab === 'coach' && <div className="page-col"><CoachView people={people} journal={journal} initialPersonId={coachInit.personId} initialTab={coachInit.tab} onOpenLog={openLog} onApproveInfo={handleApproveInfo} onLogFromAnalysis={handleLogFromAnalysis} onOpenPerson={openPerson} /></div>}
+                        {activeTab === 'journal' && <div className="page-col"><JournalView today={today} people={people} journal={journal} onOpenPerson={openPerson} onEditEntry={setEditingEntryId} /></div>}
+                        {activeTab === 'me' && <div className="page-col"><MeView people={people} journal={journal} skills={skills} generalGoals={generalGoals} profile={profile} onAddSample={handleAddSample} onRemoveSample={handleRemoveSample} hasSamplePeople={people.some(p => SAMPLE_PERSON_IDS.has(p.id))} canAddSample={INITIAL_PEOPLE.some(sp => !people.some(p => p.id === sp.id))} onStartOver={() => setStartOverOpen(true)} onExport={handleExportData} onImportClick={handleImportClick} backupInfo={backupInfo} onOpenBackups={handleOpenBackups} hasUpdater={hasUpdater} updateStatus={updateStatus} onCheckForUpdates={handleCheckForUpdates} onInstallUpdate={handleInstallUpdate} onOpenDownloadPage={handleOpenDownloadPage} shortcutStatus={shortcutStatus} themeMode={themeMode} onSetTheme={setThemeMode} onUpdateProfile={(changes) => setProfile(p => ({ ...p, ...changes }))} onEditProfile={() => setEditProfileOpen(true)} achievements={achievements || {}} hasSystemBridge={hasSystemBridge} autoLaunch={autoLaunch} onToggleAutoLaunch={handleToggleAutoLaunch} onOpenShortcuts={() => setShortcutsOpen(true)} appVersion={appVersion} /></div>}
                       </>
                     )}
                   </>
@@ -1071,10 +1091,10 @@ function LayersApp() {
               </PageTransition>
             </div>
 
-            {onboarded && screen.name === 'tabs' && (
+            {showNav && (
               <>
                 <button className="fab-btn" onClick={() => openLog(null)} aria-label="Log an interaction"><Plus size={26} color={COLORS.onAccent} /></button>
-                <BottomNav active={activeTab} onChange={switchTab} />
+                <BottomNav active={peopleSplit ? 'people' : activeTab} onChange={switchTab} />
               </>
             )}
 

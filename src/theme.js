@@ -105,6 +105,31 @@ input, textarea { font-family: 'Manrope', ui-sans-serif, system-ui, sans-serif; 
 }
 .scroll-area { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; }
 
+/* A wide window (900 px or more; useWide in lib/hooks.js adds .is-wide):
+   Layers fills the window instead of the phone-shaped card. Today puts the
+   month beside the day, People the list beside a profile, the other pages
+   sit in a readable centred column, the tabs stay at the bottom (centred),
+   and sheets open as a centred panel. */
+.is-wide .app-shell { max-width: none; margin: 0; }
+.is-wide .phone-frame { height: 100vh; max-height: none; border-radius: 0; box-shadow: none; }
+.is-wide .sheet-layer { border-radius: 0; }
+.is-wide .page-col { max-width: 760px; margin: 0 auto; }
+.is-wide .nav-bar { padding-left: max(6px, calc(50% - 330px)); padding-right: max(6px, calc(50% - 330px)); }
+.is-wide .nav-indicator { left: max(6px, calc(50% - 330px)); width: calc(min(100% - 12px, 660px) / 5); }
+.is-wide .fab-btn { right: 28px; bottom: 84px; }
+.is-wide .sheet { align-items: center; }
+.is-wide .sheet-panel { width: 540px; max-width: calc(100% - 48px); max-height: 86%; border-radius: 26px; box-shadow: 0 0 0 1px color-mix(in srgb, ${COLORS.ink} 7%, transparent), 0 24px 60px rgba(10,12,20,0.3); }
+.is-wide .sheet-panel--tall { height: 80%; max-height: 80%; }
+.is-wide .sheet-handle { display: none; }
+.is-wide .sheet--top { align-items: flex-start; padding-top: 7vh; }
+.is-wide .sheet--top .sheet-panel { width: 640px; }
+.today-wide { display: grid; grid-template-columns: minmax(0, 1fr) 380px; gap: 36px; max-width: 1180px; margin: 0 auto; align-items: start; }
+.today-wide-side { position: sticky; top: 16px; }
+.people-split { display: grid; grid-template-columns: minmax(320px, 400px) minmax(0, 1fr); max-width: 1280px; margin: 0 auto; align-items: start; }
+.people-split-list { position: sticky; top: 0; max-height: calc(100vh - 84px); overflow-y: auto; border-right: 1px solid ${COLORS.line}; }
+.people-split-detail { min-width: 0; }
+.people-split-detail > * { max-width: 760px; margin: 0 auto; }
+
 /* The bottom tabs. The page you're on sits on a glowing pill with a bar on
    the top edge; the pill slides to a new tab with a little overshoot, a ring
    ripples out from it and its icon hops (BottomNav.jsx). */

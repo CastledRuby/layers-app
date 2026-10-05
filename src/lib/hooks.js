@@ -44,6 +44,24 @@ export function useDailyBackup(enabled, today, makeBackup, onDone) {
 
 // Whether Windows (or the browser) is in dark mode, following it as it
 // changes: the theme's "Match Windows".
+// Whether the window is wide enough for the desktop layout (900 px or more):
+// the month beside the day, the people list beside a profile, a readable
+// column for the other pages and sheets as a centred panel (.is-wide in
+// theme.js). Narrower, Layers is the phone-shaped card it always was.
+export const WIDE_QUERY = '(min-width: 900px)';
+export function useWide() {
+  const [wide, setWide] = useState(() => typeof window !== 'undefined' && typeof window.matchMedia === 'function' && !!window.matchMedia(WIDE_QUERY).matches);
+  useEffect(() => {
+    if (typeof window.matchMedia !== 'function') return undefined;
+    const mq = window.matchMedia(WIDE_QUERY);
+    const onChange = () => setWide(!!mq.matches);
+    onChange();
+    if (mq.addEventListener) mq.addEventListener('change', onChange); else if (mq.addListener) mq.addListener(onChange);
+    return () => { if (mq.removeEventListener) mq.removeEventListener('change', onChange); else if (mq.removeListener) mq.removeListener(onChange); };
+  }, []);
+  return wide;
+}
+
 export function useSystemDark() {
   const query = '(prefers-color-scheme: dark)';
   const [dark, setDark] = useState(() => typeof window !== 'undefined' && typeof window.matchMedia === 'function' && !!window.matchMedia(query).matches);

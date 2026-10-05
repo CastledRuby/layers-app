@@ -7,7 +7,9 @@
 // clicking the day that's picked) opens the day in a popup (DaySheet), with
 // Coach tips for its plans. L and J answer the first
 // "How did it go?" (Log it, Just tick it), I plans the first idea, and W
-// opens the week's review (shown as a card on Sundays; on a Monday, last
+// In a wide window (`wide`) the month grid sits beside the day all the time,
+// in place of the week strip and the Day/Month switch.
+// W opens the week's review (shown as a card on Sundays; on a Monday, last
 // week's). P
 // (anywhere) plans something on the day shown; that one lives in App.jsx.
 
@@ -146,7 +148,7 @@ function EventRow({ item, now, onOpen }) {
   );
 }
 
-export function TodayView({ today, selectedDay, onSelectDay, mode, onSetMode, people, journal, events, generalGoals, skills, profile, onPlan, onOpenEvent, onLogEvent, onTickEvent, onOpenPerson, onAddPerson, onOpenLog, onSwitchTab, onOpenGoals, onOpenReview, onOpenDay }) {
+export function TodayView({ today, selectedDay, onSelectDay, mode, onSetMode, people, journal, events, generalGoals, skills, profile, onPlan, onOpenEvent, onLogEvent, onTickEvent, onOpenPerson, onAddPerson, onOpenLog, onSwitchTab, onOpenGoals, onOpenReview, onOpenDay, wide = false }) {
   const state = useMemo(() => ({ people, journal, events, generalGoals }), [people, journal, events, generalGoals]);
   const day = selectedDay || today;
   const sel = parseISODay(day);
@@ -206,7 +208,8 @@ export function TodayView({ today, selectedDay, onSelectDay, mode, onSetMode, pe
   }
 
   return (
-    <div className="px-5 pt-6 pb-4">
+    <div className={wide ? 'px-8 pt-8 pb-4 today-wide' : 'px-5 pt-6 pb-4'}>
+      <div className="min-w-0">
       <p className="text-sm" style={{ color: COLORS.inkSoft }}>{greeting}{profile && profile.name ? `, ${profile.name}` : ''}</p>
       <div className="flex items-end justify-between gap-3 mt-0.5">
         <div className="min-w-0">
@@ -216,16 +219,18 @@ export function TodayView({ today, selectedDay, onSelectDay, mode, onSetMode, pe
             {day !== today && <button type="button" onClick={() => onSelectDay(today)} className="chip" style={{ padding: '2px 8px', fontSize: 11 }}>Back to today <Kbd>T</Kbd></button>}
           </p>
         </div>
-        <div className="seg seg--sm shrink-0" role="group" aria-label="Calendar view" style={{ width: 132 }}>
-          {['day', 'month'].map(m => (
-            <button key={m} type="button" onClick={() => onSetMode(m)} aria-pressed={mode === m} className={`seg-btn${mode === m ? ' seg-btn--on' : ''}`} style={{ fontSize: 12 }}>{m === 'day' ? 'Day' : 'Month'}</button>
-          ))}
-        </div>
+        {!wide && (
+          <div className="seg seg--sm shrink-0" role="group" aria-label="Calendar view" style={{ width: 132 }}>
+            {['day', 'month'].map(m => (
+              <button key={m} type="button" onClick={() => onSetMode(m)} aria-pressed={mode === m} className={`seg-btn${mode === m ? ' seg-btn--on' : ''}`} style={{ fontSize: 12 }}>{m === 'day' ? 'Day' : 'Month'}</button>
+            ))}
+          </div>
+        )}
       </div>
 
-      {mode === 'month'
+      {!wide && (mode === 'month'
         ? <MonthGrid selected={day} today={today} marksFor={marksFor} onSelect={pickDay} />
-        : <WeekStrip selected={day} today={today} marksFor={marksFor} onSelect={pickDay} />}
+        : <WeekStrip selected={day} today={today} marksFor={marksFor} onSelect={pickDay} />)}
 
       {waiting.length > 0 && (
         <div className="mt-5 flex flex-col gap-2">
@@ -329,6 +334,8 @@ export function TodayView({ today, selectedDay, onSelectDay, mode, onSetMode, pe
           ))}
         </>
       )}
+      </div>
+      {wide && <aside className="today-wide-side" aria-label="Month"><MonthGrid selected={day} today={today} marksFor={marksFor} onSelect={pickDay} /></aside>}
     </div>
   );
 }

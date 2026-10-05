@@ -92,6 +92,26 @@ reintroduce a Google Fonts `@import`.
         └── .sheet …    every open Sheet / ConfirmDialog (portaled here)
 ```
 
+### A wide window
+
+From **900 px** wide (`useWide` in [lib/hooks.js](../../src/lib/hooks.js), which adds
+`.is-wide` to `.layers-root`), Layers fills the window instead of the phone-shaped card:
+
+- `.app-shell` has no maximum width and `.phone-frame` no radius, so the frame is the
+  window.
+- **Today** is `.today-wide`: the day on the left and the month grid in a sticky column
+  on the right (`.today-wide-side`), with no week strip or Day/Month switch.
+- **People** is `.people-split`: the list (sticky, scrolling on its own) beside the open
+  profile, or "Pick someone" until one is open. The tabs stay, with People lit.
+- **Coach, Journal, Me, Goals** and onboarding sit in `.page-col`, a centred column 760 px
+  wide.
+- **The tabs** stay at the bottom, the five centred in 660 px; the FAB sits at the window's
+  right.
+- **Sheets** open as a centred 540 px panel (`.is-wide .sheet-panel`), and the Ctrl+K box
+  as a 640 px one near the top.
+
+Narrower than 900 px, nothing changes.
+
 ## Sheets and dialogs
 
 The `Sheet` component is a bottom sheet with overlay, a handle, title bar, close button,

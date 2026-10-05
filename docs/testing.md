@@ -69,6 +69,9 @@ interact.
   some things), setting up (people tapped or typed with how close they are, notification
   switches, Plan something first, Restore from a backup), and planning's Plan again and
   overlap warning.
+- `wide.test.jsx` covers a wide window: the month beside the day, and the people list
+  beside a profile. `tests/setup.js`'s `matchMedia` says the window is narrow unless a
+  test sets `window.__layersWide`.
 - `jump.test.jsx` covers Ctrl+K: finding a person and their actions, "plan sam", going
   somewhere from over a sheet, Dark mode, and saving, opening or logging a typed sentence.
   The matching itself is unit-tested in `src/jump.test.js`, and the sentence reader in

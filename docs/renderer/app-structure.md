@@ -50,6 +50,11 @@ needs that, and it's why `SheetLayerContext` and the open-sheet stack live in th
 
 ## Navigation model
 
+In a wide window (900 px or more) People shows the list beside the open profile
+(`peopleSplit` in `LayersApp`): opening a person keeps the list and the tabs, and
+Backspace closes the profile. Today shows the month beside the day. See
+[ui-system.md](ui-system.md#a-wide-window).
+
 There is no router. Two pieces of `LayersApp` state choose what's on screen:
 
 ```mermaid

@@ -9,8 +9,10 @@ import { sortHistory } from '../lib/dates.js';
 import { getCheckInSuggestions } from '../lib/text.js';
 import { COLORS } from '../theme.js';
 
-export function PeopleView({ people, journal, onOpenPerson, onAddPerson }) {
-  const [view, setView] = useState('map');
+// In a wide window (split) it's the list beside the open profile: it opens
+// on the list, and the person open there (selectedId) is highlighted.
+export function PeopleView({ people, journal, onOpenPerson, onAddPerson, split = false, selectedId = null }) {
+  const [view, setView] = useState(split ? 'list' : 'map');
   const [query, setQuery] = useState('');
   const filteredPeople = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -125,7 +127,7 @@ export function PeopleView({ people, journal, onOpenPerson, onAddPerson }) {
               {[...filteredPeople].sort((a, b) => (b.layer - a.layer) || (b.overall - a.overall)).map(p => {
                 const l = getLayer(p.layer);
                 return (
-                  <button key={p.id} onClick={() => onOpenPerson(p.id)} className="w-full flex items-center gap-3 py-3" style={{ borderBottom: `1px solid ${COLORS.line}` }}>
+                  <button key={p.id} onClick={() => onOpenPerson(p.id)} aria-current={p.id === selectedId ? 'true' : undefined} className={`w-full flex items-center gap-3 py-3${split ? ' px-2 rounded-xl' : ''}`} style={{ borderBottom: `1px solid ${COLORS.line}`, background: p.id === selectedId ? COLORS.accentSoft : undefined }}>
                     <Avatar emoji={p.emoji} size={44} ringColor={l.color} />
                     <div className="flex-1 min-w-0 text-left">
                       <p className="text-sm font-semibold" style={{ color: COLORS.ink }}>{p.name}</p>

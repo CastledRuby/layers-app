@@ -270,7 +270,7 @@ own, in this order. None of it is built yet; say if any of it should change.
   you type, like "fri 10am".)* Enter saves a typed plan or a rated log at once, with Undo;
   **Ctrl+Enter** opens it in full instead.
 
-### Wider on desktop
+### Wider on desktop ✅ Built
 
 - When the window is about **900 px wide or more** (maximised, or dragged wider),
   Layers fills the window instead of the phone-shaped card. Narrower, it stays exactly
@@ -382,6 +382,13 @@ start.
   privacy principle comes first.
 
 ## History
+
+### Wider on desktop (after 1.0.30, not released yet)
+
+From 900 px wide (maximised, or dragged wider), Layers fills the window: Today has the
+month beside the day, People the list beside the open profile, the other pages a
+readable centred column, and sheets open as a centred panel. The tabs stay at the
+bottom. Narrower, it's the phone-shaped card as before.
 
 ### Ctrl+K: jump to anything (after 1.0.30, not released yet)
 
