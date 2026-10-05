@@ -37,7 +37,7 @@ and constant are in [../generated/code-map.md](../generated/code-map.md).
 | [`lib/achievements.js`](../../src/lib/achievements.js) | `achievementProgress` (how close you are to each one), `newlyUnlocked` and `progressText`. See [state-and-data.md](state-and-data.md#achievements). |
 | [`lib/hooks.js`](../../src/lib/hooks.js) | `useToday` (the local date, updated at midnight), `useDailyCheckIn` (the once-a-day check-in nudge) and `useCalendarNotifications` (hands the calendar's notifications to Windows, or shows them itself in a browser). The only React in `lib/`. |
 | [`components/`](../../src/components/) | `Sheet` + `SheetPortal`, `sheetLayer.js` (the portal context and the open-sheet stack Esc uses), `ErrorBoundary` (the "This screen hit a problem" fallback around the current screen), `PageTransition` (slides a new page in), `peopleKeys.js` (picking people by number or name), `atoms.jsx` (`CircularProgress`, `ProgressBar`, `LabeledBar`, `Avatar`, `LayerBadge`, `ChatBubble`, `Timeline`, `ConvStateBadge`), `rows.jsx` (`GoalRow`, `InfoItemRow`), `BottomNav`, `pickers.jsx` (`DateDropdown`, `TimeDropdown`, each with a compact chip form), `PersonPick.jsx` (`PersonPick`, `AvatarStack`), `illustrations.jsx` |
-| [`modals/`](../../src/modals/) | `ConfirmDialog`, `EditPersonModal`, `EditEntryModal` (edit or delete a journal entry), `EditProfileModal` (your name and focus), `LogInteractionModal` (with its detail sheets in `LogDetailSheets`), `PlanSheet`, `EventSheet`, `KeyDateSheet`, `GoalModal`, `TemplatePickerModal`, `QuickAddInterestModal`, `AddInfoModal`, `AddPersonModal`, `ShortcutsModal`, `StartOverSheet` (Delete my data and start over), `WeekReviewSheet` ("Your week": who you saw, plans done, goals moved, who to catch up with; Enter plans next week, 1–5 plans with someone) |
+| [`modals/`](../../src/modals/) | `ConfirmDialog`, `EditPersonModal`, `EditEntryModal` (edit or delete a journal entry), `EditProfileModal` (your name and focus), `LogInteractionModal` (with its detail sheets in `LogDetailSheets`), `PlanSheet`, `EventSheet`, `KeyDateSheet`, `GoalModal`, `TemplatePickerModal`, `QuickAddInterestModal`, `AddInfoModal`, `AddPersonModal`, `ShortcutsModal`, `StartOverSheet` (Delete my data and start over), `DaySheet` (one day in a popup), `PlanTipsSheet` (Coach tips for a plan), `QuickGoalSheet` (a new goal while planning or logging), `WeekReviewSheet` ("Your week": who you saw, plans done, goals moved, who to catch up with; Enter plans next week, 1–5 plans with someone) |
 | [`views/`](../../src/views/) | `TodayView`, `PeopleView`, `PersonProfile` (with `AdjustSlider`, `PrepareTipsModal`), `GoalsView`, `JournalView`, `CoachView`, `MeView`, `OnboardingView` |
 | [`App.jsx`](../../src/App.jsx) | `LayersApp`, plus the small helpers it uses: `sampleData` and the sample-people checks (`SAMPLE_PERSON_IDS`, `SAMPLE_GOAL_IDS`, `skillsCameWithSamples`, `allSkillsZero`), `unlinkMissingPeople`, `addNotes` and `listNames` |
 
@@ -82,7 +82,7 @@ stateDiagram-v2
 | Screen | Component | What it shows / does |
 |---|---|---|
 | Onboarding | `OnboardingView` | Shown on first launch and after starting over, with a progress bar. 1. **You**: name and focus (`FOCUS_OPTIONS`); **Start fresh** (Enter), **Explore with example people**, or **Restore from a backup** (the import). 2. **Your people** (start fresh only): type a name and press Enter, or tap a suggestion (Mum, Dad, Partner…); each gets a closeness (layer 1–4) and an emoji to tap. 3. **Ready**: switches for reminders, the morning summary and the evening heads-up (only ones changed from the defaults are saved to `profile`), then **Go to Today** (Enter) or **Plan something first** (P). |
-| Today | `TodayView` | **The main screen: the centre tab (Ctrl+3) and the one Layers opens on.** A greeting, the day's name and date, and a Day/Month switch (`M`). Day shows a week strip; Month shows the month grid. Both have dots for days with plans (accent), key dates (rose) and logs (green); daily routines don't get dots. Tapping a day, or the arrow keys, picks it, and `T` comes back to today. Below that:<br>1. **How did it go?** cards for plans with people that have ended and aren't done: **Log it** or **Just tick it** (`L` and `J` answer the first card).<br>2. The day's plan: all-day chips (birthdays, goals due, all-day plans), then plans in time order with a **Now** line. Tapping a plan opens `EventSheet`.<br>3. **Logged** that day, then **Ideas** (`planIdeas`, from today on; `I` plans the first).<br>On Sundays, **Your week in review** opens `WeekReviewSheet` (`W` opens it any day; on a Monday it shows the week just gone, and the arrows move between weeks).<br>4. On today only: **Try this next** and the top three **Current goals**.<br>**+ Plan** or `P` plans something on the day shown. The old Home's stats moved to Me, and its Upcoming list became the calendar. |
+| Today | `TodayView` | **The main screen: the centre tab (Ctrl+3) and the one Layers opens on.** A greeting, the day's name and date, and a Day/Month switch (`M`). Day shows a week strip; Month shows the month grid. Both have dots for days with plans (accent), key dates (rose) and logs (green); daily routines don't get dots. Tapping a day, or the arrow keys (← → a day, ↑ ↓ a week), picks it, and `T` comes back to today. **Enter**, or tapping the day that's already picked, opens it in `DaySheet`. Below that:<br>1. **How did it go?** cards for plans with people that have ended and aren't done: **Log it** or **Just tick it** (`L` and `J` answer the first card).<br>2. The day's plan: all-day chips (birthdays, goals due, all-day plans), then plans in time order with a **Now** line. Tapping a plan opens `EventSheet`.<br>3. **Logged** that day, then **Ideas** (`planIdeas`, from today on; `I` plans the first).<br>On Sundays, **Your week in review** opens `WeekReviewSheet` (`W` opens it any day; on a Monday it shows the week just gone, and the arrows move between weeks).<br>4. On today only: **Try this next** and the top three **Current goals**.<br>**+ Plan** or `P` plans something on the day shown. The old Home's stats moved to Me, and its Upcoming list became the calendar. |
 | People | `PeopleView` | "Your circle", Ctrl+2: the map of how close you are to everyone (rings by layer), or a searchable list (`#people-search-input`, `/` focuses it) grouped by layer, add person |
 | Person profile | `PersonProfile` | Layer badge + layer-progress ring (level-up pulse), the last change and why, six dimension bars with **Adjust manually** sliders (previewing where saving would put them), *Prepare to talk* tips (`PrepareTipsModal`), **Plan something** (`PlanSheet` with them filled in), **Ideas for next time**, **Key dates** (birthdays and other dates, via `KeyDateSheet`), **Goals** (`GoalRow`), **What I know about…** (five info categories via `InfoItemRow`, quick-add interests, temporary/archived items; a bell on a temporary item sets a "how did it go?" reminder for three days later), relationship **Timeline**, **Progress** chart |
 | Goals overview | `GoalsView` | Every goal across people plus general (skill) goals, with filters |
@@ -120,6 +120,9 @@ Every modal is a `Sheet` (or `ConfirmDialog`). Most are opened by a boolean flag
 | `PlanSheet` | `P`, **+ Plan**, an idea, a profile's **Plan something**, the log's "Plan something", a plan's **Edit** or **Plan it again** (`openPlan`) | `LayersApp` (`planState`) |
 | `EventSheet` | Tapping a plan on Today, or a notification's body | `LayersApp` (`eventView`) |
 | `WeekReviewSheet` | `W` on Today, Today's Sunday card, or the review and catch-up notifications (`layers://review`) | `LayersApp` (`weekReview`) |
+| `DaySheet` | Enter on Today, or tapping the day that's picked already | `LayersApp` (`dayView`) |
+| `PlanTipsSheet` | **Coach tips** (`T`) on a plan in `DaySheet` or `EventSheet` | the sheet it's opened from |
+| `QuickGoalSheet` | **+ New goal** (`+`) on PlanSheet's "when" and the log's Goals sheet | `PlanSheet`, `LogInteractionModal` |
 | `KeyDateSheet` | A profile's **Add date** | `LayersApp` (`keyDateFor`) |
 | `GoalModal` | "Add goal" / goal "Edit" (`openGoalCreate`, `openGoalEdit`) | `LayersApp` (`goalModalOpen`, `goalEditing`) |
 | `AddInfoModal` | "+" on an info category (`openAddInfo`) | `LayersApp` |
@@ -162,7 +165,7 @@ so only one thing is asked at a time:
 | Rate each part | R | "How did each part go?": a 1–5 scale for each dimension. Type a number per row, top to bottom, or click. Backspace steps back; the arrows move. | always |
 | Active listening | L | "Did you practise active listening?": the four practices, ticked with 1–4 | always |
 | Something new | I | "Something new about …?": tap suggestions for the category (1–5 picks it): topic lists for interests, `INFO_TEMPLATES` for the rest. Typing is optional. Saved to the profile. | one-person logs |
-| Goals moved | G | "Goals this moved": every active goal is ticked; untick the ones it didn't help | when there are goals |
+| Goals moved (or Add a goal) | G | "Goals this moved": every active goal is ticked; untick the ones it didn't help. **+ New goal** (`+`) starts one with them in `QuickGoalSheet`, and it comes back ticked. | when someone's picked |
 | How it felt | F | "How did it feel?": tap phrases for how it went and what to try next time (`REFLECTION_TEMPLATES`), plus optional typing. The saved reflection is the phrases, then the text. | always |
 
 The sheets edit the log's own state as you go, so Done, Enter or Esc just closes them,
@@ -186,10 +189,12 @@ Planning is three steps, one thing at a time, nearly all taps, and every tap has
 
 1. **what**: eight templates (`EVENT_TEMPLATES`), keys 1–8. Each fills the title, the
    interaction type a log gets, a usual time and a length.
-2. **who**: the people. 1–9 picks one of the first nine, or type part of a name and
-   Enter picks the first match ([`peopleKeys.js`](../../src/components/peopleKeys.js),
-   shared with the quick log). Enter goes on, with or without anyone.
-3. **when**: the title (editable, `N`), then chips for each choice:
+2. **who**: the people, closest first (as on the People tab), each with a solid number
+   badge. 1–9 picks one of the first nine; for anyone else, type part of a name (Enter
+   picks the first match) or move with the arrows and pick with Space
+   ([`peopleKeys.js`](../../src/components/peopleKeys.js), shared with the quick log).
+   Enter goes on, with or without anyone.
+3. **when**: the title (editable, `N`; Esc or Tab leaves the box), then chips for each choice:
    - **Day** (1–7): the next seven days, or **Other day**
    - **Time** (`T`): five times, All day, or **Other time**
    - **How long** (`L`)
@@ -198,7 +203,10 @@ Planning is three steps, one thing at a time, nearly all taps, and every tap has
      chip)
    - **Remind me** (`A`): none, at the time, or 5 minutes to 1 day before (the default
      is set in Me)
-   - **Moves a goal** (`G`), when the people have goals
+   - **Moves a goal** (`G`), with **+ New goal** (`+`) whenever someone's picked:
+     `QuickGoalSheet` asks who it's for (when there's more than one), one of the seven
+     relationship suggestions (1–7) or your own words (`N`), a more specific version
+     (`V`) and a due date (`D`). Enter creates it, and the plan picks it.
 
    The letter keys step through a row's chips, and Shift steps back. Enter saves.
    **Save + another** (Shift+Enter) saves and goes straight back to "what" in the same
@@ -212,13 +220,23 @@ on "when", on the day after.
 
 The "what" step also lists **Plan again**: your four most recent plans (`recentPlans`, one of
 each title and people), keys Q, W, E and R. One opens on "when" with everything filled in, as
-a one-off on the day being planned. "When?" sums the plan up in a line ("Tomorrow, 10:00
+a one-off on the day being planned. Going back and picking a template drops the title Plan
+again brought (a typed one stays). "When?" sums the plan up in a line ("Tomorrow, 10:00
 AM–11:00 AM · reminder 15 min before") and warns when it overlaps a plan you already have
 that day (`clashesOn`; plans that only touch don't count).
 
 `EventSheet` shows one plan on one day. Before it starts it offers **Edit**, **Plan it
 again** and **Delete**; **Log it** and **Mark done** come once it has started, since
-there's nothing to log yet.
+there's nothing to log yet. A plan with people has **Coach tips** (`T`).
+
+`DaySheet` is one day in a popup: its key dates, plans (↑ ↓ pick one, Enter opens it) and
+logs. ← → move to the day before or after (Today follows), `P` plans something that day,
+and `T` opens **Coach tips** for the picked plan. `PlanTipsSheet` shows `planTips`
+([lib/tips.js](../../src/lib/tips.js)): tips for the kind of plan (`PLAN_TIPS`, by
+template), then for each person what's saved about them (Prepare's hooks: what to follow
+up on, what you last talked about and noted, their interests and plans), their key dates
+in the two weeks from the plan, a note to keep to lighter topics for Layers 1 and 2, and
+the goal the plan moves. `P` there opens Prepare in Coach for the first person.
 
 ### Starting over
 
@@ -248,15 +266,17 @@ These are defined once in `SHORTCUTS` (shown by `ShortcutsModal`) and implemente
   don't fire with Alt held.
 - **`/`** switches to People (or stays on Journal), then focuses that tab's search box once
   it has rendered, through the `searchFocus` state. It works from any tab.
-- **`Esc`** leaves a search box, or closes only the top-most sheet or dialog. See
+- **`Esc`** leaves a search box, or a text box in a sheet with keys (Tab does too, so
+  the sheet's keys work again), or closes only the top-most sheet or dialog. See
   [ui-system.md](ui-system.md#esc-and-the-open-sheet-stack).
 - **`P`** plans something (`PlanSheet`) on the day Today shows, from any tab. On Today
-  itself, `M` switches Day and Month, the arrows move a day, and `T` comes back to today
-  (`TodayView`'s own listener). `L`/`J` answer the first "How did it go?" and `I` plans
+  itself, `M` switches Day and Month, ← → move a day and ↑ ↓ a week, `T` comes back to
+  today, and Enter opens the day in `DaySheet` (`TodayView`'s own listener). `L`/`J` answer the first "How did it go?" and `I` plans
   the first idea. Ctrl+1–5 follow the tabs: Ctrl+2 is People (the map), Ctrl+3 Today.
 - **The calendar's sheets** have keys too: PlanSheet's are [above](#plansheet-steps)
-  (Shift+Enter saves and plans another); EventSheet E to edit, C to plan it again, and
-  once it has started L to log and Enter to mark done; KeyDateSheet 1–5 for the kind,
+  (Shift+Enter saves and plans another); EventSheet E to edit, C to plan it again, T for Coach tips,
+  and once it has started L to log and Enter to mark done; DaySheet ↑ ↓, Enter, T, ← →
+  and P (above); QuickGoalSheet 1–7, V, N, D, ← → and Enter; KeyDateSheet 1–5 for the kind,
   Enter to save.
 
 The log sheet has its own keys, handled by `Sheet`'s `onKey` only while it's the top
@@ -268,7 +288,7 @@ sheet and you're not typing in a text box. Each key is shown next to what it doe
 | any | Backspace goes back a step |
 | What are you logging? | 1 Interaction, 2 Plan something |
 | What did you do? | 1–6 the types |
-| Who was this with? | 1–9 picks a person, or type part of a name and Enter picks the first match; Enter confirms |
+| Who was this with? | 1–9 picks a person, or type part of a name and Enter picks the first match, or the arrows and Space; Enter confirms |
 | quick log | 1–5 how meaningful; N focuses the note; D Add detail; R, L, I, G, F the More details sheets; Enter saves (also from the note, and Ctrl+Enter from anywhere) |
 
 Enter on a button you reached with Tab presses that button instead

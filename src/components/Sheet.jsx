@@ -4,7 +4,7 @@
 import { useContext, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { ChevronLeft, X } from 'lucide-react';
-import { SheetLayerContext, topSheet, useOpenSheet } from './sheetLayer.js';
+import { isTyping, SheetLayerContext, topSheet, useOpenSheet } from './sheetLayer.js';
 import { COLORS } from '../theme.js';
 
 // Never fall back to document.body: content portaled outside .layers-root
@@ -23,6 +23,8 @@ const animate = () => typeof window.matchMedia === 'function' && !window.matchMe
 // - onBack: shows a back arrow before the title.
 // - onKey(e): keydown while this sheet is the top one (not while a sheet
 //   opened over it is showing). Esc is handled for every sheet already.
+//   In a sheet with keys, Esc or Tab in a text box leaves the box, so its
+//   keys work again; the next Esc closes the sheet.
 // - tall: a fixed 80% height, for sheets whose content changes (steps).
 // Closing by X, the backdrop or Esc slides the sheet away first; a parent
 // that unmounts it directly (after saving) closes it at once.
@@ -48,7 +50,11 @@ export function Sheet({ title, onClose, onBack, onKey, children, footer, tall })
     if (!hasKeys) return;
     // A key something already handled (Enter in a text box that then closed
     // a sheet, say) isn't handled again by the sheet that's now on top.
-    function handle(e) { if (!e.defaultPrevented && topSheet() === entry && !closingRef.current && keyHandler.current) keyHandler.current(e); }
+    function handle(e) {
+      if (e.defaultPrevented || topSheet() !== entry || closingRef.current || !keyHandler.current) return;
+      if (e.key === 'Tab' && !e.shiftKey && isTyping()) { e.preventDefault(); document.activeElement.blur(); return; }
+      keyHandler.current(e);
+    }
     window.addEventListener('keydown', handle);
     return () => window.removeEventListener('keydown', handle);
   }, [hasKeys, entry]);
@@ -57,7 +63,7 @@ export function Sheet({ title, onClose, onBack, onKey, children, footer, tall })
     <SheetPortal>
       <div className={`sheet${closing ? ' is-closing' : ''}`}>
         <div className="sheet-overlay" onClick={requestClose} />
-        <div className={`sheet-panel sheet-anim${tall ? ' sheet-panel--tall' : ''}`} role="dialog" aria-modal="true" aria-label={title}>
+        <div className={`sheet-panel sheet-anim${tall ? ' sheet-panel--tall' : ''}`} role="dialog" aria-modal="true" aria-label={title} data-keys={hasKeys ? '' : undefined}>
           <div className="sheet-handle" aria-hidden="true" />
           <div className="flex items-center gap-1.5 px-5 pt-3 pb-3">
             {onBack && (

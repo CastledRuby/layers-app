@@ -7,7 +7,9 @@
 //                                                   step through time, length,
 //                                                   repeat, reminder and goal
 //                                                   (with Shift, backwards);
-//                                                   N the title; Enter saves
+//                                                   N the title (Esc or Tab
+//                                                   leaves it); + a new goal
+//                                                   (QuickGoalSheet); Enter saves
 // Shift+Enter (or "Save + another") saves and starts the next plan in the same
 // sheet, for putting in a lot at once; what's been added shows on the first
 // step. "Several days" saves one plan for each day picked.
@@ -20,11 +22,12 @@
 import { useMemo, useRef, useState } from 'react';
 import { AlertTriangle, Check } from 'lucide-react';
 import { Sheet } from '../components/Sheet.jsx';
-import { isTabbedToButton, isTyping } from '../components/sheetLayer.js';
+import { isPlusKey, isTabbedToButton, isTyping } from '../components/sheetLayer.js';
 import { Kbd } from '../components/atoms.jsx';
 import { AvatarStack, PeopleGrid } from '../components/PersonPick.jsx';
 import { usePeopleKeys } from '../components/peopleKeys.js';
 import { DateDropdown, TimeDropdown } from '../components/pickers.jsx';
+import { QuickGoalSheet } from './QuickGoalSheet.jsx';
 import { DEFAULT_DURATION, EVENT_TEMPLATES, alertOf, clashesOn, durationOf, isDaily, recentPlans, templateFor } from '../lib/calendar.js';
 import { formatCalendarDate, formatTime12, formatWeekdays, parseISODay, toISODate, WEEKDAY_SHORT } from '../lib/dates.js';
 import { COLORS } from '../theme.js';
@@ -72,6 +75,7 @@ function freshForm(start, people, today, defaultAlert) {
     title: source ? source.title : '',
     // A copy keeps a title that was typed, and follows the people otherwise.
     titleTouched: !!editing || (!!start.copyOf && start.copyOf.title !== autoTitleFor(template, people, personIds)),
+    titleAgain: false, // the title came from "Plan again", not typed
     day,
     days: [day], // for "Several days"
     allDay: source ? !!source.allDay : false,
@@ -96,7 +100,7 @@ function Section({ title, hint, children }) {
   );
 }
 
-export function PlanSheet({ people, events = [], today, prefill = {}, defaultAlert = 15, onClose, onSave, onDelete }) {
+export function PlanSheet({ people, events = [], today, prefill = {}, defaultAlert = 15, onClose, onSave, onDelete, onCreateGoal }) {
   // After "Save + another", the next plan starts from `start` (the same day,
   // and the same person when planning from a profile).
   const [start, setStart] = useState(prefill);
@@ -105,6 +109,8 @@ export function PlanSheet({ people, events = [], today, prefill = {}, defaultAle
   const [dir, setDir] = useState(null);
   const [added, setAdded] = useState([]); // what "Save + another" has saved so far
   const titleRef = useRef(null);
+  const [titleFocus, setTitleFocus] = useState(false);
+  const [newGoal, setNewGoal] = useState(false);
   const set = (patch) => setForm(f => ({ ...f, ...(typeof patch === 'function' ? patch(f) : patch) }));
 
   const editing = start.event || null;
@@ -132,14 +138,17 @@ export function PlanSheet({ people, events = [], today, prefill = {}, defaultAle
     const t = templateFor(ev.template);
     const ids = (ev.personIds || []).filter(id => people.some(p => p.id === id));
     set(fm => ({
-      template: t, personIds: ids, title: ev.title, titleTouched: ev.title !== autoTitleFor(t, people, ids),
+      template: t, personIds: ids, title: ev.title, titleTouched: ev.title !== autoTitleFor(t, people, ids), titleAgain: true,
       allDay: !!ev.allDay, time: typeof ev.time === 'number' ? ev.time : fm.time, duration: durationOf(ev),
       repeat: 'once', days: [fm.day], alert: alertOf(ev), goalId: ev.goalId || null,
     }));
     go('when');
   }
+  // Going back and picking a template drops a title "Plan again" brought,
+  // so it can't follow you into a different plan; a typed one stays.
   function pickTemplate(t) {
-    set(editing || copyOf ? { template: t } : { template: t, time: t.time, duration: t.duration });
+    const fromAgain = form.titleAgain ? { title: '', titleTouched: false, titleAgain: false } : {};
+    set(editing || copyOf ? { template: t, ...fromAgain } : { template: t, time: t.time, duration: t.duration, ...fromAgain });
     go(start.personIds ? 'when' : 'who');
   }
   const BACK = editing ? {} : { who: start.template ? null : 'what', when: start.personIds ? (start.template ? null : 'what') : 'who' };
@@ -223,7 +232,8 @@ export function PlanSheet({ people, events = [], today, prefill = {}, defaultAle
     else if (letter === 'r') act(() => pickRepeat(cycle(repeats.map(([k]) => k), repeat, back)));
     else if (letter === 'a') act(() => set({ alert: cycle(ALERTS, alert, back) }));
     else if (letter === 'g' && goals.length) act(() => set({ goalId: cycle([null, ...goals.map(g => g.id)], goalId, back) }));
-    else if (letter === 'n') act(() => titleRef.current && titleRef.current.select());
+    else if (isPlusKey(e) && picked.length && onCreateGoal) act(() => setNewGoal(true));
+    else if (letter === 'n') act(() => { const el = titleRef.current; if (el) { el.focus(); el.select(); } });
   }
 
   const dayLabel = (d, i) => (i === 0 ? 'Today' : i === 1 ? 'Tomorrow' : shortDay(d));
@@ -302,10 +312,11 @@ export function PlanSheet({ people, events = [], today, prefill = {}, defaultAle
         {step === 'when' && (
           <>
             <div className="mb-4" style={{ position: 'relative' }}>
-              <input ref={titleRef} value={shownTitle} onChange={e => set({ title: e.target.value, titleTouched: true })}
+              <input ref={titleRef} value={shownTitle} onChange={e => set({ title: e.target.value, titleTouched: true, titleAgain: false })}
                 onKeyDown={e => { if (e.key === 'Enter' && !e.ctrlKey) { e.preventDefault(); save(e.shiftKey); } }}
-                aria-label="Title" className="w-full text-sm font-semibold rounded-xl pl-3 pr-10 py-2.5" style={{ border: `1px solid ${COLORS.line}` }} />
-              <span style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }}><Kbd>N</Kbd></span>
+                onFocus={() => setTitleFocus(true)} onBlur={() => setTitleFocus(false)}
+                aria-label="Title" className="w-full text-sm font-semibold rounded-xl pl-3 pr-12 py-2.5" style={{ border: `1px solid ${COLORS.line}` }} />
+              <span style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }}><Kbd>{titleFocus ? 'Esc' : 'N'}</Kbd></span>
             </div>
             <p className="text-xs -mt-2 mb-2" style={{ color: COLORS.inkSoft }} aria-label="Summary">{whenText}</p>
             {clashes.length > 0 && (
@@ -344,10 +355,15 @@ export function PlanSheet({ people, events = [], today, prefill = {}, defaultAle
             <Section title="Remind me" hint="A">
               {ALERTS.map(a => <Choice key={String(a)} on={alert === a} onClick={() => set({ alert: a })}>{alertLabel(a)}</Choice>)}
             </Section>
-            {goals.length > 0 && (
-              <Section title="Moves a goal (optional)" hint="G">
+            {picked.length > 0 && (goals.length > 0 || onCreateGoal) && (
+              <Section title="Moves a goal (optional)" hint={goals.length ? 'G' : null}>
                 {goals.map(g => <Choice key={g.id} on={goalId === g.id} onClick={() => set(f => ({ goalId: f.goalId === g.id ? null : g.id }))}>{g.title}{picked.length > 1 ? ` (${g.personName})` : ''}</Choice>)}
+                {onCreateGoal && <button type="button" onClick={() => setNewGoal(true)} className="chip" style={{ padding: '4px 6px 4px 10px' }}>+ New goal <Kbd>+</Kbd></button>}
               </Section>
+            )}
+            {newGoal && (
+              <QuickGoalSheet people={people} forIds={personIds} today={today} onClose={() => setNewGoal(false)}
+                onCreate={(personId, goal) => { onCreateGoal(personId, goal); set({ goalId: goal.id }); setNewGoal(false); }} />
             )}
           </>
         )}

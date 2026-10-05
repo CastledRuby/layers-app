@@ -418,6 +418,11 @@ phone later. It's unit-tested in `src/calendar.test.js`.
 - **`weekSummary(state, day)`**: the Monday-to-Sunday week around `day` for the weekly
   review: who was seen, interactions logged, plans done of planned (not daily routines),
   goals with a history point that week, and next week's Monday and plans.
+- **`planTips(ev, state, day)`** ([`lib/tips.js`](../../src/lib/tips.js)): Coach tips
+  for a plan: `PLAN_TIPS` for its template, then for each person up to four of
+  Prepare's hooks (`buildPotentialHooks`), their key dates from the plan's day to two
+  weeks after (`datesAround`), `lighter` for Layers 1 and 2, and the goal it moves with
+  its preset's suggestion. Only saved data and templates; nothing is made up.
 - **`planIdeas`**: people it's been a while since you logged with, sooner the closer
   they are: 35 days for Layer 1, 21 for Layer 2, 14 for Layer 3, 7 for Layer 4. Only
   people with nothing planned in the next week.

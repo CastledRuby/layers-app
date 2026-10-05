@@ -149,8 +149,10 @@ Every open `Sheet` and `ConfirmDialog` registers itself in a stack in
 It keeps the latest `onClose` in a ref, so Esc always calls the current handler. The
 keyboard handler in `LayersApp` uses the stack in two ways:
 
-- **Esc closes only the top sheet.** It first leaves a focused search box; otherwise it
-  calls `topSheet().close()`. A picker opened inside a sheet closes by itself, and the
+- **Esc closes only the top sheet.** It first leaves a focused search box, or a text box
+  in a sheet that has keys (its panel has `data-keys`), so the sheet's keys work again;
+  otherwise it calls `topSheet().close()`. Tab in such a text box leaves it too
+  (`Sheet`), rather than landing on the next button. A picker opened inside a sheet closes by itself, and the
   sheet underneath keeps what you typed.
 - **Shortcuts are off while any sheet is open** (`hasOpenSheet()`).
 
@@ -235,6 +237,8 @@ ARIA attribute carries the state:
   number lands; the rating sheet's key handler moves it (1–5, Backspace, arrows). A tick
   list, like "Goals this moved" or active listening, uses `role="checkbox"` and
   `aria-checked`.
+- **A person's number** on a "who" step is a solid badge (`.pick-key`), readable over any
+  avatar ring in either theme; the person the arrow keys are on has `.pick-cursor`.
 - **Key hints** (`Kbd`) are `aria-hidden`, so a button's name stays what it does
   ("Save interaction", not "Save interaction ↵").
 

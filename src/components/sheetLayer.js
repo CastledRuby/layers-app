@@ -65,3 +65,9 @@ export function isTyping() {
   if (!el) return false;
   return el.tagName === 'TEXTAREA' || el.isContentEditable || (el.tagName === 'INPUT' && !['checkbox', 'radio', 'button', 'range'].includes(el.type));
 }
+
+// "+" (new goal): on a US-style keyboard it's Shift and =, so plain = and the
+// number pad's + count too.
+export function isPlusKey(e) {
+  return e.key === '+' || e.key === '=' || e.code === 'Equal' || e.code === 'NumpadAdd';
+}

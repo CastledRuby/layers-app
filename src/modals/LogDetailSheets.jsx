@@ -6,7 +6,7 @@
 import { useEffect, useState } from 'react';
 import { Check, X } from 'lucide-react';
 import { Sheet } from '../components/Sheet.jsx';
-import { isTabbedToButton, isTyping } from '../components/sheetLayer.js';
+import { isPlusKey, isTabbedToButton, isTyping } from '../components/sheetLayer.js';
 import { Kbd } from '../components/atoms.jsx';
 import { AL_ITEMS, CATEGORIES, categoryMeta, DIM_COLORS, DIM_ORDER, DIM_QUESTIONS, INFO_TEMPLATES, NOTE_TEMPLATE_CATEGORY, NOTE_TEMPLATES, REFLECTION_TEMPLATES } from '../data/constants.js';
 import { COLORS } from '../theme.js';
@@ -201,19 +201,23 @@ export function NewInfoSheet({ personName, items, setItems, category, setCategor
 }
 
 // "Goals this moved": every active goal moves unless it's unticked here.
-export function GoalsSheet({ goals, unticked, toggle, showNames, onClose }) {
+// "+ New goal" (or +) starts one with the people logged (QuickGoalSheet,
+// opened by the log), and it comes back ticked.
+export function GoalsSheet({ goals, unticked, toggle, showNames, onNewGoal, onClose }) {
   function onKey(e) {
     if (e.ctrlKey || e.metaKey || e.altKey) return;
     if (enterCloses(e, onClose)) return;
+    if (isPlusKey(e) && onNewGoal) { e.preventDefault(); onNewGoal(); return; }
     const i = Number(e.key) - 1;
     if (i >= 0 && i < Math.min(goals.length, 9)) { e.preventDefault(); toggle(goals[i].id); }
   }
   return (
-    <Sheet title="Goals this moved" onClose={onClose} onKey={onKey} footer={<DoneButton onClick={onClose} />}>
-      <p className="text-xs mb-2" style={{ color: COLORS.inkSoft }}>Untick any it didn't help. Unticked goals stay where they are.</p>
+    <Sheet title={goals.length ? 'Goals this moved' : 'Goals'} onClose={onClose} onKey={onKey} footer={<DoneButton onClick={onClose} />}>
+      <p className="text-xs mb-2" style={{ color: COLORS.inkSoft }}>{goals.length ? "Untick any it didn't help. Unticked goals stay where they are." : 'No goals with them yet. Start one, and this log counts towards it.'}</p>
       {goals.map((g, i) => (
         <CheckRow key={g.id} checked={!unticked.includes(g.id)} onClick={() => toggle(g.id)} label={`${g.title}${showNames ? ` (${g.personName})` : ''}`} hint={i < 9 ? String(i + 1) : null} />
       ))}
+      {onNewGoal && <button type="button" onClick={onNewGoal} className="chip mt-3" style={{ padding: '6px 6px 6px 10px' }}>+ New goal <Kbd>+</Kbd></button>}
     </Sheet>
   );
 }

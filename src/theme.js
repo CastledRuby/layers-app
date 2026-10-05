@@ -195,6 +195,10 @@ button:active:not(:disabled) { transform: scale(0.97); }
 .kbd { display: inline-flex; align-items: center; justify-content: center; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 5px; font: 600 10px/1 ui-monospace, 'Cascadia Mono', Consolas, monospace; color: ${COLORS.inkSoft}; background: color-mix(in srgb, ${COLORS.ink} 5%, transparent); border: 1px solid ${COLORS.line}; border-bottom-width: 2px; flex-shrink: 0; }
 .kbd--on-accent { color: ${COLORS.onAccent}; background: color-mix(in srgb, ${COLORS.onAccent} 16%, transparent); border-color: color-mix(in srgb, ${COLORS.onAccent} 35%, transparent); }
 .tile > .kbd { position: absolute; top: 9px; right: 9px; }
+/* A person's number key on a "who" step: solid, so it reads over any avatar
+   ring in either theme; and the outline the arrow keys move (PersonPick). */
+.pick-key { position: absolute; top: -5px; left: -7px; z-index: 1; min-width: 20px; height: 20px; padding: 0 5px; border-radius: 999px; display: inline-flex; align-items: center; justify-content: center; font: 700 11px/1 ui-monospace, 'Cascadia Mono', Consolas, monospace; color: ${COLORS.ink}; background: ${COLORS.paper}; border: 1.5px solid ${COLORS.inkSoft}; box-shadow: 0 1px 3px rgba(0,0,0,0.25); }
+.pick-cursor { box-shadow: 0 0 0 2px ${COLORS.accent}; background: ${COLORS.accentSoft}; }
 
 /* A value just picked: a quick, springy pop. */
 @keyframes pop { 0% { transform: scale(0.86); } 60% { transform: scale(1.08); } 100% { transform: scale(1); } }

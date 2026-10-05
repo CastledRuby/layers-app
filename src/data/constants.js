@@ -44,21 +44,26 @@ export const SHORTCUTS = [
   { keys: ['P'], desc: 'Plan something on the calendar' },
   { keys: ['M'], desc: 'Today: switch between the day and the month' },
   { keys: ['←', '→'], or: true, desc: 'Today: the day before or after' },
+  { keys: ['↑', '↓'], or: true, desc: 'Today: a week before or after' },
+  { keys: ['↵'], desc: 'Today: open the day in a popup, with Coach tips for its plans (T)' },
   { keys: ['T'], desc: 'Today: back to today' },
   { keys: ['L', 'J'], or: true, desc: 'Today: Log it, or Just tick it, for the first "How did it go?"' },
   { keys: ['I'], desc: 'Today: plan the first idea' },
   { keys: ['W'], desc: 'Today: your week in review, then plan next week' },
   { keys: ['1–9'], desc: 'Picking people (log or plan): press their number, or type a name' },
+  { keys: ['←', '→', 'Space'], desc: 'Picking people: move to anyone past the first nine, and pick them' },
   { keys: ['T', 'L', 'R', 'A'], or: true, desc: 'Planning "When?": step through time, length, repeat, reminder (1–7 picks the day)' },
   { keys: ['Shift', '↵'], desc: 'Planning: save and plan another straight away' },
+  { keys: ['+'], desc: 'Planning "When?", or Goals when logging: a new goal with them' },
   { keys: ['Q', 'W', 'E', 'R'], or: true, desc: 'Planning "What?": plan one of your recent plans again' },
   { keys: ['C'], desc: 'An open plan: plan it again (a copy)' },
+  { keys: ['T'], desc: 'An open plan, or a plan in the day popup: Coach tips for it' },
   { keys: ['D'], desc: 'Add detail — browse templates and copy one, no logging needed' },
   { keys: ['Ctrl', 'Shift', 'A'], desc: 'Add a new person' },
   { keys: ['/'], desc: 'Jump to search (People or Journal)' },
   { keys: ['Backspace'], desc: 'Go back from a person or goals screen' },
   { keys: ['Ctrl', 'Z'], desc: 'Undo what you just did, while its message shows (a delete, tick, log or saved plan)' },
-  { keys: ['Esc'], desc: 'Close the open sheet/dialog, or leave the search box' },
+  { keys: ['Esc'], desc: 'Close the open sheet/dialog, or leave the search box or a text box you’re typing in (Tab too)' },
   { keys: ['?'], desc: 'Show this shortcuts list' },
 ];
 
@@ -102,6 +107,51 @@ export const INFO_TEMPLATES = {
   plans: ['Going on holiday', 'Planning a trip', 'Starting a new job', 'Looking for work', 'Moving house', 'Exams coming up', 'Learning to drive', 'Saving up for something', 'Starting a course', 'Training for an event', 'Birthday coming up', 'Going to a concert', 'Wants to learn something new'],
   experiences: ['Travelled overseas', 'Changed schools', 'Moved cities', 'Changed jobs', 'Got a new pet', 'Lost a pet', 'Went through a breakup', 'Started a relationship', 'Had a tough time lately', 'Achieved something big', 'Recovered from being ill', 'Family changes', 'Tried something new'],
   important: ['Exam soon', 'Job interview soon', 'Feeling unwell', 'Stressed lately', 'Family going through something', 'Busy week', 'Birthday soon', 'Going away soon', 'Big game or performance soon', 'Waiting on news', 'Celebrating something'],
+};
+
+// Coach tips for a plan, by its template (lib/tips.js adds what's saved
+// about the people). Prompts for what to try, never scripts.
+export const PLAN_TIPS = {
+  coffee: [
+    'Pick somewhere quiet enough to hear each other.',
+    'Have one thing ready to ask about, then follow where it goes.',
+    'Leave while it’s still good; it makes the next one easy to suggest.',
+  ],
+  call: [
+    'Check it’s still a good time before diving in.',
+    'Open with something specific rather than “what’s up?”.',
+    'End with something to look forward to: a plan, or a follow-up.',
+  ],
+  hangout: [
+    'Doing something side by side takes the pressure off talking the whole time.',
+    'Notice what they light up about; that’s your next plan.',
+    'Before you leave, suggest the next time.',
+  ],
+  meal: [
+    'Let them pick the place if they have a favourite.',
+    'Phones away: the easiest way to show you’re listening.',
+    'Ask about the best part of their week, then share yours.',
+  ],
+  activity: [
+    'Keep it light if it’s competitive; the point is time together.',
+    'The quiet moments in between are where the good conversations happen.',
+    'Afterwards, mention a moment you enjoyed.',
+  ],
+  study: [
+    'Agree on breaks, and use them to chat.',
+    'Ask what they’re finding hardest, and offer to go through it together.',
+    'Celebrate a small win together at the end.',
+  ],
+  checkin: [
+    'Mention something specific you remembered about them.',
+    'Keep it short and easy to reply to.',
+    'Ask an open question rather than a yes-or-no one.',
+  ],
+  custom: [
+    'Have one thing ready to ask about.',
+    'Listen for a detail to follow up on next time.',
+    'Before you go, suggest the next time.',
+  ],
 };
 
 // Tap-to-add phrases for "How did it feel?": how it went, and what to try

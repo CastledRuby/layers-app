@@ -3,7 +3,9 @@
 // ideas for who to see, and your goals. See docs/renderer/app-structure.md.
 //
 // Keys (not while typing or with a sheet open): M switches Day and Month,
-// the arrows move a day, T comes back to today. L and J answer the first
+// ← → move a day and ↑ ↓ a week, T comes back to today, and Enter (or
+// clicking the day that's picked) opens the day in a popup (DaySheet), with
+// Coach tips for its plans. L and J answer the first
 // "How did it go?" (Log it, Just tick it), I plans the first idea, and W
 // opens the week's review (shown as a card on Sundays; on a Monday, last
 // week's). P
@@ -13,7 +15,7 @@ import { useEffect, useMemo } from 'react';
 import { Bell, Check, ChevronLeft, ChevronRight, Plus, Repeat } from 'lucide-react';
 import { Kbd, ProgressBar } from '../components/atoms.jsx';
 import { AvatarStack } from '../components/PersonPick.jsx';
-import { hasOpenSheet, isTyping } from '../components/sheetLayer.js';
+import { hasOpenSheet, isTabbedToButton as isTabbed, isTyping } from '../components/sheetLayer.js';
 import { getLayer, TYPE_META } from '../data/constants.js';
 import { alertOf, dayAgenda, isDaily, monthMarks, needsAnswer, planIdeas, templateFor } from '../lib/calendar.js';
 import { formatTime12, MONTH_NAMES, parseISODay, toISODate, WEEKDAY_SHORT } from '../lib/dates.js';
@@ -144,7 +146,7 @@ function EventRow({ item, now, onOpen }) {
   );
 }
 
-export function TodayView({ today, selectedDay, onSelectDay, mode, onSetMode, people, journal, events, generalGoals, skills, profile, onPlan, onOpenEvent, onLogEvent, onTickEvent, onOpenPerson, onAddPerson, onOpenLog, onSwitchTab, onOpenGoals, onOpenReview }) {
+export function TodayView({ today, selectedDay, onSelectDay, mode, onSetMode, people, journal, events, generalGoals, skills, profile, onPlan, onOpenEvent, onLogEvent, onTickEvent, onOpenPerson, onAddPerson, onOpenLog, onSwitchTab, onOpenGoals, onOpenReview, onOpenDay }) {
   const state = useMemo(() => ({ people, journal, events, generalGoals }), [people, journal, events, generalGoals]);
   const day = selectedDay || today;
   const sel = parseISODay(day);
@@ -175,6 +177,9 @@ export function TodayView({ today, selectedDay, onSelectDay, mode, onSetMode, pe
       if (e.key === 'm' || e.key === 'M') { e.preventDefault(); onSetMode(mode === 'month' ? 'day' : 'month'); }
       else if (e.key === 'ArrowLeft') { e.preventDefault(); onSelectDay(addDays(day, -1)); }
       else if (e.key === 'ArrowRight') { e.preventDefault(); onSelectDay(addDays(day, 1)); }
+      else if (e.key === 'ArrowUp') { e.preventDefault(); onSelectDay(addDays(day, -7)); }
+      else if (e.key === 'ArrowDown') { e.preventDefault(); onSelectDay(addDays(day, 7)); }
+      else if (e.key === 'Enter' && onOpenDay && !isTabbed()) { e.preventDefault(); onOpenDay(day); }
       else if (e.key === 't' || e.key === 'T') { e.preventDefault(); onSelectDay(today); }
       else if ((e.key === 'l' || e.key === 'L') && waiting[0]) { e.preventDefault(); onLogEvent(waiting[0].ev, day); }
       else if ((e.key === 'j' || e.key === 'J') && waiting[0]) { e.preventDefault(); onTickEvent(waiting[0].ev, day); }
@@ -184,7 +189,9 @@ export function TodayView({ today, selectedDay, onSelectDay, mode, onSetMode, pe
     }
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [mode, day, today, waiting, ideas, onSetMode, onSelectDay, onLogEvent, onTickEvent, onPlan, onOpenReview]);
+  }, [mode, day, today, waiting, ideas, onSetMode, onSelectDay, onLogEvent, onTickEvent, onPlan, onOpenReview, onOpenDay]);
+  // Clicking the day that's already picked opens it in the popup.
+  const pickDay = (d) => (d === day && onOpenDay ? onOpenDay(d) : onSelectDay(d));
 
   const hour = clock.getHours();
   const greeting = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
@@ -217,8 +224,8 @@ export function TodayView({ today, selectedDay, onSelectDay, mode, onSetMode, pe
       </div>
 
       {mode === 'month'
-        ? <MonthGrid selected={day} today={today} marksFor={marksFor} onSelect={onSelectDay} />
-        : <WeekStrip selected={day} today={today} marksFor={marksFor} onSelect={onSelectDay} />}
+        ? <MonthGrid selected={day} today={today} marksFor={marksFor} onSelect={pickDay} />
+        : <WeekStrip selected={day} today={today} marksFor={marksFor} onSelect={pickDay} />}
 
       {waiting.length > 0 && (
         <div className="mt-5 flex flex-col gap-2">

@@ -17,6 +17,7 @@ import { usePeopleKeys } from '../components/peopleKeys.js';
 import { categoryMeta, DIM_ORDER, getLayer, NOTE_TEMPLATE_CATEGORY, TYPE_META, TYPE_ORDER } from '../data/constants.js';
 import { parseISODay } from '../lib/dates.js';
 import { GoalsSheet, ListeningSheet, NewInfoSheet, RateSheet, ReflectionSheet } from './LogDetailSheets.jsx';
+import { QuickGoalSheet } from './QuickGoalSheet.jsx';
 import { TemplatePickerModal } from './TemplatePickerModal.jsx';
 import { COLORS } from '../theme.js';
 
@@ -55,7 +56,7 @@ function Scale({ value, onChange, label, size = 'md' }) {
 // prefill (logging a plan from the calendar): { personIds, type, note, day,
 // goalIds } opens straight on the details, filled in; goalIds, when given,
 // are the only goals ticked.
-export function LogInteractionModal({ people, defaultPersonId, prefill, onClose, onSubmit, onPlan }) {
+export function LogInteractionModal({ people, defaultPersonId, prefill, onClose, onSubmit, onPlan, onCreateGoal }) {
   const [step, setStep] = useState(prefill ? 'details' : 'kind'); // kind -> type -> who -> details
   const [dir, setDir] = useState(null); // 'in' | 'back': the slide for the step just shown
   const [type, setType] = useState(prefill ? prefill.type || 'other' : null);
@@ -71,6 +72,7 @@ export function LogInteractionModal({ people, defaultPersonId, prefill, onClose,
   const noteRef = useRef(null);
   // "More details": which of their sheets is open (null = none), and what's in them.
   const [extra, setExtra] = useState(null); // 'rate' | 'listening' | 'new' | 'goals' | 'reflect'
+  const [newGoal, setNewGoal] = useState(false); // QuickGoalSheet, over Goals moved
   const [newInfo, setNewInfo] = useState([]); // [{ category, text }]
   const [newInfoCat, setNewInfoCat] = useState('interests');
   const [newInfoText, setNewInfoText] = useState('');
@@ -130,7 +132,7 @@ export function LogInteractionModal({ people, defaultPersonId, prefill, onClose,
     { key: 'rate', letter: 'R', Icon: Gauge, label: 'Rate each part', summary: rated ? `${rated} of ${DIM_ORDER.length}` : null },
     { key: 'listening', letter: 'L', Icon: Ear, label: 'Active listening', summary: al.length ? `${al.length} ticked` : null },
     loggedPerson && { key: 'new', letter: 'I', Icon: Sparkles, label: 'Something new', summary: newInfo.length ? `${newInfo.length} added` : null },
-    goalsInLog.length > 0 && { key: 'goals', letter: 'G', Icon: Target, label: 'Goals moved', summary: untickedGoals.length ? `${goalsInLog.length - untickedGoals.length} of ${goalsInLog.length}` : null },
+    (goalsInLog.length > 0 || (onCreateGoal && loggedPeople.length > 0)) && { key: 'goals', letter: 'G', Icon: Target, label: goalsInLog.length ? 'Goals moved' : 'Add a goal', summary: untickedGoals.length ? `${goalsInLog.length - untickedGoals.length} of ${goalsInLog.length}` : null },
     { key: 'reflect', letter: 'F', Icon: PenLine, label: 'How it felt', summary: reflectionTags.length ? `${reflectionTags.length} picked${reflection.trim() ? ', written' : ''}` : reflection.trim() ? 'written' : null },
   ].filter(Boolean);
 
@@ -285,7 +287,11 @@ export function LogInteractionModal({ people, defaultPersonId, prefill, onClose,
             {extra === 'rate' && <RateSheet ratings={ratings} setRatings={setRatings} cursor={ratingCursor} setCursor={setRatingCursor} onClose={() => setExtra(null)} />}
             {extra === 'listening' && <ListeningSheet al={al} toggle={(k) => toggleIn(setAl, k)} onClose={() => setExtra(null)} />}
             {extra === 'new' && loggedPerson && <NewInfoSheet personName={loggedPerson.name} items={newInfo} setItems={setNewInfo} category={newInfoCat} setCategory={setNewInfoCat} text={newInfoText} setText={setNewInfoText} onClose={() => setExtra(null)} />}
-            {extra === 'goals' && <GoalsSheet goals={goalsInLog} unticked={untickedGoals} toggle={(id) => toggleIn(setUntickedGoals, id)} showNames={personIds.length > 1} onClose={() => setExtra(null)} />}
+            {extra === 'goals' && <GoalsSheet goals={goalsInLog} unticked={untickedGoals} toggle={(id) => toggleIn(setUntickedGoals, id)} showNames={personIds.length > 1} onNewGoal={onCreateGoal ? () => setNewGoal(true) : undefined} onClose={() => setExtra(null)} />}
+            {extra === 'goals' && newGoal && (
+              <QuickGoalSheet people={people} forIds={personIds} onClose={() => setNewGoal(false)}
+                onCreate={(personId, goal) => { onCreateGoal(personId, goal); setNewGoal(false); }} />
+            )}
             {extra === 'reflect' && <ReflectionSheet tags={reflectionTags} toggleTag={(t) => toggleIn(setReflectionTags, t)} value={reflection} setValue={setReflection} onClose={() => setExtra(null)} />}
           </>
         )}

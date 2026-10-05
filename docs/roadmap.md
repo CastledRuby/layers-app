@@ -381,6 +381,27 @@ start.
 
 ## History
 
+### Live-test feedback (after 1.0.30, not released yet)
+
+What you found trying it on 2026-10-05, and what changed:
+
+- **Picking people** (the number keys were hard to see, and stopped at 9): people are
+  closest first, as on the People tab, with solid number badges. Past nine, type a name,
+  or move with the arrows and pick with Space.
+- **A plan's title was already filled in**: a title brought by Plan again no longer sticks
+  when you go back and pick a template. **Esc or Tab leaves the title box** (any text box
+  in a sheet with keys), so the keys work again; the next Esc closes the sheet.
+- **A new goal wherever you log or plan**: **+ New goal** (`+`) on "When?" and on the
+  log's Goals (now there even before someone has goals). Pick one of seven suggestions or
+  write your own, optionally a more specific version (V) and a due date (D); Enter
+  creates it, and the plan or log picks it.
+- **The day popup**: on Today, ↑ ↓ move a week (← → still a day). **Enter**, or tapping the
+  day that's picked, opens the day: its plans, key dates and logs; ← → move days, ↑ ↓ and
+  Enter open a plan, P plans something. **Coach tips** (T) on a plan with people: tips
+  for that kind of plan, what you know about them (what to follow up on, what you last
+  talked about and noted, their interests), their key dates around it, and the goal it
+  moves. An open plan has Coach tips too.
+
 ### Quality of life: notifications (after 1.0.30, not released yet)
 
 - **Rate a plan from "How did it go?"**: Casual, Good, Personal or Deep logs it without
