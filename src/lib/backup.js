@@ -7,7 +7,7 @@
 import { DATE_KINDS } from './calendar.js';
 import { ACHIEVEMENTS, CATEGORIES, DIM_ORDER, LAYER_BASE_DIMS, SKILL_ORDER, TYPE_META, categoryMeta } from '../data/constants.js';
 import { EMPTY_SKILLS } from '../data/seed.js';
-import { isInitials } from '../data/avatars.js';
+import { cleanAvatar } from '../data/avatars.js';
 import { clamp, uid } from './util.js';
 
 export const BACKUP_VERSION = 1;
@@ -60,10 +60,10 @@ function cleanPerson(p, skipped) {
     history: cleanHistory(p.history),
     timeline: (Array.isArray(p.timeline) ? p.timeline : []).filter(t => isObject(t) && isText(t.label)),
   };
-  // Initials instead of the emoji; anything else is dropped, so the emoji shows.
+  // Initials or a photo instead of the emoji; anything else is dropped, so the emoji shows.
   if ('avatar' in p) {
-    if (isInitials(p.avatar)) person.avatar = { style: 'initials', color: p.avatar.color };
-    else delete person.avatar;
+    const avatar = cleanAvatar(p.avatar);
+    if (avatar) person.avatar = avatar; else delete person.avatar;
   }
   // Key dates (birthdays, exams) for the calendar; ones without a real day are dropped.
   if ('dates' in p) {

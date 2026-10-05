@@ -66,6 +66,38 @@ export const INITIALS_GROUP = {
 export function isInitials(avatar) {
   return !!avatar && typeof avatar === 'object' && avatar.style === 'initials' && INITIAL_COLORS.some(c => c.key === avatar.color);
 }
+// A photo: a picture you chose, cropped to the circle and shrunk to
+// PHOTO_SIZE px (lib/photo.js), kept in the person as a data URL
+// (person.avatar = { style: 'photo', src }). Only small JPEG, PNG or WebP
+// images are kept.
+export const PHOTO_SIZE = 160;
+export const PHOTO_GROUP = { key: 'photo', label: 'Photo', photo: true, items: [] };
+const PHOTO_SRC = /^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/]+={0,2}$/;
+export function isPhoto(avatar) {
+  return !!avatar && typeof avatar === 'object' && avatar.style === 'photo' && typeof avatar.src === 'string' && avatar.src.length < 300000 && PHOTO_SRC.test(avatar.src);
+}
+// A valid avatar style (initials or a photo), or null for the emoji.
+export function cleanAvatar(avatar) {
+  if (isInitials(avatar)) return { style: 'initials', color: avatar.color };
+  if (isPhoto(avatar)) return { style: 'photo', src: avatar.src };
+  return null;
+}
+
+// Where a w × h picture sits in a square of \`size\` px: it covers the square
+// at zoom 1, and x and y move it (in parts of the square), never so far that
+// the square shows past its edge. Returns the crop as clamped, and the box.
+export function photoBox(w, h, { zoom = 1, x = 0, y = 0 } = {}, size = PHOTO_SIZE) {
+  const z = Math.max(1, Math.min(4, zoom));
+  const scale = (size / Math.min(w, h)) * z;
+  const width = w * scale;
+  const height = h * scale;
+  const maxX = (width - size) / 2 / size;
+  const maxY = (height - size) / 2 / size;
+  const cx = Math.max(-maxX, Math.min(maxX, x));
+  const cy = Math.max(-maxY, Math.min(maxY, y));
+  return { crop: { zoom: z, x: cx, y: cy }, left: (size - width) / 2 + cx * size, top: (size - height) / 2 + cy * size, width, height };
+}
+
 // "Ethan M" -> "EM"; one name -> its first two letters ("Isla" -> "Is").
 export function initialsOf(name) {
   const words = String(name || '').trim().split(/\s+/).filter(Boolean);

@@ -193,3 +193,31 @@ test('Ctrl+Alt+L sends Layers back when it is in front, and brings it forward ag
   await expect.poll(async () => { const s = await main(); return s.visible && !s.minimized; }, { timeout: 5000 }).toBe(true);
   await quit(app);
 });
+
+test('a chosen photo becomes the avatar, kept small, and survives a restart', async () => {
+  const dataDir = tempDataDir();
+  let { app, page } = await launch(dataDir);
+  await onboard(page, 'Sam');
+  await page.keyboard.press('Control+Shift+A');
+  await page.getByLabel('Their name').fill('Pip');
+  await page.keyboard.press('Tab');
+  await page.keyboard.press('g'); // Initials -> Photo
+  // A picture from the PC (the file box the U key opens).
+  const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAIAAABLbSncAAAAGUlEQVR4nGNgYGD4z8DAwMDAxMDAwMAAAAwKAAG2t3sRAAAAAElFTkSuQmCC', 'base64');
+  await page.getByLabel('Choose a picture').setInputFiles({ name: 'pip.png', mimeType: 'image/png', buffer: png });
+  await expect(page.locator('.photo-crop img')).toBeVisible();
+  await page.keyboard.press('l'); // skip the questions
+  await page.keyboard.press('Enter');
+  const avatar = () => page.evaluate(() => JSON.parse(localStorage.getItem('layers-app-state-v1')).people.find(p => p.name === 'Pip').avatar);
+  await expect.poll(async () => (await avatar() || {}).style, { timeout: 10000 }).toBe('photo');
+  const saved = await avatar();
+  expect(saved.src.startsWith('data:image/jpeg;base64,')).toBe(true);
+  expect(saved.src.length).toBeLessThan(60000);
+  await quit(app);
+
+  ({ app, page } = await launch(dataDir));
+  await page.locator('.nav-bar').getByRole('button', { name: 'People', exact: true }).click();
+  await page.getByRole('button', { name: 'List view' }).click();
+  await expect(page.locator('img[src^="data:image/jpeg"]').first()).toBeVisible();
+  await quit(app);
+});

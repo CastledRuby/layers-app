@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { CONV_STATES, getLayer } from '../data/constants.js';
-import { INITIAL_COLORS, initialsOf, isInitials } from '../data/avatars.js';
+import { INITIAL_COLORS, initialsOf, isInitials, isPhoto } from '../data/avatars.js';
 import { timelineDateLabel } from '../lib/dates.js';
 import { clamp } from '../lib/util.js';
 import { COLORS } from '../theme.js';
@@ -48,10 +48,17 @@ export function LabeledBar({ label, percent, color, size = 'sm' }) {
 }
 
 // A person's avatar (pass `person`): their emoji, or their initials on a
-// colour when person.avatar says so (data/avatars.js). `emoji` alone draws
-// just that emoji.
+// colour or their photo when person.avatar says so (data/avatars.js).
+// `emoji` alone draws just that emoji.
 export function Avatar({ person, emoji, size = 44, ringColor, bg = COLORS.paperRaised }) {
   const box = { width: size, height: size, border: `2px solid ${ringColor || COLORS.line}` };
+  if (person && isPhoto(person.avatar)) {
+    return (
+      <div className="rounded-full shrink-0 overflow-hidden" style={{ ...box, background: bg }}>
+        <img src={person.avatar.src} alt="" draggable={false} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+      </div>
+    );
+  }
   if (person && isInitials(person.avatar)) {
     const text = initialsOf(person.name);
     const c = INITIAL_COLORS.find(x => x.key === person.avatar.color);

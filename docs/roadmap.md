@@ -409,12 +409,20 @@ start.
 
 ## History
 
-### Initials as avatars (after 1.0.31, not released yet)
+### Initials and photos as avatars (after 1.0.31, not released yet)
 
-You said the emoji avatars still didn't look quite right. Anyone can now have their
-**initials** instead ("EM" for Ethan M, "Is" for Isla), in their layer's colours (which
-change as they move) or one of eight others. It's the first group in the avatar picker
-(Shift+G from People), and shows everywhere the emoji did. Older avatars are unchanged.
+You said the emoji avatars still didn't look quite right, and picked initials and photos
+from six styles (the others were drawn faces, one flat emoji set, a rings monogram and
+line icons; say if you want any of them later).
+
+- **Initials** ("EM" for Ethan M, "Is" for Isla), in their layer's colours (which change
+  as they move) or one of eight others. **New people start this way**; you can pick
+  anything else.
+- **Photos**: Photo in the avatar picker, **U** (or Choose a picture) opens the file box,
+  then drag or the arrows move it in the circle and the slider (or + and -) zooms. Only a
+  small 160 px circle is kept, on this computer and in your backups.
+- The picker's groups are now Initials, Photo, People, Faces, Animals and Things (G).
+  Avatars people already have are unchanged.
 
 ### Second live test (1.0.31)
 

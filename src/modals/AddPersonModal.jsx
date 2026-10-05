@@ -24,7 +24,8 @@ const STEP_ORDER = ['name', 'quiz', 'result'];
 export function AddPersonModal({ onClose, onSave }) {
   const [step, setStep] = useState('name');
   const [dir, setDir] = useState(null); // the slide for the step just shown
-  const [look, setLook] = useState({ emoji: PERSON_EMOJIS[0], avatar: null }); // the avatar: an emoji, or initials
+  // The avatar: initials in their layer's colours to start; or a photo, or an emoji.
+  const [look, setLook] = useState({ emoji: PERSON_EMOJIS[0], avatar: { style: 'initials', color: 'layer' } });
   const [name, setName] = useState('');
   const quiz = useCloseness();
   const picker = useAvatarPicker(look, setLook);
@@ -87,7 +88,7 @@ export function AddPersonModal({ onClose, onSave }) {
               </div>
             </div>
             <p className="text-sm font-semibold mb-2 flex items-center justify-between gap-2" style={{ color: COLORS.ink }}>Their avatar<span className="text-xs font-medium" style={{ color: COLORS.inkSoft }}>Tab out of the name for its keys</span></p>
-            <AvatarPicker picker={picker} name={who} layer={quiz.placement.layer} />
+            <AvatarPicker picker={picker} name={who} layer={quiz.placement.layer} current={look.avatar} />
             <p className="text-xs mt-5" style={{ color: COLORS.inkSoft }}>Next, a few quick questions about how close you are, from saying hi in a corridor to watching a movie together. They place {who || 'them'} on the right layer.</p>
           </>
         )}

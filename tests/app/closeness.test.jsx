@@ -62,6 +62,6 @@ describe('adding someone', () => {
     await user.keyboard('yyyyyyyyyyy');
     expect(result()).toMatch(/Layer 4: Stable \/ Close · 90% in/);
     await user.keyboard('{Enter}');
-    expect(savedPerson('Kai')).toMatchObject({ layer: 4, emoji: '👩' });
+    expect(savedPerson('Kai')).toMatchObject({ layer: 4, avatar: { style: 'initials', color: 'sky' } }); // → from their layer colours to sky
   });
 });

@@ -1,12 +1,15 @@
 // The avatar picker's state and keys (components/AvatarPicker.jsx shows
 // it). The avatar itself is the sheet's: a look, { emoji, avatar }, where
-// avatar is null for the emoji or { style: 'initials', color } for initials
-// (data/avatars.js); onChange(look) sets it. This keeps which group is
-// showing and the skin tone to use for people.
+// avatar is null for the emoji, { style: 'initials', color } for initials or
+// { style: 'photo', src } for a photo (data/avatars.js); onChange(look) sets
+// it. This keeps which group is showing, the skin tone to use for people,
+// and a picture being cropped.
 //   ← → ↑ ↓  pick the next one in the group (it's picked as you move)
 //   T        the next skin tone (Shift+T the one before), for people
-//   G        the next group (Shift+G the one before): Initials, People,
-//            Faces, Animals, Things
+//   G        the next group (Shift+G the one before): Initials, Photo,
+//            People, Faces, Animals, Things
+//   Photo:   U chooses a picture; then the arrows move it in the circle and
+//            + and - zoom (dragging and the slider do the same)
 //   /        find one by typing ("dog", "red hair", "initials"): Enter or ↓
 //            picks the first match and leaves the box, the arrows then move
 //            through the matches
@@ -14,13 +17,20 @@
 // while you're not typing.
 
 import { useCallback, useRef, useState } from 'react';
-import { AVATAR_COLS, AVATAR_GROUPS, findAvatars, groupOf, INITIALS_GROUP, isInitials, SKIN_TONES, splitTone, withTone } from '../data/avatars.js';
+import { AVATAR_COLS, AVATAR_GROUPS, findAvatars, groupOf, INITIALS_GROUP, isInitials, isPhoto, PHOTO_GROUP, photoBox, SKIN_TONES, splitTone, withTone } from '../data/avatars.js';
+import { loadPhoto, renderPhoto } from '../lib/photo.js';
 
-export const PICKER_GROUPS = [INITIALS_GROUP, ...AVATAR_GROUPS];
+export const PICKER_GROUPS = [INITIALS_GROUP, PHOTO_GROUP, ...AVATAR_GROUPS];
+const EMOJI_FROM = 2; // where the emoji groups start in PICKER_GROUPS
 
 export function useAvatarPicker(look, onChange) {
   const initials = isInitials(look.avatar);
-  const [group, setGroup] = useState(() => (initials ? 0 : groupOf(look.emoji) + 1));
+  const [group, setGroup] = useState(() => (initials ? 0 : isPhoto(look.avatar) ? 1 : groupOf(look.emoji) + EMOJI_FROM));
+  // A picture chosen here, being cropped: { img, zoom, x, y }.
+  const [photo, setPhoto] = useState(null);
+  const [photoError, setPhotoError] = useState(false);
+  const fileRef = useRef(null);
+  const attachFile = useCallback((el) => { fileRef.current = el; }, []);
   const [tone, setTone] = useState(() => splitTone(look.emoji).mod);
   const [query, setQuery] = useState('');
   const findRef = useRef(null);
@@ -49,6 +59,22 @@ export function useAvatarPicker(look, onChange) {
       e.currentTarget.blur();
     }
   }
+  // Photos: choose one (the file box), then move and zoom it.
+  function choosePhoto() { if (fileRef.current) fileRef.current.click(); }
+  async function photoChosen(file) {
+    const img = await loadPhoto(file);
+    setPhotoError(!img);
+    if (img) applyPhoto({ img, zoom: 1, x: 0, y: 0 });
+  }
+  function applyPhoto(next) {
+    const { crop } = photoBox(next.img.naturalWidth, next.img.naturalHeight, next);
+    const placed = { img: next.img, ...crop };
+    setPhoto(placed);
+    const src = renderPhoto(placed.img, crop);
+    if (src) onChange({ emoji: look.emoji, avatar: { style: 'photo', src } });
+  }
+  function movePhoto(dx, dy) { if (photo) applyPhoto({ ...photo, x: photo.x + dx, y: photo.y + dy }); }
+  function zoomPhoto(zoom) { if (photo) applyPhoto({ ...photo, zoom }); }
   function chooseTone(mod) {
     setTone(mod);
     if (!initials && AVATAR_GROUPS[0].items.some(it => it.emoji === base)) onChange({ emoji: withTone(base, mod), avatar: null });
@@ -64,7 +90,14 @@ export function useAvatarPicker(look, onChange) {
       if (findRef.current) findRef.current.focus();
       return true;
     }
-    if (e.key in moves) {
+    if (shown.photo) {
+      const nudges = { ArrowLeft: [-0.03, 0], ArrowRight: [0.03, 0], ArrowUp: [0, -0.03], ArrowDown: [0, 0.03] };
+      if (key === 'u') { e.preventDefault(); choosePhoto(); return true; }
+      if (photo && e.key in nudges) { e.preventDefault(); movePhoto(...nudges[e.key]); return true; }
+      if (photo && (e.key === '+' || e.key === '=' || e.code === 'NumpadAdd')) { e.preventDefault(); zoomPhoto(photo.zoom + 0.1); return true; }
+      if (photo && (e.key === '-' || e.key === '_' || e.code === 'NumpadSubtract')) { e.preventDefault(); zoomPhoto(photo.zoom - 0.1); return true; }
+    }
+    if (e.key in moves && !shown.photo) {
       e.preventDefault();
       const items = shown.items;
       if (!items.length) return true;
@@ -86,5 +119,8 @@ export function useAvatarPicker(look, onChange) {
     return false;
   }
 
-  return { group, shown, tone, finding, query, setQuery, attachFind, findKey, isOn, pick, chooseTone, showGroup, handleKey };
+  return {
+    group, shown, tone, finding, query, setQuery, attachFind, findKey, isOn, pick, chooseTone, showGroup, handleKey,
+    photo, photoError, attachFile, choosePhoto, photoChosen, movePhoto, zoomPhoto,
+  };
 }

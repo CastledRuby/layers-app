@@ -1,0 +1,39 @@
+// Photos for avatars: reading a picture you chose, and drawing the part in
+// the circle at PHOTO_SIZE px as a small JPEG (data/avatars.js has where it
+// sits, photoBox). Nothing leaves the computer: the picture is read here and
+// only the small crop is kept, in the person.
+
+import { PHOTO_SIZE, photoBox } from '../data/avatars.js';
+
+export const MAX_PHOTO_BYTES = 25 * 1024 * 1024;
+
+// A chosen file as an <img>, or null if it isn't a picture this can read.
+export function loadPhoto(file) {
+  return new Promise((resolve) => {
+    if (!file || !/^image\//.test(file.type) || file.size > MAX_PHOTO_BYTES) { resolve(null); return; }
+    const reader = new FileReader();
+    reader.onerror = () => resolve(null);
+    reader.onload = () => {
+      const img = new Image();
+      img.onload = () => resolve(img.naturalWidth && img.naturalHeight ? img : null);
+      img.onerror = () => resolve(null);
+      img.src = reader.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+// The crop as a small JPEG data URL, or null where there's no canvas.
+export function renderPhoto(img, crop) {
+  const canvas = document.createElement('canvas');
+  canvas.width = PHOTO_SIZE;
+  canvas.height = PHOTO_SIZE;
+  let ctx = null;
+  try { ctx = canvas.getContext('2d'); } catch { ctx = null; }
+  if (!ctx) return null;
+  const box = photoBox(img.naturalWidth, img.naturalHeight, crop, PHOTO_SIZE);
+  ctx.fillStyle = '#FFFFFF';
+  ctx.fillRect(0, 0, PHOTO_SIZE, PHOTO_SIZE);
+  ctx.drawImage(img, box.left, box.top, box.width, box.height);
+  return canvas.toDataURL('image/jpeg', 0.85);
+}

@@ -33,7 +33,7 @@ export function EditPersonModal({ person, onClose, onSave, onDelete }) {
         </div>
       </div>
       <p className="text-sm font-semibold mb-2" style={{ color: COLORS.ink }}>Avatar</p>
-      <div className="mb-6"><AvatarPicker picker={picker} name={name} layer={person.layer} /></div>
+      <div className="mb-6"><AvatarPicker picker={picker} name={name} layer={person.layer} current={person.avatar} /></div>
       <button onClick={onDelete} className="w-full flex items-center justify-center gap-1.5 text-xs font-semibold rounded-full py-3" style={{ background: COLORS.layer4Tint, color: COLORS.layer4Deep }}><Trash2 size={13} /> Remove this person</button>
     </Sheet>
   );

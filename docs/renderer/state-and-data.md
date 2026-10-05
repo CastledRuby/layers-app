@@ -85,7 +85,8 @@ These shapes are inferred from the seed data and handlers. There are no runtime 
 ```ts
 type Person = {
   id: string; name: string; emoji: string;    // the emoji, with any skin tone in it
-  avatar?: { style: 'initials'; color: string }; // their initials instead (INITIAL_COLORS key; 'layer' follows their layer). Kept only if valid
+  avatar?: { style: 'initials'; color: string } // their initials instead (INITIAL_COLORS key; 'layer' follows their layer), the default for new people
+         | { style: 'photo'; src: string };     // or a photo: a 160 px JPEG data URL (under 300 KB of text). cleanAvatar keeps only these two
   layer: 1 | 2 | 3 | 4;                       // see LAYERS
   overall: number;                            // 0–100 progress *within the current layer*
   dims: Record<'depth'|'trust'|'reciprocity'|'interaction'|'sharedExperiences'|'listening', number>; // each 0–100

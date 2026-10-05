@@ -259,6 +259,8 @@ button:active:not(:disabled) { transform: scale(0.97); }
 .avatar-choice--initials:hover { transform: translateY(-2px); }
 .avatar-choice-name { font-size: 10.5px; font-weight: 600; color: ${COLORS.inkSoft}; }
 .avatar-initials { font-weight: 600; letter-spacing: -0.01em; line-height: 1; }
+.photo-crop { position: relative; overflow: hidden; border-radius: 50%; cursor: grab; touch-action: none; background: ${COLORS.paperRaised}; box-shadow: 0 0 0 2px ${COLORS.accent}; user-select: none; }
+.photo-crop:active { cursor: grabbing; }
 .avatar-preview { width: 64px; height: 64px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 34px; background: ${COLORS.paperRaised}; border: 2px solid ${COLORS.line}; }
 
 /* The closeness quiz (ClosenessQuiz.jsx): a dot per question, and the

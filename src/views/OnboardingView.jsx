@@ -86,7 +86,7 @@ export function OnboardingView({ initialName, initialFocus, initialNotify = NOTI
   function addDraftPerson(raw, ask = false) {
     const trimmed = (raw === undefined ? newName : raw).trim();
     if (!trimmed) return;
-    setDraftPeople(prev => [...prev, { name: trimmed, emoji: PERSON_EMOJIS[prev.length % PERSON_EMOJIS.length], avatar: null, layer: 1, overall: null }]);
+    setDraftPeople(prev => [...prev, { name: trimmed, emoji: PERSON_EMOJIS[prev.length % PERSON_EMOJIS.length], avatar: { style: 'initials', color: 'layer' }, layer: 1, overall: null }]);
     if (ask) setQuizFor(draftPeople.length);
     if (raw === undefined) setNewName('');
   }
