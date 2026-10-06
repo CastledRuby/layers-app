@@ -31,7 +31,7 @@ how the app behaves for you is listed with the default chosen, so it can be chan
 | Works with zero people | ✅ Done | Checked by both the app tests and the end-to-end tests. |
 | Data-model migration | ✅ Done | Saved data has a version number (2), and older saves are migrated once at startup. Old dates, skill history and login items are upgraded in place too. |
 | People & Layers | ✅ Done | Every layer change gets a dated timeline step. Logging keeps the dimensions inside the layer (P3 option C), so Adjust agrees with the layer shown, and its preview shows any change of percentage. |
-| Goals | ✅ Mostly | Skill goals move with their skills (1.0.28). Goals linked to a reminder move when it's logged. The variant chevron still can't be reached by keyboard. |
+| Goals | ✅ Mostly | Skill goals move with their skills (1.0.28). Goals linked to a reminder move when it's logged. Every part of a goal works by keys (2026-10-06), and logs record the goals they moved. |
 | Coach, Prepare | ✅ Done (1.0.28) | Hooks come from all saved interests, plans, preferences, things to ask about, recent topics and reflections. Personal experiences are kept for Layer 3 and closer. |
 | Coach, Analyse | ✅ Works (sample conversations) | It's still a prototype on four sample chats. Real screenshot analysis is a later idea. |
 | Social skills | ✅ Done | The chart records points, and achievements are stored with dates. Strength and focus come from your real levels. |
@@ -185,12 +185,12 @@ always. **Yes: now, before the next batch.**
 
 ### B. Small: finish the keyboard (next batch)
 
-1. **Keys for the sheets that still need the mouse**: the full goal editor (Goals, and
+1. ✅ **Keys for the sheets that still need the mouse**: the full goal editor (Goals, and
    Edit on a goal), **Add info** on a profile, **Edit your profile** in Me, the interest
    picker, and Coach's **Prepare**. The same pattern as the rest: a letter for each
    section, 1–9 for choices, Esc or Tab out of a text box, Enter saves.
-2. **The goal-variant chevron** by keyboard (V on a goal card).
-3. **Focus**: moves into a sheet when it opens and back to where you were when it closes,
+2. ✅ **The goal-variant chevron** by keyboard (V on a goal card).
+3. ✅ **Focus**: moves into a sheet when it opens and back to where you were when it closes,
    and the icon-only buttons get labels (for screen readers, and tooltips).
 
 ### C. Small: setting up and plans (next batch)
@@ -428,6 +428,23 @@ its own. Changes made while building are marked.
   box in the packaged app, with a temporary data folder as always.
 
 ## History
+
+### Keys for the last sheets, and focus (after 1.0.32, not released yet)
+
+- **A goal** (Add goal on a profile or Goals, and Edit): **1–7** a relationship goal,
+  **S** the next skill goal, **C** your own, **V** its more specific versions (the
+  chevron is a proper button now; 1–6 pick one), **E** the description, **D** a due
+  date (2 weeks, a month, 3 months, none), **← →** who it's for, **Enter** creates it.
+- **Add info** on a profile: type straight away, Esc, then **← →** the icon and **T**
+  temporary; Enter saves. The **+** beside each section is labelled ("Add to
+  Interests").
+- **Your profile** in Me: **N** your name, **1–4** your focus, Enter saves.
+- **Coach, Prepare**: **← →** who you're about to talk to, **L** log the conversation,
+  **A** analyse a chat with them, **O** their profile; **1** and **2** switch Prepare and
+  Analyse.
+- **Focus** moves into a sheet when it opens and back to where you were when it closes,
+  for Tab and screen readers. A dialog that deletes something starts on **Cancel**, so
+  Enter there is safe. The calendar picker's month arrows are labelled too.
 
 ### Key dates while setting up (after 1.0.32, not released yet)
 

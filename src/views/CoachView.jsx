@@ -1,8 +1,12 @@
 // Conversation Coach tab: Prepare and Analyse.
+// Keys (no sheet open, not typing): 1 Prepare, 2 Analyse; on Prepare, ← →
+// who you're about to talk to, L logs the conversation with them, A
+// analyses a chat with them, O opens their profile.
 
 import { useEffect, useState } from 'react';
 import { Check } from 'lucide-react';
-import { Avatar, ChatBubble, ConvStateBadge, LabeledBar, LayerBadge } from '../components/atoms.jsx';
+import { Avatar, ChatBubble, ConvStateBadge, Kbd, LabeledBar, LayerBadge } from '../components/atoms.jsx';
+import { hasOpenSheet, isTyping } from '../components/sheetLayer.js';
 import { categoryMeta, DIM_COLORS, getLayer } from '../data/constants.js';
 import { SCENARIOS } from '../data/scenarios.js';
 import { buildPotentialHooks, HOOKS } from '../lib/text.js';
@@ -63,6 +67,29 @@ export function CoachView({ people, journal, initialPersonId, initialTab, onOpen
     setEditingIndex(null);
   }
   function ignoreInfoItem(i) { updateSession(s => ({ infoStatus: { ...s.infoStatus, [i]: 'ignored' } })); setEditingIndex(null); }
+  useEffect(() => {
+    function onKey(e) {
+      if (e.ctrlKey || e.metaKey || e.altKey || e.defaultPrevented || hasOpenSheet() || isTyping()) return;
+      const el = document.activeElement;
+      if (el && el.tagName === 'BUTTON' && e.key === 'Enter') return;
+      const key = e.key.toLowerCase();
+      const act = (fn) => { e.preventDefault(); fn(); };
+      if (e.key === '1') { act(() => setTab('prepare')); return; }
+      if (e.key === '2') { act(() => setTab('analyse')); return; }
+      if (tab !== 'prepare' || !preparePerson) return;
+      if ((e.key === 'ArrowLeft' || e.key === 'ArrowRight') && people.length > 1) {
+        act(() => {
+          const i = people.findIndex(p => p.id === preparePerson.id);
+          setPreparePersonId(people[(i + (e.key === 'ArrowLeft' ? people.length - 1 : 1)) % people.length].id);
+        });
+      } else if (key === 'l') act(() => onOpenLog(preparePerson.id));
+      else if (key === 'a') act(() => { setAnalysisPersonId(preparePerson.id); setTab('analyse'); });
+      else if (key === 'o') act(() => onOpenPerson(preparePerson.id));
+    }
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  });
+
   function handleLogAnalysis() {
     if (logged) return;
     onLogFromAnalysis(scenarioPerson.id, scenario);
@@ -75,19 +102,19 @@ export function CoachView({ people, journal, initialPersonId, initialTab, onOpen
       <p className="text-sm mt-1" style={{ color: COLORS.inkSoft }}>Noticing, responding and adapting, not scripts.</p>
 
       <div className="flex items-center gap-2 mt-4">
-        {[{ k: 'prepare', label: 'Prepare' }, { k: 'analyse', label: 'Analyse a chat' }].map(t => (
-          <button key={t.k} onClick={() => setTab(t.k)} className="text-xs font-semibold rounded-full px-3 py-1.5" style={{ background: tab === t.k ? COLORS.accent : COLORS.paperRaised, color: tab === t.k ? COLORS.onAccent : COLORS.inkSoft, border: `1px solid ${tab === t.k ? COLORS.accent : COLORS.line}` }}>{t.label}</button>
+        {[{ k: 'prepare', label: 'Prepare' }, { k: 'analyse', label: 'Analyse a chat' }].map((t, i) => (
+          <button key={t.k} onClick={() => setTab(t.k)} aria-pressed={tab === t.k} className="flex items-center gap-1.5 text-xs font-semibold rounded-full pl-3 pr-1.5 py-1" style={{ background: tab === t.k ? COLORS.accent : COLORS.paperRaised, color: tab === t.k ? COLORS.onAccent : COLORS.inkSoft, border: `1px solid ${tab === t.k ? COLORS.accent : COLORS.line}` }}>{t.label}<Kbd onAccent={tab === t.k}>{i + 1}</Kbd></button>
         ))}
       </div>
 
       {tab === 'prepare' && (
         <div className="mt-5">
-          <p className="text-sm font-semibold mb-2" style={{ color: COLORS.ink }}>Who are you about to talk to?</p>
+          <p className="text-sm font-semibold mb-2 flex items-center gap-1.5" style={{ color: COLORS.ink }}>Who are you about to talk to?{people.length > 1 && <><Kbd>←</Kbd><Kbd>→</Kbd></>}</p>
           <div style={{ display: 'flex', flexWrap: 'wrap', columnGap: 8, rowGap: 12, paddingBottom: 4, marginBottom: 16, maxHeight: 168, overflowY: 'auto' }}>
             {people.map(p => {
               const active = !!preparePerson && preparePerson.id === p.id; const l = getLayer(p.layer);
               return (
-                <button key={p.id} onClick={() => setPreparePersonId(p.id)} className="flex flex-col items-center gap-1 shrink-0" style={{ width: 56 }}>
+                <button key={p.id} onClick={() => setPreparePersonId(p.id)} aria-pressed={active} className="flex flex-col items-center gap-1 shrink-0" style={{ width: 56 }}>
                   <Avatar person={p} size={44} ringColor={active ? COLORS.accent : l.color} />
                   <span className="text-xs truncate" style={{ maxWidth: 56, color: active ? COLORS.accent : COLORS.inkSoft, fontWeight: active ? 700 : 500 }}>{p.name}</span>
                 </button>
@@ -143,7 +170,7 @@ export function CoachView({ people, journal, initialPersonId, initialTab, onOpen
               <div className="rounded-2xl p-4 mb-3" style={{ background: COLORS.paperRaised, border: `1px dashed ${COLORS.line}` }}>
                 <p className="text-sm font-semibold" style={{ color: COLORS.ink }}>No saved information for {preparePerson.name} yet</p>
                 <p className="text-xs mt-1 mb-2.5" style={{ color: COLORS.inkSoft }}>Add an interest or two and Prepare can surface hooks here automatically.</p>
-                <button onClick={() => onOpenPerson(preparePerson.id)} className="text-xs font-semibold rounded-full px-3 py-1.5" style={{ background: COLORS.accentSoft, color: COLORS.accent }}>Open {preparePerson.name}'s profile</button>
+                <button onClick={() => onOpenPerson(preparePerson.id)} className="inline-flex items-center gap-1.5 text-xs font-semibold rounded-full pl-3 pr-1.5 py-1" style={{ background: COLORS.accentSoft, color: COLORS.accent }}>Open {preparePerson.name}'s profile <Kbd>O</Kbd></button>
               </div>
             );
           })()}
@@ -188,8 +215,8 @@ export function CoachView({ people, journal, initialPersonId, initialTab, onOpen
           </div>
 
           <div className="flex items-center gap-2 mt-5">
-            <button onClick={() => onOpenLog(preparePerson ? preparePerson.id : null)} className="flex-1 text-sm font-semibold rounded-full py-3 text-center" style={{ background: COLORS.accent, color: COLORS.onAccent }}>Log this conversation</button>
-            <button onClick={() => { setAnalysisPersonId(preparePerson ? preparePerson.id : null); setTab('analyse'); }} className="flex-1 text-sm font-semibold rounded-full py-3 text-center" style={{ background: COLORS.paperRaised, color: COLORS.accent, border: `1px solid ${COLORS.accent}` }}>Analyse a screenshot</button>
+            <button onClick={() => onOpenLog(preparePerson ? preparePerson.id : null)} className="flex-1 flex items-center justify-center gap-1.5 text-sm font-semibold rounded-full py-3 text-center" style={{ background: COLORS.accent, color: COLORS.onAccent }}>Log this conversation <Kbd onAccent>L</Kbd></button>
+            <button onClick={() => { setAnalysisPersonId(preparePerson ? preparePerson.id : null); setTab('analyse'); }} className="flex-1 flex items-center justify-center gap-1.5 text-sm font-semibold rounded-full py-3 text-center" style={{ background: COLORS.paperRaised, color: COLORS.accent, border: `1px solid ${COLORS.accent}` }}>Analyse a screenshot <Kbd>A</Kbd></button>
           </div>
 
           <p className="text-xs text-center mt-5" style={{ color: COLORS.inkSoft }}>Good social skills are about noticing, responding and adapting, not forcing a particular outcome.</p>

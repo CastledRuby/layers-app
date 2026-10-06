@@ -186,6 +186,13 @@ keyboard handler in `LayersApp` uses the stack in two ways:
   Something new, How it felt, Add detail's own words, a new goal's own words and a plan's
   title all work this way.
 - **Shortcuts are off while any sheet is open** (`hasOpenSheet()`).
+- **Focus moves into a sheet** when it opens: its panel (`tabIndex=-1`), unless
+  something inside took focus already (a text box with `autoFocus`). When it closes,
+  `returnFocus` (`sheetLayer.js`) puts focus back on what had it before, if that's
+  still on the page and focus hasn't moved on. A panel still on the page hasn't closed
+  (React's StrictMode runs effects twice in development), so nothing moves then.
+  `ConfirmDialog` starts on **Cancel** when its action is `danger` (so Enter is safe),
+  otherwise on its main button, and also gives focus back.
 
 This covers sheets owned by a screen, such as "Prepare to talk" in `PersonProfile`, the
 date and time pickers and `GoalModal`'s variant picker, as well as the

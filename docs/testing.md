@@ -110,6 +110,10 @@ interact.
 - `keys2.test.jsx` covers the second live test's keys: N into a note box and Esc out
   (the quick log, Add detail, editing a journal entry), Redo with Ctrl+Y and
   Ctrl+Shift+Z (and not once something else changed), and Ctrl+K's O, L, P and R.
+- `keys3.test.jsx` covers the last sheets that needed the mouse: the full goal editor
+  (a goal by number, its more specific versions with V, S, C, E, D and ← →), Add info,
+  your profile, Coach's Prepare (← →, L, A, 1 and 2), and focus moving into a sheet and
+  back, with a deleting dialog starting on Cancel.
 - `qol.test.jsx` covers the quality-of-life batches: Undo from a toast and with
   Ctrl+Z, a birthday reminder's Plan something, daily backups (a fake bridge), Match
   Windows, rating a plan from its notification, and the weekly review. `src/backups.test.js` checks `electron/backups.cjs` on a temporary folder:

@@ -4,7 +4,7 @@
 import { useContext, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { ChevronLeft, X } from 'lucide-react';
-import { isTyping, SheetLayerContext, topSheet, useOpenSheet } from './sheetLayer.js';
+import { isTyping, returnFocus, SheetLayerContext, topSheet, useOpenSheet } from './sheetLayer.js';
 import { COLORS } from '../theme.js';
 
 // Never fall back to document.body: content portaled outside .layers-root
@@ -30,6 +30,9 @@ const animate = () => typeof window.matchMedia === 'function' && !window.matchMe
 //   it for screen readers), for the Ctrl+K box.
 // Closing by X, the backdrop or Esc slides the sheet away first; a parent
 // that unmounts it directly (after saving) closes it at once.
+// Focus moves into the sheet when it opens (unless something in it took it
+// already, a text box with autoFocus), and back to where it was when it
+// closes, so Tab and screen readers start in the right place.
 export function Sheet({ title, onClose, onBack, onKey, children, footer, tall, top }) {
   const [closing, setClosing] = useState(false);
   const closingRef = useRef(false);
@@ -44,6 +47,13 @@ export function Sheet({ title, onClose, onBack, onKey, children, footer, tall, t
     timer.current = setTimeout(() => { onClose(); closingRef.current = false; setClosing(false); }, CLOSE_MS);
   }
   const entry = useOpenSheet(requestClose);
+  const panelRef = useRef(null);
+  const [opener] = useState(() => (typeof document === 'undefined' ? null : document.activeElement));
+  useEffect(() => {
+    const panel = panelRef.current;
+    if (panel && !panel.contains(document.activeElement)) panel.focus({ preventScroll: true });
+    return () => { returnFocus(opener, panel); };
+  }, [opener]);
 
   const keyHandler = useRef(onKey);
   useEffect(() => { keyHandler.current = onKey; });
@@ -65,7 +75,7 @@ export function Sheet({ title, onClose, onBack, onKey, children, footer, tall, t
     <SheetPortal>
       <div className={`sheet${top ? ' sheet--top' : ''}${closing ? ' is-closing' : ''}`}>
         <div className="sheet-overlay" onClick={requestClose} />
-        <div className={`sheet-panel sheet-anim${tall ? ' sheet-panel--tall' : ''}`} role="dialog" aria-modal="true" aria-label={title} data-keys={hasKeys ? '' : undefined}>
+        <div ref={panelRef} tabIndex={-1} className={`sheet-panel sheet-anim${tall ? ' sheet-panel--tall' : ''}`} role="dialog" aria-modal="true" aria-label={title} data-keys={hasKeys ? '' : undefined}>
           {!top && <div className="sheet-handle" aria-hidden="true" />}
           {!top && <div className="flex items-center gap-1.5 px-5 pt-3 pb-3">
             {onBack && (

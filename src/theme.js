@@ -192,6 +192,7 @@ button:active:not(:disabled) { transform: scale(0.97); }
    opened on top of it. */
 .sheet { position: absolute; inset: 0; display: flex; align-items: flex-end; justify-content: center; pointer-events: auto; isolation: isolate; }
 .sheet-overlay { position: absolute; inset: 0; background: ${COLORS.overlay}; animation: fadeIn .24s ease-out; }
+.sheet-panel:focus { outline: none; }
 .sheet-panel { position: relative; width: 100%; max-height: 88%; display: flex; flex-direction: column; background: ${COLORS.paperRaised}; color: ${COLORS.ink}; border-radius: 26px 26px 0 0; box-shadow: 0 -1px 0 color-mix(in srgb, ${COLORS.ink} 7%, transparent), 0 -16px 40px rgba(10,12,20,0.22); overflow: hidden; }
 .sheet-panel--tall { height: 80%; max-height: 80%; }
 .sheet-handle { width: 38px; height: 4px; border-radius: 2px; background: ${COLORS.line}; margin: 9px auto 0; flex-shrink: 0; }

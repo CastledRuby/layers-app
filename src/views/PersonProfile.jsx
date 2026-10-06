@@ -241,7 +241,7 @@ export function PersonProfile({ today, person, journal, onBack, onOpenLog, onOpe
                     {cat.key === 'interests' && (
                       <button onClick={() => onOpenQuickAddInterest(person.id)} className="text-xs font-semibold rounded-full px-2.5 py-1" style={{ background: COLORS.accentSoft, color: COLORS.accent }}>Quick add</button>
                     )}
-                    <button onClick={() => onOpenAddInfo(person.id, cat.key)} className="p-1"><Plus size={16} color={COLORS.accent} /></button>
+                    <button onClick={() => onOpenAddInfo(person.id, cat.key)} aria-label={`Add to ${cat.label}`} title={`Add to ${cat.label}`} className="p-1"><Plus size={16} color={COLORS.accent} /></button>
                   </div>
                 </div>
                 {active.length === 0 ? (

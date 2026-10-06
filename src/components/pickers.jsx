@@ -49,9 +49,9 @@ export function DateDropdown({ value, onChange, maxDate, minDate, compact, other
       {open && (
         <Sheet title="Pick a date" onClose={() => setOpen(false)}>
           <div className="flex items-center justify-between mb-4">
-            <button type="button" onClick={() => setViewDate(v => new Date(v.getFullYear(), v.getMonth() - 1, 1))} style={{ width: 34, height: 34, borderRadius: '50%', background: COLORS.accentSoft, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><ChevronLeft size={18} color={COLORS.accent} /></button>
+            <button type="button" aria-label="Previous month" title="Previous month" onClick={() => setViewDate(v => new Date(v.getFullYear(), v.getMonth() - 1, 1))} style={{ width: 34, height: 34, borderRadius: '50%', background: COLORS.accentSoft, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><ChevronLeft size={18} color={COLORS.accent} /></button>
             <span className="text-base font-semibold" style={{ color: COLORS.ink }}>{MONTH_NAMES[month]} {year}</span>
-            <button type="button" onClick={() => setViewDate(v => new Date(v.getFullYear(), v.getMonth() + 1, 1))} style={{ width: 34, height: 34, borderRadius: '50%', background: COLORS.accentSoft, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><ChevronRight size={18} color={COLORS.accent} /></button>
+            <button type="button" aria-label="Next month" title="Next month" onClick={() => setViewDate(v => new Date(v.getFullYear(), v.getMonth() + 1, 1))} style={{ width: 34, height: 34, borderRadius: '50%', background: COLORS.accentSoft, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><ChevronRight size={18} color={COLORS.accent} /></button>
           </div>
           <div className="grid grid-cols-7 gap-1 mb-2">
             {WEEKDAY_SHORT.map(w => (<span key={w} className="text-center" style={{ fontSize: 11, fontWeight: 700, letterSpacing: 0.5, color: COLORS.inkSoft }}>{w[0]}</span>))}

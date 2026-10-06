@@ -341,6 +341,15 @@ These are defined once in `SHORTCUTS` (shown by `ShortcutsModal`) and implemente
   then the day typed in its box (T; "14 Mar", "14/3", with a year if you like, read by
   `readDayMonth` in `lib/dates.js`), Y every year or just once, Backspace back and Enter
   to save.
+- **The rest of the sheets** have keys as well: `GoalModal` (the full goal editor) 1–7
+  a relationship goal, S the next skill goal (Shift+S back), C your own (its title box),
+  V the more specific versions (the chevron, now a button; 1–6 there pick one), E the
+  description, D a due date (none, 2 weeks, a month, 3 months), ← → who it's for (new
+  goals), Enter; `AddInfoModal` types straight into the details (N gets back in), ← →
+  the icon, T temporary, Enter; `EditProfileModal` N your name, 1–4 your focus, Enter.
+  Coach's Prepare (`CoachView`'s own listener, while no sheet is open) has ← → for who
+  you're about to talk to, L log, A analyse, O their profile, and 1 and 2 for Prepare
+  and Analyse.
 
 The log sheet has its own keys, handled by `Sheet`'s `onKey` only while it's the top
 sheet and you're not typing in a text box. Each key is shown next to what it does

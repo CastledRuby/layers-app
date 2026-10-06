@@ -42,6 +42,18 @@ export function useOpenSheet(onClose) {
   return entry;
 }
 
+// Back to what had focus before a sheet or dialog opened (Sheet,
+// ConfirmDialog), if it's still on the page and focus hasn't gone somewhere
+// else meanwhile (it's nowhere, or still inside the closed panel).
+// A panel still on the page hasn't closed: that's React's StrictMode trying
+// the effect twice in development, and focus stays where it is.
+export function returnFocus(opener, panel) {
+  if (panel && panel.isConnected) return;
+  const now = document.activeElement;
+  const lost = !now || now === document.body || (panel && panel.contains(now));
+  if (lost && opener && opener !== document.body && opener.isConnected && typeof opener.focus === 'function') opener.focus({ preventScroll: true });
+}
+
 // Whether focus last moved by Tab rather than by a click: a clicked button
 // keeps focus, and Enter shouldn't press it again.
 let tabbing = false;
