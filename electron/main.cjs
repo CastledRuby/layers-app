@@ -5,6 +5,7 @@ const path = require('path');
 const windowStateKeeper = require('electron-window-state');
 const { createScheduler } = require('./toasts.cjs');
 const { backupDir, backupsInfo, saveDailyBackup } = require('./backups.cjs');
+const { findFaces } = require('./faces.cjs');
 
 // Windows groups taskbar entries, toast notifications, and jump lists by
 // this identity string. It must be set before the app is ready, and it
@@ -89,6 +90,7 @@ if (!gotSingleInstanceLock || quitRequested) {
     setupWindowIpc();
     setupCalendar();
     setupBackups();
+    setupFaces();
     setupQuickAdd();
     registerGlobalShortcut();
 
@@ -534,6 +536,13 @@ function setupBackups() {
     const error = await shell.openPath(dir());
     return { error: error || null };
   });
+}
+
+// --- Faces in pictures (faces.cjs) ----------------------------------------
+// Photos from a folder (and a single photo) start their circle on the face
+// Windows finds; the page sends the pictures' paths.
+function setupFaces() {
+  ipcMain.handle('find-faces', (_event, paths) => findFaces(paths));
 }
 
 function setupCalendar() {

@@ -23,6 +23,21 @@ export function loadPhoto(file) {
   });
 }
 
+// Where the faces are in these pictures (File objects), from Windows' own
+// face detector through the bridge (electron/faces.cjs): one
+// { width, height, faces: [{ x, y, w, h }] } or null per file. null when
+// there's no bridge (the browser preview, tests) or it fails.
+export async function findFaces(files) {
+  const sys = typeof window !== 'undefined' ? window.layersSystem : null;
+  if (!sys || typeof sys.findFaces !== 'function' || !files || !files.length) return null;
+  try {
+    const found = await sys.findFaces(files);
+    return Array.isArray(found) ? found : null;
+  } catch {
+    return null;
+  }
+}
+
 // The crop as a small JPEG data URL, or null where there's no canvas.
 export function renderPhoto(img, crop) {
   const canvas = document.createElement('canvas');

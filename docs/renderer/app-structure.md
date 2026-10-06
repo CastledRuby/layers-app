@@ -357,10 +357,13 @@ These are defined once in `SHORTCUTS` (shown by `ShortcutsModal`) and implemente
   (the shared `usePeopleKeys`; a picture named after someone starts on them,
   `personForFile`), Shift+arrows and + − move and zoom it (`PhotoCrop`, shared with the
   avatar picker), Enter uses it and goes on (or skips it), Backspace goes back. Each
-  starts at `startCrop` (`data/avatars.js`): the upper middle of a portrait, the middle
-  of anything wider. At the end, Enter gives everyone picked their photo
-  (`handlePhotoFolder`), with one Undo. Chromium's own face detector isn't built into
-  Electron on Windows ("not implemented"), so there's no face-finding yet.
+  starts on the face Windows finds (`findFaces` in `lib/photo.js`, asked once for the
+  folder through the bridge; `faceCrop` in `data/avatars.js`: the biggest face in the
+  middle, filling about half the circle), or else at `startCrop`: the upper middle of a
+  portrait, the middle of anything wider. "Finding faces…" shows until Windows answers,
+  and a picture already moved isn't moved again. At the end, Enter gives everyone picked
+  their photo (`handlePhotoFolder`), with one Undo. The avatar picker's Photo does the
+  same for one picture: it shows at once, then moves onto the face.
 
 The log sheet has its own keys, handled by `Sheet`'s `onKey` only while it's the top
 sheet and you're not typing in a text box. Each key is shown next to what it does

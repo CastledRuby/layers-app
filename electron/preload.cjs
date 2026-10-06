@@ -1,4 +1,4 @@
-const { contextBridge, ipcRenderer } = require('electron');
+const { contextBridge, ipcRenderer, webUtils } = require('electron');
 
 contextBridge.exposeInMainWorld('layersUpdater', {
   checkForUpdates: () => ipcRenderer.invoke('check-for-updates'),
@@ -26,6 +26,9 @@ contextBridge.exposeInMainWorld('layersSystem', {
   saveDailyBackup: (day, json) => ipcRenderer.invoke('save-daily-backup', day, json),
   getBackupsInfo: () => ipcRenderer.invoke('backups-info'),
   openBackupsFolder: () => ipcRenderer.invoke('open-backups-folder'),
+  // Where the faces are in chosen pictures (File objects), from Windows' own
+  // face detector (faces.cjs): one { width, height, faces } or null each.
+  findFaces: (files) => ipcRenderer.invoke('find-faces', [...files].map(file => { try { return webUtils.getPathForFile(file) || null; } catch { return null; } })),
   onCalendarAction: (callback) => {
     const listener = (_event, link) => callback(link);
     ipcRenderer.on('calendar-action', listener);

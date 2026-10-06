@@ -17,8 +17,8 @@
 // while you're not typing.
 
 import { useCallback, useRef, useState } from 'react';
-import { AVATAR_COLS, AVATAR_GROUPS, findAvatars, groupOf, INITIALS_GROUP, isInitials, isPhoto, PHOTO_GROUP, photoBox, SKIN_TONES, splitTone, withTone } from '../data/avatars.js';
-import { loadPhoto, renderPhoto } from '../lib/photo.js';
+import { AVATAR_COLS, AVATAR_GROUPS, faceCrop, findAvatars, groupOf, INITIALS_GROUP, isInitials, isPhoto, PHOTO_GROUP, photoBox, SKIN_TONES, splitTone, withTone } from '../data/avatars.js';
+import { findFaces, loadPhoto, renderPhoto } from '../lib/photo.js';
 
 export const PICKER_GROUPS = [INITIALS_GROUP, PHOTO_GROUP, ...AVATAR_GROUPS];
 const EMOJI_FROM = 2; // where the emoji groups start in PICKER_GROUPS
@@ -61,10 +61,18 @@ export function useAvatarPicker(look, onChange) {
   }
   // Photos: choose one (the file box), then move and zoom it.
   function choosePhoto() { if (fileRef.current) fileRef.current.click(); }
+  // It shows at once in the middle, then moves onto the face Windows finds
+  // (a second or two), unless it's been moved or zoomed meanwhile.
+  const latest = useRef({ img: null, moved: false });
   async function photoChosen(file) {
     const img = await loadPhoto(file);
     setPhotoError(!img);
-    if (img) applyPhoto({ img, zoom: 1, x: 0, y: 0 });
+    if (!img) return;
+    latest.current = { img, moved: false };
+    applyPhoto({ img, zoom: 1, x: 0, y: 0 });
+    const found = await findFaces([file]);
+    const crop = found && faceCrop(found[0], img.naturalWidth, img.naturalHeight);
+    if (crop && latest.current.img === img && !latest.current.moved) applyPhoto({ img, ...crop });
   }
   function applyPhoto(next) {
     const { crop } = photoBox(next.img.naturalWidth, next.img.naturalHeight, next);
@@ -73,8 +81,8 @@ export function useAvatarPicker(look, onChange) {
     const src = renderPhoto(placed.img, crop);
     if (src) onChange({ emoji: look.emoji, avatar: { style: 'photo', src } });
   }
-  function movePhoto(dx, dy) { if (photo) applyPhoto({ ...photo, x: photo.x + dx, y: photo.y + dy }); }
-  function zoomPhoto(zoom) { if (photo) applyPhoto({ ...photo, zoom }); }
+  function movePhoto(dx, dy) { if (photo) { latest.current.moved = true; applyPhoto({ ...photo, x: photo.x + dx, y: photo.y + dy }); } }
+  function zoomPhoto(zoom) { if (photo) { latest.current.moved = true; applyPhoto({ ...photo, zoom }); } }
   function chooseTone(mod) {
     setTone(mod);
     if (!initials && AVATAR_GROUPS[0].items.some(it => it.emoji === base)) onChange({ emoji: withTone(base, mod), avatar: null });

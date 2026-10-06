@@ -221,3 +221,38 @@ test('a chosen photo becomes the avatar, kept small, and survives a restart', as
   await expect(page.locator('img[src^="data:image/jpeg"]').first()).toBeVisible();
   await quit(app);
 });
+
+test('photos from a folder: Windows is asked where the faces are, and the photos are kept small', async () => {
+  const dataDir = tempDataDir();
+  const picDir = fs.mkdtempSync(path.join(dataDir, 'pictures-'));
+  const { app, page } = await launch(dataDir);
+  await onboard(page, 'Sam'); // with the example people: Alex, Jamie, Priya, Noah and Sam
+  // Two made-up portraits (no real faces), one named after Priya.
+  const pics = await page.evaluate(() => ['#7aa6c2', '#c99a6b'].map((bg) => {
+    const c = document.createElement('canvas'); c.width = 300; c.height = 450;
+    const x = c.getContext('2d');
+    x.fillStyle = bg; x.fillRect(0, 0, 300, 450);
+    x.fillStyle = '#f1d3b5'; x.beginPath(); x.arc(150, 150, 60, 0, Math.PI * 2); x.fill();
+    return c.toDataURL('image/png').split(',')[1];
+  }));
+  fs.writeFileSync(path.join(picDir, 'Priya.png'), Buffer.from(pics[0], 'base64'));
+  fs.writeFileSync(path.join(picDir, 'IMG_1.png'), Buffer.from(pics[1], 'base64'));
+  await page.locator('.nav-bar').getByRole('button', { name: 'People', exact: true }).click();
+  await page.getByRole('button', { name: 'Add photos from a folder' }).click();
+  await page.getByLabel('Choose a folder of pictures').setInputFiles(picDir);
+  await expect(page.getByLabel('Which picture')).toContainText('Picture 1 of 2');
+  // The real Windows face detector, as the packaged app asks it (faces.cjs).
+  const answer = await app.evaluate((_electron, file) => process.mainModule.require('./faces.cjs').findFaces([file]), path.join(picDir, 'Priya.png'));
+  expect(answer[0]).toMatchObject({ width: 300, height: 450, faces: expect.any(Array) });
+  // Windows answers (no faces in these), and the circle stays where it started.
+  await expect(page.getByText('Finding faces…')).toBeHidden({ timeout: 30000 });
+  await expect(page.getByRole('button', { name: /Skip this one/ })).toBeVisible();
+  await page.keyboard.press('Enter'); // skip IMG_1.png
+  await expect(page.getByRole('button', { name: /Use for Priya/ })).toBeVisible(); // Priya.png starts on Priya
+  await page.keyboard.press('Enter');
+  await page.keyboard.press('Enter'); // add the one photo
+  const avatar = () => page.evaluate(() => JSON.parse(localStorage.getItem('layers-app-state-v1')).people.find(p => p.name === 'Priya').avatar);
+  await expect.poll(async () => (await avatar() || {}).style, { timeout: 10000 }).toBe('photo');
+  expect((await avatar()).src.length).toBeLessThan(60000);
+  await quit(app);
+});

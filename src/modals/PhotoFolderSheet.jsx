@@ -1,7 +1,8 @@
 // Photos for several people at once: choose a folder, then go through its
-// pictures one at a time. Each starts already placed in the circle (the
-// upper middle of a portrait, where a face usually is; startCrop), and you
-// pick who it's for. Only the small circle is kept, and nothing leaves this
+// pictures one at a time. Each starts already placed in the circle: on the
+// face Windows' own face detector finds (findFaces, asked once for the whole
+// folder; faceCrop), or else the upper middle of a portrait, where a face
+// usually is (startCrop). You pick who it's for. Only the small circle is kept, and nothing leaves this
 // computer. See docs/renderer/app-structure.md.
 // Keys: U (or Enter) chooses the folder; then 1-9 or a name picks who it's
 // for (a picture named after someone starts on them), Shift+arrows move it
@@ -17,8 +18,8 @@ import { Kbd } from '../components/atoms.jsx';
 import { PhotoCrop } from '../components/AvatarPicker.jsx';
 import { PeopleGrid } from '../components/PersonPick.jsx';
 import { usePeopleKeys } from '../components/peopleKeys.js';
-import { isPictureFile, personForFile, photoBox, startCrop } from '../data/avatars.js';
-import { loadPhoto, renderPhoto } from '../lib/photo.js';
+import { faceCrop, isPictureFile, personForFile, photoBox, startCrop } from '../data/avatars.js';
+import { findFaces, loadPhoto, renderPhoto } from '../lib/photo.js';
 import { COLORS } from '../theme.js';
 
 export function PhotoFolderSheet({ people, onClose, onApply }) {
@@ -29,7 +30,11 @@ export function PhotoFolderSheet({ people, onClose, onApply }) {
   const [who, setWho] = useState(null);
   const [chosen, setChosen] = useState([]); // [{ personId, src, file }]
   const [noPictures, setNoPictures] = useState(false);
+  // Where the faces are, one entry per picture: 'finding' until Windows
+  // answers (null entries where it found nothing or there's no Windows).
+  const [faces, setFaces] = useState(null);
   const inputRef = useRef(null);
+  const now = useRef({ faces: null, index: 0, moved: false }); // for the async answers below
   const peopleKeys = usePeopleKeys(people, who ? [who] : [], (id) => setWho(w => (w === id ? null : id)));
   const file = files && files[index];
   const finished = Boolean(files) && index >= files.length;
@@ -43,15 +48,28 @@ export function PhotoFolderSheet({ people, onClose, onApply }) {
     setPhoto(null); setUnreadable(false);
     const before = chosen.find(c => c.file === file.name);
     setWho(before ? before.personId : personForFile(file.name, people));
+    now.current.moved = false;
     loadPhoto(file).then(img => {
       if (!live) return;
       if (!img) { setUnreadable(true); return; }
-      setPhoto({ img, ...startCrop(img.naturalWidth, img.naturalHeight) });
+      const found = Array.isArray(now.current.faces) ? now.current.faces[index] : null;
+      setPhoto({ img, ...(faceCrop(found, img.naturalWidth, img.naturalHeight) || startCrop(img.naturalWidth, img.naturalHeight)) });
     });
     return () => { live = false; };
     // Only when the picture changes; who it's for is then the user's to pick.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [file]);
+
+  useEffect(() => { now.current.index = index; now.current.faces = faces; });
+  // The faces arrive after the first picture shows: move it onto its face,
+  // unless it's been moved by then.
+  useEffect(() => {
+    if (!Array.isArray(faces) || now.current.moved) return;
+    setPhoto(p => {
+      const crop = p && faceCrop(faces[now.current.index], p.img.naturalWidth, p.img.naturalHeight);
+      return crop ? { ...p, ...crop } : p;
+    });
+  }, [faces]);
 
   function chooseFolder() { if (inputRef.current) inputRef.current.click(); }
   function folderChosen(list) {
@@ -59,8 +77,10 @@ export function PhotoFolderSheet({ people, onClose, onApply }) {
     setNoPictures(!pictures.length);
     if (!pictures.length) return;
     setFiles(pictures); setIndex(0); setChosen([]);
+    setFaces('finding');
+    findFaces(pictures).then(found => setFaces(found || []));
   }
-  function place(next) { setPhoto(p => (p ? { ...p, ...photoBox(p.img.naturalWidth, p.img.naturalHeight, { ...p, ...next }).crop } : p)); }
+  function place(next) { now.current.moved = true; setPhoto(p => (p ? { ...p, ...photoBox(p.img.naturalWidth, p.img.naturalHeight, { ...p, ...next }).crop } : p)); }
   const move = (dx, dy) => photo && place({ x: photo.x + dx, y: photo.y + dy });
   const zoom = (z) => photo && place({ zoom: z });
   // Enter: this picture for whoever's picked, then the next (or skip it).
@@ -125,6 +145,7 @@ export function PhotoFolderSheet({ people, onClose, onApply }) {
           <p className="text-xs mb-3 flex items-center gap-1.5 min-w-0" style={{ color: COLORS.inkSoft }} aria-label="Which picture">
             <span className="font-semibold shrink-0" style={{ color: COLORS.ink }}>Picture {index + 1} of {files.length}</span>
             <span className="truncate">· {file.name}</span>
+            {faces === 'finding' && <span className="shrink-0 ml-auto">Finding faces…</span>}
           </p>
           <div className="flex flex-col items-center gap-2 mb-4">
             {photo ? <PhotoCrop photo={photo} onMove={move} onZoom={zoom} />

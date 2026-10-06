@@ -112,6 +112,18 @@ export function startCrop(w, h) {
   return cropAround(w, h, 0.5, h > w * 1.1 ? 0.35 : 0.45, 1);
 }
 
+// The crop that starts on the biggest face found in a w × h picture
+// (lib/photo.js, findFaces): its middle in the middle of the circle, zoomed
+// so the face fills about half of it. null when there's no face, or the
+// sizes don't match the picture as shown (a phone photo turned by its
+// camera's rotation, say), since the face would then be in the wrong place.
+export function faceCrop(found, w, h) {
+  if (!found || !Array.isArray(found.faces) || !found.faces.length || found.width !== w || found.height !== h) return null;
+  const face = found.faces.reduce((a, b) => (b.w * b.h > a.w * a.h ? b : a));
+  const zoom = Math.max(1, Math.min(4, (0.5 * Math.min(w, h)) / Math.max(face.w, face.h)));
+  return cropAround(w, h, (face.x + face.w / 2) / w, (face.y + face.h / 2) / h, zoom);
+}
+
 // A file that's a picture Layers can read (by type, or by name when the type
 // is missing).
 export function isPictureFile(file) {

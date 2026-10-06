@@ -6,12 +6,16 @@
 // made from its name.
 import { screen, within } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
+import { faceCrop, startCrop } from '../../src/data/avatars.js';
 import { dialog, nav, person, renderApp, savedPerson, seedState, toasts } from './harness.jsx';
 
+// Windows' face detector is stood in for too: it finds a face in Kai.png.
+const crops = vi.hoisted(() => new Map()); // the crop each picture was drawn with
 vi.mock('../../src/lib/photo.js', () => ({
   MAX_PHOTO_BYTES: 25 * 1024 * 1024,
   loadPhoto: async (file) => ({ naturalWidth: 400, naturalHeight: 600, src: `data:image/png;base64,${btoa(file.name)}` }),
-  renderPhoto: (img) => `data:image/jpeg;base64,${img.src.split(',')[1]}`,
+  renderPhoto: (img, crop) => { crops.set(img.src, { zoom: crop.zoom, x: crop.x, y: crop.y }); return `data:image/jpeg;base64,${img.src.split(',')[1]}`; },
+  findFaces: async (files) => files.map(f => (f.name === 'Kai.png' ? { width: 400, height: 600, faces: [{ x: 150, y: 100, w: 100, h: 100 }] } : null)),
 }));
 
 describe('photos from a folder', () => {
@@ -38,6 +42,9 @@ describe('photos from a folder', () => {
     await user.keyboard('{Enter}');
 
     expect(savedPerson('Kai').avatar).toEqual({ style: 'photo', src: `data:image/jpeg;base64,${btoa('Kai.png')}` });
+    // Kai's picture started on the face Windows found; the other, with none, on its upper middle.
+    expect(crops.get(`data:image/png;base64,${btoa('Kai.png')}`)).toEqual(faceCrop({ width: 400, height: 600, faces: [{ x: 150, y: 100, w: 100, h: 100 }] }, 400, 600));
+    expect(crops.get(`data:image/png;base64,${btoa('IMG_2041.jpg')}`)).toEqual(startCrop(400, 600));
     expect(savedPerson('Morgan').avatar).toEqual({ style: 'photo', src: `data:image/jpeg;base64,${btoa('IMG_2041.jpg')}` });
     expect(toasts()).toContain('Photos added for Morgan and Kai');
     await user.click(screen.getByRole('button', { name: 'Undo (Ctrl+Z)' }));

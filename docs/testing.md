@@ -104,8 +104,12 @@ interact.
   after a restart. `photos.test.jsx` covers photos from a folder (pictures only, a picture
   named after someone starting on them, finding someone by name, Backspace, skipping, and
   one Undo for the lot), with `lib/photo.js` stood in for, since jsdom can't decode
-  pictures; `src/avatars.test.js` checks `personForFile`, `isPictureFile` and where a
-  picture starts in the circle.
+  pictures, and Windows' face detector stood in for (a face found in one picture starts
+  its circle there); `src/avatars.test.js` checks `personForFile`, `isPictureFile` and
+  where a picture starts in the circle; `src/faces.test.js` checks `electron/faces.cjs`
+  (which paths are asked about, reading Windows' answers, one PowerShell run, nothing off
+  Windows, the time limit) and `faceCrop`. The end-to-end tests run photos from a
+  folder in the packaged app, with the real face detector asked about a picture.
 - `closeness.test.jsx` covers adding someone through "How close are you two?" from the
   keyboard: the questions in order, stopping early, Backspace, picking a layer by hand,
   asking again (Q) and the avatar arrows; `setup.test.jsx` covers the quiz while setting
