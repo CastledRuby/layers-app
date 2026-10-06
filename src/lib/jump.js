@@ -28,6 +28,7 @@ export const ACTIONS = [
   { id: 'act:plan', label: 'Plan something', emoji: '➕', words: ['plan', 'new plan', 'event', 'add plan'], run: { type: 'action', key: 'plan' } },
   { id: 'act:person', label: 'Add a person', emoji: '🧑', words: ['add person', 'new person', 'friend'], run: { type: 'action', key: 'addPerson' } },
   { id: 'act:goal', label: 'New goal', emoji: '🎯', words: ['add goal', 'goal'], run: { type: 'action', key: 'goal' } },
+  { id: 'act:photos', label: 'Add photos from a folder', emoji: '🖼️', words: ['photos', 'pictures', 'profile pictures', 'pfp', 'avatars', 'folder'], run: { type: 'action', key: 'photos' } },
   { id: 'act:light', label: 'Light mode', emoji: '☀️', words: ['theme', 'appearance', 'light'], run: { type: 'action', key: 'light' } },
   { id: 'act:dark', label: 'Dark mode', emoji: '🌙', words: ['theme', 'appearance', 'night'], run: { type: 'action', key: 'dark' } },
   { id: 'act:system', label: 'Match Windows', sub: 'Light or dark, as Windows is', emoji: '🖥️', words: ['theme', 'appearance', 'system', 'auto'], run: { type: 'action', key: 'system' } },

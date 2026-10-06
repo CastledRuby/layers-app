@@ -40,7 +40,7 @@ and constant are in [../generated/code-map.md](../generated/code-map.md).
 | [`lib/achievements.js`](../../src/lib/achievements.js) | `achievementProgress` (how close you are to each one), `newlyUnlocked` and `progressText`. See [state-and-data.md](state-and-data.md#achievements). |
 | [`lib/hooks.js`](../../src/lib/hooks.js) | `useToday` (the local date, updated at midnight), `useDailyCheckIn` (the once-a-day check-in nudge) and `useCalendarNotifications` (hands the calendar's notifications to Windows, or shows them itself in a browser). The only React in `lib/`. |
 | [`components/`](../../src/components/) | `Sheet` + `SheetPortal`, `sheetLayer.js` (the portal context and the open-sheet stack Esc uses), `ErrorBoundary` (the "This screen hit a problem" fallback around the current screen), `PageTransition` (slides a new page in), `peopleKeys.js` (picking people by number or name), `ClosenessQuiz.jsx` (`QuizQuestion`, `QuizResult`, `QuizSheet`: "How close are you two?") with its state and keys in `closenessKeys.js`, `AvatarPicker.jsx` (`AvatarPicker`, `AvatarSheet`: initials in nine colours, a photo cropped to the circle, or an emoji) with its state and keys in `avatarKeys.js` (arrows pick, T the skin tone, G the group, / finds one by name; for a photo U chooses it, the arrows move it and + and - zoom), `atoms.jsx` (`CircularProgress`, `ProgressBar`, `LabeledBar`, `Avatar`, `LayerBadge`, `ChatBubble`, `Timeline`, `ConvStateBadge`), `rows.jsx` (`GoalRow`, `InfoItemRow`), `BottomNav`, `pickers.jsx` (`DateDropdown`, `TimeDropdown`, each with a compact chip form), `PersonPick.jsx` (`PersonPick`, `AvatarStack`), `illustrations.jsx` |
-| [`modals/`](../../src/modals/) | `ConfirmDialog`, `EditPersonModal`, `EditEntryModal` (edit or delete a journal entry), `EditProfileModal` (your name and focus), `LogInteractionModal` (with its detail sheets in `LogDetailSheets`), `PlanSheet`, `EventSheet`, `KeyDateSheet`, `GoalModal`, `TemplatePickerModal`, `QuickAddInterestModal`, `AddInfoModal`, `AddPersonModal`, `ShortcutsModal`, `StartOverSheet` (Delete my data and start over), `JumpSheet` (Ctrl+K), `DaySheet` (one day in a popup), `PlanTipsSheet` (Coach tips for a plan), `QuickGoalSheet` (a new goal while planning or logging), `WeekReviewSheet` ("Your week": who you saw, plans done, goals moved, who to catch up with; Enter plans next week, 1–5 plans with someone) |
+| [`modals/`](../../src/modals/) | `ConfirmDialog`, `EditPersonModal`, `EditEntryModal` (edit or delete a journal entry), `EditProfileModal` (your name and focus), `LogInteractionModal` (with its detail sheets in `LogDetailSheets`), `PlanSheet`, `EventSheet`, `KeyDateSheet`, `GoalModal`, `TemplatePickerModal`, `QuickAddInterestModal`, `AddInfoModal`, `AddPersonModal`, `ShortcutsModal`, `StartOverSheet` (Delete my data and start over), `JumpSheet` (Ctrl+K), `DaySheet` (one day in a popup), `PlanTipsSheet` (Coach tips for a plan), `QuickGoalSheet` (a new goal while planning or logging), `PhotoFolderSheet` (photos for several people from a folder), `WeekReviewSheet` ("Your week": who you saw, plans done, goals moved, who to catch up with; Enter plans next week, 1–5 plans with someone) |
 | [`views/`](../../src/views/) | `TodayView`, `PeopleView`, `PersonProfile` (with `AdjustSlider`, `PrepareTipsModal`), `GoalsView`, `JournalView`, `CoachView`, `MeView`, `OnboardingView` |
 | [`App.jsx`](../../src/App.jsx) | `LayersApp`, plus the small helpers it uses: `sampleData` and the sample-people checks (`SAMPLE_PERSON_IDS`, `SAMPLE_GOAL_IDS`, `skillsCameWithSamples`, `allSkillsZero`), `unlinkMissingPeople`, `addNotes` and `listNames` |
 
@@ -147,7 +147,8 @@ Every modal is a `Sheet` (or `ConfirmDialog`). Most are opened by a boolean flag
 | `JumpSheet` | Ctrl+K, anywhere (even over a sheet) | `LayersApp` (`jumpOpen`) |
 | `PlanTipsSheet` | **Coach tips** (`T`) on a plan in `DaySheet` or `EventSheet` | the sheet it's opened from |
 | `QuickGoalSheet` | **+ New goal** (`+`) on PlanSheet's "when" and the log's Goals sheet | `PlanSheet`, `LogInteractionModal` |
-| `KeyDateSheet` | A profile's **Add date** | `LayersApp` (`keyDateFor`) |
+| `KeyDateSheet` | A profile's **Add date**, and **Birthday** (D) on a card while setting up | `LayersApp` (`keyDateFor`), `OnboardingView` |
+| `PhotoFolderSheet` | **Photos** on People, or Ctrl+K's "Add photos from a folder" | `LayersApp` (`photoFolderOpen`) |
 | `GoalModal` | "Add goal" / goal "Edit" (`openGoalCreate`, `openGoalEdit`) | `LayersApp` (`goalModalOpen`, `goalEditing`) |
 | `AddInfoModal` | "+" on an info category (`openAddInfo`) | `LayersApp` |
 | `QuickAddInterestModal` | "Quick add" interests (`openQuickAddInterest`) | `LayersApp` |
@@ -350,6 +351,15 @@ These are defined once in `SHORTCUTS` (shown by `ShortcutsModal`) and implemente
   Coach's Prepare (`CoachView`'s own listener, while no sheet is open) has ← → for who
   you're about to talk to, L log, A analyse, O their profile, and 1 and 2 for Prepare
   and Analyse.
+- **`PhotoFolderSheet`**: U (or Enter) chooses a folder (`<input webkitdirectory>`;
+  pictures only, sorted by name), then for each picture 1–9 or a name picks who it's for
+  (the shared `usePeopleKeys`; a picture named after someone starts on them,
+  `personForFile`), Shift+arrows and + − move and zoom it (`PhotoCrop`, shared with the
+  avatar picker), Enter uses it and goes on (or skips it), Backspace goes back. Each
+  starts at `startCrop` (`data/avatars.js`): the upper middle of a portrait, the middle
+  of anything wider. At the end, Enter gives everyone picked their photo
+  (`handlePhotoFolder`), with one Undo. Chromium's own face detector isn't built into
+  Electron on Windows ("not implemented"), so there's no face-finding yet.
 
 The log sheet has its own keys, handled by `Sheet`'s `onKey` only while it's the top
 sheet and you're not typing in a text box. Each key is shown next to what it does

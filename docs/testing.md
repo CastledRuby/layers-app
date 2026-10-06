@@ -101,7 +101,11 @@ interact.
   still offered, how initials are worked out, where a picture sits in the circle, and that
   saved data keeps only initials or a small photo held in the data. The end-to-end tests
   choose a real picture in the packaged app and check it's saved small and still there
-  after a restart.
+  after a restart. `photos.test.jsx` covers photos from a folder (pictures only, a picture
+  named after someone starting on them, finding someone by name, Backspace, skipping, and
+  one Undo for the lot), with `lib/photo.js` stood in for, since jsdom can't decode
+  pictures; `src/avatars.test.js` checks `personForFile`, `isPictureFile` and where a
+  picture starts in the circle.
 - `closeness.test.jsx` covers adding someone through "How close are you two?" from the
   keyboard: the questions in order, stopping early, Backspace, picking a layer by hand,
   asking again (Q) and the avatar arrows; `setup.test.jsx` covers the quiz while setting

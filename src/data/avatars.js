@@ -98,6 +98,37 @@ export function photoBox(w, h, { zoom = 1, x = 0, y = 0 } = {}, size = PHOTO_SIZ
   return { crop: { zoom: z, x: cx, y: cy }, left: (size - width) / 2 + cx * size, top: (size - height) / 2 + cy * size, width, height };
 }
 
+// The crop that puts the point fx, fy (parts of the picture's width and
+// height) in the middle of the circle, at `zoom`, kept covering the circle.
+export function cropAround(w, h, fx, fy, zoom = 1) {
+  const z = Math.max(1, Math.min(4, zoom));
+  const k = z / Math.min(w, h);
+  return photoBox(w, h, { zoom: z, x: w * k * (0.5 - fx), y: h * k * (0.5 - fy) }).crop;
+}
+
+// Where a picture starts in the circle before it's moved: the upper middle
+// of a portrait, where a face usually is; the middle of anything wider.
+export function startCrop(w, h) {
+  return cropAround(w, h, 0.5, h > w * 1.1 ? 0.35 : 0.45, 1);
+}
+
+// A file that's a picture Layers can read (by type, or by name when the type
+// is missing).
+export function isPictureFile(file) {
+  return /^image\/(jpeg|png|webp|gif|bmp)$/.test(file.type || '') || /\.(jpe?g|png|webp|gif|bmp)$/i.test(file.name || '');
+}
+
+// The person a picture is named after ("Kai.jpg", "kai smith 2.png"): their
+// whole name, or a first name only one person has. Otherwise null.
+export function personForFile(fileName, people) {
+  const words = String(fileName || '').replace(/\.[^.]+$/, '').toLowerCase().split(/[^\p{L}]+/u).filter(Boolean);
+  if (!words.length) return null;
+  const whole = people.filter(p => p.name.toLowerCase().split(/\s+/).every((w, i) => words[i] === w));
+  if (whole.length === 1) return whole[0].id;
+  const first = people.filter(p => p.name.toLowerCase().split(/\s+/)[0] === words[0]);
+  return first.length === 1 ? first[0].id : null;
+}
+
 // "Ethan M" -> "EM"; one name -> its first two letters ("Isla" -> "Is").
 export function initialsOf(name) {
   const words = String(name || '').trim().split(/\s+/).filter(Boolean);

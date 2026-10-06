@@ -1,7 +1,7 @@
 // People tab: your circle, grouped by layer.
 
 import { useEffect, useMemo, useState } from 'react';
-import { Plus, Search } from 'lucide-react';
+import { ImagePlus, Plus, Search } from 'lucide-react';
 import { Avatar, Kbd, LayerBadge, ProgressBar } from '../components/atoms.jsx';
 import { hasOpenSheet, isTabbedToButton, isTyping } from '../components/sheetLayer.js';
 import { RingsEmpty } from '../components/illustrations.jsx';
@@ -18,7 +18,7 @@ import { COLORS } from '../theme.js';
 // closest first (the map switches to the list), and Enter opens the one
 // marked. Beside an open profile, ↑ ↓ open the one before or after. In the
 // search box, ↓ goes into the list and Enter opens the first match.
-export function PeopleView({ people, journal, onOpenPerson, onAddPerson, split = false, selectedId = null }) {
+export function PeopleView({ people, journal, onOpenPerson, onAddPerson, onAddPhotos, split = false, selectedId = null }) {
   const [view, setView] = useState(split ? 'list' : 'map');
   const [query, setQuery] = useState('');
   const [cursor, setCursor] = useState(null); // the person ↑ ↓ have marked
@@ -110,6 +110,7 @@ export function PeopleView({ people, journal, onOpenPerson, onAddPerson, split =
                 {v === 'map' ? 'Map view' : v === 'list' ? 'List view' : 'Overview'}
               </button>
             ))}
+            {onAddPhotos && <button type="button" onClick={onAddPhotos} title="Add photos from a folder (also in Ctrl+K)" aria-label="Add photos from a folder" className="flex items-center gap-1 text-xs font-semibold rounded-full px-2.5 py-1.5" style={{ color: COLORS.inkSoft, border: `1px solid ${COLORS.line}` }}><ImagePlus size={13} /> Photos</button>}
             <span className="flex items-center gap-1 text-xs ml-auto" style={{ color: COLORS.inkSoft }}><Kbd>↑</Kbd><Kbd>↓</Kbd>{!selectedId && <> <Kbd>↵</Kbd></>}</span>
           </div>
 

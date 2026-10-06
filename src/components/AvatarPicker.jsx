@@ -16,30 +16,41 @@ import { COLORS } from '../theme.js';
 
 const VIEW = 168; // the crop circle, in px
 
-// Choosing a picture, then moving it (drag or arrows) and zooming it (the
-// slider, the wheel, or + and -) inside the circle.
-function PhotoPanel({ picker, current }) {
+// A picture in its circle: drag or the wheel to move and zoom it, and the
+// slider under it. photo: { img, zoom, x, y }; onMove(dx, dy) in parts of the
+// circle; onZoom(zoom).
+export function PhotoCrop({ photo: p, onMove, onZoom }) {
   const last = useRef(null);
-  const { photo: p, photoError, attachFile, choosePhoto, photoChosen, movePhoto, zoomPhoto } = picker;
-  const box = p ? photoBox(p.img.naturalWidth, p.img.naturalHeight, p, VIEW) : null;
+  const box = photoBox(p.img.naturalWidth, p.img.naturalHeight, p, VIEW);
   function down(e) { last.current = { x: e.clientX, y: e.clientY }; if (e.currentTarget.setPointerCapture) e.currentTarget.setPointerCapture(e.pointerId); }
   function move(e) {
     if (!last.current) return;
-    movePhoto((e.clientX - last.current.x) / VIEW, (e.clientY - last.current.y) / VIEW);
+    onMove((e.clientX - last.current.x) / VIEW, (e.clientY - last.current.y) / VIEW);
     last.current = { x: e.clientX, y: e.clientY };
   }
   function up() { last.current = null; }
+  return (
+    <>
+      <div className="photo-crop" style={{ width: VIEW, height: VIEW }} onPointerDown={down} onPointerMove={move} onPointerUp={up} onPointerCancel={up}
+        onWheel={e => onZoom(p.zoom + (e.deltaY < 0 ? 0.1 : -0.1))} role="img" aria-label="The photo in its circle">
+        <img src={p.img.src} alt="" draggable={false} style={{ position: 'absolute', left: box.left, top: box.top, width: box.width, height: box.height, maxWidth: 'none' }} />
+      </div>
+      <input type="range" min="1" max="4" step="0.05" value={p.zoom} onChange={e => onZoom(Number(e.target.value))} aria-label="Zoom" style={{ width: VIEW, accentColor: COLORS.accent }} />
+    </>
+  );
+}
+
+// Choosing a picture, then moving it (drag or arrows) and zooming it (the
+// slider, the wheel, or + and -) inside the circle.
+function PhotoPanel({ picker, current }) {
+  const { photo: p, photoError, attachFile, choosePhoto, photoChosen, movePhoto, zoomPhoto } = picker;
   return (
     <div className="photo-panel">
       <input ref={attachFile} type="file" accept="image/*" hidden aria-label="Choose a picture"
         onChange={e => { const file = e.target.files && e.target.files[0]; e.target.value = ''; if (file) photoChosen(file); }} />
       {p ? (
         <div className="flex flex-col items-center gap-3">
-          <div className="photo-crop" style={{ width: VIEW, height: VIEW }} onPointerDown={down} onPointerMove={move} onPointerUp={up} onPointerCancel={up}
-            onWheel={e => zoomPhoto(p.zoom + (e.deltaY < 0 ? 0.1 : -0.1))} role="img" aria-label="The photo in its circle">
-            <img src={p.img.src} alt="" draggable={false} style={{ position: 'absolute', left: box.left, top: box.top, width: box.width, height: box.height, maxWidth: 'none' }} />
-          </div>
-          <input type="range" min="1" max="4" step="0.05" value={p.zoom} onChange={e => zoomPhoto(Number(e.target.value))} aria-label="Zoom" style={{ width: VIEW, accentColor: COLORS.accent }} />
+          <PhotoCrop photo={p} onMove={movePhoto} onZoom={zoomPhoto} />
           <p className="text-xs flex items-center gap-1 flex-wrap justify-center" style={{ color: COLORS.inkSoft }}>
             Drag or <Kbd>←</Kbd><Kbd>→</Kbd><Kbd>↑</Kbd><Kbd>↓</Kbd> to move · <Kbd>+</Kbd><Kbd>−</Kbd> zoom ·
             <button type="button" onClick={choosePhoto} className="font-semibold" style={{ color: COLORS.accent }}>another picture</button><Kbd>U</Kbd>

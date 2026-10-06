@@ -1,7 +1,7 @@
 // The avatars (data/avatars.js): skin tones go in and come out of an emoji
 // cleanly, so a toned avatar is found in its group again.
 import { describe, expect, it } from 'vitest';
-import { AVATAR_COLS, AVATAR_GROUPS, avatarName, cleanAvatar, groupOf, initialsOf, isInitials, photoBox, splitTone, withTone } from './data/avatars.js';
+import { AVATAR_COLS, AVATAR_GROUPS, avatarName, cleanAvatar, cropAround, groupOf, initialsOf, isInitials, isPictureFile, personForFile, photoBox, splitTone, startCrop, withTone } from './data/avatars.js';
 import { createBackup, validateBackup } from './lib/backup.js';
 import { makePerson } from './lib/progress.js';
 import { PERSON_EMOJIS } from './data/constants.js';
@@ -69,5 +69,30 @@ describe('avatars', () => {
     expect(groupOf('🫠')).toBe(0); // not one of ours: People
     expect(avatarName(withTone('👩‍🦰', MEDIUM))).toBe('Woman, red hair, medium skin');
     expect(avatarName('🦊')).toBe('Fox');
+  });
+});
+
+describe('photos from a folder', () => {
+  it('finds the person a picture is named after, only when it is clear', () => {
+    const people = [{ id: 'k', name: 'Kai' }, { id: 'em', name: 'Ethan M' }, { id: 'ep', name: 'Ethan P' }];
+    expect(personForFile('Kai.jpg', people)).toBe('k');
+    expect(personForFile('kai 2.PNG', people)).toBe('k');
+    expect(personForFile('ethan m.jpg', people)).toBe('em'); // the whole name
+    expect(personForFile('Ethan.jpg', people)).toBeNull(); // two Ethans
+    expect(personForFile('IMG_2041.jpg', people)).toBeNull();
+  });
+
+  it('knows a picture by its type, or its name', () => {
+    expect(isPictureFile({ name: 'a.jpg', type: 'image/jpeg' })).toBe(true);
+    expect(isPictureFile({ name: 'a.HEIC', type: '' })).toBe(false);
+    expect(isPictureFile({ name: 'a.webp', type: '' })).toBe(true);
+    expect(isPictureFile({ name: 'notes.txt', type: 'text/plain' })).toBe(false);
+  });
+
+  it('starts a portrait on its upper middle, and centres on a point when asked', () => {
+    // A 400 × 600 portrait at zoom 1 is as wide as the circle: it can only move up and down.
+    expect(startCrop(400, 600)).toEqual({ zoom: 1, x: 0, y: expect.closeTo(0.225, 5) });
+    expect(startCrop(600, 400)).toEqual({ zoom: 1, x: 0, y: 0 }); // wider: the middle
+    expect(cropAround(400, 400, 0.5, 0.5, 2)).toEqual({ zoom: 2, x: 0, y: 0 });
   });
 });

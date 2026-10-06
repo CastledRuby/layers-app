@@ -31,6 +31,7 @@ import { GoalModal } from './modals/GoalModal.jsx';
 import { KeyDateSheet } from './modals/KeyDateSheet.jsx';
 import { LogInteractionModal } from './modals/LogInteractionModal.jsx';
 import { PlanSheet } from './modals/PlanSheet.jsx';
+import { PhotoFolderSheet } from './modals/PhotoFolderSheet.jsx';
 import { QuickAddInterestModal } from './modals/QuickAddInterestModal.jsx';
 import { ShortcutsModal } from './modals/ShortcutsModal.jsx';
 import { StartOverSheet } from './modals/StartOverSheet.jsx';
@@ -146,6 +147,7 @@ function LayersApp() {
   const [quickInterestOpen, setQuickInterestOpen] = useState(false);
   const [quickInterestPersonId, setQuickInterestPersonId] = useState(null);
   const [addPersonOpen, setAddPersonOpen] = useState(false);
+  const [photoFolderOpen, setPhotoFolderOpen] = useState(false); // PhotoFolderSheet
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
   const [startOverOpen, setStartOverOpen] = useState(false);
   const [standaloneDetailOpen, setStandaloneDetailOpen] = useState(false);
@@ -426,7 +428,7 @@ function LayersApp() {
   // sheets that were open; an action like Dark mode leaves them be.
   function closeSheets() {
     setLogOpen(false); setLogPrefill(null); setPlanState(null); setEventView(null); setDayView(null); setWeekReview(null);
-    setKeyDateFor(null); setRecheckFor(null); setGoalModalOpen(false); setAddInfoOpen(false); setQuickInterestOpen(false); setAddPersonOpen(false);
+    setKeyDateFor(null); setRecheckFor(null); setGoalModalOpen(false); setAddInfoOpen(false); setQuickInterestOpen(false); setAddPersonOpen(false); setPhotoFolderOpen(false);
     setShortcutsOpen(false); setStartOverOpen(false); setStandaloneDetailOpen(false); setEditPersonOpen(false);
     setEditingEntryId(null); setEditProfileOpen(false);
   }
@@ -449,6 +451,7 @@ function LayersApp() {
         log: () => go(() => openLog(null)),
         plan: () => go(() => openPlan({ day: today })),
         addPerson: () => go(() => setAddPersonOpen(true)),
+        photos: () => go(() => setPhotoFolderOpen(true)),
         goal: () => go(() => openGoalCreate()),
         export: handleExportData,
         restore: handleImportClick,
@@ -948,6 +951,15 @@ function LayersApp() {
 
   function openEditPerson() { setEditPersonOpen(true); }
   function closeEditPerson() { setEditPersonOpen(false); }
+  // Photos from a folder: each picked person's avatar becomes their photo,
+  // all with one Undo.
+  function handlePhotoFolder(list) {
+    const snap = snapshot();
+    setPeople(prev => prev.map(p => { const c = list.find(x => x.personId === p.id); return c ? { ...p, avatar: { style: 'photo', src: c.src } } : p; }));
+    setPhotoFolderOpen(false);
+    const names = list.map(c => (people.find(p => p.id === c.personId) || {}).name).filter(Boolean);
+    pushToast(`Photos added for ${names.length <= 2 ? names.join(' and ') : `${names.slice(0, 2).join(', ')} and ${names.length - 2} more`}`, { undo: snap });
+  }
   function handleSavePersonEdit(personId, { name, emoji, avatar }) {
     setPeople(prev => prev.map(p => {
       if (p.id !== personId) return p;
@@ -1193,7 +1205,7 @@ function LayersApp() {
                 ) : peopleSplit ? (
                   <div className={`people-split${selectedPerson ? '' : ' people-split--solo'}`}>
                     <div className="people-split-list" ref={peopleListRef}>
-                      <PeopleView people={people} journal={journal} onOpenPerson={openPerson} onAddPerson={() => setAddPersonOpen(true)} split selectedId={selectedPerson ? selectedPerson.id : null} />
+                      <PeopleView people={people} journal={journal} onOpenPerson={openPerson} onAddPerson={() => setAddPersonOpen(true)} onAddPhotos={() => setPhotoFolderOpen(true)} split selectedId={selectedPerson ? selectedPerson.id : null} />
                     </div>
                     {selectedPerson && (
                       <div className="people-split-detail">
@@ -1210,7 +1222,7 @@ function LayersApp() {
                     {screen.name === 'tabs' && (
                       <>
                         {activeTab === 'today' && <TodayView wide={wide} today={today} selectedDay={selectedDay || today} onSelectDay={(d) => setSelectedDay(d === today ? null : d)} mode={calendarMode} onSetMode={setCalendarMode} people={people} journal={journal} events={events} generalGoals={generalGoals} skills={skills} profile={profile} onPlan={openPlan} onOpenEvent={(eventId, day) => setEventView({ eventId, day })} onLogEvent={openLogFromEvent} onTickEvent={(ev, day) => handleMarkEventDone(ev.id, day)} onOpenPerson={openPerson} onAddPerson={() => setAddPersonOpen(true)} onOpenLog={() => openLog(null)} onSwitchTab={switchTab} onOpenGoals={openGoalsOverview} onOpenReview={setWeekReview} onOpenDay={setDayView} onOpenJump={() => { setJumpOpen(true); markTried('jump'); }} onHideFirstSteps={() => setProfile(p => ({ ...p, gettingStartedHidden: true }))} />}
-                        {activeTab === 'people' && <PeopleView people={people} journal={journal} onOpenPerson={openPerson} onAddPerson={() => setAddPersonOpen(true)} />}
+                        {activeTab === 'people' && <PeopleView people={people} journal={journal} onOpenPerson={openPerson} onAddPerson={() => setAddPersonOpen(true)} onAddPhotos={() => setPhotoFolderOpen(true)} />}
                         {activeTab === 'coach' && <div className="page-col"><CoachView people={people} journal={journal} initialPersonId={coachInit.personId} initialTab={coachInit.tab} onOpenLog={openLog} onApproveInfo={handleApproveInfo} onLogFromAnalysis={handleLogFromAnalysis} onOpenPerson={openPerson} /></div>}
                         {activeTab === 'journal' && <div className="page-col"><JournalView today={today} people={people} generalGoals={generalGoals} journal={journal} goalFilter={journalGoal} onGoalFilter={setJournalGoal} onOpenPerson={openPerson} onEditEntry={setEditingEntryId} /></div>}
                         {activeTab === 'me' && <div className="page-col"><MeView people={people} journal={journal} skills={skills} generalGoals={generalGoals} profile={profile} onAddSample={handleAddSample} onRemoveSample={handleRemoveSample} hasSamplePeople={people.some(p => SAMPLE_PERSON_IDS.has(p.id))} canAddSample={INITIAL_PEOPLE.some(sp => !people.some(p => p.id === sp.id))} onStartOver={() => setStartOverOpen(true)} onExport={handleExportData} onImportClick={handleImportClick} backupInfo={backupInfo} onOpenBackups={handleOpenBackups} hasUpdater={hasUpdater} updateStatus={updateStatus} onCheckForUpdates={handleCheckForUpdates} onInstallUpdate={handleInstallUpdate} onOpenDownloadPage={handleOpenDownloadPage} shortcutStatus={shortcutStatus} themeMode={themeMode} onSetTheme={setThemeMode} onUpdateProfile={(changes) => setProfile(p => ({ ...p, ...changes }))} onEditProfile={() => setEditProfileOpen(true)} achievements={achievements || {}} hasSystemBridge={hasSystemBridge} autoLaunch={autoLaunch} onToggleAutoLaunch={handleToggleAutoLaunch} onOpenShortcuts={() => setShortcutsOpen(true)} appVersion={appVersion} /></div>}
@@ -1266,6 +1278,7 @@ function LayersApp() {
               <QuickAddInterestModal personName={(people.find(p => p.id === quickInterestPersonId) || {}).name} onClose={closeQuickAddInterest} onSave={handleQuickAddInterestSave} />
             )}
             {addPersonOpen && <AddPersonModal onClose={() => setAddPersonOpen(false)} onSave={handleAddPerson} />}
+            {photoFolderOpen && <PhotoFolderSheet people={people} onClose={() => setPhotoFolderOpen(false)} onApply={handlePhotoFolder} />}
             {shortcutsOpen && <ShortcutsModal onClose={() => setShortcutsOpen(false)} />}
             {jumpOpen && (
               <JumpSheet people={people} events={events} today={today} has={{ bridge: hasSystemBridge, updater: hasUpdater }}

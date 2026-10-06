@@ -208,7 +208,7 @@ always. **Yes: now, before the next batch.**
 Your `PFP` folder has nine pictures (eight screenshots and a WhatsApp photo), not named
 after anyone. Two ways to use them; **you picked 7**, so it's in the next batch:
 
-7. **Add photos from a folder**, in Layers: pick a folder, and it shows each picture in
+7. ✅ **Add photos from a folder**, in Layers: pick a folder, and it shows each picture in
    turn with the crop circle already on the face's middle; 1–9 or a name picks who it's
    for, S skips, Enter goes on. One Undo for the lot. Everything stays on this computer.
 8. **I crop them for you** now: you say who's who, and I make a square, centred,
@@ -355,7 +355,7 @@ its own. Changes made while building are marked.
   - **Plans** from two weeks back to four weeks ahead, by title or person. Enter opens
     the plan on its day.
   - **Pages**: Today, Month, People, Coach, Journal, Me, Goals and Your week.
-  - **Actions**: Log, Plan, Add a person, New goal, Light, Dark, Match Windows, Export a
+  - **Actions**: Log, Plan, Add a person, New goal, Add photos from a folder (2026-10-06), Light, Dark, Match Windows, Export a
     backup, Restore from a backup, Open the backups folder, Check for updates, Keyboard
     shortcuts, and Start over (which only opens its sheet). *(Changed while building: New
     goal and Restore in place of Add a key date, which needs a person first.)*
@@ -428,6 +428,20 @@ its own. Changes made while building are marked.
   box in the packaged app, with a temporary data folder as always.
 
 ## History
+
+### Photos from a folder (after 1.0.32, not released yet)
+
+- **Photos** on People (or Ctrl+K, "Add photos from a folder"): choose a folder, then go
+  through its pictures one at a time. Each starts in the circle (the upper middle of a
+  portrait, where a face usually is). **1–9** or typing a name picks who it's for, and a
+  picture named after someone ("Kai.jpg") starts on them. **Shift+arrows** move it and
+  **+ −** zoom (or drag and the slider). **Enter** uses it and goes on, or skips it with
+  nobody picked; **Backspace** goes back.
+- At the end, Enter gives everyone picked their photo, with **one Undo** for the lot.
+  Only the small circle is kept, on this computer.
+- **Not done: finding faces.** The crop doesn't find the face itself. Chromium's face
+  detector isn't built into Layers' Electron on Windows, so it would need a small
+  face-finding model bundled into Layers. That's bigger than drafted, so it's your call.
 
 ### Keys for the last sheets, and focus (after 1.0.32, not released yet)
 

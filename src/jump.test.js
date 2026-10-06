@@ -29,7 +29,7 @@ describe('jumpResults', () => {
   it('finds people, their plans, and pages by their other words', () => {
     expect(ids('pri').slice(0, 2)).toEqual(['person:p', 'plan:c']);
     expect(ids('settings')).toContain('page:me');
-    expect(ids('old')).toEqual([]); // more than two weeks ago
+    expect(ids('old').filter(id => !id.startsWith('act:'))).toEqual([]); // the plan more than two weeks ago ("folder" is an action)
   });
 
   it('"plan sam" puts planning with Sam first', () => {

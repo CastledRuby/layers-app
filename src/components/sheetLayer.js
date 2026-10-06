@@ -75,7 +75,7 @@ export function isTabbedToButton() {
 export function isTyping() {
   const el = document.activeElement;
   if (!el) return false;
-  return el.tagName === 'TEXTAREA' || el.isContentEditable || (el.tagName === 'INPUT' && !['checkbox', 'radio', 'button', 'range'].includes(el.type));
+  return el.tagName === 'TEXTAREA' || el.isContentEditable || (el.tagName === 'INPUT' && !['checkbox', 'radio', 'button', 'range', 'file'].includes(el.type));
 }
 
 // "+" (new goal): on a US-style keyboard it's Shift and =, so plain = and the
