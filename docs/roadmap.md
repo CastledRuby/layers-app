@@ -1,7 +1,8 @@
 # Roadmap
 
 Where Layers stands against [vision.md](vision.md), what was decided along the way, and
-what comes next. Last updated 2026-10-05, after 1.0.31.
+what comes next. Last updated 2026-10-06, after 1.0.31 (the changes since are listed
+under [History](#history), not released yet).
 
 **How it got here:**
 
@@ -163,6 +164,100 @@ anyone else whose Windows has it on. It also removes Windows'
 "unknown publisher" warning when installing and updating. It needs a code-signing
 certificate, which is paid: roughly US$100–400 a year, or Azure Trusted Signing at about
 US$10 a month. Once there is one, `npm run release` can sign with it.
+
+## Drafted next (2026-10-06)
+
+Everything still open, in one place, drafted on 2026-10-06 after the plan fixes. It
+replaces the older lists (what was left of "after the second live test", the smaller
+fixes and the deferred ideas). Within each group, the order is the suggested one.
+
+**Your answers (2026-10-06):** release 1.0.32 now; **all of B and C** in the next batch,
+with **Add photos from a folder** (7); and **Layers on your phone** (9) as the next big
+task, starting with a proposal. Each piece is committed and installed on its own, and
+anything that turns out bigger than drafted comes back to you first.
+
+### A. Release 1.0.32
+
+Built since 1.0.31 and so far only on this laptop: initials and photos as avatars (new
+people start as initials in their layer's colours), **Every weekday** for plans, and
+copies of a plan no longer called overlaps. Smart App Control is checked first, as
+always. **Yes: now, before the next batch.**
+
+### B. Small: finish the keyboard (next batch)
+
+1. **Keys for the sheets that still need the mouse**: the full goal editor (Goals, and
+   Edit on a goal), **Add info** on a profile, **Edit your profile** in Me, the interest
+   picker, and Coach's **Prepare**. The same pattern as the rest: a letter for each
+   section, 1–9 for choices, Esc or Tab out of a text box, Enter saves.
+2. **The goal-variant chevron** by keyboard (V on a goal card).
+3. **Focus**: moves into a sheet when it opens and back to where you were when it closes,
+   and the icon-only buttons get labels (for screen readers, and tooltips).
+
+### C. Small: setting up and plans (next batch)
+
+4. **Key dates while setting up**: a birthday (or another date) on each person's card,
+   by keys (D, then the day and month).
+5. **Change one day of a repeating plan**: editing a repeating plan asks **This day
+   only** or **Every time**, so Thursday's check-in can move to 4 PM without changing the
+   rest. Today a change always applies every time it repeats.
+6. **Goals on journal entries**: each log keeps which goals it moved, the Journal gets a
+   goal filter (as the vision lists), and a goal shows the logs that moved it.
+
+### D. Photos for your people
+
+Your `PFP` folder has nine pictures (eight screenshots and a WhatsApp photo), not named
+after anyone. Two ways to use them; **you picked 7**, so it's in the next batch:
+
+7. **Add photos from a folder**, in Layers: pick a folder, and it shows each picture in
+   turn with the crop circle already on the face's middle; 1–9 or a name picks who it's
+   for, S skips, Enter goes on. One Undo for the lot. Everything stays on this computer.
+8. **I crop them for you** now: you say who's who, and I make a square, centred,
+   evened-out copy of each to add with U. Opening them here sends them to Anthropic.
+
+### E. The next big task: you picked Layers on your phone
+
+9. **Layers on your phone** *(picked; a proposal first)*. The routes, roughly:
+   - **The same app on the iPhone's home screen** (a web app): free, works offline, no
+     App Store. iOS limits its notifications.
+   - **The App Store**, by wrapping the same code (Capacitor): proper notifications and
+     an icon, but it needs an Apple Developer account (US$99 a year) and a Mac, or a cloud
+     Mac, to build it.
+   - **Apple Watch**: needs a small native app; after the phone.
+   - **Keeping the laptop and phone in step, privately**: for example an encrypted file
+     in your own iCloud or OneDrive, so nothing sits on someone else's server. The data
+     was built ready for this (stable ids, `updatedAt` on plans).
+The other three stay here for later:
+
+10. **Your other calendars** (school, uni, work, Google or Outlook): read-only first,
+   from a calendar's private link, so Today shows your timetable and planning warns about
+   clashes. Two-way later. It saves typing in things like Mentor every weekday.
+11. **Activity and a one-page summary**: a GitHub-style calendar of the last six months
+   on each profile (and one for everyone on the Journal), shaded by how much and how
+   meaningful; tapping a day filters the Journal. **Export summary** makes a one-page PDF
+   of someone: layer, dimensions, what you know, timeline, goals and recent logs.
+12. **Real conversation analysis**: Analyse a pasted or screenshotted chat instead of the
+   four samples. It needs an AI model: a local one (private, but heavy) or a cloud one
+   that runs only when you ask, with a clear warning. The privacy principle comes first,
+   so it needs its own decision.
+
+### F. Housekeeping (nothing you'd notice; these can just be done)
+
+13. **Stale-build guard** for packaging by hand: fail if `electron/app/index.html` is
+    older than `src/` ([known-issues.md](known-issues.md)).
+14. **Analyse: more suggestion tones.** Only "continue the topic" has natural, playful
+    and deeper versions; two sample chats have none.
+15. ✅ **`PFP/` kept out of git**, in this laptop's own exclude list (`.git/info/exclude`),
+    so local builds aren't labelled "uncommitted" and releases aren't held up by it.
+
+### Later, or dropped
+
+- **Other avatar styles**: drawn faces, one flat emoji set, a rings monogram, line icons.
+- **Code signing** (P8): only needed for other people's laptops.
+- **The 20-question survey** for someone you already know: covered by the closeness
+  questions ("How close are you two?" when adding, "Where are we now?" on a profile).
+  Dropped unless you still want the longer version.
+- Already done from the old lists: a version number on saved data, Undo for deletes,
+  per-dimension ratings and desktop notifications.
 
 ## The calendar (built in 1.0.30)
 
@@ -331,81 +426,6 @@ its own. Changes made while building are marked.
   as if you'd done it there.
 - **Tests**: app tests for all three, and an end-to-end test that opens the real quick-add
   box in the packaged app, with a temporary data folder as always.
-
-## Drafted next: after the second live test
-
-Drafted on 2026-10-05 from what the second live test showed. You picked 1 to 4 to go in
-before 1.0.31, and they're built; 5 and 6 wait.
-
-1. ✅ **A getting-started list on Today**, for a new circle: add people (A), log your first
-   chat (N), plan something (P), try Ctrl+K, try the quick-add box (Ctrl+Shift+L). Each
-   ticks itself off from what you do, and the list goes once it's done, or with Hide. It
-   would stand in for "Try this next" until then.
-2. ✅ **Arrow keys on the People list**: ↑ ↓ move through people, Enter opens them (beside
-   the list in a wide window), / searches as now. The list is mouse-only today.
-3. ✅ **Logging with someone skips "What are you logging?"**: from Ctrl+K's L or a profile's
-   "Log an interaction", the person is already picked, so it could open on "What did you
-   do?".
-4. ✅ **The questions again from a profile**: "Where are we now?" asks the closeness
-   questions about someone already in your circle and moves them, recorded like Adjust,
-   with Undo.
-5. **Key dates while setting up**: a birthday (or another date) on each person's card.
-6. **Keys for the sheets that still need the mouse**: the full goal editor, key dates,
-   Add info, Edit person, Add detail's items (type to find one), and Coach's Prepare.
-7. ✅ **Release 1.0.31** with everything since 1.0.30: published and installed on 2026-10-05.
-
-Also from your answers: setting up asks the closeness questions only when you ask
-(Shift+Enter, or Q), and the avatar picker can find one by name (/).
-
-## Next: smaller fixes
-
-These are small and contained, so they can go in the next batch.
-
-1. ~~**A version number on saved data.**~~ Done with P3 (`dataVersion: 2`).
-2. ~~**Undo for deletes.**~~ Done with the quick wins: deletes, ticks, logs and saved
-   plans all have Undo, or Ctrl+Z.
-3. **Keyboard and screen-reader pass.**
-   - Make the goal-variant chevron reachable by keyboard.
-   - Move focus into a sheet when it opens and back when it closes.
-   - Label the remaining icon-only buttons.
-4. **Stale-build guard** for packaging by hand: fail if `electron/app/index.html` is
-   older than `src/` ([known-issues.md](known-issues.md)).
-5. **A goal on journal entries.** Store which goals a log moved (from P1's "Goals this
-   moved"), then add the journal goal filter the vision listed.
-6. **Analyse: more suggestion tones.** Only "continue the topic" has natural, playful and
-   deeper versions; two sample chats have none.
-
-## Later: the deferred ideas, sketched
-
-Each still needs a yes before it's built. These sketches are where the proposal would
-start.
-
-- **Quick survey for someone you already know** (about 20 questions).
-  - Where: Add person gets "Not starting from zero? Answer a quick survey".
-  - How: about 20 one-tap questions in four short groups (how often you talk, what you
-    share, trust and support, time together), each answered on 1–5.
-  - Result: the answers set the six dimensions, and the layer and percentage come from
-    them the same way Adjust works. The answers are kept, so it can be retaken later.
-- **Per-dimension meaningfulness**: ✅ built at your request, in 1.0.28. More details
-  rates each dimension 1–5, by keyboard or click. Each rating drives its dimension, and
-  goals about a dimension move by its rating.
-- **Activity heatmap.**
-  - Where: an "Activity" section on each profile, plus one for everyone on the Journal.
-  - What: a GitHub-style calendar of the last 6 months, shaded by how many and how
-    meaningful the logs were. Journal entries already carry ISO dates.
-  - Tapping a day filters the journal to it.
-- **Readable person summary (PDF).**
-  - Profile > "Export summary" makes a one-page printable summary: layer and progress,
-    the six dimensions, what you know about them, timeline, goals and recent entries.
-  - Electron's `printToPDF` saves it as a PDF. Nothing leaves the device unless you send
-    it.
-- **Minimal desktop notifications**: ✅ done in 1.0.28 (reminders and the daily
-  check-in, each with a switch in Me).
-- **Real conversation analysis.** Analyse a pasted or screenshotted conversation instead
-  of the four samples. It would need an AI model, which raises a privacy question for a
-  local-first app. Options: a local model (private, but heavy), or a cloud API that only
-  runs when you ask, with a clear warning. This needs its own proposal, and the vision's
-  privacy principle comes first.
 
 ## History
 
