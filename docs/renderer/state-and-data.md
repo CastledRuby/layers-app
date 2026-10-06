@@ -33,6 +33,7 @@ These keys are saved as one JSON blob under `localStorage['layers-app-state-v1']
 | `themeMode` | `'system' \| 'light' \| 'dark'` | `'system'`: Match Windows. Saves from before 2026-10-05 have none, so they follow Windows too (the owner's choice). |
 | `theme` | `'light' \| 'dark'`: what's showing, worked out from `themeMode` | `'light'` |
 | `achievements` | `{ [key]: 'YYYY-MM-DD' }`, or `null` until worked out | `null` (saved as `{}`). See [Achievements](#achievements). |
+| `deleted` | `{ id, kind: 'person'\|'entry'\|'event'\|'goal', at }[]`: what was deleted in the last 90 days | `[]`. Saved only; see [Ready for syncing](#ready-for-syncing). |
 
 Three more keys belong to notifications ([below](#notifications)):
 - `layers-last-notified-date`: the day the check-in nudge last fired
@@ -562,12 +563,36 @@ from `uid()`. `SAMPLE_PERSON_IDS` and `SAMPLE_GOAL_IDS` in `App.jsx` are how Me 
 "Restore sample data", which replaced everything, was removed in 1.0.28. Onboarding's
 "explore with example people" still loads the samples.
 
+### Ready for syncing
+
+Step 1 of the phone proposal ([roadmap.md](../roadmap.md#proposal-layers-on-your-phone-2026-10-06)):
+what's saved, and every backup, says when each record last changed and what was deleted,
+so a phone's copy can be merged with this one later. Nothing syncs yet.
+
+- **`updatedAt`** (an ISO time) on people, journal entries, plans, goals (a person's and
+  the general ones) and the profile. `createStamper` in
+  [`lib/sync.js`](../../src/lib/sync.js) adds it to *the saved copy* only: each save is
+  compared with the one before by reference (state is never changed in place, so a new
+  object is a changed record). The state itself isn't stamped, so Undo and Redo, which
+  compare it by reference, work as before. The first save after starting only remembers
+  what's there, keeping the times it was saved with; records from before 2026-10-06 have
+  none until they next change, and count as oldest.
+- **`deleted`**: a record that's gone since the last save is added (`{ id, kind, at }`);
+  one that comes back (Undo) is taken off. Kept for 90 days (`KEEP_DELETED_DAYS`).
+- **`mergeData(mine, theirs)`** brings two copies together record by record: the one
+  changed last wins (a tie, or no times, keeps this computer's); a person's goals are
+  merged one by one, so a goal moved on the phone and a note changed on the laptop both
+  survive (their other lists follow whichever copy of the person changed last); a
+  deletion wins over changes before it and loses to changes after it; skills keep the
+  copy that's further on, and achievements the day first earned. It isn't used yet: the
+  phone and the OneDrive sync file come in later steps. `src/sync.test.js` covers it.
+
 ## Backup format
 
 The Me tab's **Export** writes `layers-backup-YYYY-MM-DD.json`:
 
 ```json
-{ "version": 1, "exportedAt": "ISO timestamp", "people": [], "journal": [], "generalGoals": [], "events": [], "skills": {}, "profile": {}, "achievements": {} }
+{ "version": 1, "exportedAt": "ISO timestamp", "people": [], "journal": [], "generalGoals": [], "events": [], "skills": {}, "profile": {}, "achievements": {}, "deleted": [] }
 ```
 
 `createBackup` in [`src/lib/backup.js`](../../src/lib/backup.js) builds it, and
@@ -588,6 +613,7 @@ own saved data gets the same check at startup ([Loading saved data](#loading-sav
 | A journal entry's `summary` or `reflection` that isn't text, or `standouts` that isn't a list of strings | Repaired: a bad `summary` or `reflection` is dropped, because it's shown as it is, and `standouts` keeps only its strings |
 | `achievements` missing or not an object | Read as `null`, so the app works them out again from the data, quietly ([Achievements](#achievements)) |
 | An unknown achievement key, or a date that isn't `YYYY-MM-DD` | That entry is dropped |
+| `deleted` missing, or an entry without an `id`, a known `kind` or a real time | Read as `[]`, or that entry is dropped (`cleanDeleted`) |
 
 Old backups without `version`, `events`, `generalGoals` or `achievements` still import.
 The confirm dialog shows the export date, what will be imported ("5 people, 7 journal

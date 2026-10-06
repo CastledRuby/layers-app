@@ -38,7 +38,7 @@ describe('first launch', () => {
     const s = savedState();
     expect(s.onboarded).toBe(true);
     expect(s.people).toEqual([]);
-    expect(s.profile).toEqual({ name: 'Sam', focus: 'mix' });
+    expect({ ...s.profile, updatedAt: undefined }).toEqual({ name: 'Sam', focus: 'mix' });
   });
 
   it('explores with the sample people, and every tab renders', async () => {

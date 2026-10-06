@@ -254,7 +254,11 @@ The other three stay here for later:
 
 ## Proposal: Layers on your phone (2026-10-06)
 
-You picked this as the next big task, starting with a proposal. Nothing is built yet.
+You picked this as the next big task, starting with a proposal.
+
+**Your answers (2026-10-06):** the recommended plan, starting with step 1 now; **no
+Mac**, so GitHub's macOS machines build it; the sync file in **OneDrive**. Step 1 is
+built (below); the Apple Developer account is needed at step 3.
 
 ### Where it starts from
 
@@ -291,7 +295,7 @@ watches). It comes after the phone.
 
 ### Suggested steps, each usable on its own
 
-1. **Sync-ready data** (nothing you'd see): `updatedAt` on people, logs and goals as
+1. ✅ **Sync-ready data** (nothing you'd see; built 2026-10-06): `updatedAt` on people, logs and goals as
    well as plans; deleted things remembered for a while; a merge with thorough tests. It
    helps the laptop on its own too (safer restores).
 2. **The phone check**: try OneDrive's or iCloud's folder from a test iPhone app, before
@@ -479,6 +483,13 @@ its own. Changes made while building are marked.
   box in the packaged app, with a temporary data folder as always.
 
 ## History
+
+### Ready for syncing (after 1.0.32, not released yet)
+
+Step 1 of Layers on your phone. Nothing looks different: what Layers saves (and every
+backup) now says when each person, log, plan, goal and your profile last changed, and
+what was deleted in the last 90 days. A merge that brings two copies together record by
+record is written and tested, ready for the phone and the OneDrive sync file.
 
 ### Photos from a folder (after 1.0.32, not released yet)
 

@@ -9,13 +9,15 @@ import { ACHIEVEMENTS, CATEGORIES, DIM_ORDER, LAYER_BASE_DIMS, SKILL_ORDER, TYPE
 import { EMPTY_SKILLS } from '../data/seed.js';
 import { cleanAvatar } from '../data/avatars.js';
 import { clamp, uid } from './util.js';
+import { cleanDeleted } from './sync.js';
 
 export const BACKUP_VERSION = 1;
 // Far beyond any real backup; stops a wrong file (a video, say) being read into memory.
 export const MAX_BACKUP_BYTES = 20 * 1024 * 1024;
 
-export function createBackup({ people, journal, generalGoals, events, skills, profile, achievements }, now = new Date()) {
-  return { version: BACKUP_VERSION, exportedAt: now.toISOString(), people, journal, generalGoals, events, skills, profile, achievements: achievements || {} };
+// deleted: what was deleted lately (lib/sync.js), for syncing later.
+export function createBackup({ people, journal, generalGoals, events, skills, profile, achievements, deleted }, now = new Date()) {
+  return { version: BACKUP_VERSION, exportedAt: now.toISOString(), people, journal, generalGoals, events, skills, profile, achievements: achievements || {}, deleted: deleted || [] };
 }
 
 const isObject = (v) => v !== null && typeof v === 'object' && !Array.isArray(v);
@@ -199,5 +201,5 @@ export function validateBackup(raw, { source = 'backup' } = {}) {
     events: events.length,
     text: [count(people.length, 'person', 'people'), count(journal.length, 'journal entry', 'journal entries'), count(goalCount, 'goal'), count(events.length, 'event')].join(', '),
   };
-  return { ok: true, data: { people, journal, generalGoals, events, skills, profile, achievements, exportedAt }, summary, warnings };
+  return { ok: true, data: { people, journal, generalGoals, events, skills, profile, achievements, exportedAt, deleted: cleanDeleted(raw.deleted) }, summary, warnings };
 }

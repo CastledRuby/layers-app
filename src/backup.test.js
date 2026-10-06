@@ -22,7 +22,7 @@ describe('createBackup / validateBackup round trip', () => {
     expect(result.warnings).toEqual([]);
     const { exportedAt, ...data } = result.data;
     expect(exportedAt).toBe(NOW.toISOString());
-    expect(data).toEqual({ ...JSON.parse(JSON.stringify(sampleState())), achievements: {} });
+    expect(data).toEqual({ ...JSON.parse(JSON.stringify(sampleState())), achievements: {}, deleted: [] });
   });
   it('keeps recorded achievements, dropping unknown ones and bad dates', () => {
     const backup = { ...createBackup(sampleState(), NOW), achievements: { firstMeaningful: '2026-09-01', nope: '2026-09-01', activeListener: 'yesterday' } };

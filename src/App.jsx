@@ -32,6 +32,7 @@ import { KeyDateSheet } from './modals/KeyDateSheet.jsx';
 import { LogInteractionModal } from './modals/LogInteractionModal.jsx';
 import { PlanSheet } from './modals/PlanSheet.jsx';
 import { PhotoFolderSheet } from './modals/PhotoFolderSheet.jsx';
+import { createStamper } from './lib/sync.js';
 import { QuickAddInterestModal } from './modals/QuickAddInterestModal.jsx';
 import { ShortcutsModal } from './modals/ShortcutsModal.jsx';
 import { StartOverSheet } from './modals/StartOverSheet.jsx';
@@ -110,13 +111,18 @@ function LayersApp() {
   const theme = themeMode === 'system' ? (systemDark ? 'dark' : 'light') : themeMode;
   // { key: 'YYYY-MM-DD' } for each achievement reached; null until worked out.
   const [achievements, setAchievements] = useState(() => (saved && saved.achievements) || null);
+  // When each record last changed, and what was deleted, kept in what's saved
+  // and in backups for syncing later (lib/sync.js); the state itself is left
+  // alone, so Undo and Redo still compare it by reference.
+  const [stamper] = useState(() => createStamper((saved && saved.deleted) || []));
+  const stamped = () => stamper.stamp({ people, journal, generalGoals, events, profile }, new Date().toISOString());
   const [screen, setScreen] = useState({ name: 'tabs' });
   const [activeTab, setActiveTab] = useState('today');
   // The calendar: the day it shows (null = today) and Day or Month.
   const [selectedDay, setSelectedDay] = useState(null);
   const [calendarMode, setCalendarMode] = useState('day');
-  const [planState, setPlanState] = useState(null);
-  const [journalGoal, setJournalGoal] = useState('all'); // the Journal's goal filter // PlanSheet's prefill while it's open
+  const [planState, setPlanState] = useState(null); // PlanSheet's prefill while it's open
+  const [journalGoal, setJournalGoal] = useState('all'); // the Journal's goal filter
   const [weekReview, setWeekReview] = useState(null); // a day in the week WeekReviewSheet shows
   const [eventView, setEventView] = useState(null); // { eventId, day } in EventSheet
   const [dayView, setDayView] = useState(null); // a day open in DaySheet
@@ -173,7 +179,7 @@ function LayersApp() {
   }
 
   useEffect(() => {
-    const ok = persistState({ people, journal, generalGoals, events, skills, profile, onboarded, theme, themeMode, achievements: achievements || {} });
+    const ok = persistState({ ...stamped(), skills, onboarded, theme, themeMode, achievements: achievements || {} });
     // Say so once if saving fails (storage full), rather than silently losing
     // every change after it.
     if (!ok && !saveFailed.current) pushToast("Layers couldn't save your latest changes: storage may be full. Export a backup from Me to keep a copy.");
@@ -224,7 +230,7 @@ function LayersApp() {
     if (hasSystemBridge && window.layersSystem.getBackupsInfo) Promise.resolve(window.layersSystem.getBackupsInfo()).then(setBackupInfo).catch(() => {});
   }, [hasSystemBridge]);
   useDailyBackup(onboarded && hasSystemBridge, today,
-    () => JSON.stringify(createBackup({ people, journal, generalGoals, events, skills, profile, achievements })),
+    () => JSON.stringify(createBackup({ ...stamped(), skills, achievements })),
     setBackupInfo);
   function handleOpenBackups() {
     Promise.resolve(window.layersSystem.openBackupsFolder()).then(r => { if (r && r.error) pushToast(`Couldn't open the backups folder: ${r.error}`); }).catch(() => {});
@@ -1067,7 +1073,7 @@ function LayersApp() {
   }
 
   function handleExportData() {
-    const data = createBackup({ people, journal, generalGoals, events, skills, profile, achievements });
+    const data = createBackup({ ...stamped(), skills, achievements });
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');

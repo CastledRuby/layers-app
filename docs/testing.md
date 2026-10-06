@@ -114,6 +114,11 @@ interact.
 - `keys2.test.jsx` covers the second live test's keys: N into a note box and Esc out
   (the quick log, Add detail, editing a journal entry), Redo with Ctrl+Y and
   Ctrl+Shift+Z (and not once something else changed), and Ctrl+K's O, L, P and R.
+- `sync.test.jsx` covers being ready for syncing: a deleted plan remembered and Undo
+  forgetting it (with Redo still working), only changed records getting a new time, and
+  a backup carrying them. `src/sync.test.js` covers `createStamper` and `mergeData`
+  (the copy changed last, ties, a person's goals merged one by one, deletions before and
+  after changes, skills and achievements).
 - `keys3.test.jsx` covers the last sheets that needed the mouse: the full goal editor
   (a goal by number, its more specific versions with V, S, C, E, D and ← →), Add info,
   your profile, Coach's Prepare (← →, L, A, 1 and 2), and focus moving into a sheet and

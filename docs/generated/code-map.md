@@ -4,21 +4,21 @@
 > Run `npm run docs:map` after changing anything under `src/`, `electron/*.cjs` or `package.json` scripts.
 > Hand-written explanations live in the other files under [`docs/`](../README.md).
 
-Package: `layers-web` v1.0.32 · `src/`: 69 files, 11153 lines, 95 components, 241 top-level functions, 140 constants.
+Package: `layers-web` v1.0.32 · `src/`: 70 files, 11321 lines, 95 components, 250 top-level functions, 144 constants.
 
 ## Source files
 
 | File | Lines | Declares | Imports from |
 |---|---|---|---|
 | [main.jsx](../../src/main.jsx) | 16 | quick | — |
-| [App.jsx](../../src/App.jsx) | 1322 | sampleData, SAMPLE_PERSON_IDS, SAMPLE_GOAL_IDS, skillsCameWithSamples, allSkillsZero, listNames, unlinkMissingPeople, addNotes, LayersApp | `components/BottomNav`, `components/ErrorBoundary`, `components/PageTransition`, `components/sheetLayer`, `data/constants`, `data/seed`, `lib/dates`, `lib/achievements`, `lib/progress`, `lib/backup`, `lib/calendar`, `lib/hooks`, `lib/reminders`, `lib/storage`, `lib/util`, `modals/AddInfoModal`, `modals/AddPersonModal`, `modals/ConfirmDialog`, `modals/EditEntryModal`, `modals/EditPersonModal`, `modals/EditProfileModal`, `modals/EventSheet`, `modals/GoalModal`, `modals/KeyDateSheet`, `modals/LogInteractionModal`, `modals/PlanSheet`, `modals/PhotoFolderSheet`, `modals/QuickAddInterestModal`, `modals/ShortcutsModal`, `modals/StartOverSheet`, `modals/DaySheet`, `modals/JumpSheet`, `lib/sentence`, `modals/TemplatePickerModal`, `modals/WeekReviewSheet`, `theme`, `views/CoachView`, `views/GoalsView`, `views/JournalView`, `views/MeView`, `views/OnboardingView`, `views/PeopleView`, `views/PersonProfile`, `components/ClosenessQuiz`, `views/TodayView` |
+| [App.jsx](../../src/App.jsx) | 1328 | sampleData, SAMPLE_PERSON_IDS, SAMPLE_GOAL_IDS, skillsCameWithSamples, allSkillsZero, listNames, unlinkMissingPeople, addNotes, LayersApp | `components/BottomNav`, `components/ErrorBoundary`, `components/PageTransition`, `components/sheetLayer`, `data/constants`, `data/seed`, `lib/dates`, `lib/achievements`, `lib/progress`, `lib/backup`, `lib/calendar`, `lib/hooks`, `lib/reminders`, `lib/storage`, `lib/util`, `modals/AddInfoModal`, `modals/AddPersonModal`, `modals/ConfirmDialog`, `modals/EditEntryModal`, `modals/EditPersonModal`, `modals/EditProfileModal`, `modals/EventSheet`, `modals/GoalModal`, `modals/KeyDateSheet`, `modals/LogInteractionModal`, `modals/PlanSheet`, `modals/PhotoFolderSheet`, `lib/sync`, `modals/QuickAddInterestModal`, `modals/ShortcutsModal`, `modals/StartOverSheet`, `modals/DaySheet`, `modals/JumpSheet`, `lib/sentence`, `modals/TemplatePickerModal`, `modals/WeekReviewSheet`, `theme`, `views/CoachView`, `views/GoalsView`, `views/JournalView`, `views/MeView`, `views/OnboardingView`, `views/PeopleView`, `views/PersonProfile`, `components/ClosenessQuiz`, `views/TodayView` |
 | [theme.js](../../src/theme.js) | 335 | THEME_LIGHT, THEME_DARK, COLORS, cssVarBlock, EASE, CSS | `fonts` |
 | [data/avatars.js](../../src/data/avatars.js) | 191 | AVATAR_COLS, AVATAR_GROUPS, findAvatars, INITIAL_COLORS, INITIALS_GROUP, isInitials, PHOTO_SIZE, PHOTO_GROUP, PHOTO_SRC, isPhoto, … (+15) | — |
 | [data/constants.js](../../src/data/constants.js) | 320 | LAYERS, getLayer, DIM_ORDER, DIM_LABELS, DIM_COLORS, LAYER_BASE_DIMS, CATEGORIES, categoryMeta, TABS, SHORTCUTS, … (+26) | `theme` |
 | [data/scenarios.js](../../src/data/scenarios.js) | 115 | SCENARIOS | — |
 | [data/seed.js](../../src/data/seed.js) | 176 | INITIAL_PEOPLE, INITIAL_GENERAL_GOALS, INITIAL_JOURNAL, INITIAL_SKILLS, EMPTY_SKILLS | — |
 | [lib/achievements.js](../../src/lib/achievements.js) | 37 | achievementProgress, newlyUnlocked, progressText | `data/constants` |
-| [lib/backup.js](../../src/lib/backup.js) | 204 | BACKUP_VERSION, MAX_BACKUP_BYTES, createBackup, isObject, isText, isISODay, num, count, cleanHistory, cleanGoal, … (+5) | `lib/calendar`, `data/constants`, `data/seed`, `data/avatars`, `lib/util` |
+| [lib/backup.js](../../src/lib/backup.js) | 206 | BACKUP_VERSION, MAX_BACKUP_BYTES, createBackup, isObject, isText, isISODay, num, count, cleanHistory, cleanGoal, … (+5) | `lib/calendar`, `data/constants`, `data/seed`, `data/avatars`, `lib/util`, `lib/sync` |
 | [lib/calendar.js](../../src/lib/calendar.js) | 417 | WEEKDAY_NAMES, DEFAULT_DURATION, EVENT_TEMPLATES, templateFor, DATE_KINDS, dateKind, NOTIFY_DEFAULTS, notifySettings, dayDate, addDays, … (+27) | `lib/dates` |
 | [lib/closeness.js](../../src/lib/closeness.js) | 64 | QUIZ, ANSWERS, REACHED, inLayer, share, nextQuestion, quizPlacement | — |
 | [lib/dates.js](../../src/lib/dates.js) | 314 | parseDaysAgo, startOfDay, WEEKDAY_SHORT, WEEKDAY_FULL, formatWeekdays, MONTH_NAMES, MONTH_WORDS, readDayMonth, dayMonthToDate, dateToRelativeLabel, … (+26) | `data/constants` |
@@ -29,6 +29,7 @@ Package: `layers-web` v1.0.32 · `src/`: 69 files, 11153 lines, 95 components, 2
 | [lib/reminders.js](../../src/lib/reminders.js) | 33 | markDone, followUpEvent | `lib/dates` |
 | [lib/sentence.js](../../src/lib/sentence.js) | 297 | WEEKDAYS, MONTHS, RATING_WORDS, TEMPLATE_WORDS, MEAL_TIMES, PART_TIMES, LOG_VERBS, LOG_NOUNS, FILLERS, PREPOSITIONS, … (+12) | `lib/calendar`, `lib/dates` |
 | [lib/storage.js](../../src/lib/storage.js) | 125 | STORAGE_KEY, DATA_VERSION, UNREADABLE_PREFIX, keepCopy, loadSavedState, persistState, LAST_NOTIFIED_KEY, getLastNotifiedDate, setLastNotifiedDate, NOTIFIED_REMINDERS_KEY, … (+5) | `lib/backup`, `lib/progress` |
+| [lib/sync.js](../../src/lib/sync.js) | 160 | KINDS, KEEP_DELETED_DAYS, COLLECTIONS, DAY_MS, prune, createStamper, cleanDeleted, stampOf, mergeList, mergeSkills, … (+3) | — |
 | [lib/text.js](../../src/lib/text.js) | 168 | summaryFor, updateStatusText, homeGoalTitle, generateSuggestions, getCheckInSuggestions, checkInReminder, HOOKS, buildPotentialHooks, focusSuggestion | `data/constants`, `lib/dates` |
 | [lib/tips.js](../../src/lib/tips.js) | 47 | SOON_DAYS, addDays, datesAround, planTips | `data/constants`, `lib/calendar`, `lib/dates`, `lib/text` |
 | [lib/util.js](../../src/lib/util.js) | 9 | clamp, uidCounter, uid | — |
@@ -84,7 +85,7 @@ Package: `layers-web` v1.0.32 · `src/`: 69 files, 11153 lines, 95 components, 2
 
 | Component | Defined | Props | Rendered by |
 |---|---|---|---|
-| `LayersApp` | [App.jsx:95](../../src/App.jsx#L95) | — | — |
+| `LayersApp` | [App.jsx:96](../../src/App.jsx#L96) | — | — |
 | `CircularProgress` | [atoms.jsx:10](../../src/components/atoms.jsx#L10) | `percent`, `size`, `stroke`, `color`, `track`, `label` | `PersonProfile` |
 | `ProgressBar` | [atoms.jsx:30](../../src/components/atoms.jsx#L30) | `percent`, `color`, `height`, `track` | `LabeledBar`, `GoalRow`, `PeopleView`, `TodayView`, `GettingStarted` |
 | `LabeledBar` | [atoms.jsx:38](../../src/components/atoms.jsx#L38) | `label`, `percent`, `color`, `size` | `CoachView`, `MeView`, `PersonProfile` |
@@ -185,12 +186,12 @@ Package: `layers-web` v1.0.32 · `src/`: 69 files, 11153 lines, 95 components, 2
 | Function | Defined | Exported | Unit-tested |
 |---|---|---|---|
 | `quick` | [main.jsx:9](../../src/main.jsx#L9) |  |  |
-| `sampleData` | [App.jsx:55](../../src/App.jsx#L55) |  |  |
-| `skillsCameWithSamples` | [App.jsx:70](../../src/App.jsx#L70) |  |  |
-| `allSkillsZero` | [App.jsx:71](../../src/App.jsx#L71) |  |  |
-| `listNames` | [App.jsx:72](../../src/App.jsx#L72) |  |  |
-| `unlinkMissingPeople` | [App.jsx:75](../../src/App.jsx#L75) |  |  |
-| `addNotes` | [App.jsx:83](../../src/App.jsx#L83) |  |  |
+| `sampleData` | [App.jsx:56](../../src/App.jsx#L56) |  |  |
+| `skillsCameWithSamples` | [App.jsx:71](../../src/App.jsx#L71) |  |  |
+| `allSkillsZero` | [App.jsx:72](../../src/App.jsx#L72) |  |  |
+| `listNames` | [App.jsx:73](../../src/App.jsx#L73) |  |  |
+| `unlinkMissingPeople` | [App.jsx:76](../../src/App.jsx#L76) |  |  |
+| `addNotes` | [App.jsx:84](../../src/App.jsx#L84) |  |  |
 | `cssVarBlock` | [theme.js:60](../../src/theme.js#L60) |  |  |
 | `findAvatars` | [avatars.js:41](../../src/data/avatars.js#L41) | ✓ |  |
 | `isInitials` | [avatars.js:66](../../src/data/avatars.js#L66) | ✓ | ✓ |
@@ -213,19 +214,19 @@ Package: `layers-web` v1.0.32 · `src/`: 69 files, 11153 lines, 95 components, 2
 | `achievementProgress` | [achievements.js:9](../../src/lib/achievements.js#L9) | ✓ |  |
 | `newlyUnlocked` | [achievements.js:29](../../src/lib/achievements.js#L29) | ✓ |  |
 | `progressText` | [achievements.js:34](../../src/lib/achievements.js#L34) | ✓ |  |
-| `createBackup` | [backup.js:17](../../src/lib/backup.js#L17) | ✓ | ✓ |
-| `isObject` | [backup.js:21](../../src/lib/backup.js#L21) |  |  |
-| `isText` | [backup.js:22](../../src/lib/backup.js#L22) |  |  |
-| `isISODay` | [backup.js:23](../../src/lib/backup.js#L23) |  |  |
-| `num` | [backup.js:24](../../src/lib/backup.js#L24) |  |  |
-| `count` | [backup.js:25](../../src/lib/backup.js#L25) |  |  |
-| `cleanHistory` | [backup.js:27](../../src/lib/backup.js#L27) |  |  |
-| `cleanGoal` | [backup.js:33](../../src/lib/backup.js#L33) |  |  |
-| `cleanPerson` | [backup.js:48](../../src/lib/backup.js#L48) |  |  |
-| `cleanEntry` | [backup.js:87](../../src/lib/backup.js#L87) |  |  |
-| `cleanEvent` | [backup.js:110](../../src/lib/backup.js#L110) |  |  |
-| `cleanSkills` | [backup.js:137](../../src/lib/backup.js#L137) |  |  |
-| `validateBackup` | [backup.js:149](../../src/lib/backup.js#L149) | ✓ | ✓ |
+| `createBackup` | [backup.js:19](../../src/lib/backup.js#L19) | ✓ | ✓ |
+| `isObject` | [backup.js:23](../../src/lib/backup.js#L23) |  |  |
+| `isText` | [backup.js:24](../../src/lib/backup.js#L24) |  |  |
+| `isISODay` | [backup.js:25](../../src/lib/backup.js#L25) |  |  |
+| `num` | [backup.js:26](../../src/lib/backup.js#L26) |  |  |
+| `count` | [backup.js:27](../../src/lib/backup.js#L27) |  |  |
+| `cleanHistory` | [backup.js:29](../../src/lib/backup.js#L29) |  |  |
+| `cleanGoal` | [backup.js:35](../../src/lib/backup.js#L35) |  |  |
+| `cleanPerson` | [backup.js:50](../../src/lib/backup.js#L50) |  |  |
+| `cleanEntry` | [backup.js:89](../../src/lib/backup.js#L89) |  |  |
+| `cleanEvent` | [backup.js:112](../../src/lib/backup.js#L112) |  |  |
+| `cleanSkills` | [backup.js:139](../../src/lib/backup.js#L139) |  |  |
+| `validateBackup` | [backup.js:151](../../src/lib/backup.js#L151) | ✓ | ✓ |
 | `templateFor` | [calendar.js:41](../../src/lib/calendar.js#L41) | ✓ |  |
 | `dateKind` | [calendar.js:51](../../src/lib/calendar.js#L51) | ✓ |  |
 | `notifySettings` | [calendar.js:70](../../src/lib/calendar.js#L70) | ✓ |  |
@@ -354,6 +355,15 @@ Package: `layers-web` v1.0.32 · `src/`: 69 files, 11153 lines, 95 components, 2
 | `addNotifiedReminder` | [storage.js:103](../../src/lib/storage.js#L103) | ✓ |  |
 | `getSnoozes` | [storage.js:115](../../src/lib/storage.js#L115) | ✓ |  |
 | `setSnoozes` | [storage.js:122](../../src/lib/storage.js#L122) | ✓ |  |
+| `prune` | [sync.js:25](../../src/lib/sync.js#L25) |  |  |
+| `createStamper` | [sync.js:33](../../src/lib/sync.js#L33) | ✓ | ✓ |
+| `cleanDeleted` | [sync.js:87](../../src/lib/sync.js#L87) | ✓ | ✓ |
+| `stampOf` | [sync.js:94](../../src/lib/sync.js#L94) |  |  |
+| `mergeList` | [sync.js:99](../../src/lib/sync.js#L99) |  |  |
+| `mergeSkills` | [sync.js:118](../../src/lib/sync.js#L118) |  |  |
+| `mergeAchievements` | [sync.js:125](../../src/lib/sync.js#L125) |  |  |
+| `mergeData` | [sync.js:134](../../src/lib/sync.js#L134) | ✓ | ✓ |
+| `mergeDeleted` | [sync.js:151](../../src/lib/sync.js#L151) |  |  |
 | `summaryFor` | [text.js:7](../../src/lib/text.js#L7) | ✓ | ✓ |
 | `updateStatusText` | [text.js:13](../../src/lib/text.js#L13) | ✓ | ✓ |
 | `homeGoalTitle` | [text.js:29](../../src/lib/text.js#L29) | ✓ | ✓ |
@@ -430,8 +440,8 @@ Package: `layers-web` v1.0.32 · `src/`: 69 files, 11153 lines, 95 components, 2
 
 | Constant | Defined |
 |---|---|
-| `SAMPLE_PERSON_IDS` | [App.jsx:67](../../src/App.jsx#L67) |
-| `SAMPLE_GOAL_IDS` | [App.jsx:68](../../src/App.jsx#L68) |
+| `SAMPLE_PERSON_IDS` | [App.jsx:68](../../src/App.jsx#L68) |
+| `SAMPLE_GOAL_IDS` | [App.jsx:69](../../src/App.jsx#L69) |
 | `THEME_LIGHT` | [theme.js:6](../../src/theme.js#L6) |
 | `THEME_DARK` | [theme.js:31](../../src/theme.js#L31) |
 | `COLORS` | [theme.js:58](../../src/theme.js#L58) |
@@ -486,8 +496,8 @@ Package: `layers-web` v1.0.32 · `src/`: 69 files, 11153 lines, 95 components, 2
 | `INITIAL_JOURNAL` | [seed.js:149](../../src/data/seed.js#L149) |
 | `INITIAL_SKILLS` | [seed.js:159](../../src/data/seed.js#L159) |
 | `EMPTY_SKILLS` | [seed.js:168](../../src/data/seed.js#L168) |
-| `BACKUP_VERSION` | [backup.js:13](../../src/lib/backup.js#L13) |
-| `MAX_BACKUP_BYTES` | [backup.js:15](../../src/lib/backup.js#L15) |
+| `BACKUP_VERSION` | [backup.js:14](../../src/lib/backup.js#L14) |
+| `MAX_BACKUP_BYTES` | [backup.js:16](../../src/lib/backup.js#L16) |
 | `WEEKDAY_NAMES` | [calendar.js:25](../../src/lib/calendar.js#L25) |
 | `DEFAULT_DURATION` | [calendar.js:27](../../src/lib/calendar.js#L27) |
 | `EVENT_TEMPLATES` | [calendar.js:31](../../src/lib/calendar.js#L31) |
@@ -526,6 +536,10 @@ Package: `layers-web` v1.0.32 · `src/`: 69 files, 11153 lines, 95 components, 2
 | `LAST_NOTIFIED_KEY` | [storage.js:81](../../src/lib/storage.js#L81) |
 | `NOTIFIED_REMINDERS_KEY` | [storage.js:94](../../src/lib/storage.js#L94) |
 | `SNOOZES_KEY` | [storage.js:113](../../src/lib/storage.js#L113) |
+| `KINDS` | [sync.js:18](../../src/lib/sync.js#L18) |
+| `KEEP_DELETED_DAYS` | [sync.js:21](../../src/lib/sync.js#L21) |
+| `COLLECTIONS` | [sync.js:22](../../src/lib/sync.js#L22) |
+| `DAY_MS` | [sync.js:23](../../src/lib/sync.js#L23) |
 | `HOOKS` | [text.js:78](../../src/lib/text.js#L78) |
 | `SOON_DAYS` | [tips.js:13](../../src/lib/tips.js#L13) |
 | `PICKER_GROUPS` | [avatarKeys.js:23](../../src/components/avatarKeys.js#L23) |

@@ -67,7 +67,7 @@ describe('Delete my data and start over', () => {
     const s = savedState();
     expect([s.people, s.journal, s.events]).toEqual([[], [], []]);
     expect(s.onboarded).toBe(false);
-    expect(s.profile).toEqual({ name: '', focus: null });
+    expect({ ...s.profile, updatedAt: undefined }).toEqual({ name: '', focus: null });
     expect(screen.getByText('Welcome to Layers')).toBeTruthy();
   });
 
@@ -113,7 +113,7 @@ describe('setting up', () => {
     expect(dialog('Plan something')).toBeTruthy();
     expect(savedPerson('Mum').layer).toBe(1);
     expect(savedPerson('Ana').layer).toBe(4);
-    expect(savedState().profile).toEqual({ name: 'Sam', focus: null, morningSummary: false });
+    expect({ ...savedState().profile, updatedAt: undefined }).toEqual({ name: 'Sam', focus: null, morningSummary: false });
   });
 
   it('D adds a birthday while setting up, typed as "14 mar"', async () => {
