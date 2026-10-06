@@ -1122,7 +1122,7 @@ function LayersApp() {
     });
     quietAchievements.current = true;
     if (startFresh) {
-      setPeople((newPeople || []).map(p => makePerson({ name: p.name, emoji: p.emoji, avatar: p.avatar, layer: p.layer || 1, overall: p.overall })));
+      setPeople((newPeople || []).map(p => ({ ...makePerson({ name: p.name, emoji: p.emoji, avatar: p.avatar, layer: p.layer || 1, overall: p.overall }), ...(p.dates && p.dates.length ? { dates: p.dates } : {}) })));
       setJournal([]); setGeneralGoals([]); setSkills(EMPTY_SKILLS);
     } else {
       const sample = sampleData();

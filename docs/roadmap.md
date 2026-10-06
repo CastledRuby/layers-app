@@ -195,7 +195,7 @@ always. **Yes: now, before the next batch.**
 
 ### C. Small: setting up and plans (next batch)
 
-4. **Key dates while setting up**: a birthday (or another date) on each person's card,
+4. ✅ **Key dates while setting up**: a birthday (or another date) on each person's card,
    by keys (D, then the day and month).
 5. ✅ **Change one day of a repeating plan**: editing a repeating plan asks **This day
    only** or **Every time**, so Thursday's check-in can move to 4 PM without changing the
@@ -428,6 +428,14 @@ its own. Changes made while building are marked.
   box in the packaged app, with a temporary data folder as always.
 
 ## History
+
+### Key dates while setting up (after 1.0.32, not released yet)
+
+- Each person's card while setting up has **🎂 Birthday**; **D** adds one for the newest
+  person. Type the day ("14 Mar", "14/3", or with the year, "14 March 2008"), then
+  Enter. Another date (an exam, an anniversary) works the same way after the birthday.
+- The same typed box is in **Add date** on a profile, with **Y** for every year or just
+  once and Backspace to go back. The calendar picker is still there.
 
 ### Goals on journal entries (after 1.0.32, not released yet)
 

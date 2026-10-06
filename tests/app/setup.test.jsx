@@ -116,6 +116,24 @@ describe('setting up', () => {
     expect(savedState().profile).toEqual({ name: 'Sam', focus: null, morningSummary: false });
   });
 
+  it('D adds a birthday while setting up, typed as "14 mar"', async () => {
+    const { user } = renderApp();
+    await user.type(screen.getByLabelText('Your name'), 'Sam{Enter}');
+    await user.type(screen.getByLabelText("Person's name"), 'Kai{Enter}');
+    await user.keyboard('{Escape}d'); // out of the name box, then D for the newest
+    const sheet = dialog('🎂 Birthday');
+    expect(document.activeElement).toBe(within(sheet).getByLabelText('Type the day'));
+    await user.keyboard('14 mar');
+    expect(within(sheet).getByRole('status', { name: 'The date' }).textContent).toBe('14 March, every year');
+    await user.keyboard('{Enter}');
+    expect(within(screen.getByRole('group', { name: "Kai's dates" })).getByText(/🎂 14 Mar/)).toBeTruthy();
+    expect(document.activeElement).toBe(screen.getByLabelText("Person's name")); // ready for the next name
+    await user.keyboard('{Enter}'); // an empty box goes on
+    expect(screen.getByText("You're all set, Sam")).toBeTruthy();
+    await user.keyboard('{Enter}'); // Go to Today
+    expect(savedPerson('Kai').dates).toEqual([expect.objectContaining({ kind: 'birthday', yearly: true, date: expect.stringMatching(/-03-14$/) })]);
+  });
+
   it('can restore from a backup instead', async () => {
     const click = vi.spyOn(HTMLInputElement.prototype, 'click').mockImplementation(() => {});
     const { user } = renderApp();

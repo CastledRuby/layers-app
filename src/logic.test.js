@@ -430,3 +430,30 @@ describe('checkInReminder', () => {
     expect(checkInReminder(people, journalAt([['a', '2026-09-10']]), '2026-10-03', justAfterMidnight).day).toBe('2026-10-04');
   });
 });
+
+describe('typed key dates', () => {
+  it('reads a day and month, day first, with or without a year', async () => {
+    const { readDayMonth } = await import('./lib/dates.js');
+    expect(readDayMonth('14 mar')).toEqual({ day: 14, month: 2, year: null });
+    expect(readDayMonth('14th March')).toEqual({ day: 14, month: 2, year: null });
+    expect(readDayMonth('March 14')).toEqual({ day: 14, month: 2, year: null });
+    expect(readDayMonth('14/3')).toEqual({ day: 14, month: 2, year: null });
+    expect(readDayMonth('14-3-2008')).toEqual({ day: 14, month: 2, year: 2008 });
+    expect(readDayMonth('14 mar 08')).toEqual({ day: 14, month: 2, year: 2008 });
+    expect(readDayMonth('29 feb')).toEqual({ day: 29, month: 1, year: null });
+    expect(readDayMonth('31/4')).toBeNull();
+    expect(readDayMonth('29/2/2023')).toBeNull();
+    expect(readDayMonth('next week')).toBeNull();
+    expect(readDayMonth('')).toBeNull();
+  });
+
+  it('keeps a birthday this year, and a one-off the next time it comes round', async () => {
+    const { dayMonthToDate, toISODate } = await import('./lib/dates.js');
+    const now = new Date(2026, 9, 6); // 6 October 2026
+    expect(toISODate(dayMonthToDate({ day: 14, month: 2, year: null }, true, now))).toBe('2026-03-14');
+    expect(toISODate(dayMonthToDate({ day: 14, month: 2, year: null }, false, now))).toBe('2027-03-14');
+    expect(toISODate(dayMonthToDate({ day: 20, month: 9, year: null }, false, now))).toBe('2026-10-20');
+    expect(toISODate(dayMonthToDate({ day: 29, month: 1, year: null }, true, now))).toBe('2028-02-29');
+    expect(toISODate(dayMonthToDate({ day: 14, month: 2, year: 2008 }, true, now))).toBe('2008-03-14');
+  });
+});

@@ -8,8 +8,9 @@
 //           "How close are you two?" (QuizSheet) asks a few questions to place
 //           them when you want it: Shift+Enter adds someone and asks, Q (out
 //           of the name box) asks about the newest, or a card's Questions.
-//           A picks the newest one's avatar (AvatarSheet). Each card's layer
-//           can be tapped too. Enter on an empty box goes on.
+//           A picks the newest one's avatar (AvatarSheet), and D adds their
+//           birthday or another date (KeyDateSheet, typed: "14 Mar"). Each
+//           card's layer can be tapped too. Enter on an empty box goes on.
 //   ready   the notifications you want and the keys worth knowing, then Go to
 //           Today (Enter) or Plan something first (P)
 // The example people skip "people". See docs/renderer/app-structure.md.
@@ -19,11 +20,13 @@ import { Bell, ChevronLeft, Keyboard, Upload, X } from 'lucide-react';
 import { Avatar, Kbd } from '../components/atoms.jsx';
 import { QuizSheet } from '../components/ClosenessQuiz.jsx';
 import { AvatarSheet } from '../components/AvatarPicker.jsx';
+import { KeyDateSheet } from '../modals/KeyDateSheet.jsx';
 import { isTyping } from '../components/sheetLayer.js';
 import { RingsWelcome } from '../components/illustrations.jsx';
 import { FOCUS_OPTIONS, LAYERS, PERSON_EMOJIS } from '../data/constants.js';
-import { NOTIFY_DEFAULTS } from '../lib/calendar.js';
-import { formatTime12 } from '../lib/dates.js';
+import { dateKind, NOTIFY_DEFAULTS } from '../lib/calendar.js';
+import { formatTime12, MONTH_NAMES, parseISODay } from '../lib/dates.js';
+import { uid } from '../lib/util.js';
 import { COLORS } from '../theme.js';
 
 const QUICK_NAMES = ['Mum', 'Dad', 'Partner', 'Best friend', 'Brother', 'Sister', 'Flatmate', 'Workmate'];
@@ -36,6 +39,7 @@ const KEYS_TO_KNOW = [
   { keys: ['Ctrl', 'Shift', 'L'], text: 'From any app: the quick-add box' },
   { keys: ['?'], text: 'Every shortcut' },
 ];
+const shortDate = (iso) => { const d = parseISODay(iso); return `${d.getDate()} ${MONTH_NAMES[d.getMonth()].slice(0, 3)}`; };
 const listNames = (names) => (names.length <= 1 ? names.join('') : `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}`);
 
 function Progress({ step, samples }) {
@@ -70,10 +74,11 @@ export function OnboardingView({ initialName, initialFocus, initialNotify = NOTI
   const [samples, setSamples] = useState(false);
   const [name, setName] = useState(initialName || '');
   const [focus, setFocus] = useState(initialFocus || null);
-  const [draftPeople, setDraftPeople] = useState([]); // [{ name, emoji, avatar, layer, overall }]
+  const [draftPeople, setDraftPeople] = useState([]); // [{ name, emoji, avatar, layer, overall, dates? }]
   const [newName, setNewName] = useState('');
   const [quizFor, setQuizFor] = useState(null); // the draft person the quiz is asking about
   const [avatarFor, setAvatarFor] = useState(null); // the draft person whose avatar is being picked
+  const [dateFor, setDateFor] = useState(null); // the draft person getting a key date
   const nameRef = useRef(null);
   const [notify, setNotify] = useState(() => ({
     reminderNotifications: initialNotify.reminderNotifications,
@@ -98,6 +103,10 @@ export function OnboardingView({ initialName, initialFocus, initialNotify = NOTI
     setAvatarFor(null);
     if (nameRef.current) nameRef.current.focus();
   }
+  function closeDate() {
+    setDateFor(null);
+    if (nameRef.current) nameRef.current.focus();
+  }
   const updateDraft = (i, changes) => setDraftPeople(prev => prev.map((p, idx) => idx === i ? { ...p, ...changes } : p));
   const removeDraftPerson = (i) => setDraftPeople(prev => prev.filter((_, idx) => idx !== i));
   function startFresh() { if (canContinue) { setSamples(false); setStep('people'); } }
@@ -112,7 +121,7 @@ export function OnboardingView({ initialName, initialFocus, initialNotify = NOTI
   useEffect(() => {
     if (step === 'ready') return undefined;
     function onKey(e) {
-      if (e.ctrlKey || e.metaKey || e.altKey || e.defaultPrevented || quizFor !== null || avatarFor !== null) return;
+      if (e.ctrlKey || e.metaKey || e.altKey || e.defaultPrevented || quizFor !== null || avatarFor !== null || dateFor !== null) return;
       const el = document.activeElement;
       if (e.key === 'Escape' && isTyping()) { el.blur(); return; }
       if (isTyping() || (el && el.tagName === 'BUTTON' && e.key === 'Enter')) return;
@@ -125,6 +134,7 @@ export function OnboardingView({ initialName, initialFocus, initialNotify = NOTI
       } else if (step === 'people') {
         if (key === 'q' && draftPeople.length) { e.preventDefault(); setQuizFor(draftPeople.length - 1); }
         else if (key === 'a' && draftPeople.length) { e.preventDefault(); setAvatarFor(draftPeople.length - 1); }
+        else if (key === 'd' && draftPeople.length) { e.preventDefault(); setDateFor(draftPeople.length - 1); }
         else if (key === 'n' && nameRef.current) { e.preventDefault(); nameRef.current.focus(); }
       }
     }
@@ -153,7 +163,7 @@ export function OnboardingView({ initialName, initialFocus, initialNotify = NOTI
         <Progress step="people" samples={false} />
         <button type="button" onClick={() => setStep('intro')} className="flex items-center gap-1 text-sm font-medium mb-3" style={{ color: COLORS.inkSoft }}><ChevronLeft size={18} /> Back</button>
         <p className="font-display" style={{ fontSize: 24, color: COLORS.ink }}>Who's in your circle?</p>
-        <p className="text-sm mt-2" style={{ color: COLORS.inkSoft }}>Type a name and press Enter, or tap one below, then tap how close you are. Shift+Enter adds someone and asks a few quick questions to place them instead. Out of the box (Esc), Q asks about the newest person and A picks their avatar. Enter on an empty box goes on.</p>
+        <p className="text-sm mt-2" style={{ color: COLORS.inkSoft }}>Type a name and press Enter, or tap one below, then tap how close you are. Shift+Enter adds someone and asks a few quick questions to place them instead. Out of the box (Esc), Q asks about the newest person, A picks their avatar and D adds their birthday. Enter on an empty box goes on.</p>
 
         <div className="flex items-center gap-2 mt-5">
           <input ref={nameRef} autoFocus value={newName} onChange={e => setNewName(e.target.value)}
@@ -183,6 +193,18 @@ export function OnboardingView({ initialName, initialFocus, initialNotify = NOTI
                     <button key={l.id} type="button" onClick={() => updateDraft(i, { layer: l.id, overall: p.layer === l.id ? p.overall : null })} aria-pressed={p.layer === l.id} className="chip" style={{ padding: '3px 9px', fontSize: 11.5, ...(p.layer === l.id ? { background: l.tint, color: l.deep, borderColor: l.color } : {}) }}>{l.name}</button>
                   ))}
                 </div>
+                <div className="flex flex-wrap items-center gap-1 mt-1.5" role="group" aria-label={`${p.name}'s dates`}>
+                  {(p.dates || []).map(kd => {
+                    const what = `${dateKind(kd.kind).emoji} ${kd.kind === 'custom' && kd.label ? `${kd.label} ` : ''}${shortDate(kd.date)}`;
+                    return (
+                      <span key={kd.id} className="chip chip--on" style={{ padding: '3px 4px 3px 9px', fontSize: 11.5 }}>
+                        {what}
+                        <button type="button" onClick={() => updateDraft(i, { dates: p.dates.filter(x => x.id !== kd.id) })} aria-label={`Remove ${what}`} className="flex items-center justify-center rounded-full" style={{ width: 18, height: 18 }}><X size={11} color={COLORS.inkSoft} /></button>
+                      </span>
+                    );
+                  })}
+                  <button type="button" onClick={() => setDateFor(i)} className="chip" style={{ padding: '3px 6px 3px 9px', fontSize: 11.5 }}>{(p.dates || []).some(d => d.kind === 'birthday') ? '+ Another date' : '🎂 Birthday'}{i === draftPeople.length - 1 && <Kbd>D</Kbd>}</button>
+                </div>
               </div>
             ))}
           </div>
@@ -190,6 +212,10 @@ export function OnboardingView({ initialName, initialFocus, initialNotify = NOTI
 
         {avatarFor !== null && draftPeople[avatarFor] && (
           <AvatarSheet person={draftPeople[avatarFor]} onChange={(look) => updateDraft(avatarFor, look)} onClose={closeAvatar} />
+        )}
+        {dateFor !== null && draftPeople[dateFor] && (
+          <KeyDateSheet personName={draftPeople[dateFor].name} initialKind={(draftPeople[dateFor].dates || []).some(d => d.kind === 'birthday') ? undefined : 'birthday'} onClose={closeDate}
+            onSave={(kd) => { updateDraft(dateFor, { dates: [...(draftPeople[dateFor].dates || []), { id: uid(), ...kd }] }); closeDate(); }} />
         )}
         {quizFor !== null && draftPeople[quizFor] && (
           <QuizSheet key={quizFor} name={draftPeople[quizFor].name} person={draftPeople[quizFor]} onClose={closeQuiz}

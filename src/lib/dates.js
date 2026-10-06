@@ -39,6 +39,37 @@ export function formatWeekdays(days) {
 
 export const MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 
+// A typed day and month, day first as in New Zealand: "14 mar", "14th March",
+// "mar 14", "14/3", "14-3", "14.3", with or without a year ("14/3/2008",
+// "14 mar 08"). Gives { day, month (0-11), year or null }, or null.
+const MONTH_WORDS = { ...Object.fromEntries(MONTH_NAMES.flatMap((m, i) => [[m.toLowerCase(), i], [m.slice(0, 3).toLowerCase(), i]])), sept: 8 };
+export function readDayMonth(text) {
+  const t = String(text || '').trim().toLowerCase().replace(/(\d)(st|nd|rd|th)\b/g, '$1').replace(/,/g, ' ').replace(/\s+/g, ' ');
+  let m = t.match(/^(\d{1,2}) ?[/.\- ] ?(\d{1,2})(?: ?[/.\- ] ?(\d{2}|\d{4}))?$/);
+  let day, month, year = null;
+  if (m) { day = +m[1]; month = +m[2] - 1; year = m[3] ? +m[3] : null; }
+  else if ((m = t.match(/^(\d{1,2}) (?:of )?([a-z]+)\.?(?: (\d{2}|\d{4}))?$/))) { day = +m[1]; month = MONTH_WORDS[m[2]]; year = m[3] ? +m[3] : null; }
+  else if ((m = t.match(/^([a-z]+)\.? ?(\d{1,2})(?: (\d{4}))?$/))) { month = MONTH_WORDS[m[1]]; day = +m[2]; year = m[3] ? +m[3] : null; }
+  else return null;
+  if (month === undefined || month < 0 || month > 11 || day < 1) return null;
+  if (year !== null && year < 100) year += year < 50 ? 2000 : 1900;
+  // Without a year, 29 February is allowed (2024 was a leap year).
+  if (day > new Date(year === null ? 2024 : year, month + 1, 0).getDate()) return null;
+  return { day, month, year };
+}
+
+// The date to keep for a typed day and month: its own year if it has one; a
+// yearly one (a birthday) this year, or the next leap year for 29 February; a
+// one-off the next time that day comes round.
+export function dayMonthToDate({ day, month, year }, yearly, now = new Date()) {
+  if (year !== null) return new Date(year, month, day);
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  let y = now.getFullYear();
+  const fits = (d) => d.getMonth() === month && (yearly || d >= today);
+  while (!fits(new Date(y, month, day))) y++;
+  return new Date(y, month, day);
+}
+
 function dateToRelativeLabel(date, now = new Date()) {
   const today = startOfDay(now);
   const d = startOfDay(date);

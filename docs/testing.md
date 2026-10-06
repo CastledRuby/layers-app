@@ -69,8 +69,8 @@ interact.
     with Layers closed or open
 - `setup.test.jsx` covers knowing which page you're on (the tab marked, pages sliding
   in from their side), starting over (all of it, with a backup and a held press; or just
-  some things), setting up (people tapped or typed with how close they are, notification
-  switches, Plan something first, Restore from a backup), and planning's Plan again and
+  some things), setting up (people tapped or typed with how close they are, a birthday
+  typed with D, notification switches, Plan something first, Restore from a backup), and planning's Plan again and
   overlap warning.
 - `quickadd.test.jsx` covers the quick-add box (its preview, what it sends, what a log
   still needs, Ctrl+Z and Ctrl+Y, Ctrl+Z after opening it again, Ctrl+Enter and Esc, with a fake `window.layersQuick`) and the main
