@@ -183,7 +183,7 @@ people start as initials in their layer's colours), **Every weekday** for plans,
 copies of a plan no longer called overlaps. Smart App Control is checked first, as
 always. **Yes: now, before the next batch.**
 
-### B. Small: finish the keyboard (next batch)
+### B. Small: finish the keyboard ✅ Built 2026-10-06
 
 1. ✅ **Keys for the sheets that still need the mouse**: the full goal editor (Goals, and
    Edit on a goal), **Add info** on a profile, **Edit your profile** in Me, the interest
@@ -193,7 +193,7 @@ always. **Yes: now, before the next batch.**
 3. ✅ **Focus**: moves into a sheet when it opens and back to where you were when it closes,
    and the icon-only buttons get labels (for screen readers, and tooltips).
 
-### C. Small: setting up and plans (next batch)
+### C. Small: setting up and plans ✅ Built 2026-10-06
 
 4. ✅ **Key dates while setting up**: a birthday (or another date) on each person's card,
    by keys (D, then the day and month).
@@ -206,7 +206,7 @@ always. **Yes: now, before the next batch.**
 ### D. Photos for your people
 
 Your `PFP` folder has nine pictures (eight screenshots and a WhatsApp photo), not named
-after anyone. Two ways to use them; **you picked 7**, so it's in the next batch:
+after anyone. Two ways to use them; **you picked 7, built 2026-10-06** (see History):
 
 7. ✅ **Add photos from a folder**, in Layers: pick a folder, and it shows each picture in
    turn with the crop circle already on the face's middle; 1–9 or a name picks who it's
@@ -216,16 +216,9 @@ after anyone. Two ways to use them; **you picked 7**, so it's in the next batch:
 
 ### E. The next big task: you picked Layers on your phone
 
-9. **Layers on your phone** *(picked; a proposal first)*. The routes, roughly:
-   - **The same app on the iPhone's home screen** (a web app): free, works offline, no
-     App Store. iOS limits its notifications.
-   - **The App Store**, by wrapping the same code (Capacitor): proper notifications and
-     an icon, but it needs an Apple Developer account (US$99 a year) and a Mac, or a cloud
-     Mac, to build it.
-   - **Apple Watch**: needs a small native app; after the phone.
-   - **Keeping the laptop and phone in step, privately**: for example an encrypted file
-     in your own iCloud or OneDrive, so nothing sits on someone else's server. The data
-     was built ready for this (stable ids, `updatedAt` on plans).
+9. **Layers on your phone** *(picked)*: the proposal is
+   [below](#proposal-layers-on-your-phone-2026-10-06), waiting for your answers.
+
 The other three stay here for later:
 
 10. **Your other calendars** (school, uni, work, Google or Outlook): read-only first,
@@ -258,6 +251,64 @@ The other three stay here for later:
   Dropped unless you still want the longer version.
 - Already done from the old lists: a version number on saved data, Undo for deletes,
   per-dimension ratings and desktop notifications.
+
+## Proposal: Layers on your phone (2026-10-06)
+
+You picked this as the next big task, starting with a proposal. Nothing is built yet.
+
+### Where it starts from
+
+Layers is already a web app inside a Windows shell (Electron), laid out phone-first, and
+its logic (`src/lib/`) has no Windows-only code. The Windows parts (notifications handed
+to Windows, the tray, the quick-add box, backups to a folder) go through one bridge
+(`window.layersSystem`), so a phone can supply its own. What isn't ready is **syncing**:
+only plans carry `updatedAt`, and deleted things aren't remembered, so two copies can't
+be merged yet.
+
+### The routes
+
+| | How | Good | Costs and limits |
+|---|---|---|---|
+| **A. A home-screen web app** | The same Layers at a web address; Safari's "Add to Home Screen" | Free, quick, works offline | Its data lives in Safari's storage for that site. A reminder at a set time needs a push server (iPhone web apps can't schedule their own). The page has to be hosted somewhere public (the code, not your data). |
+| **B. An iPhone app from the same code** *(recommended)* | Capacitor wraps the web app in a native iPhone app | Reminders scheduled on the phone itself, no server; a proper icon; room for Face ID later | The Apple Developer Program (US$99 a year), to put it on your phone through TestFlight or the App Store. Building needs macOS: a Mac, or GitHub's macOS build machines. |
+| **C. A new native app (Swift)** | Rewritten for iPhone | The most native feel; the Watch shares it | A rewrite, against the working principles, and months of work |
+
+The **Apple Watch** needs a small native watchOS app alongside B (Capacitor doesn't do
+watches). It comes after the phone.
+
+### Keeping the laptop and phone in step
+
+1. **Backups only**: export on one, restore on the other. Works today, but it replaces
+   everything each time.
+2. **A sync file in your own cloud folder** *(recommended)*: your Documents folder is
+   already in OneDrive (the daily backups land there). Both copies of Layers would read and
+   write one **encrypted** sync file in it, with a passphrase only you know, merging record
+   by record by when each last changed. Microsoft would only ever see scrambled data, and
+   there's no server of ours. The riskiest part is the phone reaching that file (through
+   the Files app's OneDrive or iCloud Drive), so it gets checked first.
+3. **A small sync server**: changes arrive at once, but it's a server to run, pay for and
+   trust with your data, even encrypted.
+
+### Suggested steps, each usable on its own
+
+1. **Sync-ready data** (nothing you'd see): `updatedAt` on people, logs and goals as
+   well as plans; deleted things remembered for a while; a merge with thorough tests. It
+   helps the laptop on its own too (safer restores).
+2. **The phone check**: try OneDrive's or iCloud's folder from a test iPhone app, before
+   anything else depends on it.
+3. **The iPhone app** with Capacitor: built on GitHub's macOS machines, on your phone
+   through TestFlight. Reminders through Capacitor's local notifications, from the same
+   `plannedNotifications` the laptop uses. Touch-sized controls where the laptop leans
+   on keys.
+4. **Sync** between the two through the encrypted file.
+5. **The Watch**, later: today's plans, and "How did it go?".
+
+### What it needs from you
+
+- An **Apple Developer** account (US$99 a year), in your name.
+- Whether you have a **Mac** (otherwise GitHub builds it).
+- Where the sync file lives: **OneDrive** (already on the laptop) or **iCloud Drive**.
+- A **passphrase** for the sync file, kept by you; Layers can't recover it.
 
 ## The calendar (built in 1.0.30)
 
