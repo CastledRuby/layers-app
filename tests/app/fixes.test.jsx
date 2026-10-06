@@ -395,11 +395,12 @@ describe('#22 reminders', () => {
     const { user } = renderApp();
     await user.click(screen.getByRole('button', { name: 'Call Gran' }));
     await user.click(screen.getByRole('button', { name: 'Delete' }));
-    expect(confirmDialog('Delete this plan?').textContent).toContain('"Call Gran" will be removed for good, every time it repeats');
+    // A repeating plan asks whether to delete today's or every time (one day of a repeat).
+    expect(confirmDialog('Delete this plan?').textContent).toContain('"Call Gran" repeats every day. Delete it for today only, or every time?');
     await user.keyboard('{Escape}');
     expect(savedState().events).toHaveLength(1);
     await user.click(screen.getByRole('button', { name: 'Delete' }));
-    await user.click(screen.getByRole('button', { name: 'Delete plan' }));
+    await user.click(screen.getByRole('button', { name: 'Every time' }));
     expect(savedState().events).toEqual([]);
   });
 });

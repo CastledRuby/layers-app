@@ -4,7 +4,9 @@ import { SheetPortal } from '../components/Sheet.jsx';
 import { useOpenSheet } from '../components/sheetLayer.js';
 import { COLORS } from '../theme.js';
 
-export function ConfirmDialog({ title, message, confirmLabel, danger, onConfirm, onCancel, hideCancel }) {
+// altLabel and onAlt: a second choice beside the main one ("Only tomorrow"
+// beside "Every time").
+export function ConfirmDialog({ title, message, confirmLabel, danger, onConfirm, onCancel, hideCancel, altLabel, onAlt }) {
   useOpenSheet(onCancel);
   // Portaled like Sheet so it shares its geometry and, opening last, always
   // stacks above any sheet that is already open.
@@ -19,6 +21,7 @@ export function ConfirmDialog({ title, message, confirmLabel, danger, onConfirm,
             <p className="text-sm mt-2" style={{ color: COLORS.inkSoft }}>{message}</p>
             <div className="flex items-center gap-2 mt-5">
               {!hideCancel && <button onClick={onCancel} className="flex-1 text-sm font-semibold rounded-full py-3" style={{ background: COLORS.paperRaised, color: COLORS.ink, border: `1px solid ${COLORS.line}` }}>Cancel</button>}
+              {onAlt && <button onClick={onAlt} className="flex-1 text-sm font-semibold rounded-full py-3" style={{ background: COLORS.paperRaised, color: danger ? COLORS.alert : COLORS.accent, border: `1px solid ${danger ? COLORS.alert : COLORS.accent}` }}>{altLabel}</button>}
               <button onClick={onConfirm} className="flex-1 text-sm font-semibold rounded-full py-3" style={{ background: danger ? COLORS.layer4Deep : COLORS.accent, color: COLORS.onAccent }}>{confirmLabel || 'Confirm'}</button>
             </div>
           </div>

@@ -154,6 +154,7 @@ type Event = {                                // a plan on the calendar; see The
   date?: string;                              // 'YYYY-MM-DD' (one-off)
   weekdays?: number[];                        // 0=Sun…6=Sat (recurring; all seven = daily); legacy single `weekday` also read
   from?: string;                              // recurring: the first day it applies (1.0.30+; older ones have always applied)
+  skipDays?: string[];                        // recurring: days it doesn't come up on, because that day alone was changed (now a one-off) or deleted
   time?: number | null;                       // minutes since midnight; null for all day
   allDay?: boolean;
   duration?: number;                          // minutes; missing means 60
@@ -460,6 +461,11 @@ phone later. It's unit-tested in `src/calendar.test.js`.
 - **`markDone(ev, day)`** (`lib/reminders.js`): a one-off gets `doneAt` and is finished
   for good; a repeating one adds the day to `doneDays` (the last 14). Logging a plan
   ticks it off for that day, and only its linked goal (`goalId`) moves.
+- **One day of a repeating plan**: editing it from one of its days with **Only <day>**
+  saves that day as a one-off of its own (moved, retimed, renamed as you like) and adds the
+  day to the repeat's `skipDays`, so it isn't there twice; deleting **Only <day>** just
+  adds the day. `occursOn` leaves out skipped days, so the day plan, the month, Ctrl+K and
+  notifications all follow.
 - **`followUpEvent(person, item)`** makes a one-off like `Ask Sam how "Job interview"
   went` for three days later at 9:00 AM. It's the bell on a temporary detail in the
   profile.

@@ -1,8 +1,8 @@
 # Roadmap
 
 Where Layers stands against [vision.md](vision.md), what was decided along the way, and
-what comes next. Last updated 2026-10-06, after 1.0.31 (the changes since are listed
-under [History](#history), not released yet).
+what comes next. Last updated 2026-10-06, after 1.0.32 (anything since is at the top of
+[History](#history), marked not released yet).
 
 **How it got here:**
 
@@ -176,7 +176,7 @@ with **Add photos from a folder** (7); and **Layers on your phone** (9) as the n
 task, starting with a proposal. Each piece is committed and installed on its own, and
 anything that turns out bigger than drafted comes back to you first.
 
-### A. Release 1.0.32
+### A. Release 1.0.32 ✅ Released 2026-10-06
 
 Built since 1.0.31 and so far only on this laptop: initials and photos as avatars (new
 people start as initials in their layer's colours), **Every weekday** for plans, and
@@ -197,7 +197,7 @@ always. **Yes: now, before the next batch.**
 
 4. **Key dates while setting up**: a birthday (or another date) on each person's card,
    by keys (D, then the day and month).
-5. **Change one day of a repeating plan**: editing a repeating plan asks **This day
+5. ✅ **Change one day of a repeating plan**: editing a repeating plan asks **This day
    only** or **Every time**, so Thursday's check-in can move to 4 PM without changing the
    rest. Today a change always applies every time it repeats.
 6. **Goals on journal entries**: each log keeps which goals it moved, the Journal gets a
@@ -429,7 +429,14 @@ its own. Changes made while building are marked.
 
 ## History
 
-### Every weekday, and copies of a plan (after 1.0.31, not released yet)
+### One day of a repeating plan (after 1.0.32, not released yet)
+
+- Editing a repeating plan from one of its days asks what to change: **Only Thu 8** (O)
+  or **Every time**. Only that day makes it a plan of its own, so it can move to another
+  time or day, or be renamed, and the repeat skips that day. Every time is as before.
+- **Deleting** it asks the same: Only that day, or Every time. Both have Undo.
+
+### Every weekday, and copies of a plan (1.0.32)
 
 You found that editing a plan couldn't make it every weekday, and that it said it
 overlapped itself. Your five "Check in with Alexa" plans were five copies from **Several
@@ -444,7 +451,7 @@ days** (Mon 5 to Fri 9); moving one onto another's day warned about the other co
   day once. The sheet says so before you save, and the message has Undo. Copies already
   ticked off stay.
 
-### Initials and photos as avatars (after 1.0.31, not released yet)
+### Initials and photos as avatars (1.0.32)
 
 You said the emoji avatars still didn't look quite right, and picked initials and photos
 from six styles (the others were drawn faces, one flat emoji set, a rings monogram and

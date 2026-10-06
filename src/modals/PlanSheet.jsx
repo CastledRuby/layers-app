@@ -18,6 +18,9 @@
 // you already have. Editing one of several copies of a plan (the same title,
 // people and time, as "Several days" saves them): a copy isn't an overlap, and
 // making it repeat replaces the copies on the days it now covers.
+// Editing a repeating plan from one of its days asks what to change (O):
+// only that day (it becomes a plan of its own, and the repeat skips the day)
+// or every time.
 // A plan started from a profile or an idea skips the steps it already knows;
 // editing opens straight on "when", and so does a copy (prefill.copyOf).
 // See docs/renderer/app-structure.md.
@@ -101,6 +104,7 @@ function freshForm(start, people, today, defaultAlert) {
     weekdays: recurring && !isDaily(source) ? source.weekdays : [parseISODay(day).getDay()],
     alert: source ? alertOf(source) : defaultAlert,
     goalId: source ? source.goalId || null : null,
+    only: false, // a repeating plan: change only the day it was opened on
   };
 }
 
@@ -131,6 +135,8 @@ export function PlanSheet({ people, events = [], today, prefill = {}, defaultAle
 
   const editing = start.event || null;
   const copyOf = !editing && (start.copyOf || start.draft) ? start.copyOf || start.draft : null;
+  // The day a repeating plan was opened on, when editing it: "Only Thu 8".
+  const occurrence = editing && editing.kind === 'recurring' && start.day ? start.day : null;
   const { template, personIds, day, days, allDay, time, duration, repeat, weekdays, alert, goalId } = form;
   const picked = personIds.map(id => people.find(p => p.id === id)).filter(Boolean);
   const shownTitle = form.titleTouched ? form.title : autoTitleFor(template, people, personIds);
@@ -190,6 +196,13 @@ export function PlanSheet({ people, events = [], today, prefill = {}, defaultAle
       day: f.repeat === 'several' && r !== 'several' && f.days.length ? f.days[0] : f.day,
     }));
   }
+  // Only that day: a one-off on it (which can still move to another day);
+  // back to every time puts the repeat as it was.
+  function pickOnly(on) {
+    set(f => (on === f.only ? {} : on
+      ? { only: true, before: { repeat: f.repeat, day: f.day }, repeat: 'once', day: occurrence }
+      : { only: false, ...f.before }));
+  }
   function pickTime(t) { set(t === 'all' ? { allDay: true } : { allDay: false, time: t }); }
 
   // "Coffee with Priya · Tue 6, 6:00 PM", for the list of plans just added.
@@ -218,7 +231,7 @@ export function PlanSheet({ people, events = [], today, prefill = {}, defaultAle
       goalId: goals.some(g => g.id === goalId) ? goalId : null,
     };
     const next = !editing && another;
-    onSave(repeat === 'several' ? days.map(d => ({ ...fields, date: d })) : fields, editing ? editing.id : null, { another: next, replaceIds: replaced.map(ev => ev.id) });
+    onSave(repeat === 'several' ? days.map(d => ({ ...fields, date: d })) : fields, editing ? editing.id : null, { another: next, replaceIds: replaced.map(ev => ev.id), onlyDay: form.only ? occurrence : undefined });
     if (!next) return;
     // Start the next plan here: the same day, and the same person if the
     // plan came from their profile.
@@ -255,7 +268,8 @@ export function PlanSheet({ people, events = [], today, prefill = {}, defaultAle
     else if (num && num <= 7) act(() => pickDay(nextDays[num - 1]));
     else if (letter === 't') act(() => pickTime(cycle([...TIMES, 'all'], allDay ? 'all' : time, back)));
     else if (letter === 'l' && !allDay) act(() => set({ duration: cycle(LENGTHS, duration, back) }));
-    else if (letter === 'r') act(() => pickRepeat(cycle(repeats.map(([k]) => k), repeat, back)));
+    else if (letter === 'r' && !form.only) act(() => pickRepeat(cycle(repeats.map(([k]) => k), repeat, back)));
+    else if (letter === 'o' && occurrence) act(() => pickOnly(!form.only));
     else if (letter === 'a') act(() => set({ alert: cycle(ALERTS, alert, back) }));
     else if (letter === 'g' && goals.length) act(() => set({ goalId: cycle([null, ...goals.map(g => g.id)], goalId, back) }));
     else if (isPlusKey(e) && picked.length && onCreateGoal) act(() => setNewGoal(true));
@@ -278,7 +292,7 @@ export function PlanSheet({ people, events = [], today, prefill = {}, defaultAle
     : step === 'who'
       ? <button type="button" onClick={() => go('when')} className="primary-btn">{picked.length ? `Continue with ${namesText(picked.map(p => p.name))}` : 'Continue without anyone'} <Kbd onAccent>↵</Kbd></button>
       : <div className="flex items-center gap-2">
-          {editing && onDelete && <button type="button" onClick={() => onDelete(editing.id)} className="chip" style={{ color: COLORS.alert, borderColor: COLORS.alert, padding: '12px 16px' }}>Delete</button>}
+          {editing && onDelete && <button type="button" onClick={() => onDelete(editing.id, occurrence)} className="chip" style={{ color: COLORS.alert, borderColor: COLORS.alert, padding: '12px 16px' }}>Delete</button>}
           {!editing && <button type="button" onClick={() => save(true)} disabled={!canSave} className="chip shrink-0" style={{ padding: '10px 12px' }}>Save + another <Kbd>⇧↵</Kbd></button>}
           <button type="button" onClick={() => save()} disabled={!canSave} className="primary-btn">{saveLabel} <Kbd onAccent>↵</Kbd></button>
         </div>;
@@ -364,6 +378,12 @@ export function PlanSheet({ people, events = [], today, prefill = {}, defaultAle
               </p>
             )}
             <div className="mb-2" />
+            {occurrence && (
+              <Section title="Change" hint="O">
+                <Choice on={form.only} onClick={() => pickOnly(true)}>Only {shortDay(occurrence)}</Choice>
+                <Choice on={!form.only} onClick={() => pickOnly(false)}>Every time</Choice>
+              </Section>
+            )}
             <Section title={repeat === 'several' ? 'Days (pick as many as you like)' : repeat === 'once' ? 'Day' : 'Starting'} hint="1–7">
               {nextDays.map((d, i) => <Choice key={d} on={isDayOn(d)} onClick={() => pickDay(d)}>{dayLabel(d, i)}</Choice>)}
               {repeat === 'several' && days.filter(d => !nextDays.includes(d)).map(d => <Choice key={d} on onClick={() => pickDay(d)}>{shortDay(d)}</Choice>)}
@@ -381,7 +401,7 @@ export function PlanSheet({ people, events = [], today, prefill = {}, defaultAle
                 {LENGTHS.map(m => <Choice key={m} on={duration === m} onClick={() => set({ duration: m })}>{lengthLabel(m)}</Choice>)}
               </Section>
             )}
-            <Section title="Repeat" hint="R">
+            {!form.only && <Section title="Repeat" hint="R">
               {repeats.map(([k, label]) => <Choice key={k} on={repeat === k} onClick={() => pickRepeat(k)}>{label}</Choice>)}
               {repeat === 'weekly' && (
                 <span className="w-full flex flex-wrap gap-1 mt-1">
@@ -389,7 +409,7 @@ export function PlanSheet({ people, events = [], today, prefill = {}, defaultAle
                   <Choice on={weekdays.join() === MON_FRI.join()} onClick={() => set({ weekdays: MON_FRI })}>Mon–Fri</Choice>
                 </span>
               )}
-            </Section>
+            </Section>}
             <Section title="Remind me" hint="A">
               {ALERTS.map(a => <Choice key={String(a)} on={alert === a} onClick={() => set({ alert: a })}>{alertLabel(a)}</Choice>)}
             </Section>

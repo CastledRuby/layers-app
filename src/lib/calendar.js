@@ -8,6 +8,8 @@
 //     date        one-off: 'YYYY-MM-DD'
 //     weekdays    recurring: [0-6], 0 = Sunday; all seven = daily
 //     from?       recurring: the first day it applies ('YYYY-MM-DD')
+//     skipDays?   recurring: days it doesn't come up on, because that day
+//                 alone was changed (now a one-off of its own) or deleted
 //     time        minutes after midnight, or null with allDay
 //     allDay?     true for an all-day event
 //     duration?   minutes (DEFAULT_DURATION when missing)
@@ -80,6 +82,7 @@ export function occursOn(ev, day) {
   if (ev.kind === 'oneoff') return ev.date === day;
   if (ev.kind !== 'recurring') return false;
   if (ev.from && day < ev.from) return false;
+  if (ev.skipDays && ev.skipDays.includes(day)) return false;
   const d = dayDate(day);
   return !!d && weekdaysOf(ev).includes(d.getDay());
 }

@@ -4,22 +4,22 @@
 > Run `npm run docs:map` after changing anything under `src/`, `electron/*.cjs` or `package.json` scripts.
 > Hand-written explanations live in the other files under [`docs/`](../README.md).
 
-Package: `layers-web` v1.0.32 · `src/`: 68 files, 10594 lines, 93 components, 232 top-level functions, 138 constants.
+Package: `layers-web` v1.0.32 · `src/`: 68 files, 10652 lines, 93 components, 232 top-level functions, 138 constants.
 
 ## Source files
 
 | File | Lines | Declares | Imports from |
 |---|---|---|---|
 | [main.jsx](../../src/main.jsx) | 16 | quick | — |
-| [App.jsx](../../src/App.jsx) | 1268 | sampleData, SAMPLE_PERSON_IDS, SAMPLE_GOAL_IDS, skillsCameWithSamples, allSkillsZero, listNames, unlinkMissingPeople, addNotes, LayersApp | `components/BottomNav`, `components/ErrorBoundary`, `components/PageTransition`, `components/sheetLayer`, `data/constants`, `data/seed`, `lib/dates`, `lib/achievements`, `lib/progress`, `lib/backup`, `lib/calendar`, `lib/hooks`, `lib/reminders`, `lib/storage`, `lib/util`, `modals/AddInfoModal`, `modals/AddPersonModal`, `modals/ConfirmDialog`, `modals/EditEntryModal`, `modals/EditPersonModal`, `modals/EditProfileModal`, `modals/EventSheet`, `modals/GoalModal`, `modals/KeyDateSheet`, `modals/LogInteractionModal`, `modals/PlanSheet`, `modals/QuickAddInterestModal`, `modals/ShortcutsModal`, `modals/StartOverSheet`, `modals/DaySheet`, `modals/JumpSheet`, `lib/sentence`, `modals/TemplatePickerModal`, `modals/WeekReviewSheet`, `theme`, `views/CoachView`, `views/GoalsView`, `views/JournalView`, `views/MeView`, `views/OnboardingView`, `views/PeopleView`, `views/PersonProfile`, `components/ClosenessQuiz`, `views/TodayView` |
+| [App.jsx](../../src/App.jsx) | 1299 | sampleData, SAMPLE_PERSON_IDS, SAMPLE_GOAL_IDS, skillsCameWithSamples, allSkillsZero, listNames, unlinkMissingPeople, addNotes, LayersApp | `components/BottomNav`, `components/ErrorBoundary`, `components/PageTransition`, `components/sheetLayer`, `data/constants`, `data/seed`, `lib/dates`, `lib/achievements`, `lib/progress`, `lib/backup`, `lib/calendar`, `lib/hooks`, `lib/reminders`, `lib/storage`, `lib/util`, `modals/AddInfoModal`, `modals/AddPersonModal`, `modals/ConfirmDialog`, `modals/EditEntryModal`, `modals/EditPersonModal`, `modals/EditProfileModal`, `modals/EventSheet`, `modals/GoalModal`, `modals/KeyDateSheet`, `modals/LogInteractionModal`, `modals/PlanSheet`, `modals/QuickAddInterestModal`, `modals/ShortcutsModal`, `modals/StartOverSheet`, `modals/DaySheet`, `modals/JumpSheet`, `lib/sentence`, `modals/TemplatePickerModal`, `modals/WeekReviewSheet`, `theme`, `views/CoachView`, `views/GoalsView`, `views/JournalView`, `views/MeView`, `views/OnboardingView`, `views/PeopleView`, `views/PersonProfile`, `components/ClosenessQuiz`, `views/TodayView` |
 | [theme.js](../../src/theme.js) | 334 | THEME_LIGHT, THEME_DARK, COLORS, cssVarBlock, EASE, CSS | `fonts` |
 | [data/avatars.js](../../src/data/avatars.js) | 160 | AVATAR_COLS, AVATAR_GROUPS, findAvatars, INITIAL_COLORS, INITIALS_GROUP, isInitials, PHOTO_SIZE, PHOTO_GROUP, PHOTO_SRC, isPhoto, … (+11) | — |
 | [data/constants.js](../../src/data/constants.js) | 317 | LAYERS, getLayer, DIM_ORDER, DIM_LABELS, DIM_COLORS, LAYER_BASE_DIMS, CATEGORIES, categoryMeta, TABS, SHORTCUTS, … (+26) | `theme` |
 | [data/scenarios.js](../../src/data/scenarios.js) | 115 | SCENARIOS | — |
 | [data/seed.js](../../src/data/seed.js) | 176 | INITIAL_PEOPLE, INITIAL_GENERAL_GOALS, INITIAL_JOURNAL, INITIAL_SKILLS, EMPTY_SKILLS | — |
 | [lib/achievements.js](../../src/lib/achievements.js) | 37 | achievementProgress, newlyUnlocked, progressText | `data/constants` |
-| [lib/backup.js](../../src/lib/backup.js) | 201 | BACKUP_VERSION, MAX_BACKUP_BYTES, createBackup, isObject, isText, isISODay, num, count, cleanHistory, cleanGoal, … (+5) | `lib/calendar`, `data/constants`, `data/seed`, `data/avatars`, `lib/util` |
-| [lib/calendar.js](../../src/lib/calendar.js) | 414 | WEEKDAY_NAMES, DEFAULT_DURATION, EVENT_TEMPLATES, templateFor, DATE_KINDS, dateKind, NOTIFY_DEFAULTS, notifySettings, dayDate, addDays, … (+27) | `lib/dates` |
+| [lib/backup.js](../../src/lib/backup.js) | 202 | BACKUP_VERSION, MAX_BACKUP_BYTES, createBackup, isObject, isText, isISODay, num, count, cleanHistory, cleanGoal, … (+5) | `lib/calendar`, `data/constants`, `data/seed`, `data/avatars`, `lib/util` |
+| [lib/calendar.js](../../src/lib/calendar.js) | 417 | WEEKDAY_NAMES, DEFAULT_DURATION, EVENT_TEMPLATES, templateFor, DATE_KINDS, dateKind, NOTIFY_DEFAULTS, notifySettings, dayDate, addDays, … (+27) | `lib/dates` |
 | [lib/closeness.js](../../src/lib/closeness.js) | 64 | QUIZ, ANSWERS, REACHED, inLayer, share, nextQuestion, quizPlacement | — |
 | [lib/dates.js](../../src/lib/dates.js) | 283 | parseDaysAgo, startOfDay, WEEKDAY_SHORT, WEEKDAY_FULL, formatWeekdays, MONTH_NAMES, dateToRelativeLabel, formatCalendarDate, toISODate, formatAbsoluteDate, … (+23) | `data/constants` |
 | [lib/hooks.js](../../src/lib/hooks.js) | 196 | useToday, useDailyBackup, WIDE_QUERY, useWide, useSlideAcross, useSystemDark, useDailyCheckIn, notify, SCHEDULE_DAYS, LATE_MINUTES, … (+1) | `lib/dates`, `lib/calendar`, `lib/storage`, `lib/text` |
@@ -49,7 +49,7 @@ Package: `layers-web` v1.0.32 · `src/`: 68 files, 10594 lines, 93 components, 2
 | [components/sheetLayer.js](../../src/components/sheetLayer.js) | 74 | SheetLayerContext, openSheets, registerSheet, topSheet, hasOpenSheet, useOpenSheet, tabbing, isTabbedToButton, isTyping, isPlusKey | — |
 | [modals/AddInfoModal.jsx](../../src/modals/AddInfoModal.jsx) | 37 | AddInfoModal | `components/Sheet`, `data/constants`, `theme` |
 | [modals/AddPersonModal.jsx](../../src/modals/AddPersonModal.jsx) | 101 | STEP_ORDER, AddPersonModal | `components/Sheet`, `components/sheetLayer`, `components/atoms`, `components/AvatarPicker`, `components/avatarKeys`, `components/ClosenessQuiz`, `components/closenessKeys`, `data/constants`, `theme` |
-| [modals/ConfirmDialog.jsx](../../src/modals/ConfirmDialog.jsx) | 30 | ConfirmDialog | `components/Sheet`, `components/sheetLayer`, `theme` |
+| [modals/ConfirmDialog.jsx](../../src/modals/ConfirmDialog.jsx) | 33 | ConfirmDialog | `components/Sheet`, `components/sheetLayer`, `theme` |
 | [modals/DaySheet.jsx](../../src/modals/DaySheet.jsx) | 113 | WEEKDAY_LONG, addDays, dayTitle, DaySheet | `components/Sheet`, `components/sheetLayer`, `components/atoms`, `components/PersonPick`, `data/constants`, `lib/calendar`, `lib/dates`, `lib/text`, `modals/PlanTipsSheet`, `theme` |
 | [modals/EditEntryModal.jsx](../../src/modals/EditEntryModal.jsx) | 79 | EditEntryModal | `components/Sheet`, `components/sheetLayer`, `components/atoms`, `components/pickers`, `data/constants`, `lib/dates`, `theme` |
 | [modals/EditPersonModal.jsx](../../src/modals/EditPersonModal.jsx) | 41 | EditPersonModal | `components/Sheet`, `components/sheetLayer`, `components/atoms`, `components/AvatarPicker`, `components/avatarKeys`, `theme` |
@@ -60,7 +60,7 @@ Package: `layers-web` v1.0.32 · `src/`: 68 files, 10594 lines, 93 components, 2
 | [modals/KeyDateSheet.jsx](../../src/modals/KeyDateSheet.jsx) | 59 | KeyDateSheet | `components/Sheet`, `components/sheetLayer`, `components/atoms`, `components/pickers`, `lib/calendar`, `lib/dates`, `theme` |
 | [modals/LogDetailSheets.jsx](../../src/modals/LogDetailSheets.jsx) | 251 | DoneButton, enterCloses, Pick, sectionLabel, INTEREST_GROUPS, CheckRow, RateSheet, ListeningSheet, NewInfoSheet, GoalsSheet, … (+1) | `components/Sheet`, `components/sheetLayer`, `components/atoms`, `data/constants`, `theme` |
 | [modals/LogInteractionModal.jsx](../../src/modals/LogInteractionModal.jsx) | 305 | ML_LABELS, STEP_ORDER, DETAIL_TITLE, namesText, SectionLabel, optional, Scale, LogInteractionModal | `components/Sheet`, `components/sheetLayer`, `components/atoms`, `components/pickers`, `components/PersonPick`, `components/peopleKeys`, `data/constants`, `lib/dates`, `modals/LogDetailSheets`, `modals/QuickGoalSheet`, `modals/TemplatePickerModal`, `theme` |
-| [modals/PlanSheet.jsx](../../src/modals/PlanSheet.jsx) | 412 | TIMES, LENGTHS, ALERTS, REPEATS, MON_FRI, ALL_WEEK, isMonFri, repeatDaysOf, STEPS, AGAIN_KEYS, … (+14) | `components/Sheet`, `components/sheetLayer`, `components/atoms`, `components/PersonPick`, `components/peopleKeys`, `components/pickers`, `modals/QuickGoalSheet`, `lib/calendar`, `lib/dates`, `theme` |
+| [modals/PlanSheet.jsx](../../src/modals/PlanSheet.jsx) | 432 | TIMES, LENGTHS, ALERTS, REPEATS, MON_FRI, ALL_WEEK, isMonFri, repeatDaysOf, STEPS, AGAIN_KEYS, … (+14) | `components/Sheet`, `components/sheetLayer`, `components/atoms`, `components/PersonPick`, `components/peopleKeys`, `components/pickers`, `modals/QuickGoalSheet`, `lib/calendar`, `lib/dates`, `theme` |
 | [modals/PlanTipsSheet.jsx](../../src/modals/PlanTipsSheet.jsx) | 69 | whenText, Heading, PlanTipsSheet | `components/Sheet`, `components/sheetLayer`, `components/atoms`, `data/constants`, `lib/tips`, `theme` |
 | [modals/QuickAddInterestModal.jsx](../../src/modals/QuickAddInterestModal.jsx) | 16 | QuickAddInterestModal | `modals/TemplatePickerModal` |
 | [modals/QuickGoalSheet.jsx](../../src/modals/QuickGoalSheet.jsx) | 147 | SUGGESTIONS, DUES, dueLabel, QuickGoalSheet | `components/Sheet`, `components/sheetLayer`, `components/atoms`, `data/constants`, `lib/dates`, `lib/progress`, `lib/util`, `theme` |
@@ -117,7 +117,7 @@ Package: `layers-web` v1.0.32 · `src/`: 68 files, 10594 lines, 93 components, 2
 | `SheetLayerContext` | [sheetLayer.js:12](../../src/components/sheetLayer.js#L12) | — | `LayersApp` |
 | `AddInfoModal` | [AddInfoModal.jsx:9](../../src/modals/AddInfoModal.jsx#L9) | `personName`, `category`, `onClose`, `onSave` | `LayersApp` |
 | `AddPersonModal` | [AddPersonModal.jsx:24](../../src/modals/AddPersonModal.jsx#L24) | `onClose`, `onSave` | `LayersApp` |
-| `ConfirmDialog` | [ConfirmDialog.jsx:7](../../src/modals/ConfirmDialog.jsx#L7) | `title`, `message`, `confirmLabel`, `danger`, `onConfirm`, `onCancel`, `hideCancel` | `LayersApp` |
+| `ConfirmDialog` | [ConfirmDialog.jsx:9](../../src/modals/ConfirmDialog.jsx#L9) | `title`, `message`, `confirmLabel`, `danger`, `onConfirm`, `onCancel`, `hideCancel`, `altLabel`, `onAlt` | `LayersApp` |
 | `DaySheet` | [DaySheet.jsx:29](../../src/modals/DaySheet.jsx#L29) | `day`, `today`, `people`, `journal`, `events`, `generalGoals`, `onDay`, `onOpenEvent`, `onPlan`, `onPrepare`, `onClose` | `LayersApp` |
 | `EditEntryModal` | [EditEntryModal.jsx:18](../../src/modals/EditEntryModal.jsx#L18) | `entry`, `personName`, `onClose`, `onSave`, `onDelete` | `LayersApp` |
 | `EditPersonModal` | [EditPersonModal.jsx:13](../../src/modals/EditPersonModal.jsx#L13) | `person`, `onClose`, `onSave`, `onDelete` | `LayersApp` |
@@ -138,9 +138,9 @@ Package: `layers-web` v1.0.32 · `src/`: 68 files, 10594 lines, 93 components, 2
 | `SectionLabel` | [LogInteractionModal.jsx:36](../../src/modals/LogInteractionModal.jsx#L36) | `children`, `extra` | `LogInteractionModal` |
 | `Scale` | [LogInteractionModal.jsx:46](../../src/modals/LogInteractionModal.jsx#L46) | `value`, `onChange`, `label`, `size` | `LogInteractionModal` |
 | `LogInteractionModal` | [LogInteractionModal.jsx:59](../../src/modals/LogInteractionModal.jsx#L59) | `people`, `defaultPersonId`, `prefill`, `onClose`, `onSubmit`, `onPlan`, `onCreateGoal` | `LayersApp` |
-| `Choice` | [PlanSheet.jsx:107](../../src/modals/PlanSheet.jsx#L107) | `on`, `onClick`, `children`, `label` | `PlanSheet` |
-| `Section` | [PlanSheet.jsx:110](../../src/modals/PlanSheet.jsx#L110) | `title`, `hint`, `children` | `PlanSheet` |
-| `PlanSheet` | [PlanSheet.jsx:119](../../src/modals/PlanSheet.jsx#L119) | `people`, `events`, `today`, `prefill`, `defaultAlert`, `onClose`, `onSave`, `onDelete`, `onCreateGoal` | `LayersApp` |
+| `Choice` | [PlanSheet.jsx:111](../../src/modals/PlanSheet.jsx#L111) | `on`, `onClick`, `children`, `label` | `PlanSheet` |
+| `Section` | [PlanSheet.jsx:114](../../src/modals/PlanSheet.jsx#L114) | `title`, `hint`, `children` | `PlanSheet` |
+| `PlanSheet` | [PlanSheet.jsx:123](../../src/modals/PlanSheet.jsx#L123) | `people`, `events`, `today`, `prefill`, `defaultAlert`, `onClose`, `onSave`, `onDelete`, `onCreateGoal` | `LayersApp` |
 | `Heading` | [PlanTipsSheet.jsx:16](../../src/modals/PlanTipsSheet.jsx#L16) | `children` | `PlanTipsSheet` |
 | `PlanTipsSheet` | [PlanTipsSheet.jsx:20](../../src/modals/PlanTipsSheet.jsx#L20) | `ev`, `day`, `people`, `journal`, `generalGoals`, `onClose`, `onPrepare` | `DaySheet`, `EventSheet` |
 | `QuickAddInterestModal` | [QuickAddInterestModal.jsx:5](../../src/modals/QuickAddInterestModal.jsx#L5) | `personName`, `onClose`, `onSave` | `LayersApp` |
@@ -217,39 +217,39 @@ Package: `layers-web` v1.0.32 · `src/`: 68 files, 10594 lines, 93 components, 2
 | `cleanPerson` | [backup.js:48](../../src/lib/backup.js#L48) |  |  |
 | `cleanEntry` | [backup.js:87](../../src/lib/backup.js#L87) |  |  |
 | `cleanEvent` | [backup.js:108](../../src/lib/backup.js#L108) |  |  |
-| `cleanSkills` | [backup.js:134](../../src/lib/backup.js#L134) |  |  |
-| `validateBackup` | [backup.js:146](../../src/lib/backup.js#L146) | ✓ | ✓ |
-| `templateFor` | [calendar.js:39](../../src/lib/calendar.js#L39) | ✓ |  |
-| `dateKind` | [calendar.js:49](../../src/lib/calendar.js#L49) | ✓ |  |
-| `notifySettings` | [calendar.js:68](../../src/lib/calendar.js#L68) | ✓ |  |
-| `dayDate` | [calendar.js:73](../../src/lib/calendar.js#L73) |  |  |
-| `addDays` | [calendar.js:74](../../src/lib/calendar.js#L74) |  |  |
-| `weekdaysOf` | [calendar.js:75](../../src/lib/calendar.js#L75) |  |  |
-| `isDaily` | [calendar.js:76](../../src/lib/calendar.js#L76) | ✓ |  |
-| `occursOn` | [calendar.js:79](../../src/lib/calendar.js#L79) | ✓ | ✓ |
-| `isDoneOn` | [calendar.js:87](../../src/lib/calendar.js#L87) | ✓ | ✓ |
-| `durationOf` | [calendar.js:92](../../src/lib/calendar.js#L92) | ✓ |  |
-| `alertOf` | [calendar.js:93](../../src/lib/calendar.js#L93) | ✓ |  |
-| `timed` | [calendar.js:94](../../src/lib/calendar.js#L94) |  |  |
-| `keyDateOn` | [calendar.js:98](../../src/lib/calendar.js#L98) | ✓ | ✓ |
-| `keyDateLabel` | [calendar.js:110](../../src/lib/calendar.js#L110) | ✓ |  |
-| `dayAgenda` | [calendar.js:119](../../src/lib/calendar.js#L119) | ✓ | ✓ |
-| `monthMarks` | [calendar.js:145](../../src/lib/calendar.js#L145) | ✓ | ✓ |
-| `recentPlans` | [calendar.js:160](../../src/lib/calendar.js#L160) | ✓ | ✓ |
-| `clashesOn` | [calendar.js:175](../../src/lib/calendar.js#L175) | ✓ | ✓ |
-| `needsAnswer` | [calendar.js:182](../../src/lib/calendar.js#L182) | ✓ | ✓ |
-| `planIdeas` | [calendar.js:193](../../src/lib/calendar.js#L193) | ✓ | ✓ |
-| `usualGap` | [calendar.js:212](../../src/lib/calendar.js#L212) | ✓ | ✓ |
-| `quietDay` | [calendar.js:222](../../src/lib/calendar.js#L222) | ✓ | ✓ |
-| `weekSummary` | [calendar.js:233](../../src/lib/calendar.js#L233) | ✓ | ✓ |
-| `sinceText` | [calendar.js:252](../../src/lib/calendar.js#L252) |  |  |
-| `at` | [calendar.js:258](../../src/lib/calendar.js#L258) |  |  |
-| `clock` | [calendar.js:259](../../src/lib/calendar.js#L259) |  |  |
-| `names` | [calendar.js:263](../../src/lib/calendar.js#L263) |  |  |
-| `alertWhen` | [calendar.js:264](../../src/lib/calendar.js#L264) |  |  |
-| `plannedNotifications` | [calendar.js:284](../../src/lib/calendar.js#L284) | ✓ | ✓ |
-| `snoozeUntil` | [calendar.js:390](../../src/lib/calendar.js#L390) | ✓ | ✓ |
-| `parseActionUrl` | [calendar.js:400](../../src/lib/calendar.js#L400) | ✓ | ✓ |
+| `cleanSkills` | [backup.js:135](../../src/lib/backup.js#L135) |  |  |
+| `validateBackup` | [backup.js:147](../../src/lib/backup.js#L147) | ✓ | ✓ |
+| `templateFor` | [calendar.js:41](../../src/lib/calendar.js#L41) | ✓ |  |
+| `dateKind` | [calendar.js:51](../../src/lib/calendar.js#L51) | ✓ |  |
+| `notifySettings` | [calendar.js:70](../../src/lib/calendar.js#L70) | ✓ |  |
+| `dayDate` | [calendar.js:75](../../src/lib/calendar.js#L75) |  |  |
+| `addDays` | [calendar.js:76](../../src/lib/calendar.js#L76) |  |  |
+| `weekdaysOf` | [calendar.js:77](../../src/lib/calendar.js#L77) |  |  |
+| `isDaily` | [calendar.js:78](../../src/lib/calendar.js#L78) | ✓ |  |
+| `occursOn` | [calendar.js:81](../../src/lib/calendar.js#L81) | ✓ | ✓ |
+| `isDoneOn` | [calendar.js:90](../../src/lib/calendar.js#L90) | ✓ | ✓ |
+| `durationOf` | [calendar.js:95](../../src/lib/calendar.js#L95) | ✓ |  |
+| `alertOf` | [calendar.js:96](../../src/lib/calendar.js#L96) | ✓ |  |
+| `timed` | [calendar.js:97](../../src/lib/calendar.js#L97) |  |  |
+| `keyDateOn` | [calendar.js:101](../../src/lib/calendar.js#L101) | ✓ | ✓ |
+| `keyDateLabel` | [calendar.js:113](../../src/lib/calendar.js#L113) | ✓ |  |
+| `dayAgenda` | [calendar.js:122](../../src/lib/calendar.js#L122) | ✓ | ✓ |
+| `monthMarks` | [calendar.js:148](../../src/lib/calendar.js#L148) | ✓ | ✓ |
+| `recentPlans` | [calendar.js:163](../../src/lib/calendar.js#L163) | ✓ | ✓ |
+| `clashesOn` | [calendar.js:178](../../src/lib/calendar.js#L178) | ✓ | ✓ |
+| `needsAnswer` | [calendar.js:185](../../src/lib/calendar.js#L185) | ✓ | ✓ |
+| `planIdeas` | [calendar.js:196](../../src/lib/calendar.js#L196) | ✓ | ✓ |
+| `usualGap` | [calendar.js:215](../../src/lib/calendar.js#L215) | ✓ | ✓ |
+| `quietDay` | [calendar.js:225](../../src/lib/calendar.js#L225) | ✓ | ✓ |
+| `weekSummary` | [calendar.js:236](../../src/lib/calendar.js#L236) | ✓ | ✓ |
+| `sinceText` | [calendar.js:255](../../src/lib/calendar.js#L255) |  |  |
+| `at` | [calendar.js:261](../../src/lib/calendar.js#L261) |  |  |
+| `clock` | [calendar.js:262](../../src/lib/calendar.js#L262) |  |  |
+| `names` | [calendar.js:266](../../src/lib/calendar.js#L266) |  |  |
+| `alertWhen` | [calendar.js:267](../../src/lib/calendar.js#L267) |  |  |
+| `plannedNotifications` | [calendar.js:287](../../src/lib/calendar.js#L287) | ✓ | ✓ |
+| `snoozeUntil` | [calendar.js:393](../../src/lib/calendar.js#L393) | ✓ | ✓ |
+| `parseActionUrl` | [calendar.js:403](../../src/lib/calendar.js#L403) | ✓ | ✓ |
 | `inLayer` | [closeness.js:36](../../src/lib/closeness.js#L36) |  |  |
 | `share` | [closeness.js:38](../../src/lib/closeness.js#L38) |  |  |
 | `nextQuestion` | [closeness.js:44](../../src/lib/closeness.js#L44) | ✓ | ✓ |
@@ -384,19 +384,19 @@ Package: `layers-web` v1.0.32 · `src/`: 68 files, 10594 lines, 93 components, 2
 | `sectionLabel` | [LogDetailSheets.jsx:35](../../src/modals/LogDetailSheets.jsx#L35) |  |  |
 | `namesText` | [LogInteractionModal.jsx:31](../../src/modals/LogInteractionModal.jsx#L31) |  |  |
 | `optional` | [LogInteractionModal.jsx:44](../../src/modals/LogInteractionModal.jsx#L44) |  |  |
-| `isMonFri` | [PlanSheet.jsx:44](../../src/modals/PlanSheet.jsx#L44) |  |  |
-| `repeatDaysOf` | [PlanSheet.jsx:46](../../src/modals/PlanSheet.jsx#L46) |  |  |
-| `lengthLabel` | [PlanSheet.jsx:49](../../src/modals/PlanSheet.jsx#L49) |  |  |
-| `alertLabel` | [PlanSheet.jsx:50](../../src/modals/PlanSheet.jsx#L50) |  |  |
-| `namesText` | [PlanSheet.jsx:51](../../src/modals/PlanSheet.jsx#L51) |  |  |
-| `addDays` | [PlanSheet.jsx:52](../../src/modals/PlanSheet.jsx#L52) |  |  |
-| `shortDay` | [PlanSheet.jsx:53](../../src/modals/PlanSheet.jsx#L53) |  |  |
-| `daysText` | [PlanSheet.jsx:54](../../src/modals/PlanSheet.jsx#L54) |  |  |
-| `isCopyOf` | [PlanSheet.jsx:57](../../src/modals/PlanSheet.jsx#L57) |  |  |
-| `autoTitleFor` | [PlanSheet.jsx:61](../../src/modals/PlanSheet.jsx#L61) |  |  |
-| `cycle` | [PlanSheet.jsx:65](../../src/modals/PlanSheet.jsx#L65) |  |  |
-| `firstStep` | [PlanSheet.jsx:75](../../src/modals/PlanSheet.jsx#L75) |  |  |
-| `freshForm` | [PlanSheet.jsx:78](../../src/modals/PlanSheet.jsx#L78) |  |  |
+| `isMonFri` | [PlanSheet.jsx:47](../../src/modals/PlanSheet.jsx#L47) |  |  |
+| `repeatDaysOf` | [PlanSheet.jsx:49](../../src/modals/PlanSheet.jsx#L49) |  |  |
+| `lengthLabel` | [PlanSheet.jsx:52](../../src/modals/PlanSheet.jsx#L52) |  |  |
+| `alertLabel` | [PlanSheet.jsx:53](../../src/modals/PlanSheet.jsx#L53) |  |  |
+| `namesText` | [PlanSheet.jsx:54](../../src/modals/PlanSheet.jsx#L54) |  |  |
+| `addDays` | [PlanSheet.jsx:55](../../src/modals/PlanSheet.jsx#L55) |  |  |
+| `shortDay` | [PlanSheet.jsx:56](../../src/modals/PlanSheet.jsx#L56) |  |  |
+| `daysText` | [PlanSheet.jsx:57](../../src/modals/PlanSheet.jsx#L57) |  |  |
+| `isCopyOf` | [PlanSheet.jsx:60](../../src/modals/PlanSheet.jsx#L60) |  |  |
+| `autoTitleFor` | [PlanSheet.jsx:64](../../src/modals/PlanSheet.jsx#L64) |  |  |
+| `cycle` | [PlanSheet.jsx:68](../../src/modals/PlanSheet.jsx#L68) |  |  |
+| `firstStep` | [PlanSheet.jsx:78](../../src/modals/PlanSheet.jsx#L78) |  |  |
+| `freshForm` | [PlanSheet.jsx:81](../../src/modals/PlanSheet.jsx#L81) |  |  |
 | `whenText` | [PlanTipsSheet.jsx:14](../../src/modals/PlanTipsSheet.jsx#L14) |  |  |
 | `dueLabel` | [QuickGoalSheet.jsx:23](../../src/modals/QuickGoalSheet.jsx#L23) |  |  |
 | `count` | [StartOverSheet.jsx:19](../../src/modals/StartOverSheet.jsx#L19) |  |  |
@@ -476,12 +476,12 @@ Package: `layers-web` v1.0.32 · `src/`: 68 files, 10594 lines, 93 components, 2
 | `EMPTY_SKILLS` | [seed.js:168](../../src/data/seed.js#L168) |
 | `BACKUP_VERSION` | [backup.js:13](../../src/lib/backup.js#L13) |
 | `MAX_BACKUP_BYTES` | [backup.js:15](../../src/lib/backup.js#L15) |
-| `WEEKDAY_NAMES` | [calendar.js:23](../../src/lib/calendar.js#L23) |
-| `DEFAULT_DURATION` | [calendar.js:25](../../src/lib/calendar.js#L25) |
-| `EVENT_TEMPLATES` | [calendar.js:29](../../src/lib/calendar.js#L29) |
-| `DATE_KINDS` | [calendar.js:42](../../src/lib/calendar.js#L42) |
-| `NOTIFY_DEFAULTS` | [calendar.js:53](../../src/lib/calendar.js#L53) |
-| `QUIET_DAYS` | [calendar.js:192](../../src/lib/calendar.js#L192) |
+| `WEEKDAY_NAMES` | [calendar.js:25](../../src/lib/calendar.js#L25) |
+| `DEFAULT_DURATION` | [calendar.js:27](../../src/lib/calendar.js#L27) |
+| `EVENT_TEMPLATES` | [calendar.js:31](../../src/lib/calendar.js#L31) |
+| `DATE_KINDS` | [calendar.js:44](../../src/lib/calendar.js#L44) |
+| `NOTIFY_DEFAULTS` | [calendar.js:55](../../src/lib/calendar.js#L55) |
+| `QUIET_DAYS` | [calendar.js:195](../../src/lib/calendar.js#L195) |
 | `QUIZ` | [closeness.js:11](../../src/lib/closeness.js#L11) |
 | `ANSWERS` | [closeness.js:26](../../src/lib/closeness.js#L26) |
 | `REACHED` | [closeness.js:34](../../src/lib/closeness.js#L34) |
@@ -531,14 +531,14 @@ Package: `layers-web` v1.0.32 · `src/`: 68 files, 10594 lines, 93 components, 2
 | `ML_LABELS` | [LogInteractionModal.jsx:24](../../src/modals/LogInteractionModal.jsx#L24) |
 | `STEP_ORDER` | [LogInteractionModal.jsx:27](../../src/modals/LogInteractionModal.jsx#L27) |
 | `DETAIL_TITLE` | [LogInteractionModal.jsx:30](../../src/modals/LogInteractionModal.jsx#L30) |
-| `TIMES` | [PlanSheet.jsx:38](../../src/modals/PlanSheet.jsx#L38) |
-| `LENGTHS` | [PlanSheet.jsx:39](../../src/modals/PlanSheet.jsx#L39) |
-| `ALERTS` | [PlanSheet.jsx:40](../../src/modals/PlanSheet.jsx#L40) |
-| `REPEATS` | [PlanSheet.jsx:41](../../src/modals/PlanSheet.jsx#L41) |
-| `MON_FRI` | [PlanSheet.jsx:42](../../src/modals/PlanSheet.jsx#L42) |
-| `ALL_WEEK` | [PlanSheet.jsx:43](../../src/modals/PlanSheet.jsx#L43) |
-| `STEPS` | [PlanSheet.jsx:47](../../src/modals/PlanSheet.jsx#L47) |
-| `AGAIN_KEYS` | [PlanSheet.jsx:48](../../src/modals/PlanSheet.jsx#L48) |
+| `TIMES` | [PlanSheet.jsx:41](../../src/modals/PlanSheet.jsx#L41) |
+| `LENGTHS` | [PlanSheet.jsx:42](../../src/modals/PlanSheet.jsx#L42) |
+| `ALERTS` | [PlanSheet.jsx:43](../../src/modals/PlanSheet.jsx#L43) |
+| `REPEATS` | [PlanSheet.jsx:44](../../src/modals/PlanSheet.jsx#L44) |
+| `MON_FRI` | [PlanSheet.jsx:45](../../src/modals/PlanSheet.jsx#L45) |
+| `ALL_WEEK` | [PlanSheet.jsx:46](../../src/modals/PlanSheet.jsx#L46) |
+| `STEPS` | [PlanSheet.jsx:50](../../src/modals/PlanSheet.jsx#L50) |
+| `AGAIN_KEYS` | [PlanSheet.jsx:51](../../src/modals/PlanSheet.jsx#L51) |
 | `SUGGESTIONS` | [QuickGoalSheet.jsx:21](../../src/modals/QuickGoalSheet.jsx#L21) |
 | `DUES` | [QuickGoalSheet.jsx:22](../../src/modals/QuickGoalSheet.jsx#L22) |
 | `STEPS` | [StartOverSheet.jsx:17](../../src/modals/StartOverSheet.jsx#L17) |

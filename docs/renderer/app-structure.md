@@ -226,6 +226,9 @@ Planning is three steps, one thing at a time, nearly all taps, and every tap has
    - **Repeat** (`R`): once, **several days** (pick as many days as you like; one plan
      is saved for each), every day, **every weekday** (Monday to Friday), or every week
      on chosen days (with a **Mon–Fri** chip)
+   - **Change** (`O`), when editing a repeating plan opened on one of its days: **Only
+     <that day>** (it becomes a one-off of its own, so Repeat goes) or **Every time**.
+     Deleting it asks the same
    - Above them, a warning when the plan overlaps one you already have. Editing one of
      several copies of a plan (the same title, people and time, as several days saves
      them), a copy on the same day is called a copy, not an overlap; and making it

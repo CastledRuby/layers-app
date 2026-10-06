@@ -121,6 +121,7 @@ function cleanEvent(e, personIds, skipped) {
   if ('doneAt' in clean && !isISODay(clean.doneAt)) delete clean.doneAt;
   if ('doneOn' in clean && !isISODay(clean.doneOn)) delete clean.doneOn;
   if ('doneDays' in clean) clean.doneDays = (Array.isArray(clean.doneDays) ? clean.doneDays : []).filter(isISODay);
+  if ('skipDays' in clean) clean.skipDays = (Array.isArray(clean.skipDays) ? clean.skipDays : []).filter(isISODay);
   // Calendar fields (lib/calendar.js): length and reminder in minutes (a
   // reminder may be null, for none), all-day, the first day of a repeat.
   if ('duration' in clean && !(typeof clean.duration === 'number' && clean.duration > 0 && clean.duration <= 24 * 60)) delete clean.duration;

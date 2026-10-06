@@ -11,7 +11,7 @@ import { PageTransition } from './components/PageTransition.jsx';
 import { hasOpenSheet, isTyping, SheetLayerContext, topSheet } from './components/sheetLayer.js';
 import { ACHIEVEMENTS, categoryMeta, DIM_LABELS, DIM_ORDER, getLayer, TABS } from './data/constants.js';
 import { EMPTY_SKILLS, INITIAL_GENERAL_GOALS, INITIAL_JOURNAL, INITIAL_PEOPLE, INITIAL_SKILLS } from './data/seed.js';
-import { backfillJournalDates, backfillPeopleDates, backfillSkillDates, formatAbsoluteDate, formatCalendarDate, parseISODay, pushHistoryPoint, toISODate } from './lib/dates.js';
+import { backfillJournalDates, backfillPeopleDates, backfillSkillDates, formatAbsoluteDate, formatCalendarDate, formatWeekdays, parseISODay, pushHistoryPoint, toISODate } from './lib/dates.js';
 import { achievementProgress, newlyUnlocked } from './lib/achievements.js';
 import { advanceLayer, advanceSkillGoals, bumpSkills, chartDay, computeOverall, dimBumps, dimsEqual, goalBumpFor, keepDimsInLayer, makePerson, migrateDimsToLayers, movePerson, placeOnLayers, raisedSkills } from './lib/progress.js';
 import { MAX_BACKUP_BYTES, createBackup, validateBackup } from './lib/backup.js';
@@ -161,8 +161,12 @@ function LayersApp() {
   // recorded without a toast; only ones you reach by using the app announce.
   const quietAchievements = useRef(true);
 
+  function dayWords(day) {
+    const label = formatCalendarDate(parseISODay(day));
+    return ['Today', 'Tomorrow', 'Yesterday'].includes(label) ? label.toLowerCase() : label;
+  }
   function askConfirm(opts) {
-    setConfirmState({ ...opts, onConfirm: () => { opts.onConfirm(); setConfirmState(null); }, onCancel: () => setConfirmState(null) });
+    setConfirmState({ ...opts, onConfirm: () => { opts.onConfirm(); setConfirmState(null); }, onAlt: opts.onAlt && (() => { opts.onAlt(); setConfirmState(null); }), onCancel: () => setConfirmState(null) });
   }
 
   useEffect(() => {
@@ -586,14 +590,25 @@ function LayersApp() {
   // one (editingId). Clearing a field removes it, so an edited plan never
   // keeps a stale goal or start day. With `another` the sheet stays open for
   // the next plan and lists what's been added, so there's no toast or jump.
-  // replaceIds: copies of an edited plan that it now repeats over.
-  function handleSavePlan(fieldsOrList, editingId, { another = false, quick = false, replaceIds = [] } = {}) {
+  // replaceIds: copies of an edited plan that it now repeats over. onlyDay:
+  // a repeating plan changed for that day alone, which becomes a one-off of
+  // its own while the repeat skips the day.
+  function handleSavePlan(fieldsOrList, editingId, { another = false, quick = false, replaceIds = [], onlyDay } = {}) {
     const snap = snapshot();
     const now = new Date().toISOString();
     const tidy = (ev) => { Object.keys(ev).forEach(k => { if (ev[k] === null || ev[k] === undefined) delete ev[k]; }); return ev; };
     const list = Array.isArray(fieldsOrList) ? fieldsOrList : [fieldsOrList];
     const fields = list[0];
-    if (editingId) {
+    if (editingId && onlyDay) {
+      const created = toISODate(new Date());
+      setEvents(prev => {
+        const ev = prev.find(e => e.id === editingId);
+        if (!ev) return prev;
+        const day = tidy({ id: uid(), defaultMeaningfulness: ev.defaultMeaningfulness || 3, ...fields, ...(isDoneOn(ev, onlyDay) ? { doneAt: onlyDay } : {}), createdAt: created, updatedAt: now });
+        return [day, ...prev.map(e => e.id !== editingId ? e : { ...e, skipDays: [...new Set([...(e.skipDays || []), onlyDay])].sort(), updatedAt: now })];
+      });
+      pushToast(`Changed for ${dayWords(onlyDay)} only`, { undo: snap });
+    } else if (editingId) {
       setEvents(prev => prev.filter(e => !replaceIds.includes(e.id)).map(e => e.id !== editingId ? e : tidy({ ...e, goalId: null, from: null, date: null, weekdays: null, allDay: null, ...fields, updatedAt: now })));
       pushToast(replaceIds.length ? `Plan updated, and ${replaceIds.length === 1 ? 'its copy' : `its ${replaceIds.length} copies`} replaced` : 'Plan updated', { undo: snap });
     } else {
@@ -691,9 +706,25 @@ function LayersApp() {
     setEvents(prev => [{ id: uid(), ...ev, createdAt: toISODate(new Date()) }, ...prev]);
     pushToast(`Reminder set for ${formatCalendarDate(new Date(`${ev.date}T00:00:00`))}, 9:00 AM`);
   }
-  function handleDeleteEvent(eventId) {
+  // A repeating plan opened on one of its days (`day`) can lose just that day.
+  function handleDeleteEvent(eventId, day) {
     const ev = events.find(e => e.id === eventId);
     const snap = snapshot();
+    if (ev && ev.kind === 'recurring' && day) {
+      askConfirm({
+        title: 'Delete this plan?',
+        message: `"${ev.title}" repeats ${formatWeekdays(ev.weekdays || []).replace(/^Every/, 'every')}. Delete it for ${dayWords(day)} only, or every time?`,
+        altLabel: `Only ${dayWords(day)}`,
+        onAlt: () => {
+          setEvents(prev => prev.map(e => e.id !== eventId ? e : { ...e, skipDays: [...new Set([...(e.skipDays || []), day])].sort(), updatedAt: new Date().toISOString() }));
+          setEventView(null); setPlanState(null); pushToast(`Deleted for ${dayWords(day)} only`, { undo: snap });
+        },
+        confirmLabel: 'Every time',
+        danger: true,
+        onConfirm: () => { setEvents(prev => prev.filter(e => e.id !== eventId)); setEventView(null); setPlanState(null); pushToast('Plan deleted', { undo: snap }); },
+      });
+      return;
+    }
     askConfirm({
       title: 'Delete this plan?',
       message: ev ? `"${ev.title}" will be removed for good${ev.kind === 'recurring' ? ', every time it repeats' : ''}.` : 'This plan will be removed for good.',
@@ -1204,7 +1235,7 @@ function LayersApp() {
             {planState && <PlanSheet people={people} events={events} today={today} prefill={planState} defaultAlert={notifySettings(profile).defaultAlert} onClose={() => setPlanState(null)} onSave={handleSavePlan} onDelete={handleDeleteEvent} onCreateGoal={handleQuickGoal} />}
             {eventView && events.some(e => e.id === eventView.eventId) && (() => {
               const ev = events.find(e => e.id === eventView.eventId);
-              return <EventSheet ev={ev} day={eventView.day} today={today} people={people} goals={[...people.flatMap(p => p.goals), ...generalGoals]} journal={journal} generalGoals={generalGoals} onPrepare={openPrepare} onClose={() => setEventView(null)} onLog={() => openLogFromEvent(ev, eventView.day)} onDone={() => { handleMarkEventDone(ev.id, eventView.day); setEventView(null); }} onEdit={() => openPlan({ event: ev, day: eventView.day })} onCopy={() => openPlan({ copyOf: ev, day: eventView.day })} onDelete={() => handleDeleteEvent(ev.id)} />;
+              return <EventSheet ev={ev} day={eventView.day} today={today} people={people} goals={[...people.flatMap(p => p.goals), ...generalGoals]} journal={journal} generalGoals={generalGoals} onPrepare={openPrepare} onClose={() => setEventView(null)} onLog={() => openLogFromEvent(ev, eventView.day)} onDone={() => { handleMarkEventDone(ev.id, eventView.day); setEventView(null); }} onEdit={() => openPlan({ event: ev, day: eventView.day })} onCopy={() => openPlan({ copyOf: ev, day: eventView.day })} onDelete={() => handleDeleteEvent(ev.id, eventView.day)} />;
             })()}
             {dayView && (
               <DaySheet day={dayView} today={today} people={people} journal={journal} events={events} generalGoals={generalGoals}
@@ -1253,7 +1284,7 @@ function LayersApp() {
               return <EditEntryModal entry={entry} personName={(people.find(p => p.id === entry.personId) || {}).name} onClose={() => setEditingEntryId(null)} onSave={(changes) => handleUpdateEntry(entry.id, changes)} onDelete={() => handleDeleteEntry(entry.id)} />;
             })()}
             {confirmState && (
-              <ConfirmDialog title={confirmState.title} message={confirmState.message} confirmLabel={confirmState.confirmLabel} danger={confirmState.danger} hideCancel={confirmState.hideCancel} onConfirm={confirmState.onConfirm} onCancel={confirmState.onCancel} />
+              <ConfirmDialog title={confirmState.title} message={confirmState.message} confirmLabel={confirmState.confirmLabel} danger={confirmState.danger} hideCancel={confirmState.hideCancel} onConfirm={confirmState.onConfirm} altLabel={confirmState.altLabel} onAlt={confirmState.onAlt} onCancel={confirmState.onCancel} />
             )}
           </div>
           {/* Where every Sheet/ConfirmDialog portals to — see SheetPortal. */}

@@ -166,6 +166,37 @@ describe('Planning', () => {
     expect(savedState().events.map(e => e.id).sort()).toEqual(['a', 'b', 'c', 'x']);
   });
 
+  it('one day of a repeating plan: Only that day changes it alone, and deleting can take just that day', async () => {
+    seedState({ events: [{ id: 'm', title: 'Mentor', kind: 'recurring', weekdays: [0, 1, 2, 3, 4, 5, 6], from: TODAY, time: 640, duration: 60, alert: 15, personIds: [], template: 'custom' }] });
+    const { user } = renderApp();
+    await user.keyboard('{ArrowRight}'); // tomorrow
+    await user.click(screen.getByRole('button', { name: 'Mentor' }));
+    await user.keyboard('e');
+    const sheet = () => dialog('Edit plan');
+    expect(within(sheet()).getByRole('button', { name: 'Every time' }).getAttribute('aria-pressed')).toBe('true');
+    await user.keyboard('o'); // only tomorrow
+    expect(within(sheet()).getByRole('button', { name: /^Only / }).getAttribute('aria-pressed')).toBe('true');
+    expect(within(sheet()).queryByRole('button', { name: 'Every day' })).toBeNull(); // one day doesn't repeat
+    await user.keyboard('t'); // 10:40 AM -> 9:00 AM, the first time chip
+    await user.keyboard('{Enter}');
+    const after = savedState().events;
+    expect(after.find(e => e.id === 'm')).toMatchObject({ kind: 'recurring', skipDays: [TOMORROW], time: 640 });
+    expect(after.find(e => e.id !== 'm')).toMatchObject({ title: 'Mentor', kind: 'oneoff', date: TOMORROW, time: 540 });
+    expect(toasts()).toContain('Changed for tomorrow only');
+    expect(screen.getAllByRole('button', { name: 'Mentor' })).toHaveLength(1); // tomorrow has it once, at 9
+
+    // The day after: delete it for that day only.
+    await user.keyboard('{ArrowRight}');
+    await user.click(screen.getByRole('button', { name: 'Mentor' }));
+    await user.click(within(dialog('✏️ Mentor')).getByRole('button', { name: 'Delete' }));
+    await user.click(screen.getByRole('button', { name: /^Only / }));
+    expect(savedState().events.find(e => e.id === 'm').skipDays).toEqual([TOMORROW, day(2)]);
+    expect(screen.queryByRole('button', { name: 'Mentor' })).toBeNull();
+    // ...and the repeat carries on after it.
+    await user.keyboard('{ArrowRight}');
+    expect(screen.getByRole('button', { name: 'Mentor' })).toBeTruthy();
+  });
+
   it("a plan that hasn't started offers Edit and Plan it again, not Log it; C copies it to the next day", async () => {
     const morgan = person('Morgan');
     seedState({ people: [morgan], events: [{ id: 'c', title: 'Coffee with Morgan', kind: 'oneoff', date: TOMORROW, time: 600, duration: 60, alert: 15, personIds: [morgan.id], template: 'coffee' }] });

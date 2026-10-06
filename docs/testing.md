@@ -59,7 +59,8 @@ interact.
 - `calendar.test.jsx` covers the calendar as the main screen:
   - Today first and in the centre tab, the month on M, Ctrl+2 for the map
   - planning by keys and from a profile, daily plans and edits, Save + another,
-    Several days, Every weekday, editing one of several copies (a copy isn't an overlap,
+    Several days, Every weekday, one day of a repeating plan (changed or deleted on its
+    own), editing one of several copies (a copy isn't an overlap,
     and making it repeat replaces the copies it covers, with Undo), and Plan it again
     (only offered before a plan starts, without Log it)
   - picking people by number or name

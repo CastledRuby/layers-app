@@ -15,6 +15,8 @@ describe('occursOn', () => {
     expect(occursOn(gym, '2026-09-30')).toBe(false);
     expect(occursOn(gym, '2026-10-01')).toBe(true);
     expect(occursOn({ ...gym, weekdays: [1] }, '2026-10-05')).toBe(true); // a Monday
+    expect(occursOn({ ...gym, weekdays: [1], skipDays: ['2026-10-05'] }, '2026-10-05')).toBe(false); // that Monday changed or deleted on its own
+    expect(occursOn({ ...gym, weekdays: [1], skipDays: ['2026-10-05'] }, '2026-10-12')).toBe(true);
     expect(occursOn({ ...gym, weekdays: [1] }, DAY)).toBe(false);
   });
 });
