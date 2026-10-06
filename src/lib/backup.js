@@ -102,6 +102,8 @@ function cleanEntry(j, personIds, skipped) {
     const r = isObject(entry.ratings) ? entry.ratings : {};
     entry.ratings = Object.fromEntries(DIM_ORDER.filter(k => Number.isInteger(r[k]) && r[k] >= 1 && r[k] <= 5).map(k => [k, r[k]]));
   }
+  // The goals the log moved: ids only (a goal deleted since is just not shown).
+  if ('goalIds' in entry) entry.goalIds = (Array.isArray(entry.goalIds) ? entry.goalIds : []).filter(isText);
   return entry;
 }
 

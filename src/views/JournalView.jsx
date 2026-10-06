@@ -1,8 +1,9 @@
 // Journal tab: every logged interaction, newest first, with filters, and a
-// pencil on each entry to edit or delete it.
+// pencil on each entry to edit or delete it. The goal filter (goalFilter) is
+// kept by LayersApp, so a goal's "N logs" can open the Journal on it.
 
 import { useMemo, useState } from 'react';
-import { Check, Pencil, Search } from 'lucide-react';
+import { Check, Pencil, Search, Target } from 'lucide-react';
 import { CONV_STATES, DIM_LABELS, DIM_ORDER, getLayer, STANDOUTS, TYPE_META } from '../data/constants.js';
 import { journalDateLabel, journalDaysAgo, parseISODay } from '../lib/dates.js';
 import { summaryFor } from '../lib/text.js';
@@ -24,13 +25,23 @@ function Chip({ active, onClick, children, label, slim }) {
   );
 }
 
-export function JournalView({ today, people, journal, onOpenPerson, onEditEntry }) {
+export function JournalView({ today, people, generalGoals = [], journal, goalFilter = 'all', onGoalFilter = () => {}, onOpenPerson, onEditEntry }) {
   const [filterPerson, setFilterPerson] = useState('all');
   const [filterType, setFilterType] = useState('all');
   const [period, setPeriod] = useState('all');
   const [query, setQuery] = useState('');
   const peopleById = useMemo(() => Object.fromEntries(people.map(p => [p.id, p])), [people]);
   const now = useMemo(() => parseISODay(today) || new Date(), [today]);
+  // Every goal by id, with whose it is; and the ones some log moved, for the filter.
+  const goalsById = useMemo(() => Object.fromEntries([
+    ...people.flatMap(p => (p.goals || []).map(g => [g.id, { id: g.id, title: g.title, personName: p.name }])),
+    ...generalGoals.map(g => [g.id, { id: g.id, title: g.title, personName: null }]),
+  ]), [people, generalGoals]);
+  const goalOptions = useMemo(() => {
+    const ids = new Set(journal.flatMap(j => j.goalIds || []));
+    if (goalFilter !== 'all') ids.add(goalFilter);
+    return [...ids].map(id => goalsById[id]).filter(Boolean).sort((a, b) => a.title.localeCompare(b.title));
+  }, [journal, goalFilter, goalsById]);
 
   const q = query.trim().toLowerCase();
   const days = PERIODS.find(pd => pd.key === period).days;
@@ -39,6 +50,7 @@ export function JournalView({ today, people, journal, onOpenPerson, onEditEntry 
     if (!p) return false;
     if (filterPerson !== 'all' && j.personId !== filterPerson) return false;
     if (filterType !== 'all' && j.type !== filterType) return false;
+    if (goalFilter !== 'all' && !(j.goalIds || []).includes(goalFilter)) return false;
     if (days !== null && journalDaysAgo(j, now) >= days) return false;
     if (q) {
       const haystack = [p.name, summaryFor(j), j.reflection || '', ...(j.added || [])].join(' ').toLowerCase();
@@ -46,8 +58,8 @@ export function JournalView({ today, people, journal, onOpenPerson, onEditEntry 
     }
     return true;
   });
-  const filtering = filterPerson !== 'all' || filterType !== 'all' || period !== 'all' || !!q;
-  function clearFilters() { setFilterPerson('all'); setFilterType('all'); setPeriod('all'); setQuery(''); }
+  const filtering = filterPerson !== 'all' || filterType !== 'all' || period !== 'all' || goalFilter !== 'all' || !!q;
+  function clearFilters() { setFilterPerson('all'); setFilterType('all'); setPeriod('all'); setQuery(''); onGoalFilter('all'); }
 
   const sorted = [...filtered].sort((a, b) => journalDaysAgo(a, now) - journalDaysAgo(b, now));
   const groups = [];
@@ -90,6 +102,17 @@ export function JournalView({ today, people, journal, onOpenPerson, onEditEntry 
         {PERIODS.map(pd => (<Chip key={pd.key} active={period === pd.key} onClick={() => setPeriod(pd.key)}>{pd.label}</Chip>))}
       </div>
 
+      {goalOptions.length > 0 && (
+        <div className="flex items-center gap-1.5 mt-1.5 min-w-0">
+          <Target size={13} color={goalFilter !== 'all' ? COLORS.accent : COLORS.inkSoft} className="shrink-0" />
+          <select value={goalFilter} onChange={e => onGoalFilter(e.target.value)} aria-label="Goal" className="text-xs font-medium rounded-full py-1 px-2.5 min-w-0"
+            style={{ background: goalFilter !== 'all' ? COLORS.accentSoft : 'transparent', color: goalFilter !== 'all' ? COLORS.accent : COLORS.inkSoft, border: `1px solid ${COLORS.line}`, maxWidth: '100%' }}>
+            <option value="all">Any goal</option>
+            {goalOptions.map(g => <option key={g.id} value={g.id}>{g.title}{g.personName ? ` · ${g.personName}` : ''}</option>)}
+          </select>
+        </div>
+      )}
+
       {filtering && (
         <button onClick={clearFilters} className="text-xs font-semibold mt-2" style={{ color: COLORS.accent }}>Clear filters ({filtered.length} of {journal.filter(j => peopleById[j.personId]).length} shown)</button>
       )}
@@ -106,6 +129,7 @@ export function JournalView({ today, people, journal, onOpenPerson, onEditEntry 
               const meta = TYPE_META[entry.type] || TYPE_META.other;
               const stoodOut = STANDOUTS.filter(s => (entry.standouts || []).includes(s.key)).map(s => s.label);
               const ratings = DIM_ORDER.filter(k => entry.ratings && entry.ratings[k]).map(k => `${DIM_LABELS[k]} ${entry.ratings[k]}`);
+              const moved = (entry.goalIds || []).map(id => goalsById[id]).filter(Boolean).map(g => g.title);
               return (
                 <div key={entry.id} className="relative mb-2">
                   <button onClick={() => onOpenPerson(p.id)} className="w-full text-left rounded-2xl p-3.5 pr-10" style={{ background: COLORS.paperRaised, border: `1px solid ${COLORS.line}` }}>
@@ -118,6 +142,7 @@ export function JournalView({ today, people, journal, onOpenPerson, onEditEntry 
                     {entry.reflection && (<p className="text-xs mt-1.5 italic" style={{ color: COLORS.inkSoft }}>“{entry.reflection}”</p>)}
                     {entry.added && entry.added.length > 0 && (<p className="text-xs mt-1" style={{ color: COLORS.inkSoft }}>Added: {entry.added.join(', ')}</p>)}
                     {ratings.length > 0 && (<p className="text-xs mt-1" style={{ color: COLORS.inkSoft }}>Rated: {ratings.join(' · ')}</p>)}
+                    {moved.length > 0 && (<p className="text-xs mt-1 flex items-center gap-1" style={{ color: COLORS.inkSoft }}><Target size={11} className="shrink-0" /> Moved: {moved.join(', ')}</p>)}
                     {stoodOut.length > 0 && (<p className="text-xs mt-1" style={{ color: COLORS.inkSoft }}>Stood out: {stoodOut.join(', ')}</p>)}
                     {entry.activeListening && entry.activeListening.length > 0 && (<p className="text-xs mt-1 flex items-center gap-1" style={{ color: l.deep }}><Check size={11} /> Practised active listening</p>)}
                     {entry.analysis && (<p className="text-xs mt-1" style={{ color: l.deep }}>{CONV_STATES[entry.analysis.conversationState] ? `${CONV_STATES[entry.analysis.conversationState].emoji} ${CONV_STATES[entry.analysis.conversationState].label}, ` : ''}grading {entry.analysis.grading.overall}%</p>)}

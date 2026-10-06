@@ -114,7 +114,8 @@ function LayersApp() {
   // The calendar: the day it shows (null = today) and Day or Month.
   const [selectedDay, setSelectedDay] = useState(null);
   const [calendarMode, setCalendarMode] = useState('day');
-  const [planState, setPlanState] = useState(null); // PlanSheet's prefill while it's open
+  const [planState, setPlanState] = useState(null);
+  const [journalGoal, setJournalGoal] = useState('all'); // the Journal's goal filter // PlanSheet's prefill while it's open
   const [weekReview, setWeekReview] = useState(null); // a day in the week WeekReviewSheet shows
   const [eventView, setEventView] = useState(null); // { eventId, day } in EventSheet
   const [dayView, setDayView] = useState(null); // a day open in DaySheet
@@ -418,6 +419,8 @@ function LayersApp() {
   function openGoalsOverview() { setScreen({ name: 'goals' }); }
   function backToTabs() { setScreen({ name: 'tabs' }); }
   function switchTab(tab) { setActiveTab(tab); setScreen({ name: 'tabs' }); }
+  // A goal's "N logs": the Journal, showing the logs that moved it.
+  function showGoalLogs(goalId) { setJournalGoal(goalId); switchTab('journal'); }
   function openCoach(personId, tab) { setCoachInit({ personId: personId || null, tab: tab || 'prepare' }); setActiveTab('coach'); setScreen({ name: 'tabs' }); }
   // Ctrl+K's row picked (JumpSheet, lib/jump.js). Going somewhere closes the
   // sheets that were open; an action like Dark mode leaves them be.
@@ -573,10 +576,16 @@ function LayersApp() {
       if (leveledUp) levelUps.push({ name: p.name, layer: newLayer });
       return movePerson(p, { layer: newLayer, overall: newOverall, at: chartAt, why, extra: { dims: newDims, goals: advanceSkillGoals(newGoals, raised, undefined, goalIds), ...addNotes(p, notes, chartAt) } });
     });
+    // Which of each person's goals this log moved, kept on their entry (the
+    // Journal's goal filter, and a goal's "N logs").
+    const moved = Object.fromEntries(nextPeople.filter(p => personIds.includes(p.id)).map(p => {
+      const before = people.find(x => x.id === p.id);
+      return [p.id, p.goals.filter(g => { const was = before.goals.find(x => x.id === g.id); return was && g.progress > was.progress; }).map(g => g.id)];
+    }));
     setPeople(nextPeople);
     setGeneralGoals(prev => advanceSkillGoals(prev, raised));
     setJournal(prev => [
-      ...personIds.map(personId => ({ id: uid(), personId, at: chartAt, type, meaningfulness, added: notes.map(n => n.text), activeListening, ...(summary ? { summary } : {}), ...(rated.length ? { ratings: Object.fromEntries(rated.map(k => [k, ratings[k]])) } : {}), ...(reflection ? { reflection } : {}) })),
+      ...personIds.map(personId => ({ id: uid(), personId, at: chartAt, type, meaningfulness, added: notes.map(n => n.text), activeListening, ...(summary ? { summary } : {}), ...(moved[personId] && moved[personId].length ? { goalIds: moved[personId] } : {}), ...(rated.length ? { ratings: Object.fromEntries(rated.map(k => [k, ratings[k]])) } : {}), ...(reflection ? { reflection } : {}) })),
       ...prev,
     ]);
     setSkills(nextSkills);
@@ -1164,6 +1173,7 @@ function LayersApp() {
       onAddKeyDate={setKeyDateFor}
       onDeleteKeyDate={handleDeleteKeyDate}
       onRecheck={() => setRecheckFor(selectedPerson.id)}
+      onShowGoalLogs={showGoalLogs}
     />
   );
   useEffect(() => { if (scrollRef.current) scrollRef.current.scrollTop = 0; }, [pageKey]);
@@ -1195,14 +1205,14 @@ function LayersApp() {
                   <>
                     {screen.name === 'person' && <div className="page-col">{profileView}</div>}
                     {screen.name === 'goals' && (
-                      <div className="page-col"><GoalsView today={today} people={people} generalGoals={generalGoals} onBack={backToTabs} onOpenPerson={openPerson} onOpenGoalCreate={openGoalCreate} onOpenGoalEdit={openGoalEdit} onDeleteGoal={handleDeleteGoal} onBumpGoal={handleBumpGoal} /></div>
+                      <div className="page-col"><GoalsView today={today} people={people} generalGoals={generalGoals} journal={journal} onShowGoalLogs={showGoalLogs} onBack={backToTabs} onOpenPerson={openPerson} onOpenGoalCreate={openGoalCreate} onOpenGoalEdit={openGoalEdit} onDeleteGoal={handleDeleteGoal} onBumpGoal={handleBumpGoal} /></div>
                     )}
                     {screen.name === 'tabs' && (
                       <>
                         {activeTab === 'today' && <TodayView wide={wide} today={today} selectedDay={selectedDay || today} onSelectDay={(d) => setSelectedDay(d === today ? null : d)} mode={calendarMode} onSetMode={setCalendarMode} people={people} journal={journal} events={events} generalGoals={generalGoals} skills={skills} profile={profile} onPlan={openPlan} onOpenEvent={(eventId, day) => setEventView({ eventId, day })} onLogEvent={openLogFromEvent} onTickEvent={(ev, day) => handleMarkEventDone(ev.id, day)} onOpenPerson={openPerson} onAddPerson={() => setAddPersonOpen(true)} onOpenLog={() => openLog(null)} onSwitchTab={switchTab} onOpenGoals={openGoalsOverview} onOpenReview={setWeekReview} onOpenDay={setDayView} onOpenJump={() => { setJumpOpen(true); markTried('jump'); }} onHideFirstSteps={() => setProfile(p => ({ ...p, gettingStartedHidden: true }))} />}
                         {activeTab === 'people' && <PeopleView people={people} journal={journal} onOpenPerson={openPerson} onAddPerson={() => setAddPersonOpen(true)} />}
                         {activeTab === 'coach' && <div className="page-col"><CoachView people={people} journal={journal} initialPersonId={coachInit.personId} initialTab={coachInit.tab} onOpenLog={openLog} onApproveInfo={handleApproveInfo} onLogFromAnalysis={handleLogFromAnalysis} onOpenPerson={openPerson} /></div>}
-                        {activeTab === 'journal' && <div className="page-col"><JournalView today={today} people={people} journal={journal} onOpenPerson={openPerson} onEditEntry={setEditingEntryId} /></div>}
+                        {activeTab === 'journal' && <div className="page-col"><JournalView today={today} people={people} generalGoals={generalGoals} journal={journal} goalFilter={journalGoal} onGoalFilter={setJournalGoal} onOpenPerson={openPerson} onEditEntry={setEditingEntryId} /></div>}
                         {activeTab === 'me' && <div className="page-col"><MeView people={people} journal={journal} skills={skills} generalGoals={generalGoals} profile={profile} onAddSample={handleAddSample} onRemoveSample={handleRemoveSample} hasSamplePeople={people.some(p => SAMPLE_PERSON_IDS.has(p.id))} canAddSample={INITIAL_PEOPLE.some(sp => !people.some(p => p.id === sp.id))} onStartOver={() => setStartOverOpen(true)} onExport={handleExportData} onImportClick={handleImportClick} backupInfo={backupInfo} onOpenBackups={handleOpenBackups} hasUpdater={hasUpdater} updateStatus={updateStatus} onCheckForUpdates={handleCheckForUpdates} onInstallUpdate={handleInstallUpdate} onOpenDownloadPage={handleOpenDownloadPage} shortcutStatus={shortcutStatus} themeMode={themeMode} onSetTheme={setThemeMode} onUpdateProfile={(changes) => setProfile(p => ({ ...p, ...changes }))} onEditProfile={() => setEditProfileOpen(true)} achievements={achievements || {}} hasSystemBridge={hasSystemBridge} autoLaunch={autoLaunch} onToggleAutoLaunch={handleToggleAutoLaunch} onOpenShortcuts={() => setShortcutsOpen(true)} appVersion={appVersion} /></div>}
                       </>
                     )}

@@ -144,6 +144,7 @@ type JournalEntry = {
   summary?: string;                           // the note
   reflection?: string;                        // "How did it feel?" (the log's More details, or Edit entry)
   ratings?: { [dimension]: 1|2|3|4|5 };       // "How did each part go?" (More details); only rated dimensions
+  goalIds?: string[];                         // the goals this log moved (logs from 2026-10-06 on); the Journal's goal filter
   standouts?: string[];                       // older 1.0.28 builds' "What stood out?" picks; shown, no longer written
   analysis?: { grading: object; conversationState: string }; // from Coach → Analyse
 };

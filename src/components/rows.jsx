@@ -1,7 +1,7 @@
 // List rows for goals and saved info items.
 
 import { useState } from 'react';
-import { Archive, BellPlus, Check, Clock, Pencil, Trash2, TrendingUp } from 'lucide-react';
+import { Archive, BellPlus, BookOpen, Check, Clock, Pencil, Trash2, TrendingUp } from 'lucide-react';
 import { ProgressBar } from './atoms.jsx';
 import { presetMeta } from '../data/constants.js';
 import { infoItemDateLabel, parseISODay, startOfDay } from '../lib/dates.js';
@@ -9,7 +9,8 @@ import { COLORS } from '../theme.js';
 
 // `today` ('YYYY-MM-DD', from useToday) keeps "Due in 2 days" correct after
 // midnight; it used to be worked out once and kept until something else changed.
-export function GoalRow({ goal, color, today, onBump, onEdit, onDelete }) {
+// logs: how many journal entries moved it; onShowLogs opens the Journal on them.
+export function GoalRow({ goal, color, today, onBump, onEdit, onDelete, logs = 0, onShowLogs }) {
   const done = goal.progress >= 100;
   const preset = presetMeta(goal.type);
   let dueInfo = null;
@@ -48,6 +49,7 @@ export function GoalRow({ goal, color, today, onBump, onEdit, onDelete }) {
         ) : (
           <button onClick={onBump} className="flex items-center gap-1 text-xs font-medium" style={{ color: COLORS.accent }}><TrendingUp size={13} /> Mark progress</button>
         )}
+        {logs > 0 && onShowLogs && <button onClick={onShowLogs} className="flex items-center gap-1 text-xs" style={{ color: COLORS.inkSoft }}><BookOpen size={13} /> {logs} {logs === 1 ? 'log' : 'logs'}</button>}
         <button onClick={onEdit} className="flex items-center gap-1 text-xs" style={{ color: COLORS.inkSoft }}><Pencil size={13} /> Edit</button>
         <button onClick={onDelete} className="flex items-center gap-1 text-xs" style={{ color: COLORS.inkSoft }}><Trash2 size={13} /> Delete</button>
       </div>

@@ -7,7 +7,7 @@ import { GoalRow } from '../components/rows.jsx';
 import { getLayer } from '../data/constants.js';
 import { COLORS } from '../theme.js';
 
-export function GoalsView({ today, people, generalGoals, onBack, onOpenPerson, onOpenGoalCreate, onOpenGoalEdit, onDeleteGoal, onBumpGoal }) {
+export function GoalsView({ today, people, generalGoals, journal = [], onShowGoalLogs, onBack, onOpenPerson, onOpenGoalCreate, onOpenGoalEdit, onDeleteGoal, onBumpGoal }) {
   const [filter, setFilter] = useState('active');
   const groups = useMemo(() => {
     const passFilter = g => filter === 'all' ? true : filter === 'active' ? g.progress < 100 : g.progress >= 100;
@@ -17,6 +17,12 @@ export function GoalsView({ today, people, generalGoals, onBack, onOpenPerson, o
     return [...g1, ...g2];
   }, [people, generalGoals, filter]);
 
+  // How many logs moved each goal.
+  const logCount = useMemo(() => {
+    const n = {};
+    journal.forEach(j => (j.goalIds || []).forEach(id => { n[id] = (n[id] || 0) + 1; }));
+    return n;
+  }, [journal]);
   const totalActive = people.flatMap(p => p.goals).concat(generalGoals).filter(g => g.progress < 100).length;
   const totalDone = people.flatMap(p => p.goals).concat(generalGoals).filter(g => g.progress >= 100).length;
 
@@ -52,6 +58,7 @@ export function GoalsView({ today, people, generalGoals, onBack, onOpenPerson, o
             </button>
             {grp.goals.map(g => (
               <GoalRow key={g.id} goal={g} color={grp.color} today={today}
+                logs={logCount[g.id] || 0} onShowLogs={onShowGoalLogs && (() => onShowGoalLogs(g.id))}
                 onBump={() => onBumpGoal(grp.id, g.id)}
                 onEdit={() => onOpenGoalEdit(grp.id, g)}
                 onDelete={() => onDeleteGoal(grp.id, g.id, g.title)} />

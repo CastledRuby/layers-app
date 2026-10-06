@@ -4,21 +4,21 @@
 > Run `npm run docs:map` after changing anything under `src/`, `electron/*.cjs` or `package.json` scripts.
 > Hand-written explanations live in the other files under [`docs/`](../README.md).
 
-Package: `layers-web` v1.0.32 · `src/`: 68 files, 10652 lines, 93 components, 232 top-level functions, 138 constants.
+Package: `layers-web` v1.0.32 · `src/`: 68 files, 10699 lines, 93 components, 232 top-level functions, 138 constants.
 
 ## Source files
 
 | File | Lines | Declares | Imports from |
 |---|---|---|---|
 | [main.jsx](../../src/main.jsx) | 16 | quick | — |
-| [App.jsx](../../src/App.jsx) | 1299 | sampleData, SAMPLE_PERSON_IDS, SAMPLE_GOAL_IDS, skillsCameWithSamples, allSkillsZero, listNames, unlinkMissingPeople, addNotes, LayersApp | `components/BottomNav`, `components/ErrorBoundary`, `components/PageTransition`, `components/sheetLayer`, `data/constants`, `data/seed`, `lib/dates`, `lib/achievements`, `lib/progress`, `lib/backup`, `lib/calendar`, `lib/hooks`, `lib/reminders`, `lib/storage`, `lib/util`, `modals/AddInfoModal`, `modals/AddPersonModal`, `modals/ConfirmDialog`, `modals/EditEntryModal`, `modals/EditPersonModal`, `modals/EditProfileModal`, `modals/EventSheet`, `modals/GoalModal`, `modals/KeyDateSheet`, `modals/LogInteractionModal`, `modals/PlanSheet`, `modals/QuickAddInterestModal`, `modals/ShortcutsModal`, `modals/StartOverSheet`, `modals/DaySheet`, `modals/JumpSheet`, `lib/sentence`, `modals/TemplatePickerModal`, `modals/WeekReviewSheet`, `theme`, `views/CoachView`, `views/GoalsView`, `views/JournalView`, `views/MeView`, `views/OnboardingView`, `views/PeopleView`, `views/PersonProfile`, `components/ClosenessQuiz`, `views/TodayView` |
+| [App.jsx](../../src/App.jsx) | 1309 | sampleData, SAMPLE_PERSON_IDS, SAMPLE_GOAL_IDS, skillsCameWithSamples, allSkillsZero, listNames, unlinkMissingPeople, addNotes, LayersApp | `components/BottomNav`, `components/ErrorBoundary`, `components/PageTransition`, `components/sheetLayer`, `data/constants`, `data/seed`, `lib/dates`, `lib/achievements`, `lib/progress`, `lib/backup`, `lib/calendar`, `lib/hooks`, `lib/reminders`, `lib/storage`, `lib/util`, `modals/AddInfoModal`, `modals/AddPersonModal`, `modals/ConfirmDialog`, `modals/EditEntryModal`, `modals/EditPersonModal`, `modals/EditProfileModal`, `modals/EventSheet`, `modals/GoalModal`, `modals/KeyDateSheet`, `modals/LogInteractionModal`, `modals/PlanSheet`, `modals/QuickAddInterestModal`, `modals/ShortcutsModal`, `modals/StartOverSheet`, `modals/DaySheet`, `modals/JumpSheet`, `lib/sentence`, `modals/TemplatePickerModal`, `modals/WeekReviewSheet`, `theme`, `views/CoachView`, `views/GoalsView`, `views/JournalView`, `views/MeView`, `views/OnboardingView`, `views/PeopleView`, `views/PersonProfile`, `components/ClosenessQuiz`, `views/TodayView` |
 | [theme.js](../../src/theme.js) | 334 | THEME_LIGHT, THEME_DARK, COLORS, cssVarBlock, EASE, CSS | `fonts` |
 | [data/avatars.js](../../src/data/avatars.js) | 160 | AVATAR_COLS, AVATAR_GROUPS, findAvatars, INITIAL_COLORS, INITIALS_GROUP, isInitials, PHOTO_SIZE, PHOTO_GROUP, PHOTO_SRC, isPhoto, … (+11) | — |
 | [data/constants.js](../../src/data/constants.js) | 317 | LAYERS, getLayer, DIM_ORDER, DIM_LABELS, DIM_COLORS, LAYER_BASE_DIMS, CATEGORIES, categoryMeta, TABS, SHORTCUTS, … (+26) | `theme` |
 | [data/scenarios.js](../../src/data/scenarios.js) | 115 | SCENARIOS | — |
 | [data/seed.js](../../src/data/seed.js) | 176 | INITIAL_PEOPLE, INITIAL_GENERAL_GOALS, INITIAL_JOURNAL, INITIAL_SKILLS, EMPTY_SKILLS | — |
 | [lib/achievements.js](../../src/lib/achievements.js) | 37 | achievementProgress, newlyUnlocked, progressText | `data/constants` |
-| [lib/backup.js](../../src/lib/backup.js) | 202 | BACKUP_VERSION, MAX_BACKUP_BYTES, createBackup, isObject, isText, isISODay, num, count, cleanHistory, cleanGoal, … (+5) | `lib/calendar`, `data/constants`, `data/seed`, `data/avatars`, `lib/util` |
+| [lib/backup.js](../../src/lib/backup.js) | 204 | BACKUP_VERSION, MAX_BACKUP_BYTES, createBackup, isObject, isText, isISODay, num, count, cleanHistory, cleanGoal, … (+5) | `lib/calendar`, `data/constants`, `data/seed`, `data/avatars`, `lib/util` |
 | [lib/calendar.js](../../src/lib/calendar.js) | 417 | WEEKDAY_NAMES, DEFAULT_DURATION, EVENT_TEMPLATES, templateFor, DATE_KINDS, dateKind, NOTIFY_DEFAULTS, notifySettings, dayDate, addDays, … (+27) | `lib/dates` |
 | [lib/closeness.js](../../src/lib/closeness.js) | 64 | QUIZ, ANSWERS, REACHED, inLayer, share, nextQuestion, quizPlacement | — |
 | [lib/dates.js](../../src/lib/dates.js) | 283 | parseDaysAgo, startOfDay, WEEKDAY_SHORT, WEEKDAY_FULL, formatWeekdays, MONTH_NAMES, dateToRelativeLabel, formatCalendarDate, toISODate, formatAbsoluteDate, … (+23) | `data/constants` |
@@ -44,7 +44,7 @@ Package: `layers-web` v1.0.32 · `src/`: 68 files, 10652 lines, 93 components, 2
 | [components/peopleKeys.js](../../src/components/peopleKeys.js) | 78 | startsWord, columns, usePeopleKeys | — |
 | [components/PersonPick.jsx](../../src/components/PersonPick.jsx) | 67 | PersonPick, PeopleGrid, AvatarStack | `components/atoms`, `data/constants`, `theme` |
 | [components/pickers.jsx](../../src/components/pickers.jsx) | 142 | DateDropdown, TimeDropdown | `components/Sheet`, `lib/dates`, `theme` |
-| [components/rows.jsx](../../src/components/rows.jsx) | 91 | GoalRow, InfoItemRow | `components/atoms`, `data/constants`, `lib/dates`, `theme` |
+| [components/rows.jsx](../../src/components/rows.jsx) | 93 | GoalRow, InfoItemRow | `components/atoms`, `data/constants`, `lib/dates`, `theme` |
 | [components/Sheet.jsx](../../src/components/Sheet.jsx) | 84 | SheetPortal, CLOSE_MS, animate, Sheet | `components/sheetLayer`, `theme` |
 | [components/sheetLayer.js](../../src/components/sheetLayer.js) | 74 | SheetLayerContext, openSheets, registerSheet, topSheet, hasOpenSheet, useOpenSheet, tabbing, isTabbedToButton, isTyping, isPlusKey | — |
 | [modals/AddInfoModal.jsx](../../src/modals/AddInfoModal.jsx) | 37 | AddInfoModal | `components/Sheet`, `data/constants`, `theme` |
@@ -69,12 +69,12 @@ Package: `layers-web` v1.0.32 · `src/`: 68 files, 10652 lines, 93 components, 2
 | [modals/TemplatePickerModal.jsx](../../src/modals/TemplatePickerModal.jsx) | 96 | TemplatePickerModal | `components/Sheet`, `components/sheetLayer`, `components/atoms`, `data/constants`, `theme` |
 | [modals/WeekReviewSheet.jsx](../../src/modals/WeekReviewSheet.jsx) | 86 | addDays, short, Stat, WeekReviewSheet | `components/Sheet`, `components/sheetLayer`, `components/atoms`, `components/PersonPick`, `lib/calendar`, `lib/dates`, `theme` |
 | [views/CoachView.jsx](../../src/views/CoachView.jsx) | 381 | CoachView | `components/atoms`, `data/constants`, `data/scenarios`, `lib/text`, `theme` |
-| [views/GoalsView.jsx](../../src/views/GoalsView.jsx) | 65 | GoalsView | `components/atoms`, `components/rows`, `data/constants`, `theme` |
-| [views/JournalView.jsx](../../src/views/JournalView.jsx) | 135 | PERIODS, Chip, JournalView | `data/constants`, `lib/dates`, `lib/text`, `theme` |
+| [views/GoalsView.jsx](../../src/views/GoalsView.jsx) | 72 | GoalsView | `components/atoms`, `components/rows`, `data/constants`, `theme` |
+| [views/JournalView.jsx](../../src/views/JournalView.jsx) | 160 | PERIODS, Chip, JournalView | `data/constants`, `lib/dates`, `lib/text`, `theme` |
 | [views/MeView.jsx](../../src/views/MeView.jsx) | 256 | Toggle, Pick, MeView | `components/atoms`, `data/constants`, `lib/achievements`, `lib/calendar`, `lib/dates`, `lib/text`, `theme` |
 | [views/OnboardingView.jsx](../../src/views/OnboardingView.jsx) | 275 | QUICK_NAMES, STEP_LABELS, KEYS_TO_KNOW, listNames, Progress, Switch, OnboardingView | `components/atoms`, `components/ClosenessQuiz`, `components/AvatarPicker`, `components/sheetLayer`, `components/illustrations`, `data/constants`, `lib/calendar`, `lib/dates`, `theme` |
 | [views/PeopleView.jsx](../../src/views/PeopleView.jsx) | 230 | PeopleView | `components/atoms`, `components/sheetLayer`, `components/illustrations`, `data/constants`, `lib/dates`, `lib/text`, `theme` |
-| [views/PersonProfile.jsx](../../src/views/PersonProfile.jsx) | 307 | shortDate, keyDatesInOrder, AdjustSlider, PrepareTipsModal, PersonProfile | `components/Sheet`, `components/atoms`, `components/rows`, `data/constants`, `lib/dates`, `lib/progress`, `lib/calendar`, `lib/dates`, `lib/text`, `theme` |
+| [views/PersonProfile.jsx](../../src/views/PersonProfile.jsx) | 308 | shortDate, keyDatesInOrder, AdjustSlider, PrepareTipsModal, PersonProfile | `components/Sheet`, `components/atoms`, `components/rows`, `data/constants`, `lib/dates`, `lib/progress`, `lib/calendar`, `lib/dates`, `lib/text`, `theme` |
 | [views/TodayView.jsx](../../src/views/TodayView.jsx) | 394 | WEEKDAY_LONG, addDays, daysBetween, relativeLabel, fullDate, Dots, DayCell, WeekStrip, MonthGrid, SectionTitle, … (+4) | `components/atoms`, `components/PersonPick`, `components/sheetLayer`, `data/constants`, `lib/calendar`, `lib/dates`, `lib/text`, `theme` |
 | [fonts.js](../../src/fonts.js) | 28 | LATIN, LATIN_EXT, face, FONT_FACES | — |
 | [QuickAdd.jsx](../../src/QuickAdd.jsx) | 177 | RATING_LABELS, SAVED_MS, UNDO_MS, readSaved, listNames, whenText, MISSING_TEXT, QuickAdd | `components/atoms`, `lib/dates`, `lib/hooks`, `lib/sentence`, `lib/storage`, `theme` |
@@ -110,8 +110,8 @@ Package: `layers-web` v1.0.32 · `src/`: 68 files, 10652 lines, 93 components, 2
 | `AvatarStack` | [PersonPick.jsx:56](../../src/components/PersonPick.jsx#L56) | `people`, `size`, `max` | `DaySheet`, `EventSheet`, `PlanSheet`, `WeekReviewSheet`, `EventRow`, `TodayView` |
 | `DateDropdown` | [pickers.jsx:13](../../src/components/pickers.jsx#L13) | `value`, `onChange`, `maxDate`, `minDate`, `compact`, `other`, `highlight` | `EditEntryModal`, `GoalModal`, `KeyDateSheet`, `LogInteractionModal`, `PlanSheet` |
 | `TimeDropdown` | [pickers.jsx:85](../../src/components/pickers.jsx#L85) | `value`, `onChange`, `compact`, `highlight` | `PlanSheet` |
-| `GoalRow` | [rows.jsx:12](../../src/components/rows.jsx#L12) | `goal`, `color`, `today`, `onBump`, `onEdit`, `onDelete` | `GoalsView`, `PersonProfile` |
-| `InfoItemRow` | [rows.jsx:59](../../src/components/rows.jsx#L59) | `item`, `onSave`, `onDelete`, `onToggleTemporary`, `onToggleArchive`, `onRemind` | `PersonProfile` |
+| `GoalRow` | [rows.jsx:13](../../src/components/rows.jsx#L13) | `goal`, `color`, `today`, `onBump`, `onEdit`, `onDelete`, `logs`, `onShowLogs` | `GoalsView`, `PersonProfile` |
+| `InfoItemRow` | [rows.jsx:61](../../src/components/rows.jsx#L61) | `item`, `onSave`, `onDelete`, `onToggleTemporary`, `onToggleArchive`, `onRemind` | `PersonProfile` |
 | `SheetPortal` | [Sheet.jsx:14](../../src/components/Sheet.jsx#L14) | `children` | `Sheet`, `ConfirmDialog` |
 | `Sheet` | [Sheet.jsx:33](../../src/components/Sheet.jsx#L33) | `title`, `onClose`, `onBack`, `onKey`, `children`, `footer`, `tall`, `top` | `AvatarSheet`, `QuizSheet`, `DateDropdown`, `TimeDropdown`, `AddInfoModal`, `AddPersonModal`, `DaySheet`, `EditEntryModal`, `EditPersonModal`, `EditProfileModal`, `EventSheet`, `GoalModal`, `JumpSheet`, `KeyDateSheet`, `RateSheet`, `ListeningSheet`, `NewInfoSheet`, `GoalsSheet`, `ReflectionSheet`, `LogInteractionModal`, `PlanSheet`, `PlanTipsSheet`, `QuickGoalSheet`, `ShortcutsModal`, `StartOverSheet`, `TemplatePickerModal`, `WeekReviewSheet`, `PrepareTipsModal` |
 | `SheetLayerContext` | [sheetLayer.js:12](../../src/components/sheetLayer.js#L12) | — | `LayersApp` |
@@ -153,9 +153,9 @@ Package: `layers-web` v1.0.32 · `src/`: 68 files, 10652 lines, 93 components, 2
 | `Stat` | [WeekReviewSheet.jsx:21](../../src/modals/WeekReviewSheet.jsx#L21) | `value`, `label`, `children` | `WeekReviewSheet` |
 | `WeekReviewSheet` | [WeekReviewSheet.jsx:33](../../src/modals/WeekReviewSheet.jsx#L33) | `day`, `people`, `journal`, `events`, `generalGoals`, `onClose`, `onPlan` | `LayersApp` |
 | `CoachView` | [CoachView.jsx:11](../../src/views/CoachView.jsx#L11) | `people`, `journal`, `initialPersonId`, `initialTab`, `onOpenLog`, `onApproveInfo`, `onLogFromAnalysis`, `onOpenPerson` | `LayersApp` |
-| `GoalsView` | [GoalsView.jsx:10](../../src/views/GoalsView.jsx#L10) | `today`, `people`, `generalGoals`, `onBack`, `onOpenPerson`, `onOpenGoalCreate`, `onOpenGoalEdit`, `onDeleteGoal`, `onBumpGoal` | `LayersApp` |
-| `Chip` | [JournalView.jsx:19](../../src/views/JournalView.jsx#L19) | `active`, `onClick`, `children`, `label`, `slim` | `JournalView` |
-| `JournalView` | [JournalView.jsx:27](../../src/views/JournalView.jsx#L27) | `today`, `people`, `journal`, `onOpenPerson`, `onEditEntry` | `LayersApp` |
+| `GoalsView` | [GoalsView.jsx:10](../../src/views/GoalsView.jsx#L10) | `today`, `people`, `generalGoals`, `journal`, `onShowGoalLogs`, `onBack`, `onOpenPerson`, `onOpenGoalCreate`, `onOpenGoalEdit`, `onDeleteGoal`, `onBumpGoal` | `LayersApp` |
+| `Chip` | [JournalView.jsx:20](../../src/views/JournalView.jsx#L20) | `active`, `onClick`, `children`, `label`, `slim` | `JournalView` |
+| `JournalView` | [JournalView.jsx:28](../../src/views/JournalView.jsx#L28) | `today`, `people`, `generalGoals`, `journal`, `goalFilter`, `onGoalFilter`, `onOpenPerson`, `onEditEntry` | `LayersApp` |
 | `Toggle` | [MeView.jsx:15](../../src/views/MeView.jsx#L15) | `on`, `onChange`, `label`, `hint`, `children` | `MeView` |
 | `Pick` | [MeView.jsx:31](../../src/views/MeView.jsx#L31) | — | `NewInfoSheet`, `ReflectionSheet`, `MeView` |
 | `MeView` | [MeView.jsx:33](../../src/views/MeView.jsx#L33) | `people`, `journal`, `skills`, `profile`, `generalGoals`, `onUpdateProfile`, `onEditProfile`, `achievements`, `onAddSample`, `onRemoveSample`, `hasSamplePeople`, `canAddSample`, `onStartOver`, `onExport`, `onImportClick`, `backupInfo`, `onOpenBackups`, `hasUpdater`, `updateStatus`, `onCheckForUpdates`, `onInstallUpdate`, `onOpenDownloadPage`, `shortcutStatus`, `themeMode`, `onSetTheme`, `hasSystemBridge`, `autoLaunch`, `onToggleAutoLaunch`, `onOpenShortcuts`, `appVersion` | `LayersApp` |
@@ -165,7 +165,7 @@ Package: `layers-web` v1.0.32 · `src/`: 68 files, 10652 lines, 93 components, 2
 | `PeopleView` | [PeopleView.jsx:21](../../src/views/PeopleView.jsx#L21) | `people`, `journal`, `onOpenPerson`, `onAddPerson`, `split`, `selectedId` | `LayersApp` |
 | `AdjustSlider` | [PersonProfile.jsx:35](../../src/views/PersonProfile.jsx#L35) | `label`, `value`, `onChange`, `color` | `PersonProfile` |
 | `PrepareTipsModal` | [PersonProfile.jsx:47](../../src/views/PersonProfile.jsx#L47) | `person`, `journal`, `onClose`, `onOpenFullCoach` | `PersonProfile` |
-| `PersonProfile` | [PersonProfile.jsx:74](../../src/views/PersonProfile.jsx#L74) | `today`, `person`, `journal`, `onBack`, `onOpenLog`, `onOpenGoalCreate`, `onOpenGoalEdit`, `onDeleteGoal`, `onBumpGoal`, `onOpenAddInfo`, `onOpenQuickAddInterest`, `onSaveInfo`, `onDeleteInfo`, `onToggleTemporary`, `onToggleArchive`, `onAdjust`, `onOpenCoach`, `onEditPerson`, `onClearLevelUpFlag`, `onRemindFollowUp`, `onPlan`, `onAddKeyDate`, `onDeleteKeyDate`, `onRecheck` | — |
+| `PersonProfile` | [PersonProfile.jsx:74](../../src/views/PersonProfile.jsx#L74) | `today`, `person`, `journal`, `onBack`, `onOpenLog`, `onOpenGoalCreate`, `onOpenGoalEdit`, `onDeleteGoal`, `onBumpGoal`, `onOpenAddInfo`, `onOpenQuickAddInterest`, `onSaveInfo`, `onDeleteInfo`, `onToggleTemporary`, `onToggleArchive`, `onAdjust`, `onOpenCoach`, `onEditPerson`, `onClearLevelUpFlag`, `onRemindFollowUp`, `onPlan`, `onAddKeyDate`, `onDeleteKeyDate`, `onRecheck`, `onShowGoalLogs` | — |
 | `Dots` | [TodayView.jsx:45](../../src/views/TodayView.jsx#L45) | `mark` | `DayCell` |
 | `DayCell` | [TodayView.jsx:55](../../src/views/TodayView.jsx#L55) | `day`, `today`, `selected`, `mark`, `onSelect`, `compact` | `WeekStrip`, `MonthGrid` |
 | `WeekStrip` | [TodayView.jsx:68](../../src/views/TodayView.jsx#L68) | `selected`, `today`, `marksFor`, `onSelect` | `TodayView` |
@@ -216,9 +216,9 @@ Package: `layers-web` v1.0.32 · `src/`: 68 files, 10652 lines, 93 components, 2
 | `cleanGoal` | [backup.js:33](../../src/lib/backup.js#L33) |  |  |
 | `cleanPerson` | [backup.js:48](../../src/lib/backup.js#L48) |  |  |
 | `cleanEntry` | [backup.js:87](../../src/lib/backup.js#L87) |  |  |
-| `cleanEvent` | [backup.js:108](../../src/lib/backup.js#L108) |  |  |
-| `cleanSkills` | [backup.js:135](../../src/lib/backup.js#L135) |  |  |
-| `validateBackup` | [backup.js:147](../../src/lib/backup.js#L147) | ✓ | ✓ |
+| `cleanEvent` | [backup.js:110](../../src/lib/backup.js#L110) |  |  |
+| `cleanSkills` | [backup.js:137](../../src/lib/backup.js#L137) |  |  |
+| `validateBackup` | [backup.js:149](../../src/lib/backup.js#L149) | ✓ | ✓ |
 | `templateFor` | [calendar.js:41](../../src/lib/calendar.js#L41) | ✓ |  |
 | `dateKind` | [calendar.js:51](../../src/lib/calendar.js#L51) | ✓ |  |
 | `notifySettings` | [calendar.js:70](../../src/lib/calendar.js#L70) | ✓ |  |
@@ -544,7 +544,7 @@ Package: `layers-web` v1.0.32 · `src/`: 68 files, 10652 lines, 93 components, 2
 | `STEPS` | [StartOverSheet.jsx:17](../../src/modals/StartOverSheet.jsx#L17) |
 | `HOLD_MS` | [StartOverSheet.jsx:18](../../src/modals/StartOverSheet.jsx#L18) |
 | `PARTS` | [StartOverSheet.jsx:21](../../src/modals/StartOverSheet.jsx#L21) |
-| `PERIODS` | [JournalView.jsx:12](../../src/views/JournalView.jsx#L12) |
+| `PERIODS` | [JournalView.jsx:13](../../src/views/JournalView.jsx#L13) |
 | `QUICK_NAMES` | [OnboardingView.jsx:29](../../src/views/OnboardingView.jsx#L29) |
 | `STEP_LABELS` | [OnboardingView.jsx:30](../../src/views/OnboardingView.jsx#L30) |
 | `KEYS_TO_KNOW` | [OnboardingView.jsx:32](../../src/views/OnboardingView.jsx#L32) |

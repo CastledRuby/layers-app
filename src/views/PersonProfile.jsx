@@ -71,7 +71,7 @@ function PrepareTipsModal({ person, journal, onClose, onOpenFullCoach }) {
   );
 }
 
-export function PersonProfile({ today, person, journal, onBack, onOpenLog, onOpenGoalCreate, onOpenGoalEdit, onDeleteGoal, onBumpGoal, onOpenAddInfo, onOpenQuickAddInterest, onSaveInfo, onDeleteInfo, onToggleTemporary, onToggleArchive, onAdjust, onOpenCoach, onEditPerson, onClearLevelUpFlag, onRemindFollowUp, onPlan, onAddKeyDate, onDeleteKeyDate, onRecheck }) {
+export function PersonProfile({ today, person, journal, onBack, onOpenLog, onOpenGoalCreate, onOpenGoalEdit, onDeleteGoal, onBumpGoal, onOpenAddInfo, onOpenQuickAddInterest, onSaveInfo, onDeleteInfo, onToggleTemporary, onToggleArchive, onAdjust, onOpenCoach, onEditPerson, onClearLevelUpFlag, onRemindFollowUp, onPlan, onAddKeyDate, onDeleteKeyDate, onRecheck, onShowGoalLogs }) {
   const [prepareOpen, setPrepareOpen] = useState(false);
   const [showAdjust, setShowAdjust] = useState(false);
   const [draft, setDraft] = useState(person.dims);
@@ -219,6 +219,7 @@ export function PersonProfile({ today, person, journal, onBack, onOpenLog, onOpe
             <p className="text-sm" style={{ color: COLORS.inkSoft }}>No goals yet for {person.name}. Add one to start tracking progress.</p>
           ) : person.goals.map(g => (
             <GoalRow key={g.id} goal={g} color={l.color} today={today}
+              logs={journal.filter(j => (j.goalIds || []).includes(g.id)).length} onShowLogs={onShowGoalLogs && (() => onShowGoalLogs(g.id))}
               onBump={() => onBumpGoal(person.id, g.id)}
               onEdit={() => onOpenGoalEdit(person.id, g)}
               onDelete={() => onDeleteGoal(person.id, g.id, g.title)} />

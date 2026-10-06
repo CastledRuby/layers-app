@@ -54,7 +54,7 @@ interact.
   so it can't come back unnoticed.
 - `proposals.test.jsx` covers the proposals built in 1.0.28 (P1, P2 and P4 to P7; see
   [roadmap.md](roadmap.md#proposals-built-in-1028)) through the UI: the log's More
-  details, journal editing and filters, sample people, reminders and their
+  details, journal editing and filters (and the goals a log moved), sample people, reminders and their
   notifications, profile editing, achievements, skill goals and "Try this next".
 - `calendar.test.jsx` covers the calendar as the main screen:
   - Today first and in the centre tab, the month on M, Ctrl+2 for the map

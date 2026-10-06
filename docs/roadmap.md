@@ -65,7 +65,7 @@ and how.
 **Journal (P2)**
 - Editing or deleting an entry changes the record, **not progress already added**. Taking
   progress back out would mean replaying everything since.
-- The filters are: past week, past month and 3 months. A goal filter was skipped because
+- The filters are: past week, past month and 3 months. *(Built 2026-10-06: logs now record the goals they moved, so the goal filter is there; logs from before then aren't under any goal.)* A goal filter was skipped because
   entries don't record goals yet.
 - *(Changed at your request, 1.0.29.)* Every filter row fits on screen, with nothing to scroll
   sideways. So types show only their emoji (the name is the tooltip), and **the layer filter
@@ -200,7 +200,7 @@ always. **Yes: now, before the next batch.**
 5. ✅ **Change one day of a repeating plan**: editing a repeating plan asks **This day
    only** or **Every time**, so Thursday's check-in can move to 4 PM without changing the
    rest. Today a change always applies every time it repeats.
-6. **Goals on journal entries**: each log keeps which goals it moved, the Journal gets a
+6. ✅ **Goals on journal entries**: each log keeps which goals it moved, the Journal gets a
    goal filter (as the vision lists), and a goal shows the logs that moved it.
 
 ### D. Photos for your people
@@ -428,6 +428,14 @@ its own. Changes made while building are marked.
   box in the packaged app, with a temporary data folder as always.
 
 ## History
+
+### Goals on journal entries (after 1.0.32, not released yet)
+
+- Each log remembers which goals it moved. The Journal says so on the entry ("Moved:
+  Learn more") and has a **goal filter** (the 🎯 list, under the periods). Logs from
+  before today don't record it, so they aren't under any goal.
+- A goal that logs have moved shows **N logs** (on Goals and on the profile), which opens
+  the Journal on them.
 
 ### One day of a repeating plan (after 1.0.32, not released yet)
 

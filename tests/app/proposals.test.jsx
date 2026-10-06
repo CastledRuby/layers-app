@@ -66,7 +66,7 @@ describe('P1 progressive "More details" when logging', () => {
     expect(morgan.goals.find(g => g.id === 'g2').progress).toBe(10); // unticked: didn't move
     expect(morgan.lastChange.why).toContain('You rated it: Depth 5');
     const entry = savedState().journal[0];
-    expect(entry).toMatchObject({ reflection: 'Felt easy today', ratings: { depth: 5 }, added: ['Running a marathon in May'] });
+    expect(entry).toMatchObject({ reflection: 'Felt easy today', ratings: { depth: 5 }, added: ['Running a marathon in May'], goalIds: ['g1'] }); // the goal it moved, not the unticked one
   });
 
   it('shows the reflection in the journal, and finds it by search', async () => {
@@ -479,5 +479,31 @@ describe('P3 option C: dimensions stay inside the layer', () => {
     renderApp();
     expect(screen.queryByRole('alertdialog', { name: 'Dimensions updated' })).toBeNull();
     expect(savedPerson('Morgan').dims.depth).toBe(90);
+  });
+});
+
+describe('Goals on journal entries', () => {
+  it('the Journal shows and filters by the goals a log moved, and a goal opens its logs', async () => {
+    const morgan = person('Morgan', { goals: [goal('g1', 'Learn more'), goal('g2', 'Spend time together')] });
+    const entry = (id, summary, extra = {}) => ({ id, personId: morgan.id, at: TODAY, type: 'talked', meaningfulness: 3, added: [], activeListening: [], summary, ...extra });
+    seedState({ people: [morgan], journal: [entry('j1', 'Coffee chat', { goalIds: ['g1'] }), entry('j2', 'Quick call')] });
+    const { user } = renderApp();
+    await user.click(nav('Journal'));
+    expect(screen.getByText(/Moved: Learn more/)).toBeTruthy();
+    await user.selectOptions(screen.getByRole('combobox', { name: 'Goal' }), 'g1');
+    expect(screen.getByText('Coffee chat')).toBeTruthy();
+    expect(screen.queryByText('Quick call')).toBeNull();
+    await user.click(screen.getByRole('button', { name: /Clear filters/ }));
+    expect(screen.getByText('Quick call')).toBeTruthy();
+
+    // From the goal on Morgan's profile: "1 log" opens the Journal on it.
+    await user.click(nav('People'));
+    await user.click(screen.getByRole('button', { name: 'List view' }));
+    await user.click(screen.getAllByText('Morgan')[0]);
+    expect(screen.getAllByRole('button', { name: /^\d+ logs?$/ })).toHaveLength(1); // only the goal a log moved
+    await user.click(screen.getByRole('button', { name: '1 log' }));
+    expect(screen.getByRole('combobox', { name: 'Goal' }).value).toBe('g1');
+    expect(screen.getByText('Coffee chat')).toBeTruthy();
+    expect(screen.queryByText('Quick call')).toBeNull();
   });
 });
