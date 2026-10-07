@@ -204,7 +204,8 @@ comes back to you first.
 
 **Waiting for the Apple account** (when you're ready): checking the phone can reach the
 OneDrive file, the iPhone app on your phone through TestFlight, the phone syncing, and
-later the Watch.
+later the Watch. Chat analysis on the phone comes with it: screenshots for Snapchat,
+iMessage and Instagram, and WhatsApp's Export chat shared straight to Layers.
 
 **Dropped:** the other avatar styles, and the 20-question survey. **Later:** code
 signing (P8), only needed for other people's laptops.
@@ -530,6 +531,21 @@ its own. Changes made while building are marked.
   box in the packaged app, with a temporary data folder as always.
 
 ## History
+
+### Chats from your exports (after 1.0.35, not released yet)
+
+- **No more unzipping and scrolling**: on your phone, WhatsApp → the chat → Export chat
+  → Without media → Save to Files → OneDrive → Documents → **Layers chats**. A few
+  seconds after OneDrive brings it down, Coach → Analyse a chat shows it under **From
+  your chats**, with its new conversations (split wherever there's a pause of three
+  hours or more). Pick one and it's in the box, with who it's with and its exact times;
+  the log goes on that day. Next time, only what's after shows; earlier ones are a tap
+  away.
+- **Instagram**: Accounts Centre → Download your information → just Messages, as JSON
+  → save the zip in the same folder. Every chat in it shows the same way (chats with
+  people not in Layers are tucked away).
+- Snapchat and iMessage don't export chats, so they'll be screenshots in the phone app.
+- Exports stay in the folder; Layers only reads them.
 
 ### Chat analysis that knows who it's with, and logs it properly (after 1.0.35, not released yet)
 

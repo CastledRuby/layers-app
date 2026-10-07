@@ -8,6 +8,7 @@ const { backupDir, backupsInfo, saveDailyBackup } = require('./backups.cjs');
 const { findFaces } = require('./faces.cjs');
 const { calendarName, cleanFeedUrl, feedStore, fetchFeed } = require('./feeds.cjs');
 const { checkKey, cleanKey, keyStore, runAnalysis } = require('./analysis.cjs');
+const { chatsDir, listExports, readExport, watchExports } = require('./chatfiles.cjs');
 const { FILE: SYNC_FILE, passphraseStore, readSyncFiles, removeSyncCopies, setAsideSyncFile, syncDir, writeSyncFile } = require('./sync.cjs');
 
 // Windows groups taskbar entries, toast notifications, and jump lists by
@@ -98,6 +99,7 @@ if (!gotSingleInstanceLock || quitRequested) {
     setupFeeds();
     setupSummary();
     setupAnalysis();
+    setupChats();
     setupQuickAdd();
     registerGlobalShortcut();
 
@@ -657,6 +659,23 @@ function setupAnalysis() {
   });
   ipcMain.handle('analysis-key-clear', () => store.clear());
   ipcMain.handle('analysis-run', (_event, request) => runAnalysis(request, { apiKey: store.get() }));
+}
+
+// --- Chat exports (chatfiles.cjs) -------------------------------------------
+// The Layers chats folder in Documents (OneDrive here): WhatsApp chat
+// exports and Instagram downloads you save there, read for Coach. Only read;
+// the files stay. The page hears when one arrives.
+function setupChats() {
+  const dir = () => chatsDir({ documents: app.getPath('documents'), userData: app.getPath('userData') });
+  ipcMain.handle('chats-info', () => ({ dir: dir() }));
+  ipcMain.handle('chats-list', () => listExports(dir()));
+  ipcMain.handle('chats-read', (_event, name) => readExport(dir(), name));
+  ipcMain.handle('chats-open-folder', async () => {
+    try { fs.mkdirSync(dir(), { recursive: true }); } catch { /* openPath says why */ }
+    return { error: (await shell.openPath(dir())) || null };
+  });
+  const stop = watchExports(dir(), () => { if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send('chats-changed'); });
+  app.on('will-quit', stop);
 }
 
 function setupCalendar() {

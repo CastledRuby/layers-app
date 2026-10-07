@@ -5,6 +5,7 @@ import { expect, test } from '@playwright/test';
 import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
+import zlib from 'node:zlib';
 import { EXE, launch, mainWindowState, onboard, quit, runExe, tempDataDir } from './helpers.js';
 
 test('a fresh install onboards once, and everything survives a restart', async () => {
@@ -336,6 +337,48 @@ test('your Google Calendar: the packaged app refuses an address that is not a ca
   await card.getByRole('button', { name: 'Add' }).click();
   await expect(card.getByRole('alert')).toContainText("isn't a calendar address");
   expect(fs.existsSync(path.join(dataDir, 'calendars.bin'))).toBe(false);
+  await quit(app);
+});
+
+// A one-file zip, deflated, as WhatsApp's "Export chat" makes.
+function chatZip(name, text) {
+  const raw = Buffer.from(text, 'utf8');
+  const data = zlib.deflateRawSync(raw);
+  const file = Buffer.from(name, 'utf8');
+  const local = Buffer.alloc(30);
+  local.writeUInt32LE(0x04034b50, 0); local.writeUInt16LE(8, 8); local.writeUInt32LE(data.length, 18); local.writeUInt32LE(raw.length, 22); local.writeUInt16LE(file.length, 26);
+  const head = Buffer.alloc(46);
+  head.writeUInt32LE(0x02014b50, 0); head.writeUInt16LE(8, 10); head.writeUInt32LE(data.length, 20); head.writeUInt32LE(raw.length, 24); head.writeUInt16LE(file.length, 28);
+  const cd = Buffer.concat([head, file]);
+  const end = Buffer.alloc(22);
+  end.writeUInt32LE(0x06054b50, 0); end.writeUInt16LE(1, 8); end.writeUInt16LE(1, 10); end.writeUInt32LE(cd.length, 12); end.writeUInt32LE(30 + file.length + data.length, 16);
+  return Buffer.concat([local, file, data, cd, end]);
+}
+const waStamp = (d) => `[${d.getDate()}/${d.getMonth() + 1}/${String(d.getFullYear()).slice(2)}, ${d.getHours() % 12 || 12}:${String(d.getMinutes()).padStart(2, '0')}:00 ${d.getHours() < 12 ? 'am' : 'pm'}]`;
+
+test('chats from your exports: a WhatsApp export in the folder is opened by the packaged app, and a new one is noticed', async () => {
+  const dataDir = tempDataDir();
+  const chats = path.join(dataDir, 'Chats');
+  fs.mkdirSync(chats, { recursive: true });
+  const t = new Date(Date.now() - 3600 * 1000);
+  fs.writeFileSync(path.join(chats, 'WhatsApp Chat - Priya.zip'), chatZip('_chat.txt', `${waStamp(t)} Priya: I got the job!!\n${waStamp(new Date(t.getTime() + 60000))} Sam: No way, congrats!`));
+  const { app, page } = await launch(dataDir);
+  await onboard(page, 'Sam'); // the example people, Priya among them
+  // A stand-in key, kept as the main process keeps one (nothing is sent: Analyse isn't pressed).
+  await app.evaluate(({ app: a, safeStorage }) => {
+    process.getBuiltinModule('fs').writeFileSync(process.getBuiltinModule('path').join(a.getPath('userData'), 'anthropic-key.bin'), safeStorage.encryptString('sk-ant-api03-standinstandinstandinstandin'));
+  });
+  await page.reload();
+  await page.locator('.nav-bar').getByRole('button', { name: 'Coach', exact: true }).click();
+  await page.getByRole('button', { name: 'Analyse a chat' }).click();
+  const card = page.getByLabel('From your chats');
+  await card.getByRole('button', { name: /Priya.*WhatsApp.*1 new/ }).click();
+  await card.getByRole('button', { name: /2 messages/ }).click();
+  await expect(page.getByLabel('The chat')).toHaveValue(/\] Priya: I got the job!!\n\[.*\] Sam: No way, congrats!$/);
+  await expect(page.getByRole('group', { name: "Who it's with" })).toContainText('Priya');
+  // OneDrive brings down another export: it shows without reopening.
+  fs.writeFileSync(path.join(chats, 'WhatsApp Chat - Noah.zip'), chatZip('_chat.txt', `${waStamp(new Date())} Noah: game tonight?`));
+  await expect(card.getByRole('button', { name: /Noah.*WhatsApp/ })).toBeVisible({ timeout: 15000 });
   await quit(app);
 });
 

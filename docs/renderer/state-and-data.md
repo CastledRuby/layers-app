@@ -688,6 +688,48 @@ will be sent.
 - Only in the desktop app: the browser preview has nowhere safe for a key, so it shows
   the samples only.
 
+### Chats from your exports
+
+Coach → Analyse a chat → **From your chats**: chats saved in the **Layers chats** folder
+(`Documents\Layers chats`, in OneDrive, read by the main process:
+[electron.md](../electron.md)), so a chat needn't be found and pasted by hand.
+
+- **WhatsApp**: on the phone, the chat → Export chat → Without media → Save to Files →
+  OneDrive → Documents → Layers chats. `parseWhatsApp`
+  ([lib/chatImport.js](../../src/lib/chatImport.js)) reads iOS's lines ("[6/10/26,
+  9:41:03 pm] Amelie: hi") and Android's ("6/10/26, 9:41 pm - Amelie: hi"), 12 or 24
+  hour, day or month first (day first unless a date only works month first, or this
+  computer writes month first). A message over several lines stays one; notices
+  (encryption, joined, left) are left out, deleted messages too, and attachments become
+  "(photo)", "(voice message)" and the like. The chat is named from the file.
+- **Instagram**: Accounts Centre → Download your information → Messages, as **JSON**.
+  `parseInstagram` reads every chat thread, undoing Instagram's spelling of non-English
+  characters as UTF-8 bytes (`fixMetaText`), leaving out likes and reactions, and
+  turning photos, shares and calls into "(photo)" and the like. A download in HTML is
+  named, with "choose JSON". Snapchat and iMessage have no export, so they'll be
+  screenshots in the phone app.
+- **The same chat** from several files (exported again, or another week's download) is
+  one chat (`mergeChats`, keyed by the WhatsApp chat's name or Instagram's thread),
+  every message once. The files are only read; they stay where you saved them.
+- **Which name is you** (`ownerOf`): one you picked before, else your name or its first
+  part, else on Instagram the name in every chat (`everywhereName`), else in a
+  two-person chat the one who isn't the chat's name. Otherwise Coach asks "Which of
+  these is you?". **Who it's with** (`chatPeople`): the others, matched to your people
+  like pasted names (`personNamed`); a two-person WhatsApp chat named after someone is
+  them. Chats with nobody from your circle are tucked under "Show chats with people not
+  in Layers".
+- **Conversations** (`splitConversations`): a pause of three hours or more starts a new
+  one. Each chat shows its **new** conversations, newest first: after the last one you
+  analysed from it, or for a chat Layers hasn't seen before, the last two weeks.
+  "Earlier conversations" shows the rest.
+- **Picking one** fills the analysis card: who it's with, and the conversation written
+  out with exact times ("[2026-10-06 21:41] Amelie: hi", `conversationText`), your
+  messages under your name in Layers and theirs under theirs, so both are hidden as
+  usual; a very long one keeps its last 50,000 characters. The log is dated on the
+  conversation's day. Once it's analysed, that chat moves on to what's after it.
+- **Where you got up to** is `layers-chat-progress` in localStorage (`{ [chat]: { at, me
+  } }`), on this computer only; parsed files are kept in memory until they change.
+
 ### Syncing through OneDrive
 
 Turned on in Me (**Turn on sync**, `SyncSheet`): Layers keeps one encrypted copy of the

@@ -9,6 +9,8 @@ import { Avatar, ChatBubble, ConvStateBadge, Kbd, LabeledBar, LayerBadge } from 
 import { hasOpenSheet, isTyping } from '../components/sheetLayer.js';
 import { ANALYSIS_MODELS, analysisCost, analysisModel, analysisRequest, analysisResult, DEFAULT_ANALYSIS_MODEL, detectPeople, MAX_SCREENSHOTS, typicalCost } from '../lib/analysis.js';
 import { DateDropdown } from '../components/pickers.jsx';
+import { ChatExports } from '../components/ChatExports.jsx';
+import { chatPeople, conversationLabel, conversationText, isoDayOf, loadChatExports, readChatProgress, saveChatProgress } from '../lib/chatImport.js';
 import { parseISODay } from '../lib/dates.js';
 import { isPictureFile } from '../data/avatars.js';
 import { loadPhoto, shrinkForAnalysis } from '../lib/photo.js';
@@ -49,8 +51,10 @@ function ModelButtons({ label, value, onPick, done = {} }) {
 // lib/analysis.js and resolves to { result, usage, model } or { error }).
 // model / onModel: which Claude (App keeps it while Layers is open).
 // onLogChat: saves your own chat's log ({ personIds, meaningfulness, ratings,
-// activeListening, summary, date, analysis }) as a normal log.
-export function CoachView({ people, journal, initialPersonId, initialTab, onOpenLog, onApproveInfo, onLogFromAnalysis, onLogChat, onOpenPerson, analysisReady = 'none', onAnalyse, onOpenMe, yourName = '', model = DEFAULT_ANALYSIS_MODEL, onModel = () => {} }) {
+// activeListening, summary, date, analysis }) as a normal log. chatExports:
+// the main process's Layers chats folder (listChatExports, readChatExport,
+// openChatsFolder, onChatExportsChanged), or null.
+export function CoachView({ people, journal, initialPersonId, initialTab, onOpenLog, onApproveInfo, onLogFromAnalysis, onLogChat, onOpenPerson, analysisReady = 'none', onAnalyse, onOpenMe, yourName = '', model = DEFAULT_ANALYSIS_MODEL, onModel = () => {}, chatExports = null }) {
   const [tab, setTab] = useState(initialTab || 'prepare');
   const [preparePersonId, setPreparePersonId] = useState(initialPersonId || (people[0] && people[0].id) || null);
   const [analysisPersonId, setAnalysisPersonId] = useState(initialTab === 'analyse' ? initialPersonId || null : null);
@@ -77,6 +81,13 @@ export function CoachView({ people, journal, initialPersonId, initialTab, onOpen
   const [ownWithFrom, setOwnWithFrom] = useState(null);
   const [ownWithPicking, setOwnWithPicking] = useState(false);
   const [ownLogDate, setOwnLogDate] = useState(() => new Date());
+  // Chats from your exports: what's in the Layers chats folder (null while
+  // it's read), where you got up to in each, and the conversation in the box
+  // ({ key, end, day, label }), which dates the log and moves you on.
+  const [exportsState, setExportsState] = useState(null);
+  const [chatProgress, setChatProgress] = useState(() => readChatProgress());
+  const [ownSource, setOwnSource] = useState(null);
+  const [chatsFolder, setChatsFolder] = useState(null);
   const shotsInput = useRef(null);
   // Screenshots are for the phone; on the laptop a chat is pasted.
   const touch = useMemo(() => typeof window !== 'undefined' && typeof window.matchMedia === 'function' && window.matchMedia('(hover: none) and (pointer: coarse)').matches, []);
@@ -85,6 +96,18 @@ export function CoachView({ people, journal, initialPersonId, initialTab, onOpen
   // each is its own session.
   const ownTicket = useRef(0);
   const ownChats = useRef(0);
+
+  // The folder is read when Analyse opens, and again when a file arrives.
+  const exportsOn = tab === 'analyse' && analysisReady === 'ready' && !!chatExports;
+  useEffect(() => {
+    if (!exportsOn) return undefined;
+    let live = true;
+    const load = () => { loadChatExports(chatExports).then(r => { if (live) setExportsState(r); }).catch(() => { if (live) setExportsState({ chats: [], problems: [] }); }); };
+    load();
+    if (chatExports.getChatsInfo) Promise.resolve(chatExports.getChatsInfo()).then(info => { if (live && info && info.dir) setChatsFolder(info.dir.split(/[\\/]/).slice(-2).join(' → ')); }).catch(() => {});
+    const stop = chatExports.onChatExportsChanged ? chatExports.onChatExportsChanged(load) : null;
+    return () => { live = false; if (stop) stop(); };
+  }, [exportsOn, chatExports]);
 
   useEffect(() => {
     if (step === 'loading') {
@@ -127,10 +150,22 @@ export function CoachView({ people, journal, initialPersonId, initialTab, onOpen
   function changeOwnText(value) {
     setOwnText(value);
     setOwnError(null);
+    if (!value.trim()) setOwnSource(null);
     if (ownWithFrom === 'you') return;
     const found = detectPeople(value, people, yourName);
     if (found.length) { setOwnWith(found); setOwnWithFrom('chat'); setAnalysisPersonId(found[0]); }
     else if (ownWithFrom === 'chat') { setOwnWith(null); setOwnWithFrom(null); }
+  }
+  // A conversation from your chats, into the box: who it's with from the
+  // names on it, written with exact times, and its day for the log.
+  function pickConversation(chat, conv, owner) {
+    const { ids, nameFor } = chatPeople(chat, people, owner);
+    setOwnText(conversationText(conv, { owner, yourName, nameFor }));
+    setOwnError(null);
+    setOwnShots([]);
+    if (ids.length) { setOwnWith(ids); setOwnWithFrom('chat'); setAnalysisPersonId(ids[0]); }
+    else { setOwnWith(null); setOwnWithFrom(null); }
+    setOwnSource({ key: chat.key, end: conv.end, day: isoDayOf(conv.end), label: `${chat.source === 'instagram' ? 'Instagram' : 'WhatsApp'} · ${chat.title} · ${conversationLabel(conv)}` });
   }
   function changeWith(ids) { setOwnWith(ids); setOwnWithFrom('you'); if (ids.length) setAnalysisPersonId(ids[0]); }
   async function addShots(files) {
@@ -142,8 +177,12 @@ export function CoachView({ people, journal, initialPersonId, initialTab, onOpen
   // Sends your chat to Claude (only now), then shows its answer like a sample's.
   async function analyseOwn() {
     if (!onAnalyse || !ownPeople.length || (!ownText.trim() && !ownShots.length)) return;
-    const chat = { run: ++ownChats.current, people: ownPeople, text: ownText, images: ownShots.map(s => shrinkForAnalysis(s.img)).filter(Boolean) };
-    if (await ask(chat, {}, model, 'pick')) { setOwnText(''); setOwnShots([]); setOwnWith(null); setOwnWithFrom(null); setOwnWithPicking(false); }
+    const chat = { run: ++ownChats.current, people: ownPeople, text: ownText, images: ownShots.map(s => shrinkForAnalysis(s.img)).filter(Boolean), source: ownSource };
+    if (await ask(chat, {}, model, 'pick')) {
+      setOwnText(''); setOwnShots([]); setOwnWith(null); setOwnWithFrom(null); setOwnWithPicking(false); setOwnSource(null);
+      // That chat's analysed up to here: its next export shows only what's after.
+      if (chat.source) setChatProgress(saveChatProgress(chat.source.key, { at: Math.max((readChatProgress()[chat.source.key] || {}).at || 0, chat.source.end) }));
+    }
   }
   // One model's answer to a chat; on a problem, back to `backTo` saying so.
   async function ask(chat, results, withModel, backTo) {
@@ -156,6 +195,7 @@ export function CoachView({ people, journal, initialPersonId, initialTab, onOpen
     if (!answer || answer.error) { setOwnError((answer && answer.error) || "Couldn't analyse that chat."); setStep(backTo); return false; }
     const used = analysisModel(answer.model || withModel).id;
     const result = analysisResult(answer.result, chat.people);
+    if (chat.source) result.log.date = chat.source.day; // the export's own times
     setOwnChat(chat);
     setOwnResults({ ...results, [used]: { result, cost: analysisCost(answer.usage, used) } });
     showOwn(chat, used, result);
@@ -354,6 +394,8 @@ export function CoachView({ people, journal, initialPersonId, initialTab, onOpen
             <p className="text-sm" style={{ color: COLORS.inkSoft }}>Add someone in the People tab first, then come back to analyse a conversation with them.</p>
           ) : !scenarioPerson ? (
             <>
+              {exportsOn && <ChatExports state={exportsState} people={people} yourName={yourName} progress={chatProgress} folder={chatsFolder || undefined} onPick={pickConversation} onPickMe={(key, name) => setChatProgress(saveChatProgress(key, { me: name }))} onOpenFolder={chatExports.openChatsFolder ? () => chatExports.openChatsFolder() : null} />}
+              {ownSource && <p className="text-xs mb-2 font-semibold" style={{ color: COLORS.accent }}>Nobody in that chat is in Layers yet. Who is it with?</p>}
               <p className="text-sm font-semibold mb-2" style={{ color: COLORS.ink }}>Who is this conversation with?</p>
               <div style={{ display: 'flex', flexWrap: 'wrap', columnGap: 8, rowGap: 12, paddingBottom: 4, maxHeight: 168, overflowY: 'auto' }}>
                 {people.map(p => {
@@ -383,6 +425,7 @@ export function CoachView({ people, journal, initialPersonId, initialTab, onOpen
                       {onOpenMe && <button type="button" onClick={onOpenMe} className="text-xs font-semibold rounded-full px-3 py-1.5 mt-2.5" style={{ background: COLORS.accentSoft, color: COLORS.accent }}>Add a key in Me</button>}
                     </div>
                   )}
+                  {exportsOn && <ChatExports state={exportsState} people={people} yourName={yourName} progress={chatProgress} folder={chatsFolder || undefined} onPick={pickConversation} onPickMe={(key, name) => setChatProgress(saveChatProgress(key, { me: name }))} onOpenFolder={chatExports.openChatsFolder ? () => chatExports.openChatsFolder() : null} />}
                   {analysisReady === 'ready' && (
                     <div className="rounded-2xl p-3.5 mb-4" style={{ background: COLORS.paperRaised, border: `1px solid ${COLORS.line}` }} aria-label="Your own chat">
                       <p className="text-sm font-semibold" style={{ color: COLORS.ink }}>Analyse your own chat</p>
@@ -404,7 +447,13 @@ export function CoachView({ people, journal, initialPersonId, initialTab, onOpen
                           ))}
                         </div>
                       )}
-                      <textarea value={ownText} onChange={e => changeOwnText(e.target.value)} aria-label="The chat" rows={5}
+                      {ownSource && (
+                        <p className="text-xs mt-2 flex items-center gap-2" style={{ color: COLORS.inkSoft }}>
+                          <span className="flex-1 min-w-0">From {ownSource.label}</span>
+                          <button type="button" onClick={() => { setOwnSource(null); changeOwnText(''); }} className="font-semibold shrink-0" style={{ color: COLORS.accent }}>Clear</button>
+                        </p>
+                      )}
+                      <textarea value={ownText} onChange={e => changeOwnText(e.target.value)} aria-label="The chat" rows={ownSource ? 8 : 5}
                         placeholder={`Paste the chat${touch ? ', or add screenshots below' : ''}. Names on the messages ("Amelie: hey") tell Layers who it's with.`} className="w-full text-sm rounded-xl px-3 py-2.5 mt-2" style={{ border: `1px solid ${COLORS.line}`, resize: 'vertical' }} />
                       {touch && <input ref={shotsInput} type="file" accept="image/*" multiple hidden aria-label="Add screenshots" onChange={e => { const files = e.target.files ? [...e.target.files] : []; e.target.value = ''; addShots(files); }} />}
                       {touch && <div className="flex items-center gap-2 flex-wrap mt-2">
@@ -582,7 +631,7 @@ export function CoachView({ people, journal, initialPersonId, initialTab, onOpen
                   <p className="text-xs mt-1" style={{ color: COLORS.inkSoft }}>📱 Messaged {scenario.log.personIds.map(nameOf).join(', ')} · {ML_LABELS[scenario.log.meaningfulness - 1]} ({scenario.log.meaningfulness} of 5)</p>
                   <div className="flex items-center gap-2 flex-wrap mt-2.5">
                     <DateDropdown key={`${scenarioKey}:${scenario.log.date}`} compact value={ownLogDate} onChange={setOwnLogDate} maxDate={new Date()} />
-                    <span className="text-xs" style={{ color: COLORS.inkSoft }}>{scenario.log.date ? "from the chat's times" : 'no times in the chat, so today'}</span>
+                    <span className="text-xs" style={{ color: COLORS.inkSoft }}>{ownChat && ownChat.source ? "the conversation's day" : scenario.log.date ? "from the chat's times" : 'no times in the chat, so today'}</span>
                   </div>
                   {DIM_ORDER.some(k => scenario.log.ratings[k]) && <p className="text-xs mt-2.5" style={{ color: COLORS.ink }}>{DIM_ORDER.filter(k => scenario.log.ratings[k]).map(k => `${DIM_LABELS[k]} ${scenario.log.ratings[k]}`).join(' · ')}</p>}
                   {scenario.log.activeListening.length > 0 && <p className="text-xs mt-1.5" style={{ color: COLORS.good }}>✓ {scenario.log.activeListening.map(k => AL_ITEMS.find(a => a.key === k).label).join(' · ')}</p>}

@@ -146,6 +146,18 @@ interact.
   that isn't Anthropic's is refused by the packaged app's main process. They also check
   the window is always maximised: on opening, after its restore button, back from the
   tray and from a minimise, and that a login launch stays hidden until it's shown.
+- `chats.test.jsx` covers chats from your exports (the folder stood in for): a
+  WhatsApp chat's new conversation picked and its text written with exact times, the log
+  on its day, the chat moving on (and its earlier conversations still there), how to add
+  one, the folder opened, a new export noticed, Instagram (you found as the name in
+  every chat, chats with people not in Layers tucked away, an HTML download named) and
+  "Which of these is you?". `src/chatImport.test.js` covers reading WhatsApp (iOS and
+  Android, notices, attachments, several lines, day or month first) and Instagram
+  (lettering, likes, photos), merging, who's who, splitting at pauses and the text
+  sent; `src/chatFiles.test.js` covers `electron/chatfiles.cjs` (the folder, which files
+  are exports, zips packed or stored, errors, nothing outside the folder, noticing a
+  new file). The end-to-end tests open a real zip in the packaged app and see a second
+  one arrive.
 - `calendars.test.jsx` covers your Google Calendar (the main process stood in for):
   adding it in Me (a bad address refused), its event on Today marked as Google's and
   opened read-only, nothing of it handed to Windows as a reminder, planning's clash

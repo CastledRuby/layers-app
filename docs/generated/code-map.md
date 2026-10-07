@@ -4,14 +4,14 @@
 > Run `npm run docs:map` after changing anything under `src/`, `electron/*.cjs` or `package.json` scripts.
 > Hand-written explanations live in the other files under [`docs/`](../README.md).
 
-Package: `layers-web` v1.0.35 · `src/`: 77 files, 13013 lines, 101 components, 319 top-level functions, 166 constants.
+Package: `layers-web` v1.0.35 · `src/`: 79 files, 13499 lines, 103 components, 346 top-level functions, 180 constants.
 
 ## Source files
 
 | File | Lines | Declares | Imports from |
 |---|---|---|---|
 | [main.jsx](../../src/main.jsx) | 16 | quick | — |
-| [App.jsx](../../src/App.jsx) | 1554 | sampleData, SAMPLE_PERSON_IDS, SAMPLE_GOAL_IDS, skillsCameWithSamples, allSkillsZero, listNames, unlinkMissingPeople, addNotes, LayersApp | `components/BottomNav`, `components/ErrorBoundary`, `components/PageTransition`, `components/sheetLayer`, `data/constants`, `data/seed`, `lib/dates`, `lib/achievements`, `lib/progress`, `lib/backup`, `lib/calendar`, `lib/hooks`, `lib/reminders`, `lib/analysis`, `lib/storage`, `lib/util`, `modals/AddInfoModal`, `modals/AddPersonModal`, `modals/ConfirmDialog`, `modals/EditEntryModal`, `modals/EditPersonModal`, `modals/EditProfileModal`, `modals/EventSheet`, `modals/GoalModal`, `modals/KeyDateSheet`, `modals/LogInteractionModal`, `modals/PlanSheet`, `modals/PhotoFolderSheet`, `lib/sync`, `lib/syncFile`, `modals/SyncSheet`, `lib/ics`, `lib/summary`, `modals/QuickAddInterestModal`, `modals/ShortcutsModal`, `modals/StartOverSheet`, `modals/DaySheet`, `modals/JumpSheet`, `lib/sentence`, `modals/TemplatePickerModal`, `modals/WeekReviewSheet`, `theme`, `views/CoachView`, `views/GoalsView`, `views/JournalView`, `views/MeView`, `views/OnboardingView`, `views/PeopleView`, `views/PersonProfile`, `components/ClosenessQuiz`, `views/TodayView` |
+| [App.jsx](../../src/App.jsx) | 1556 | sampleData, SAMPLE_PERSON_IDS, SAMPLE_GOAL_IDS, skillsCameWithSamples, allSkillsZero, listNames, unlinkMissingPeople, addNotes, LayersApp | `components/BottomNav`, `components/ErrorBoundary`, `components/PageTransition`, `components/sheetLayer`, `data/constants`, `data/seed`, `lib/dates`, `lib/achievements`, `lib/progress`, `lib/backup`, `lib/calendar`, `lib/hooks`, `lib/reminders`, `lib/analysis`, `lib/storage`, `lib/util`, `modals/AddInfoModal`, `modals/AddPersonModal`, `modals/ConfirmDialog`, `modals/EditEntryModal`, `modals/EditPersonModal`, `modals/EditProfileModal`, `modals/EventSheet`, `modals/GoalModal`, `modals/KeyDateSheet`, `modals/LogInteractionModal`, `modals/PlanSheet`, `modals/PhotoFolderSheet`, `lib/sync`, `lib/syncFile`, `modals/SyncSheet`, `lib/ics`, `lib/summary`, `modals/QuickAddInterestModal`, `modals/ShortcutsModal`, `modals/StartOverSheet`, `modals/DaySheet`, `modals/JumpSheet`, `lib/sentence`, `modals/TemplatePickerModal`, `modals/WeekReviewSheet`, `theme`, `views/CoachView`, `views/GoalsView`, `views/JournalView`, `views/MeView`, `views/OnboardingView`, `views/PeopleView`, `views/PersonProfile`, `components/ClosenessQuiz`, `views/TodayView` |
 | [theme.js](../../src/theme.js) | 354 | THEME_LIGHT, THEME_DARK, COLORS, cssVarBlock, EASE, CSS | `fonts` |
 | [data/avatars.js](../../src/data/avatars.js) | 203 | AVATAR_COLS, AVATAR_GROUPS, findAvatars, INITIAL_COLORS, INITIALS_GROUP, isInitials, PHOTO_SIZE, PHOTO_GROUP, PHOTO_SRC, isPhoto, … (+16) | — |
 | [data/constants.js](../../src/data/constants.js) | 344 | LAYERS, getLayer, DIM_ORDER, DIM_LABELS, DIM_COLORS, LAYER_BASE_DIMS, CATEGORIES, categoryMeta, TABS, SHORTCUTS, … (+29) | `theme` |
@@ -19,9 +19,10 @@ Package: `layers-web` v1.0.35 · `src/`: 77 files, 13013 lines, 101 components, 
 | [data/seed.js](../../src/data/seed.js) | 176 | INITIAL_PEOPLE, INITIAL_GENERAL_GOALS, INITIAL_JOURNAL, INITIAL_SKILLS, EMPTY_SKILLS | — |
 | [lib/achievements.js](../../src/lib/achievements.js) | 37 | achievementProgress, newlyUnlocked, progressText | `data/constants` |
 | [lib/activity.js](../../src/lib/activity.js) | 48 | ACTIVITY_WEEKS, activityLevel, activityGrid | `lib/dates` |
-| [lib/analysis.js](../../src/lib/analysis.js) | 279 | ANALYSIS_MODELS, DEFAULT_ANALYSIS_MODEL, analysisModel, MAX_SCREENSHOTS, THEM, YOU, tokensFor, STAMP, chatSpeakers, detectPeople, … (+19) | `data/constants`, `lib/dates` |
+| [lib/analysis.js](../../src/lib/analysis.js) | 292 | ANALYSIS_MODELS, DEFAULT_ANALYSIS_MODEL, analysisModel, MAX_SCREENSHOTS, THEM, YOU, tokensFor, STAMP, chatSpeakers, detectPeople, … (+22) | `data/constants`, `lib/dates` |
 | [lib/backup.js](../../src/lib/backup.js) | 207 | BACKUP_VERSION, MAX_BACKUP_BYTES, createBackup, isObject, isText, isISODay, num, count, cleanHistory, cleanGoal, … (+5) | `lib/calendar`, `data/constants`, `data/seed`, `data/avatars`, `lib/util`, `lib/sync` |
 | [lib/calendar.js](../../src/lib/calendar.js) | 425 | WEEKDAY_NAMES, DEFAULT_DURATION, EVENT_TEMPLATES, templateFor, DATE_KINDS, dateKind, NOTIFY_DEFAULTS, notifySettings, dayDate, addDays, … (+28) | `lib/dates` |
+| [lib/chatImport.js](../../src/lib/chatImport.js) | 306 | CONVERSATION_GAP_HOURS, MAX_TEXT, PROGRESS_KEY, STAMP, IOS_LINE, ANDROID_LINE, ch, MARKS, MARKED, ODD_SPACES, … (+26) | `lib/analysis` |
 | [lib/closeness.js](../../src/lib/closeness.js) | 64 | QUIZ, ANSWERS, REACHED, inLayer, share, nextQuestion, quizPlacement | — |
 | [lib/dates.js](../../src/lib/dates.js) | 314 | parseDaysAgo, startOfDay, WEEKDAY_SHORT, WEEKDAY_FULL, formatWeekdays, MONTH_NAMES, MONTH_WORDS, readDayMonth, dayMonthToDate, dateToRelativeLabel, … (+26) | `data/constants` |
 | [lib/hooks.js](../../src/lib/hooks.js) | 196 | useToday, useDailyBackup, WIDE_QUERY, useWide, useSlideAcross, useSystemDark, useDailyCheckIn, notify, SCHEDULE_DAYS, LATE_MINUTES, … (+1) | `lib/dates`, `lib/calendar`, `lib/storage`, `lib/text` |
@@ -43,6 +44,7 @@ Package: `layers-web` v1.0.35 · `src/`: 77 files, 13013 lines, 101 components, 
 | [components/avatarKeys.js](../../src/components/avatarKeys.js) | 135 | PICKER_GROUPS, EMOJI_FROM, useAvatarPicker | `data/avatars`, `lib/photo` |
 | [components/AvatarPicker.jsx](../../src/components/AvatarPicker.jsx) | 142 | VIEW, PhotoCrop, PhotoPanel, AvatarPicker, AvatarSheet | `components/Sheet`, `components/sheetLayer`, `components/avatarKeys`, `components/atoms`, `data/avatars`, `theme` |
 | [components/BottomNav.jsx](../../src/components/BottomNav.jsx) | 40 | ITEMS, BottomNav | `data/constants` |
+| [components/ChatExports.jsx](../../src/components/ChatExports.jsx) | 116 | NEW_DAYS, SOURCE, Help, ChatExports | `components/atoms`, `data/constants`, `lib/chatImport`, `theme` |
 | [components/closenessKeys.js](../../src/components/closenessKeys.js) | 40 | useCloseness, quizKey | `lib/closeness` |
 | [components/ClosenessQuiz.jsx](../../src/components/ClosenessQuiz.jsx) | 129 | ANSWER_EMOJI, QuizDots, QuizQuestion, QuizResult, QuizSheet | `components/Sheet`, `components/sheetLayer`, `components/atoms`, `data/constants`, `components/closenessKeys`, `lib/closeness`, `theme` |
 | [components/ErrorBoundary.jsx](../../src/components/ErrorBoundary.jsx) | 39 | — | `theme` |
@@ -77,7 +79,7 @@ Package: `layers-web` v1.0.35 · `src/`: 77 files, 13013 lines, 101 components, 
 | [modals/SyncSheet.jsx](../../src/modals/SyncSheet.jsx) | 69 | MIN_PASSPHRASE, SyncSheet | `components/Sheet`, `components/sheetLayer`, `components/atoms`, `theme` |
 | [modals/TemplatePickerModal.jsx](../../src/modals/TemplatePickerModal.jsx) | 98 | TemplatePickerModal | `components/Sheet`, `components/sheetLayer`, `components/atoms`, `data/constants`, `theme` |
 | [modals/WeekReviewSheet.jsx](../../src/modals/WeekReviewSheet.jsx) | 86 | addDays, short, Stat, WeekReviewSheet | `components/Sheet`, `components/sheetLayer`, `components/atoms`, `components/PersonPick`, `lib/calendar`, `lib/dates`, `theme` |
-| [views/CoachView.jsx](../../src/views/CoachView.jsx) | 610 | Tones, ModelButtons, CoachView | `components/atoms`, `components/sheetLayer`, `lib/analysis`, `components/pickers`, `lib/dates`, `data/avatars`, `lib/photo`, `data/constants`, `data/scenarios`, `lib/text`, `theme` |
+| [views/CoachView.jsx](../../src/views/CoachView.jsx) | 659 | Tones, ModelButtons, CoachView | `components/atoms`, `components/sheetLayer`, `lib/analysis`, `components/pickers`, `components/ChatExports`, `lib/chatImport`, `lib/dates`, `data/avatars`, `lib/photo`, `data/constants`, `data/scenarios`, `lib/text`, `theme` |
 | [views/GoalsView.jsx](../../src/views/GoalsView.jsx) | 72 | GoalsView | `components/atoms`, `components/rows`, `data/constants`, `theme` |
 | [views/JournalView.jsx](../../src/views/JournalView.jsx) | 179 | PERIODS, Chip, JournalView | `components/ActivityCalendar`, `data/constants`, `lib/dates`, `lib/text`, `theme` |
 | [views/MeView.jsx](../../src/views/MeView.jsx) | 370 | Toggle, Pick, syncedAgo, AnalysisKeyCard, CalendarsCard, MeView | `components/atoms`, `data/constants`, `lib/achievements`, `lib/calendar`, `lib/dates`, `lib/text`, `theme` |
@@ -97,7 +99,7 @@ Package: `layers-web` v1.0.35 · `src/`: 77 files, 13013 lines, 101 components, 
 | `CircularProgress` | [atoms.jsx:10](../../src/components/atoms.jsx#L10) | `percent`, `size`, `stroke`, `color`, `track`, `label` | `PersonProfile` |
 | `ProgressBar` | [atoms.jsx:30](../../src/components/atoms.jsx#L30) | `percent`, `color`, `height`, `track` | `LabeledBar`, `GoalRow`, `PeopleView`, `TodayView`, `GettingStarted` |
 | `LabeledBar` | [atoms.jsx:38](../../src/components/atoms.jsx#L38) | `label`, `percent`, `color`, `size` | `CoachView`, `MeView`, `PersonProfile` |
-| `Avatar` | [atoms.jsx:53](../../src/components/atoms.jsx#L53) | `person`, `emoji`, `size`, `ringColor`, `bg` | `AvatarPicker`, `AvatarSheet`, `QuizResult`, `PersonPick`, `AvatarStack`, `AddPersonModal`, `EditPersonModal`, `GoalModal`, `JumpSheet`, `LogInteractionModal`, `PlanTipsSheet`, `QuickGoalSheet`, `CoachView`, `GoalsView`, `OnboardingView`, `PeopleView`, `PersonProfile` |
+| `Avatar` | [atoms.jsx:53](../../src/components/atoms.jsx#L53) | `person`, `emoji`, `size`, `ringColor`, `bg` | `AvatarPicker`, `AvatarSheet`, `ChatExports`, `QuizResult`, `PersonPick`, `AvatarStack`, `AddPersonModal`, `EditPersonModal`, `GoalModal`, `JumpSheet`, `LogInteractionModal`, `PlanTipsSheet`, `QuickGoalSheet`, `CoachView`, `GoalsView`, `OnboardingView`, `PeopleView`, `PersonProfile` |
 | `LayerBadge` | [atoms.jsx:80](../../src/components/atoms.jsx#L80) | `layerId` | `CoachView`, `PeopleView`, `PersonProfile` |
 | `ChatBubble` | [atoms.jsx:90](../../src/components/atoms.jsx#L90) | `who`, `text`, `name` | `CoachView` |
 | `Timeline` | [atoms.jsx:102](../../src/components/atoms.jsx#L102) | `steps` | `PersonProfile` |
@@ -109,6 +111,8 @@ Package: `layers-web` v1.0.35 · `src/`: 77 files, 13013 lines, 101 components, 
 | `AvatarPicker` | [AvatarPicker.jsx:76](../../src/components/AvatarPicker.jsx#L76) | `picker`, `name`, `layer`, `current` | `AvatarSheet`, `AddPersonModal`, `EditPersonModal` |
 | `AvatarSheet` | [AvatarPicker.jsx:127](../../src/components/AvatarPicker.jsx#L127) | `person`, `onChange`, `onClose` | `OnboardingView` |
 | `BottomNav` | [BottomNav.jsx:21](../../src/components/BottomNav.jsx#L21) | `active`, `onChange` | `LayersApp` |
+| `Help` | [ChatExports.jsx:17](../../src/components/ChatExports.jsx#L17) | `folder` | `ChatExports` |
+| `ChatExports` | [ChatExports.jsx:27](../../src/components/ChatExports.jsx#L27) | `state`, `people`, `yourName`, `progress`, `folder`, `onPick`, `onPickMe`, `onOpenFolder` | `CoachView` |
 | `QuizDots` | [ClosenessQuiz.jsx:21](../../src/components/ClosenessQuiz.jsx#L21) | `answers`, `at` | `QuizQuestion` |
 | `QuizQuestion` | [ClosenessQuiz.jsx:33](../../src/components/ClosenessQuiz.jsx#L33) | `quiz`, `name`, `onDone` | `QuizSheet`, `AddPersonModal` |
 | `QuizResult` | [ClosenessQuiz.jsx:64](../../src/components/ClosenessQuiz.jsx#L64) | `quiz`, `name`, `person`, `now` | `QuizSheet`, `AddPersonModal` |
@@ -165,9 +169,9 @@ Package: `layers-web` v1.0.35 · `src/`: 77 files, 13013 lines, 101 components, 
 | `TemplatePickerModal` | [TemplatePickerModal.jsx:23](../../src/modals/TemplatePickerModal.jsx#L23) | `title`, `subtitle`, `onClose`, `onPick`, `allowMultiple`, `templates` | `LogInteractionModal` |
 | `Stat` | [WeekReviewSheet.jsx:21](../../src/modals/WeekReviewSheet.jsx#L21) | `value`, `label`, `children` | `WeekReviewSheet` |
 | `WeekReviewSheet` | [WeekReviewSheet.jsx:33](../../src/modals/WeekReviewSheet.jsx#L33) | `day`, `people`, `journal`, `events`, `generalGoals`, `onClose`, `onPlan` | `LayersApp` |
-| `Tones` | [CoachView.jsx:21](../../src/views/CoachView.jsx#L21) | `item`, `intro` | `CoachView` |
-| `ModelButtons` | [CoachView.jsx:35](../../src/views/CoachView.jsx#L35) | `label`, `value`, `onPick`, `done` | `CoachView` |
-| `CoachView` | [CoachView.jsx:53](../../src/views/CoachView.jsx#L53) | `people`, `journal`, `initialPersonId`, `initialTab`, `onOpenLog`, `onApproveInfo`, `onLogFromAnalysis`, `onLogChat`, `onOpenPerson`, `analysisReady`, `onAnalyse`, `onOpenMe`, `yourName`, `model`, `onModel` | `LayersApp` |
+| `Tones` | [CoachView.jsx:23](../../src/views/CoachView.jsx#L23) | `item`, `intro` | `CoachView` |
+| `ModelButtons` | [CoachView.jsx:37](../../src/views/CoachView.jsx#L37) | `label`, `value`, `onPick`, `done` | `CoachView` |
+| `CoachView` | [CoachView.jsx:57](../../src/views/CoachView.jsx#L57) | `people`, `journal`, `initialPersonId`, `initialTab`, `onOpenLog`, `onApproveInfo`, `onLogFromAnalysis`, `onLogChat`, `onOpenPerson`, `analysisReady`, `onAnalyse`, `onOpenMe`, `yourName`, `model`, `onModel`, `chatExports` | `LayersApp` |
 | `GoalsView` | [GoalsView.jsx:10](../../src/views/GoalsView.jsx#L10) | `today`, `people`, `generalGoals`, `journal`, `onShowGoalLogs`, `onBack`, `onOpenPerson`, `onOpenGoalCreate`, `onOpenGoalEdit`, `onDeleteGoal`, `onBumpGoal` | `LayersApp` |
 | `Chip` | [JournalView.jsx:21](../../src/views/JournalView.jsx#L21) | `active`, `onClick`, `children`, `label`, `slim` | `JournalView` |
 | `JournalView` | [JournalView.jsx:29](../../src/views/JournalView.jsx#L29) | `today`, `people`, `generalGoals`, `journal`, `goalFilter`, `onGoalFilter`, `personFilter`, `onPersonFilter`, `dayFilter`, `onDayFilter`, `onOpenPerson`, `onEditEntry` | `LayersApp` |
@@ -235,23 +239,26 @@ Package: `layers-web` v1.0.35 · `src/`: 77 files, 13013 lines, 101 components, 
 | `tokensFor` | [analysis.js:30](../../src/lib/analysis.js#L30) | ✓ |  |
 | `chatSpeakers` | [analysis.js:41](../../src/lib/analysis.js#L41) | ✓ | ✓ |
 | `detectPeople` | [analysis.js:57](../../src/lib/analysis.js#L57) | ✓ | ✓ |
-| `str` | [analysis.js:73](../../src/lib/analysis.js#L73) |  |  |
-| `int` | [analysis.js:74](../../src/lib/analysis.js#L74) |  |  |
-| `obj` | [analysis.js:75](../../src/lib/analysis.js#L75) |  |  |
-| `orNull` | [analysis.js:76](../../src/lib/analysis.js#L76) |  |  |
-| `list` | [analysis.js:77](../../src/lib/analysis.js#L77) |  |  |
-| `tones` | [analysis.js:78](../../src/lib/analysis.js#L78) |  |  |
-| `analysisSchema` | [analysis.js:83](../../src/lib/analysis.js#L83) | ✓ | ✓ |
-| `writesDayFirst` | [analysis.js:110](../../src/lib/analysis.js#L110) |  |  |
-| `analysisSystem` | [analysis.js:118](../../src/lib/analysis.js#L118) | ✓ | ✓ |
-| `escapeRe` | [analysis.js:158](../../src/lib/analysis.js#L158) |  |  |
-| `nameParts` | [analysis.js:160](../../src/lib/analysis.js#L160) |  |  |
-| `hideNames` | [analysis.js:169](../../src/lib/analysis.js#L169) | ✓ | ✓ |
-| `restoreNames` | [analysis.js:186](../../src/lib/analysis.js#L186) | ✓ | ✓ |
-| `analysisRequest` | [analysis.js:201](../../src/lib/analysis.js#L201) | ✓ | ✓ |
-| `analysisResult` | [analysis.js:221](../../src/lib/analysis.js#L221) | ✓ | ✓ |
-| `analysisCost` | [analysis.js:267](../../src/lib/analysis.js#L267) | ✓ | ✓ |
-| `typicalCost` | [analysis.js:276](../../src/lib/analysis.js#L276) | ✓ | ✓ |
+| `firstName` | [analysis.js:67](../../src/lib/analysis.js#L67) |  |  |
+| `isYou` | [analysis.js:69](../../src/lib/analysis.js#L69) | ✓ |  |
+| `personNamed` | [analysis.js:77](../../src/lib/analysis.js#L77) | ✓ |  |
+| `str` | [analysis.js:86](../../src/lib/analysis.js#L86) |  |  |
+| `int` | [analysis.js:87](../../src/lib/analysis.js#L87) |  |  |
+| `obj` | [analysis.js:88](../../src/lib/analysis.js#L88) |  |  |
+| `orNull` | [analysis.js:89](../../src/lib/analysis.js#L89) |  |  |
+| `list` | [analysis.js:90](../../src/lib/analysis.js#L90) |  |  |
+| `tones` | [analysis.js:91](../../src/lib/analysis.js#L91) |  |  |
+| `analysisSchema` | [analysis.js:96](../../src/lib/analysis.js#L96) | ✓ | ✓ |
+| `writesDayFirst` | [analysis.js:123](../../src/lib/analysis.js#L123) |  |  |
+| `analysisSystem` | [analysis.js:131](../../src/lib/analysis.js#L131) | ✓ | ✓ |
+| `escapeRe` | [analysis.js:171](../../src/lib/analysis.js#L171) |  |  |
+| `nameParts` | [analysis.js:173](../../src/lib/analysis.js#L173) |  |  |
+| `hideNames` | [analysis.js:182](../../src/lib/analysis.js#L182) | ✓ | ✓ |
+| `restoreNames` | [analysis.js:199](../../src/lib/analysis.js#L199) | ✓ | ✓ |
+| `analysisRequest` | [analysis.js:214](../../src/lib/analysis.js#L214) | ✓ | ✓ |
+| `analysisResult` | [analysis.js:234](../../src/lib/analysis.js#L234) | ✓ | ✓ |
+| `analysisCost` | [analysis.js:280](../../src/lib/analysis.js#L280) | ✓ | ✓ |
+| `typicalCost` | [analysis.js:289](../../src/lib/analysis.js#L289) | ✓ | ✓ |
 | `createBackup` | [backup.js:19](../../src/lib/backup.js#L19) | ✓ | ✓ |
 | `isObject` | [backup.js:23](../../src/lib/backup.js#L23) |  |  |
 | `isText` | [backup.js:24](../../src/lib/backup.js#L24) |  |  |
@@ -297,6 +304,30 @@ Package: `layers-web` v1.0.35 · `src/`: 77 files, 13013 lines, 101 components, 
 | `plannedNotifications` | [calendar.js:295](../../src/lib/calendar.js#L295) | ✓ | ✓ |
 | `snoozeUntil` | [calendar.js:401](../../src/lib/calendar.js#L401) | ✓ | ✓ |
 | `parseActionUrl` | [calendar.js:411](../../src/lib/calendar.js#L411) | ✓ | ✓ |
+| `ch` | [chatImport.js:23](../../src/lib/chatImport.js#L23) |  |  |
+| `standIn` | [chatImport.js:35](../../src/lib/chatImport.js#L35) |  |  |
+| `stampOf` | [chatImport.js:52](../../src/lib/chatImport.js#L52) |  |  |
+| `writesDayFirst` | [chatImport.js:65](../../src/lib/chatImport.js#L65) |  |  |
+| `guessDayFirst` | [chatImport.js:73](../../src/lib/chatImport.js#L73) |  |  |
+| `parseWhatsApp` | [chatImport.js:96](../../src/lib/chatImport.js#L96) | ✓ | ✓ |
+| `fixMetaText` | [chatImport.js:126](../../src/lib/chatImport.js#L126) | ✓ | ✓ |
+| `instagramText` | [chatImport.js:133](../../src/lib/chatImport.js#L133) |  |  |
+| `parseInstagram` | [chatImport.js:147](../../src/lib/chatImport.js#L147) | ✓ | ✓ |
+| `chatsFromExport` | [chatImport.js:171](../../src/lib/chatImport.js#L171) | ✓ | ✓ |
+| `mergeChats` | [chatImport.js:186](../../src/lib/chatImport.js#L186) | ✓ | ✓ |
+| `ownerOf` | [chatImport.js:202](../../src/lib/chatImport.js#L202) | ✓ | ✓ |
+| `everywhereName` | [chatImport.js:214](../../src/lib/chatImport.js#L214) | ✓ | ✓ |
+| `chatPeople` | [chatImport.js:222](../../src/lib/chatImport.js#L222) | ✓ | ✓ |
+| `splitConversations` | [chatImport.js:233](../../src/lib/chatImport.js#L233) | ✓ | ✓ |
+| `pad` | [chatImport.js:243](../../src/lib/chatImport.js#L243) |  |  |
+| `isoMinute` | [chatImport.js:244](../../src/lib/chatImport.js#L244) |  |  |
+| `isoDayOf` | [chatImport.js:245](../../src/lib/chatImport.js#L245) | ✓ |  |
+| `conversationText` | [chatImport.js:250](../../src/lib/chatImport.js#L250) | ✓ | ✓ |
+| `clock` | [chatImport.js:260](../../src/lib/chatImport.js#L260) |  |  |
+| `conversationLabel` | [chatImport.js:262](../../src/lib/chatImport.js#L262) | ✓ | ✓ |
+| `readChatProgress` | [chatImport.js:275](../../src/lib/chatImport.js#L275) | ✓ |  |
+| `saveChatProgress` | [chatImport.js:278](../../src/lib/chatImport.js#L278) | ✓ |  |
+| `cache` | [chatImport.js:287](../../src/lib/chatImport.js#L287) |  |  |
 | `inLayer` | [closeness.js:36](../../src/lib/closeness.js#L36) |  |  |
 | `share` | [closeness.js:38](../../src/lib/closeness.js#L38) |  |  |
 | `nextQuestion` | [closeness.js:44](../../src/lib/closeness.js#L44) | ✓ | ✓ |
@@ -587,8 +618,8 @@ Package: `layers-web` v1.0.35 · `src/`: 77 files, 13013 lines, 101 components, 
 | `THEM` | [analysis.js:25](../../src/lib/analysis.js#L25) |
 | `YOU` | [analysis.js:26](../../src/lib/analysis.js#L26) |
 | `STAMP` | [analysis.js:37](../../src/lib/analysis.js#L37) |
-| `ANALYSIS_SCHEMA` | [analysis.js:107](../../src/lib/analysis.js#L107) |
-| `WEEKDAYS` | [analysis.js:113](../../src/lib/analysis.js#L113) |
+| `ANALYSIS_SCHEMA` | [analysis.js:120](../../src/lib/analysis.js#L120) |
+| `WEEKDAYS` | [analysis.js:126](../../src/lib/analysis.js#L126) |
 | `BACKUP_VERSION` | [backup.js:14](../../src/lib/backup.js#L14) |
 | `MAX_BACKUP_BYTES` | [backup.js:16](../../src/lib/backup.js#L16) |
 | `WEEKDAY_NAMES` | [calendar.js:26](../../src/lib/calendar.js#L26) |
@@ -597,6 +628,18 @@ Package: `layers-web` v1.0.35 · `src/`: 77 files, 13013 lines, 101 components, 
 | `DATE_KINDS` | [calendar.js:45](../../src/lib/calendar.js#L45) |
 | `NOTIFY_DEFAULTS` | [calendar.js:56](../../src/lib/calendar.js#L56) |
 | `QUIET_DAYS` | [calendar.js:203](../../src/lib/calendar.js#L203) |
+| `CONVERSATION_GAP_HOURS` | [chatImport.js:12](../../src/lib/chatImport.js#L12) |
+| `MAX_TEXT` | [chatImport.js:14](../../src/lib/chatImport.js#L14) |
+| `PROGRESS_KEY` | [chatImport.js:15](../../src/lib/chatImport.js#L15) |
+| `STAMP` | [chatImport.js:20](../../src/lib/chatImport.js#L20) |
+| `IOS_LINE` | [chatImport.js:21](../../src/lib/chatImport.js#L21) |
+| `ANDROID_LINE` | [chatImport.js:22](../../src/lib/chatImport.js#L22) |
+| `MARKS` | [chatImport.js:28](../../src/lib/chatImport.js#L28) |
+| `MARKED` | [chatImport.js:29](../../src/lib/chatImport.js#L29) |
+| `ODD_SPACES` | [chatImport.js:30](../../src/lib/chatImport.js#L30) |
+| `SYSTEM` | [chatImport.js:31](../../src/lib/chatImport.js#L31) |
+| `DAYS` | [chatImport.js:258](../../src/lib/chatImport.js#L258) |
+| `MONTHS` | [chatImport.js:259](../../src/lib/chatImport.js#L259) |
 | `QUIZ` | [closeness.js:11](../../src/lib/closeness.js#L11) |
 | `ANSWERS` | [closeness.js:26](../../src/lib/closeness.js#L26) |
 | `REACHED` | [closeness.js:34](../../src/lib/closeness.js#L34) |
@@ -650,6 +693,8 @@ Package: `layers-web` v1.0.35 · `src/`: 77 files, 13013 lines, 101 components, 
 | `EMOJI_FROM` | [avatarKeys.js:24](../../src/components/avatarKeys.js#L24) |
 | `VIEW` | [AvatarPicker.jsx:17](../../src/components/AvatarPicker.jsx#L17) |
 | `ITEMS` | [BottomNav.jsx:13](../../src/components/BottomNav.jsx#L13) |
+| `NEW_DAYS` | [ChatExports.jsx:14](../../src/components/ChatExports.jsx#L14) |
+| `SOURCE` | [ChatExports.jsx:15](../../src/components/ChatExports.jsx#L15) |
 | `ANSWER_EMOJI` | [ClosenessQuiz.jsx:18](../../src/components/ClosenessQuiz.jsx#L18) |
 | `LAYER` | [illustrations.jsx:7](../../src/components/illustrations.jsx#L7) |
 | `TINT` | [illustrations.jsx:9](../../src/components/illustrations.jsx#L9) |
@@ -695,46 +740,51 @@ Package: `layers-web` v1.0.35 · `src/`: 77 files, 13013 lines, 101 components, 
 
 | Channel | Direction | Defined |
 |---|---|---|
-| `update-status` | main → renderer push | [main.cjs:139](../../electron/main.cjs#L139) |
-| `open-download-page` | invoke → handle | [main.cjs:165](../../electron/main.cjs#L165) |
-| `check-for-updates` | invoke → handle | [main.cjs:177](../../electron/main.cjs#L177) |
-| `quit-and-install` | send → on | [main.cjs:178](../../electron/main.cjs#L178) |
-| `check-for-updates` | invoke → handle | [main.cjs:202](../../electron/main.cjs#L202) |
-| `quit-and-install` | send → on | [main.cjs:213](../../electron/main.cjs#L213) |
-| `set-theme` | send → on | [main.cjs:248](../../electron/main.cjs#L248) |
-| `get-app-version` | invoke → handle | [main.cjs:387](../../electron/main.cjs#L387) |
-| `show-window` | send → on | [main.cjs:393](../../electron/main.cjs#L393) |
-| `get-auto-launch` | invoke → handle | [main.cjs:406](../../electron/main.cjs#L406) |
-| `set-auto-launch` | invoke → handle | [main.cjs:416](../../electron/main.cjs#L416) |
-| `get-shortcut-status` | invoke → handle | [main.cjs:433](../../electron/main.cjs#L433) |
-| `quick-add-show` | main → renderer push | [main.cjs:490](../../electron/main.cjs#L490) |
-| `quick-add` | send → on | [main.cjs:508](../../electron/main.cjs#L508) |
-| `quick-add` | main → renderer push | [main.cjs:527](../../electron/main.cjs#L527) |
-| `calendar-action` | main → renderer push | [main.cjs:549](../../electron/main.cjs#L549) |
-| `save-daily-backup` | invoke → handle | [main.cjs:557](../../electron/main.cjs#L557) |
-| `backups-info` | invoke → handle | [main.cjs:560](../../electron/main.cjs#L560) |
-| `open-backups-folder` | invoke → handle | [main.cjs:561](../../electron/main.cjs#L561) |
-| `find-faces` | invoke → handle | [main.cjs:572](../../electron/main.cjs#L572) |
-| `sync-info` | invoke → handle | [main.cjs:582](../../electron/main.cjs#L582) |
-| `sync-read` | invoke → handle | [main.cjs:583](../../electron/main.cjs#L583) |
-| `sync-write` | invoke → handle | [main.cjs:584](../../electron/main.cjs#L584) |
-| `sync-remove-copies` | invoke → handle | [main.cjs:585](../../electron/main.cjs#L585) |
-| `sync-set-aside` | invoke → handle | [main.cjs:586](../../electron/main.cjs#L586) |
-| `sync-passphrase-get` | invoke → handle | [main.cjs:587](../../electron/main.cjs#L587) |
-| `sync-passphrase-set` | invoke → handle | [main.cjs:588](../../electron/main.cjs#L588) |
-| `sync-passphrase-clear` | invoke → handle | [main.cjs:589](../../electron/main.cjs#L589) |
-| `sync-open-folder` | invoke → handle | [main.cjs:590](../../electron/main.cjs#L590) |
-| `feeds-list` | invoke → handle | [main.cjs:601](../../electron/main.cjs#L601) |
-| `feeds-add` | invoke → handle | [main.cjs:602](../../electron/main.cjs#L602) |
-| `feeds-remove` | invoke → handle | [main.cjs:609](../../electron/main.cjs#L609) |
-| `feeds-fetch` | invoke → handle | [main.cjs:610](../../electron/main.cjs#L610) |
-| `export-summary` | invoke → handle | [main.cjs:621](../../electron/main.cjs#L621) |
-| `analysis-key-status` | invoke → handle | [main.cjs:651](../../electron/main.cjs#L651) |
-| `analysis-key-set` | invoke → handle | [main.cjs:652](../../electron/main.cjs#L652) |
-| `analysis-key-clear` | invoke → handle | [main.cjs:658](../../electron/main.cjs#L658) |
-| `analysis-run` | invoke → handle | [main.cjs:659](../../electron/main.cjs#L659) |
-| `schedule-notifications` | invoke → handle | [main.cjs:664](../../electron/main.cjs#L664) |
-| `calendar-ready` | invoke → handle | [main.cjs:665](../../electron/main.cjs#L665) |
+| `update-status` | main → renderer push | [main.cjs:141](../../electron/main.cjs#L141) |
+| `open-download-page` | invoke → handle | [main.cjs:167](../../electron/main.cjs#L167) |
+| `check-for-updates` | invoke → handle | [main.cjs:179](../../electron/main.cjs#L179) |
+| `quit-and-install` | send → on | [main.cjs:180](../../electron/main.cjs#L180) |
+| `check-for-updates` | invoke → handle | [main.cjs:204](../../electron/main.cjs#L204) |
+| `quit-and-install` | send → on | [main.cjs:215](../../electron/main.cjs#L215) |
+| `set-theme` | send → on | [main.cjs:250](../../electron/main.cjs#L250) |
+| `get-app-version` | invoke → handle | [main.cjs:389](../../electron/main.cjs#L389) |
+| `show-window` | send → on | [main.cjs:395](../../electron/main.cjs#L395) |
+| `get-auto-launch` | invoke → handle | [main.cjs:408](../../electron/main.cjs#L408) |
+| `set-auto-launch` | invoke → handle | [main.cjs:418](../../electron/main.cjs#L418) |
+| `get-shortcut-status` | invoke → handle | [main.cjs:435](../../electron/main.cjs#L435) |
+| `quick-add-show` | main → renderer push | [main.cjs:492](../../electron/main.cjs#L492) |
+| `quick-add` | send → on | [main.cjs:510](../../electron/main.cjs#L510) |
+| `quick-add` | main → renderer push | [main.cjs:529](../../electron/main.cjs#L529) |
+| `calendar-action` | main → renderer push | [main.cjs:551](../../electron/main.cjs#L551) |
+| `save-daily-backup` | invoke → handle | [main.cjs:559](../../electron/main.cjs#L559) |
+| `backups-info` | invoke → handle | [main.cjs:562](../../electron/main.cjs#L562) |
+| `open-backups-folder` | invoke → handle | [main.cjs:563](../../electron/main.cjs#L563) |
+| `find-faces` | invoke → handle | [main.cjs:574](../../electron/main.cjs#L574) |
+| `sync-info` | invoke → handle | [main.cjs:584](../../electron/main.cjs#L584) |
+| `sync-read` | invoke → handle | [main.cjs:585](../../electron/main.cjs#L585) |
+| `sync-write` | invoke → handle | [main.cjs:586](../../electron/main.cjs#L586) |
+| `sync-remove-copies` | invoke → handle | [main.cjs:587](../../electron/main.cjs#L587) |
+| `sync-set-aside` | invoke → handle | [main.cjs:588](../../electron/main.cjs#L588) |
+| `sync-passphrase-get` | invoke → handle | [main.cjs:589](../../electron/main.cjs#L589) |
+| `sync-passphrase-set` | invoke → handle | [main.cjs:590](../../electron/main.cjs#L590) |
+| `sync-passphrase-clear` | invoke → handle | [main.cjs:591](../../electron/main.cjs#L591) |
+| `sync-open-folder` | invoke → handle | [main.cjs:592](../../electron/main.cjs#L592) |
+| `feeds-list` | invoke → handle | [main.cjs:603](../../electron/main.cjs#L603) |
+| `feeds-add` | invoke → handle | [main.cjs:604](../../electron/main.cjs#L604) |
+| `feeds-remove` | invoke → handle | [main.cjs:611](../../electron/main.cjs#L611) |
+| `feeds-fetch` | invoke → handle | [main.cjs:612](../../electron/main.cjs#L612) |
+| `export-summary` | invoke → handle | [main.cjs:623](../../electron/main.cjs#L623) |
+| `analysis-key-status` | invoke → handle | [main.cjs:653](../../electron/main.cjs#L653) |
+| `analysis-key-set` | invoke → handle | [main.cjs:654](../../electron/main.cjs#L654) |
+| `analysis-key-clear` | invoke → handle | [main.cjs:660](../../electron/main.cjs#L660) |
+| `analysis-run` | invoke → handle | [main.cjs:661](../../electron/main.cjs#L661) |
+| `chats-info` | invoke → handle | [main.cjs:670](../../electron/main.cjs#L670) |
+| `chats-list` | invoke → handle | [main.cjs:671](../../electron/main.cjs#L671) |
+| `chats-read` | invoke → handle | [main.cjs:672](../../electron/main.cjs#L672) |
+| `chats-open-folder` | invoke → handle | [main.cjs:673](../../electron/main.cjs#L673) |
+| `chats-changed` | main → renderer push | [main.cjs:677](../../electron/main.cjs#L677) |
+| `schedule-notifications` | invoke → handle | [main.cjs:683](../../electron/main.cjs#L683) |
+| `calendar-ready` | invoke → handle | [main.cjs:684](../../electron/main.cjs#L684) |
 
 ### Preload bridges (what the renderer can call)
 
@@ -773,16 +823,21 @@ Package: `layers-web` v1.0.35 · `src/`: 77 files, 13013 lines, 101 components, 
 | `window.layersSystem.setAnalysisKey()` | `analysis-key-set` | [preload.cjs:52](../../electron/preload.cjs#L52) |
 | `window.layersSystem.clearAnalysisKey()` | `analysis-key-clear` | [preload.cjs:53](../../electron/preload.cjs#L53) |
 | `window.layersSystem.runAnalysis()` | `analysis-run` | [preload.cjs:54](../../electron/preload.cjs#L54) |
-| `window.layersSystem.findFaces()` | `find-faces` | [preload.cjs:57](../../electron/preload.cjs#L57) |
-| `window.layersSystem.onCalendarAction()` | `calendar-action` | [preload.cjs:58](../../electron/preload.cjs#L58) |
-| `window.layersSystem.onQuickAdd()` | `quick-add` | [preload.cjs:64](../../electron/preload.cjs#L64) |
-| `window.layersQuick.submit()` | `quick-add` | [preload.cjs:74](../../electron/preload.cjs#L74) |
-| `window.layersQuick.open()` | `quick-add` | [preload.cjs:75](../../electron/preload.cjs#L75) |
-| `window.layersQuick.undo()` | `quick-add` | [preload.cjs:76](../../electron/preload.cjs#L76) |
-| `window.layersQuick.redo()` | `quick-add` | [preload.cjs:77](../../electron/preload.cjs#L77) |
-| `window.layersQuick.hide()` | `quick-add` | [preload.cjs:78](../../electron/preload.cjs#L78) |
-| `window.layersQuick.resize()` | `quick-add` | [preload.cjs:79](../../electron/preload.cjs#L79) |
-| `window.layersQuick.onShow()` | `quick-add-show` | [preload.cjs:80](../../electron/preload.cjs#L80) |
+| `window.layersSystem.getChatsInfo()` | `chats-info` | [preload.cjs:57](../../electron/preload.cjs#L57) |
+| `window.layersSystem.listChatExports()` | `chats-list` | [preload.cjs:58](../../electron/preload.cjs#L58) |
+| `window.layersSystem.readChatExport()` | `chats-read` | [preload.cjs:59](../../electron/preload.cjs#L59) |
+| `window.layersSystem.openChatsFolder()` | `chats-open-folder` | [preload.cjs:60](../../electron/preload.cjs#L60) |
+| `window.layersSystem.onChatExportsChanged()` | `chats-changed` | [preload.cjs:61](../../electron/preload.cjs#L61) |
+| `window.layersSystem.findFaces()` | `find-faces` | [preload.cjs:68](../../electron/preload.cjs#L68) |
+| `window.layersSystem.onCalendarAction()` | `calendar-action` | [preload.cjs:69](../../electron/preload.cjs#L69) |
+| `window.layersSystem.onQuickAdd()` | `quick-add` | [preload.cjs:75](../../electron/preload.cjs#L75) |
+| `window.layersQuick.submit()` | `quick-add` | [preload.cjs:85](../../electron/preload.cjs#L85) |
+| `window.layersQuick.open()` | `quick-add` | [preload.cjs:86](../../electron/preload.cjs#L86) |
+| `window.layersQuick.undo()` | `quick-add` | [preload.cjs:87](../../electron/preload.cjs#L87) |
+| `window.layersQuick.redo()` | `quick-add` | [preload.cjs:88](../../electron/preload.cjs#L88) |
+| `window.layersQuick.hide()` | `quick-add` | [preload.cjs:89](../../electron/preload.cjs#L89) |
+| `window.layersQuick.resize()` | `quick-add` | [preload.cjs:90](../../electron/preload.cjs#L90) |
+| `window.layersQuick.onShow()` | `quick-add-show` | [preload.cjs:91](../../electron/preload.cjs#L91) |
 
 ### Channel mismatches
 

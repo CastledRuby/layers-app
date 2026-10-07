@@ -52,6 +52,17 @@ contextBridge.exposeInMainWorld('layersSystem', {
   setAnalysisKey: (key) => ipcRenderer.invoke('analysis-key-set', key),
   clearAnalysisKey: () => ipcRenderer.invoke('analysis-key-clear'),
   runAnalysis: (request) => ipcRenderer.invoke('analysis-run', request),
+  // Chat exports in the Layers chats folder (chatfiles.cjs): the folder, its
+  // exports, one's chat text, opening it, and hearing when one arrives.
+  getChatsInfo: () => ipcRenderer.invoke('chats-info'),
+  listChatExports: () => ipcRenderer.invoke('chats-list'),
+  readChatExport: (name) => ipcRenderer.invoke('chats-read', name),
+  openChatsFolder: () => ipcRenderer.invoke('chats-open-folder'),
+  onChatExportsChanged: (cb) => {
+    const handler = () => cb();
+    ipcRenderer.on('chats-changed', handler);
+    return () => ipcRenderer.removeListener('chats-changed', handler);
+  },
   // Where the faces are in chosen pictures (File objects), from Windows' own
   // face detector (faces.cjs): one { width, height, faces } or null each.
   findFaces: (files) => ipcRenderer.invoke('find-faces', [...files].map(file => { try { return webUtils.getPathForFile(file) || null; } catch { return null; } })),

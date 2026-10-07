@@ -55,18 +55,31 @@ export function chatSpeakers(text) {
 // name ("Amelie R" is Amelie). You (your name, "you", "me") aren't counted.
 // Read here, on this computer; nothing is sent.
 export function detectPeople(text, people = [], yourName = '') {
-  const me = String(yourName || '').trim().toLowerCase();
-  const first = (s) => s.trim().split(/\s+/)[0].toLowerCase();
   const ids = [];
   chatSpeakers(text).forEach(speaker => {
-    const s = speaker.toLowerCase();
-    if (s === 'you' || s === 'me' || (me && (s === me || first(s) === first(me)))) return;
-    const full = people.filter(p => p.name.trim().toLowerCase() === s);
-    const byFirst = people.filter(p => first(p.name) === first(s));
-    const match = full.length === 1 ? full[0] : byFirst.length === 1 ? byFirst[0] : null;
+    if (isYou(speaker, yourName)) return;
+    const match = personNamed(speaker, people);
     if (match && !ids.includes(match.id)) ids.push(match.id);
   });
   return ids;
+}
+
+const firstName = (s) => String(s || '').trim().split(/\s+/)[0].toLowerCase();
+// Whether a name on a message is you: your name or its first part, "you", "me".
+export function isYou(name, yourName = '') {
+  const s = String(name || '').trim().toLowerCase();
+  const me = String(yourName || '').trim().toLowerCase();
+  return s === 'you' || s === 'me' || (!!me && (s === me || firstName(s) === firstName(me)));
+}
+// The person a chat name means: the same full name, or the same first name
+// when only one person has it ("Amelie R" is Amelie). Emoji and symbols
+// around it don't count. Null if it's nobody, or can't be told.
+export function personNamed(name, people = []) {
+  const s = String(name || '').replace(/[^\p{L}\p{M}\s'.-]/gu, ' ').replace(/\s+/g, ' ').trim().toLowerCase();
+  if (!s) return null;
+  const full = people.filter(p => p.name.trim().toLowerCase() === s);
+  const byFirst = people.filter(p => firstName(p.name) === firstName(s));
+  return full.length === 1 ? full[0] : byFirst.length === 1 ? byFirst[0] : null;
 }
 
 // --- What Claude is asked -------------------------------------------------------
