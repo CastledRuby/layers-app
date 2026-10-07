@@ -704,6 +704,17 @@ will be sent.
 - Only in the desktop app: the browser preview has nowhere safe for a key, so it shows
   the samples only.
 
+### Skills over time
+
+From the chats you analysed and logged (journal entries with `analysis.grading`):
+`chatTrend` ([lib/chatTrend.js](../../src/lib/chatTrend.js)) makes one point a day,
+averaging that day's analyses, with **listening** (active listening), **depth**,
+**balance** (reciprocity) and **naturalness**; with everyone, a group chat (logged once
+per person with the same scores) counts once. `ChatTrendChart` shows the latest of
+each and how it has moved since the first (`trendChange`), with a chart once there are
+two days. It's on a profile ("Your chats with …", that person's) and in Me ("Your chats
+over time", everyone's), and only appears once there's an analysed log.
+
 ### Chats from your exports
 
 Coach → Analyse a chat → **From your chats**: chats saved in the **Layers chats** folder

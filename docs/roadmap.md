@@ -225,8 +225,9 @@ You asked where an analysed chat goes, and picked these. They're released togeth
    logs ("coffee w mel fri") find them too.
 3. ✅ **What Claude has cost** (built 2026-10-07): Me → Chat analysis shows this month's
    and last month's spend, by model, counting every answer Claude gave.
-4. **Skills over time**: your listening, depth, balance and naturalness from analysed
-   chats, charted per person and in Me.
+4. ✅ **Skills over time** (built 2026-10-07): your listening, depth, balance and
+   naturalness from the chats you analysed and logged, on each profile ("Your chats with
+   …") and in Me ("Your chats over time"), with how each has moved since the first.
 5. **Chats in your week**: the Sunday week review lists chats with new conversations
    to analyse.
 
@@ -551,6 +552,12 @@ its own. Changes made while building are marked.
   box in the packaged app, with a temporary data folder as always.
 
 ## History
+
+### Skills over time (after 1.0.35, not released yet)
+
+- **Your chats with …** on a profile, and **Your chats over time** in Me: listening,
+  depth, balance and naturalness as Claude scored the chats you analysed and logged,
+  charted by day, with how each has moved since the first.
 
 ### What Claude has cost (after 1.0.35, not released yet)
 

@@ -8,6 +8,8 @@ import { ACHIEVEMENTS, FOCUS_LABELS, FOCUS_SKILL_KEY, SKILL_ORDER, SKILL_TIPS } 
 import { achievementProgress, progressText } from '../lib/achievements.js';
 import { notifySettings } from '../lib/calendar.js';
 import { analysisModel, dollarsText, spendSummary } from '../lib/analysis.js';
+import { ChatTrendChart } from '../components/ChatTrendChart.jsx';
+import { chatTrend } from '../lib/chatTrend.js';
 import { formatAbsoluteDate, formatCalendarDate, formatTime12, isJournalThisWeek, parseISODay, sortHistory } from '../lib/dates.js';
 import { updateStatusText } from '../lib/text.js';
 import { COLORS } from '../theme.js';
@@ -201,6 +203,16 @@ export function MeView({ people, journal, skills, profile, generalGoals = [], on
           <p className="text-xs mt-1.5" style={{ color: COLORS.ink }}>Your skills start at 0% and grow as you log conversations. When you log one, tick what you practised, like asking follow-up questions, and your strengths and next focus will show up here.</p>
         </div>
       )}
+
+      {(() => {
+        const points = chatTrend(journal);
+        return points.length > 0 && (
+          <div className="mt-7">
+            <p className="font-display mb-3" style={{ fontSize: 18, color: COLORS.ink }}>Your chats over time</p>
+            <ChatTrendChart points={points} label="Skills from analysed chats" />
+          </div>
+        );
+      })()}
 
       <div className="mt-7">
         <p className="font-display" style={{ fontSize: 18, color: COLORS.ink }}>Progress history</p>

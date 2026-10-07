@@ -119,6 +119,9 @@ interact.
 - `keys2.test.jsx` covers the second live test's keys: N into a note box and Esc out
   (the quick log, Add detail, editing a journal entry), Redo with Ctrl+Y and
   Ctrl+Shift+Z (and not once something else changed), and Ctrl+K's O, L, P and R.
+- `chatTrend.test.jsx` covers skills over time: on a profile with analysed chats (not
+  one without) and in Me, the latest scores and how they've moved. `src/chatTrend.test.js`
+  covers the points (a day's averaged, a group chat once with everyone) and the change.
 - `nicknames.test.jsx` covers nicknames: added when editing someone, shown on the
   profile, and a chat signed with one going to them with the nickname hidden.
   `src/nicknames.test.js` covers keeping them tidy and finding someone by one in chat

@@ -3,6 +3,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { ChevronLeft, FileText, Pencil, Plus, X } from 'lucide-react';
 import { ActivityCalendar } from '../components/ActivityCalendar.jsx';
+import { ChatTrendChart } from '../components/ChatTrendChart.jsx';
+import { chatTrend } from '../lib/chatTrend.js';
 import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { Sheet } from '../components/Sheet.jsx';
 import { Avatar, CircularProgress, LabeledBar, LayerBadge, Timeline } from '../components/atoms.jsx';
@@ -295,6 +297,16 @@ export function PersonProfile({ today, person, journal, onBack, onOpenLog, onOpe
         <ActivityCalendar journal={journal.filter(j => j.personId === person.id)} today={today} color={l.color} label={`Activity with ${person.name}`}
           onPickDay={onShowDayLogs ? (day) => onShowDayLogs(person.id, day) : undefined} />
       </div>
+
+      {(() => {
+        const points = chatTrend(journal, person.id);
+        return points.length > 0 && (
+          <div className="mt-2 mb-6">
+            <p className="font-display mb-3" style={{ fontSize: 18, color: COLORS.ink }}>Your chats with {person.name}</p>
+            <ChatTrendChart points={points} label={`Skills from analysed chats with ${person.name}`} />
+          </div>
+        );
+      })()}
 
       <div className="mt-2">
         <p className="font-display" style={{ fontSize: 18, color: COLORS.ink }}>Progress</p>
