@@ -1,0 +1,8 @@
+{
+  "appId": "com.castledruby.layers",
+  "appName": "Layers",
+  "webDir": "dist-local",
+  "ios": {
+    "contentInset": "never"
+  }
+}

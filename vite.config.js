@@ -10,7 +10,7 @@ import { configDefaults } from 'vitest/config'
 // globs treat as syntax, and a bare '**/.claude/**' would match every file
 // when the project is itself a worktree under .claude/.
 const root = normalizePath(fileURLToPath(new URL('.', import.meta.url))).toLowerCase()
-const unwatched = ['release', 'dist-local', 'dist', 'dist-e2e', 'dist-install', '.claude'].map(dir => `${root}${dir}`)
+const unwatched = ['release', 'dist-local', 'dist', 'dist-e2e', 'dist-install', '.claude', 'ios'].map(dir => `${root}${dir}`)
 const isUnwatched = (path) => {
   const p = normalizePath(path).toLowerCase()
   return unwatched.some(dir => p === dir || p.startsWith(`${dir}/`))

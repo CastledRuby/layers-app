@@ -1,0 +1,48 @@
+# The iPhone app (Capacitor, ios/), built for the iPhone simulator on
+# GitHub's Macs after each push that touches it, so it's checked without a
+# Mac or an Apple account (the repository is public, so these Macs are free).
+# Putting it on a real iPhone (TestFlight) needs signing with the Apple
+# Developer account, which comes later. See docs/build-and-release.md.
+name: iPhone build
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'src/**'
+      - 'public/**'
+      - 'index.html'
+      - 'ios/**'
+      - 'capacitor.config.json'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'vite.config.local.js'
+      - '.github/workflows/ios.yml'
+  workflow_dispatch:
+
+jobs:
+  simulator:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      # No install scripts: they'd download Electron, which the phone doesn't need.
+      - run: npm ci --ignore-scripts
+      - name: Build the page
+        run: npm run build:local
+      - name: Copy it into the iPhone project
+        run: npx cap sync ios
+      - name: Build for the iPhone simulator
+        working-directory: ios/App
+        run: >
+          xcodebuild -project App.xcodeproj -scheme App -configuration Debug
+          -sdk iphonesimulator -destination 'generic/platform=iOS Simulator'
+          -derivedDataPath build CODE_SIGNING_ALLOWED=NO build
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Layers-iPhone-simulator
+          path: ios/App/build/Build/Products/Debug-iphonesimulator/App.app
+          if-no-files-found: error

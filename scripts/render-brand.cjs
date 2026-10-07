@@ -13,6 +13,9 @@
 //   electron/tray-icon-dark@2x.png
 //   electron/installer-sidebar.bmp 164 x 314, the installer's side panel
 //   public/icon.svg                the web favicon (a copy of the icon drawing)
+//   ios/App/App/Assets.xcassets/AppIcon.appiconset/AppIcon-512@2x.png
+//                                  the iPhone app's icon: 1024 px, square
+//                                  (iOS rounds the corners itself)
 const { app, BrowserWindow } = require('electron');
 const fs = require('fs');
 const path = require('path');
@@ -91,6 +94,8 @@ app.whenReady().then(async () => {
   const icon = brand('icon');
   const small = brand('icon-small');
   fs.writeFileSync(out('electron/icon.png'), await png(icon, 256));
+  const iosIcon = out('ios/App/App/Assets.xcassets/AppIcon.appiconset/AppIcon-512@2x.png');
+  if (fs.existsSync(path.dirname(iosIcon))) fs.writeFileSync(iosIcon, await png(icon.replace('rx="56"', 'rx="0"'), 1024));
   const sizes = [16, 24, 32, 48, 64, 128, 256];
   const images = [];
   for (const size of sizes) images.push({ size, png: await png(size <= 32 ? small : icon, size) });

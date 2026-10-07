@@ -149,6 +149,32 @@ App Control is ever turned on again, it fails at the install
 `%APPDATA%\layers-web\Local Storage` with the backup's `Local Storage` folder, then
 start Layers.
 
+## The iPhone app (built on GitHub, no Apple account yet)
+
+Step 2 of [Layers on your phone](roadmap.md#proposal-layers-on-your-phone-2026-10-06):
+the same page, wrapped as an iPhone app with **Capacitor** (8.5, devDependencies, so
+nothing changes in the Windows app).
+
+- [`capacitor.config.json`](../capacitor.config.json): the app id
+  `com.castledruby.layers`, the name **Layers**, and `webDir: dist-local`, the same
+  single-file build Electron uses. `contentInset: never` lets the page reach the screen's
+  edges; the CSS keeps clear of the notch and home bar
+  ([ui-system.md](renderer/ui-system.md#touch-screens)).
+- [`ios/`](../ios/): the Xcode project `npx cap add ios --packagemanager SPM` made (Swift
+  Package Manager, so no CocoaPods). Its copy of the page (`ios/App/App/public`) is
+  git-ignored; `npx cap sync ios` after `npm run build:local` puts it there. The icon,
+  `AppIcon-512@2x.png`, is the rings drawn square at 1024 px by `npm run brand:render`.
+- [`.github/workflows/ios.yml`](../.github/workflows/ios.yml): after a push to `main`
+  that touches the page or the project, GitHub's Macs build it for the **iPhone
+  simulator** (`xcodebuild ... CODE_SIGNING_ALLOWED=NO`) and keep the `.app` as the run's
+  artifact. The repository is public, so they're free. Without a Mac, that's how it's
+  checked.
+- On the phone the page runs without Electron's bridge, as in a browser: saved in the
+  app's own storage, no Windows notifications or sync yet. Those come with the next steps.
+- **Not yet**: putting it on a real iPhone (TestFlight) needs signing with the Apple
+  Developer account (US$99 a year). With it, the workflow gets a signing step and uploads
+  to TestFlight.
+
 ## "Is my installed app actually running the new code?"
 
 Me shows the installed version. `v1.0.28+local.abc1234` means it was built from commit

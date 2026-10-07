@@ -183,7 +183,7 @@ comes back to you first.
      PCs; the phone joins later.
    - ✅ **Every screen by touch** (built 2026-10-07): at phone size, everything works by tapping, with
      nothing that needs a keyboard or a hover. The keys stay for the laptop.
-   - **The iPhone project** (Capacitor) and a **GitHub build** that compiles it for the
+   - ✅ **The iPhone project** (Capacitor) and a **GitHub build** (built 2026-10-07) that compiles it for the
      iPhone simulator, pushed to GitHub after the release (the repository is public,
      so GitHub's Macs are free; your data never goes there).
 3. ✅ **Housekeeping**: the stale-build guard, and more suggestion tones in Analyse.
@@ -526,6 +526,13 @@ its own. Changes made while building are marked.
   box in the packaged app, with a temporary data folder as always.
 
 ## History
+
+### The iPhone project (after 1.0.33, not released yet)
+
+Layers now has an iPhone app project: the same Layers, wrapped with Capacitor, with the
+rings as its icon. GitHub's Macs build it for the iPhone simulator after each change, so
+it's checked without a Mac. Putting it on your phone waits for the Apple Developer
+account. See [build-and-release.md](build-and-release.md#the-iphone-app-built-on-github-no-apple-account-yet).
 
 ### Housekeeping (after 1.0.33, not released yet)
 
