@@ -14,14 +14,13 @@ import { Avatar, KeyedField, Kbd } from '../components/atoms.jsx';
 import { DateDropdown } from '../components/pickers.jsx';
 import { PeopleGrid } from '../components/PersonPick.jsx';
 import { usePeopleKeys } from '../components/peopleKeys.js';
-import { categoryMeta, DIM_ORDER, getLayer, NOTE_TEMPLATE_CATEGORY, TYPE_META, TYPE_ORDER } from '../data/constants.js';
+import { activityTemplatesFor, categoryMeta, DIM_ORDER, getLayer, ML_LABELS, NOTE_TEMPLATE_CATEGORY, TYPE_META, TYPE_ORDER } from '../data/constants.js';
 import { parseISODay } from '../lib/dates.js';
 import { GoalsSheet, ListeningSheet, NewInfoSheet, RateSheet, ReflectionSheet } from './LogDetailSheets.jsx';
 import { QuickGoalSheet } from './QuickGoalSheet.jsx';
 import { TemplatePickerModal } from './TemplatePickerModal.jsx';
 import { COLORS } from '../theme.js';
 
-const ML_LABELS = ['Very brief', 'Casual', 'Good conversation', 'Personal', 'Deep conversation'];
 
 // Step order, so moving forward slides in from the right and back from the left.
 const STEP_ORDER = ['kind', 'type', 'who', 'details'];
@@ -105,9 +104,9 @@ export function LogInteractionModal({ people, defaultPersonId, prefill, onClose,
   function pickType(key) { setType(key); go('who'); }
   const canSave = personIds.length > 0 && type;
   const loggedPeople = personIds.map(id => people.find(p => p.id === id)).filter(Boolean);
-  // Topics picked with "+ Add detail" are also saved on the person's profile
-  // (NOTE_TEMPLATE_CATEGORY says where) when the log is with one person; a
-  // group log keeps them in its note only. They used to reach only the note.
+  // "+ Add detail" picks what you did together, which stays in the note
+  // (cat 'activity'). A tag with a NOTE_TEMPLATES topic would be saved on the
+  // person's profile too (NOTE_TEMPLATE_CATEGORY says where), with one person.
   const profileNotes = personIds.length === 1
     ? quickNoteTags.filter(t => NOTE_TEMPLATE_CATEGORY[t.cat]).map(t => ({ category: NOTE_TEMPLATE_CATEGORY[t.cat], text: t.text, emoji: t.emoji }))
     : [];
@@ -255,7 +254,7 @@ export function LogInteractionModal({ people, defaultPersonId, prefill, onClose,
               <button type="button" onClick={() => setNoteTemplatesOpen(true)} className="chip" style={{ padding: '4px 6px 4px 10px' }}><Plus size={13} color={COLORS.accent} />Add detail<Kbd>D</Kbd></button>
             }>Quick note {optional}</SectionLabel>
             {noteTemplatesOpen && (
-              <TemplatePickerModal title="Add detail" onClose={() => setNoteTemplatesOpen(false)} onPick={(text, emoji, cat) => setQuickNoteTags(prev => [...prev, { text, emoji, cat }])} />
+              <TemplatePickerModal title="Add detail" subtitle="What did you do together?" templates={activityTemplatesFor(type)} onClose={() => setNoteTemplatesOpen(false)} onPick={(text, emoji) => setQuickNoteTags(prev => [...prev, { text, emoji, cat: 'activity' }])} />
             )}
             {quickNoteTags.length > 0 && (
               <div className="flex items-center gap-1.5 flex-wrap mb-2.5">

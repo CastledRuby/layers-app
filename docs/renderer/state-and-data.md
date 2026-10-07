@@ -298,13 +298,13 @@ Then:
    one dimension (`GOAL_PRESET_DIM`: "Have deeper conversations" and depth, "Spend more
    time together" and shared experiences, ...) uses that dimension's rating instead when
    it was rated (`goalBumpFor`).
-5. Topics picked with "+ Add detail" are saved to the profile, but only when the log is
-   with one person; a group log keeps them in its note. `NOTE_TEMPLATE_CATEGORY` in
-   [`data/constants.js`](../../src/data/constants.js) says where each template category
-   goes: hobby-type topics become `interests`, and school/work and life topics become
-   temporary `important` items, which Prepare turns into "ask how it went". Custom text
-   stays in the note. More details' "Something new about …?" is saved the same way,
-   into the category you picked (one-person logs only). A topic that's already saved
+5. "+ Add detail" is what you did together (`ACTIVITY_TEMPLATES` in
+   [`data/constants.js`](../../src/data/constants.js): food and drink, out and about,
+   fun, sport, school and work, talking, online and phone, helping; talking and online
+   first for a message or call). It goes in the log's note only, never on the profile.
+   (Until 2026-10-07 it offered interest topics, `NOTE_TEMPLATES`, which were filed on
+   the profile.) What you learned about someone is More details' "Something new about
+   …?", saved into the category you picked (one-person logs only). A topic that's already saved
    (same text, ignoring case) gets its `at` refreshed and leaves the archive, rather than
    being added twice (`addNotes` in `App.jsx`).
 6. A journal entry is prepended, with `ratings` and `reflection` when they're given.
@@ -626,25 +626,52 @@ Windows ([electron.md](../electron.md)); the page gets the files.
 
 ### Analysing your own chat
 
-Coach → Analyse a chat → **Analyse your own chat**: a pasted chat, screenshots (up to
-six), or both, read by **Claude Haiku 4.5**. It needs your own Anthropic API key, added
+Coach → Analyse a chat → **Analyse your own chat**: a pasted chat (or, on a phone or
+tablet, screenshots too, up to six), read by **Claude Haiku 4.5**. On the laptop the card
+only takes pasted text: screenshots are for the phone, and text is cheaper. It needs your own Anthropic API key, added
 in Me (**Chat analysis**) and kept by the main process ([electron.md](../electron.md)).
 Nothing is sent until you press **Analyse with Claude**, and the card says each time what
 will be sent.
 
+- **Who it's with** (the card's **With** row): the person picked, until a pasted chat
+  says otherwise. `detectPeople` reads the names its messages are signed with ("Amelie:
+  hi", and WhatsApp's "[6/10/26, 9:41 pm] Amelie: hi" or "6/10/26, 9:41 pm - Amelie:
+  hi"), matches them to your people (full name, or a first name only one person has;
+  your own name, "you" and "me" are you) and puts them in the row, "from the names in
+  the chat". Several names make it a group chat. **Someone else** adds a person by hand,
+  and × takes one out; once you've chosen, pasting doesn't change it. This runs on the
+  computer; nothing is sent to find out.
 - **What's sent** (`analysisRequest`, [lib/analysis.js](../../src/lib/analysis.js)): the
   screenshots, shrunk to at most 1568 px (`shrinkForAnalysis`), and the pasted text with
-  their name and yours replaced by `[them]` and `[you]` (`hideNames`: the full name
-  and each part of it, whole words only, any case). Of the person, only their layer is
-  sent, so the advice fits how close you are. Screenshots go as they are, so a name in
-  one is seen; Claude is told to call them only `[them]`.
-- **The answer** is JSON kept to `ANALYSIS_SCHEMA` by structured outputs, then checked
-  by `analysisResult`: their first name is put back for `[them]` and "you" for `[you]`,
-  scores clamped (0–100, goal impact 0–15), an unknown state becomes `unclear`, info in
-  an unknown category is dropped. It has the same shape as a sample in
-  `data/scenarios.js`, so Coach shows both the same way, and saving info and logging
-  work as for a sample. Each analysis is its own session (`own:<n>`), and an answer that
-  arrives after you've moved to someone else is dropped.
+  their name and yours replaced by tags (`hideNames`: the full name and each part of it,
+  whole words only, any case): `[them]` for one person, `[them 1]`, `[them 2]`… in a
+  group, and `[you]`. Of each person, only their layer is sent, so the advice fits how
+  close you are, plus today's date (so "Yesterday 9:41 pm" can be dated) and whether
+  this computer writes dates day first. Screenshots go as they are, so a name in one is
+  seen; Claude is told to use only the tags.
+- **What Claude is asked** (`analysisSystem`): what to look for before scoring (depth,
+  and whether openings were met; listening: follow-ups, coming back to details, naming
+  feelings, shift responses and missed bids; reciprocity: who asks, shares and starts
+  topics, and message lengths; naturalness: matching their energy and style; and their
+  engagement: replies getting longer or shorter, asking back, reply times), what the
+  scores mean (50 an ordinary chat, 70 good, 85 excellent; brevity that suits the moment
+  isn't punished), and what to write, each part pointing at specific messages. The
+  schema (`analysisSchema`) puts the reading before the scores.
+- **The answer** is JSON kept to the schema by structured outputs, then checked by
+  `analysisResult`: first names put back for the tags and "you" for `[you]`, scores
+  clamped, an unknown state becomes `unclear`, info in an unknown category or already on
+  their profile is dropped, and each detail and group-chat message is given its person.
+  It has the same shape as a sample in `data/scenarios.js`, so Coach shows both the same
+  way. Each analysis is its own session (`own:<n>:<model>`), and an answer that arrives
+  after you've moved to someone else is dropped.
+- **The log** (the result's **Log it** card): Claude fills it in on the log's own scales,
+  and **Log this chat** saves it through `handleLogSubmit` like any log: type Messaged,
+  everyone in the chat, how meaningful (1–5), the six "Rate each part" ratings (so each
+  dimension moves by its rating), the active-listening behaviours you clearly showed,
+  and a short note. It's dated from the chat's timestamps when it has them (the last
+  message's day; not in the future or more than a year back), otherwise today, and the
+  date can be changed. The entry keeps `analysis` (grading, state, model). The sample
+  chats still log the old way (`handleLogFromAnalysis`, type `analysed`).
 - **Nothing about it is saved** except what you choose: info you Save, and the log.
   The chat itself, the screenshots and Claude's answer are gone once you leave.
 - **Which model** (`ANALYSIS_MODELS`): **Claude Haiku 4.5**, the cheapest, unless you
@@ -654,7 +681,8 @@ will be sent.
   that chat to another one in a click; each model's answer is kept for that chat, so going
   back to one shows it again without asking again, and the chat is logged only once.
 - **Cost**: about US$0.02 a chat with Haiku, up to about US$0.35 with Fable, from your
-  Anthropic credit. The card says roughly what one costs (`typicalCost`), and the result
+  Anthropic credit. Most of it is Claude's written answer; pasted text costs a fraction of
+  a cent, and each screenshot about US$0.0015 with Haiku. The card says roughly what one costs (`typicalCost`), and the result
   what this one did (`analysisCost`, from the tokens used, thinking included, at each
   model's price).
 - Only in the desktop app: the browser preview has nowhere safe for a key, so it shows

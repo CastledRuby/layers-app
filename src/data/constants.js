@@ -102,11 +102,31 @@ export const NOTE_TEMPLATES = [
   { key: 'life', label: 'Life stuff', emoji: '🌱', items: ['Family', 'A pet', 'Moving house', 'A trip/holiday', 'A relationship', 'Feeling stressed', 'Feeling excited', 'A health thing', 'A celebration', 'A tough week'] },
 ];
 
-// Where a topic picked with "+ Add detail" while logging is saved on the
-// person's profile (only when the log is with one person; a group log keeps
-// topics in its note). Hobby-type topics are interests; school/work and life
-// topics ("An exam", "Moving house") are temporary "Important" items, which
-// Prepare turns into "ask how it went". Custom text stays in the note only.
+// "+ Add detail" while logging: what you actually did together, so a log
+// says what happened ("Got coffee", "Studied together"). They go in the
+// log's note only; what you learned about someone is "Something new".
+export const ACTIVITY_TEMPLATES = [
+  { key: 'food', label: 'Food and drink', emoji: '🍜', items: ['Got coffee', 'Got bubble tea', 'Had lunch', 'Had dinner', 'Got takeaways', 'Got dessert', 'Cooked together', 'Baked together', 'Had a picnic'] },
+  { key: 'out', label: 'Out and about', emoji: '🚶', items: ['Went for a walk', 'Went to the beach', 'Went to the park', 'Went shopping', 'Went into town', 'Went for a drive', 'Took the bus or train together', 'Went to the library', 'Explored somewhere new'] },
+  { key: 'fun', label: 'Fun', emoji: '🎉', items: ['Watched a movie', 'Went to the cinema', 'Watched a show', 'Played video games', 'Played a board game', 'Played cards', 'Went to a concert', 'Went to a party', 'Went to an event'] },
+  { key: 'active', label: 'Sport and active', emoji: '⚽', items: ['Went to the gym', 'Played sport', 'Went for a run', 'Went swimming', 'Went for a bike ride', 'Went for a hike', 'Went to a game'] },
+  { key: 'study', label: 'School and work', emoji: '📚', items: ['Studied together', 'Did homework together', 'Worked on a project', 'Had lunch at school', 'Sat together in class', 'Walked to or from school', 'Worked a shift together'] },
+  { key: 'talk', label: 'Talking', emoji: '💬', items: ['Caught up', 'Had a deep chat', 'Talked about how they’re going', 'Talked about how I’m going', 'Vented to each other', 'Gave advice', 'Got advice', 'Made plans', 'Laughed a lot', 'Sorted out a disagreement'] },
+  { key: 'online', label: 'Online and phone', emoji: '📱', items: ['Texted back and forth', 'Sent memes', 'Voice call', 'Video call', 'Gamed online', 'Watched something together online', 'Shared music'] },
+  { key: 'helping', label: 'Helping and celebrating', emoji: '🤝', items: ['Helped them with something', 'They helped me', 'Gave them a lift', 'Celebrated something', 'Gave a gift', 'Supported them through something'] },
+];
+// For a message or a call, talking and online come first.
+export function activityTemplatesFor(type) {
+  if (type !== 'messaged' && type !== 'called') return ACTIVITY_TEMPLATES;
+  const first = ['online', 'talk'];
+  return [...first.map(k => ACTIVITY_TEMPLATES.find(c => c.key === k)), ...ACTIVITY_TEMPLATES.filter(c => !first.includes(c.key))];
+}
+
+// Where a topic from NOTE_TEMPLATES is saved on a person's profile. (Logs
+// before 2026-10-07 picked these with "+ Add detail"; it's activities now,
+// which stay in the note.) Hobby-type topics are interests; school/work and
+// life topics ("An exam", "Moving house") are temporary "Important" items,
+// which Prepare turns into "ask how it went".
 export const NOTE_TEMPLATE_CATEGORY = {
   sports: 'interests', videogames: 'interests', boardgames: 'interests', music: 'interests',
   movies: 'interests', shows: 'interests', hobbies: 'interests', clubs: 'interests',
@@ -178,6 +198,9 @@ export const REFLECTION_TEMPLATES = {
 // The log's More details rates each dimension 1-5 with these questions
 // (keyboard: type a number per row). A rating drives that dimension's growth
 // instead of the overall "How meaningful" score (lib/progress.js dimBumps).
+// "How meaningful was it?", 1 to 5.
+export const ML_LABELS = ['Very brief', 'Casual', 'Good conversation', 'Personal', 'Deep conversation'];
+
 export const DIM_QUESTIONS = {
   depth: 'How deep did it go?',
   trust: 'How much trust was there?',

@@ -9,7 +9,7 @@ import { BottomNav } from './components/BottomNav.jsx';
 import { ErrorBoundary } from './components/ErrorBoundary.jsx';
 import { PageTransition } from './components/PageTransition.jsx';
 import { hasOpenSheet, isTyping, SheetLayerContext, topSheet } from './components/sheetLayer.js';
-import { ACHIEVEMENTS, categoryMeta, DIM_LABELS, DIM_ORDER, getLayer, TABS } from './data/constants.js';
+import { ACHIEVEMENTS, ACTIVITY_TEMPLATES, categoryMeta, DIM_LABELS, DIM_ORDER, getLayer, TABS } from './data/constants.js';
 import { EMPTY_SKILLS, INITIAL_GENERAL_GOALS, INITIAL_JOURNAL, INITIAL_PEOPLE, INITIAL_SKILLS } from './data/seed.js';
 import { backfillJournalDates, backfillPeopleDates, backfillSkillDates, formatAbsoluteDate, formatCalendarDate, formatWeekdays, parseISODay, pushHistoryPoint, toISODate } from './lib/dates.js';
 import { achievementProgress, newlyUnlocked } from './lib/achievements.js';
@@ -735,7 +735,7 @@ function LayersApp() {
   // rating per dimension, each driving that dimension's growth), `goalIds`
   // (only these goals move; undefined means all of each person's active
   // goals) and a `reflection`.
-  function handleLogSubmit({ personIds, type, meaningfulness, notes, activeListening, summary, pickedDate, ratings = {}, goalIds, reflection }) {
+  function handleLogSubmit({ personIds, type, meaningfulness, notes, activeListening, summary, pickedDate, ratings = {}, goalIds, reflection, analysis }) {
     const snap = snapshot();
     const rated = DIM_ORDER.filter(k => ratings[k]);
     const pd = pickedDate || new Date();
@@ -794,7 +794,7 @@ function LayersApp() {
     setPeople(nextPeople);
     setGeneralGoals(prev => advanceSkillGoals(prev, raised));
     setJournal(prev => [
-      ...personIds.map(personId => ({ id: uid(), personId, at: chartAt, type, meaningfulness, added: notes.map(n => n.text), activeListening, ...(summary ? { summary } : {}), ...(moved[personId] && moved[personId].length ? { goalIds: moved[personId] } : {}), ...(rated.length ? { ratings: Object.fromEntries(rated.map(k => [k, ratings[k]])) } : {}), ...(reflection ? { reflection } : {}) })),
+      ...personIds.map(personId => ({ id: uid(), personId, at: chartAt, type, meaningfulness, added: notes.map(n => n.text), activeListening, ...(summary ? { summary } : {}), ...(moved[personId] && moved[personId].length ? { goalIds: moved[personId] } : {}), ...(rated.length ? { ratings: Object.fromEntries(rated.map(k => [k, ratings[k]])) } : {}), ...(reflection ? { reflection } : {}), ...(analysis ? { analysis } : {}) })),
       ...prev,
     ]);
     setSkills(nextSkills);
@@ -1446,6 +1446,7 @@ function LayersApp() {
                         {activeTab === 'today' && <TodayView wide={wide} today={today} selectedDay={selectedDay || today} onSelectDay={(d) => setSelectedDay(d === today ? null : d)} mode={calendarMode} onSetMode={setCalendarMode} people={people} journal={journal} events={shownEvents} generalGoals={generalGoals} skills={skills} profile={profile} onPlan={openPlan} onOpenEvent={(eventId, day) => setEventView({ eventId, day })} onLogEvent={openLogFromEvent} onTickEvent={(ev, day) => handleMarkEventDone(ev.id, day)} onMissEvent={(ev, day) => handleMarkEventMissed(ev.id, day)} onOpenPerson={openPerson} onAddPerson={() => setAddPersonOpen(true)} onOpenLog={() => openLog(null)} onSwitchTab={switchTab} onOpenGoals={openGoalsOverview} onOpenReview={setWeekReview} onOpenDay={setDayView} onOpenJump={() => { setJumpOpen(true); markTried('jump'); }} onHideFirstSteps={() => setProfile(p => ({ ...p, gettingStartedHidden: true }))} />}
                         {activeTab === 'people' && <PeopleView people={people} journal={journal} onOpenPerson={openPerson} onAddPerson={() => setAddPersonOpen(true)} onAddPhotos={() => setPhotoFolderOpen(true)} />}
                         {activeTab === 'coach' && <div className="page-col"><CoachView people={people} journal={journal} initialPersonId={coachInit.personId} initialTab={coachInit.tab} onOpenLog={openLog} onApproveInfo={handleApproveInfo} onLogFromAnalysis={handleLogFromAnalysis} onOpenPerson={openPerson}
+                          onLogChat={(l) => handleLogSubmit({ personIds: l.personIds.filter(id => people.some(p => p.id === id)), type: 'messaged', meaningfulness: l.meaningfulness, notes: [], activeListening: l.activeListening, summary: l.summary || undefined, pickedDate: l.date, ratings: l.ratings, analysis: l.analysis })}
                           analysisReady={!analysisBridge ? 'none' : hasAnalysisKey ? 'ready' : 'no-key'} onAnalyse={(request) => analysisBridge.runAnalysis(request)} onOpenMe={() => switchTab('me')} yourName={profile.name}
                           model={analysisModelId} onModel={setAnalysisModelId} /></div>}
                         {activeTab === 'journal' && <div className="page-col"><JournalView today={today} people={people} generalGoals={generalGoals} journal={journal} goalFilter={journalGoal} onGoalFilter={setJournalGoal}
@@ -1519,6 +1520,7 @@ function LayersApp() {
             {standaloneDetailOpen && (
               <TemplatePickerModal
                 title="Add detail"
+                templates={ACTIVITY_TEMPLATES}
                 subtitle="Not currently logging anything — picking an item here copies it to your clipboard."
                 onClose={() => setStandaloneDetailOpen(false)}
                 onPick={(item) => {

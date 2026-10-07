@@ -6,6 +6,7 @@
 // is stood in for; jsdom can't decode pictures, so lib/photo.js is too.
 import { screen, waitFor, within } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { toISODate } from '../../src/lib/dates.js';
 import { confirmDialog, nav, person, relaunch, renderApp, savedPerson, savedState, seedState, toasts } from './harness.jsx';
 
 vi.mock('../../src/lib/photo.js', () => ({
@@ -17,11 +18,12 @@ vi.mock('../../src/lib/photo.js', () => ({
 }));
 
 const KEY = 'sk-ant-api03-abcdefghijklmnopqrstuvwxyz_0123456789';
+const YESTERDAY = toISODate(new Date(Date.now() - 24 * 3600 * 1000));
 const ANSWER = {
   transcript: [{ who: 'them', text: 'I got the job!!' }, { who: 'you', text: 'No way [them], congrats!' }],
   conversationState: 'engaged',
   recommendation: null,
-  grading: { overall: 80, depth: 70, activeListening: 84, reciprocity: 56, naturalness: 75, goalImpact: 7 },
+  grading: { overall: 80, depth: 70, activeListening: 84, reciprocity: 56, naturalness: 75 },
   wentWell: ['You celebrated [them] straight away'],
   opportunity: 'Ask what [them] is looking forward to.',
   tryNextTime: 'Share a first-day story of your own.',
@@ -29,7 +31,12 @@ const ANSWER = {
   emotionalCues: [{ emoji: '🎉', text: 'Excited and proud' }],
   extractedInfo: [{ category: 'experiences', text: '[them] got a new job at the library', temporary: false }],
   next: { continueTopic: { text: 'Ask about the new job', natural: 'When do you start?', playful: 'Librarian era!', deeper: 'What made you go for it?' }, shareYourself: null, changeTopic: null, dontMessage: null },
+  log: { meaningfulness: 4, ratings: { depth: 3, trust: 4, reciprocity: 3, interaction: 5, sharedExperiences: 1, listening: 4 }, activeListening: ['followup'], summary: 'Her new job at the library', chatDate: YESTERDAY },
 };
+// A phone or tablet: screenshots are offered there.
+function touchScreen() {
+  window.matchMedia = (query) => ({ matches: query.includes('pointer: coarse'), media: query, addEventListener() {}, removeEventListener() {} });
+}
 
 function fakeBridge({ hasKey = false, answer = { result: ANSWER, usage: { input: 9000, output: 4000 } } } = {}) {
   const b = {
@@ -44,7 +51,7 @@ function fakeBridge({ hasKey = false, answer = { result: ANSWER, usage: { input:
   window.layersSystem = b;
   return b;
 }
-afterEach(() => { delete window.layersSystem; });
+afterEach(() => { delete window.layersSystem; delete window.matchMedia; });
 
 async function openAnalyse(user, name) {
   await user.click(nav('Coach'));
@@ -106,16 +113,40 @@ describe('chat analysis with Claude', () => {
 
     await user.click(screen.getByRole('button', { name: 'Save' }));
     expect(savedPerson('Priya Shah').experiences[0].text).toBe('Priya got a new job at the library');
-    await user.click(screen.getByRole('button', { name: 'Log this as an interaction' }));
-    expect(savedState().journal).toHaveLength(1);
-    expect(screen.queryByRole('button', { name: 'Log this as an interaction' })).toBeNull();
+
+    // The log, filled in by Claude on Layers' own scales, on the chat's day.
+    const log = () => screen.getByLabelText('Log it');
+    expect(within(log()).getByText(/Messaged Priya Shah · Personal \(4 of 5\)/)).toBeTruthy();
+    expect(within(log()).getByText("from the chat's times")).toBeTruthy();
+    expect(within(log()).getByText('Depth 3 · Trust 4 · Reciprocity 3 · Interaction 5 · Shared experiences 1 · Listening / connection 4')).toBeTruthy();
+    expect(within(log()).getByText(/Asked follow-up questions/)).toBeTruthy();
+    await user.click(within(log()).getByRole('button', { name: 'Log this chat' }));
+    expect(savedState().journal).toEqual([expect.objectContaining({
+      type: 'messaged', at: YESTERDAY, meaningfulness: 4, summary: 'Her new job at the library', activeListening: ['followup'],
+      ratings: { depth: 3, trust: 4, reciprocity: 3, interaction: 5, sharedExperiences: 1, listening: 4 },
+      analysis: { grading: expect.objectContaining({ overall: 80 }), conversationState: 'engaged', model: 'claude-haiku-4-5' },
+    })]);
+    expect(toasts()).toContain('Logged time with Priya Shah');
+    expect(within(log()).queryByRole('button', { name: 'Log this chat' })).toBeNull();
 
     // Another chat starts empty, as its own session.
     await user.click(screen.getByRole('button', { name: '← Analyse another chat' }));
     expect(within(own()).getByLabelText('The chat').value).toBe('');
   });
 
-  it('sends screenshots too, six at most, and each can be taken out first', async () => {
+  it("on a laptop it's for pasting: no screenshots", async () => {
+    fakeBridge({ hasKey: true });
+    seedState({ people: [person('Priya Shah')] });
+    const { user } = renderApp();
+    await openAnalyse(user, 'Priya');
+    const own = screen.getByLabelText('Your own chat');
+    expect(within(own).queryByLabelText('Add screenshots')).toBeNull();
+    expect(within(own).queryByRole('button', { name: /Screenshots/ })).toBeNull();
+    expect(within(own).queryByText(/screenshots go as they are/)).toBeNull();
+  });
+
+  it('on a phone, sends screenshots too, six at most, and each can be taken out first', async () => {
+    touchScreen();
     const bridge = fakeBridge({ hasKey: true });
     seedState({ people: [person('Priya Shah')] });
     const { user } = renderApp();
@@ -197,9 +228,9 @@ describe('chat analysis with Claude', () => {
     expect(screen.getByText('From claude-opus-5-5')).toBeTruthy();
     expect(bridge.runAnalysis).toHaveBeenCalledTimes(2);
     // One chat is logged once, whichever answer it's logged from.
-    await user.click(screen.getByRole('button', { name: 'Log this as an interaction' }));
+    await user.click(screen.getByRole('button', { name: 'Log this chat' }));
     await user.click(again().getByRole('button', { name: /Sonnet 5\.5/ }));
-    expect(screen.queryByRole('button', { name: 'Log this as an interaction' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Log this chat' })).toBeNull();
     expect(savedState().journal).toHaveLength(1);
 
     // Started again, it's the cheapest again.
@@ -220,6 +251,64 @@ describe('chat analysis with Claude', () => {
     await user.click(within(screen.getByRole('group', { name: 'The same chat with' })).getByRole('button', { name: /Fable 5\.1/ }));
     expect((await screen.findByRole('alert')).textContent).toMatch(/credit has run out/);
     expect(screen.getByText(/Read by Claude Haiku 4\.5/)).toBeTruthy();
+  });
+
+  it("knows who it's with from the names on the messages, so a chat with Amelie goes to Amelie", async () => {
+    const bridge = fakeBridge({ hasKey: true });
+    seedState({ profile: { name: 'Liam', focus: 'mix' }, people: [person('Amelie', { layer: 4 }), person('Chloe', { layer: 3 })] });
+    const { user } = renderApp();
+    await openAnalyse(user, 'Chloe'); // the wrong person picked
+    const own = () => screen.getByLabelText('Your own chat');
+    const withRow = () => within(own()).getByRole('group', { name: "Who it's with" });
+    expect(withRow().textContent).toMatch(/Chloe/);
+    await user.click(within(own()).getByLabelText('The chat'));
+    await user.paste('[6/10/26, 9:41 pm] Amelie: I got the job!!\n[6/10/26, 9:42 pm] Liam: No way Amelie, congrats!');
+    expect(withRow().textContent).toMatch(/Amelie/);
+    expect(withRow().textContent).not.toMatch(/Chloe/);
+    expect(within(own()).getByText('from the names in the chat')).toBeTruthy();
+    expect(screen.getByText(/Analysing a conversation with/).textContent).toMatch(/Amelie/);
+    await user.click(within(own()).getByRole('button', { name: 'Analyse with Claude' }));
+    await screen.findByText('Reconstructed conversation');
+    const sent = bridge.runAnalysis.mock.calls[0][0];
+    expect(sent.content.at(-1).text).toBe('The chat:\n\n[6/10/26, 9:41 pm] [them]: I got the job!!\n[6/10/26, 9:42 pm] [you]: No way [them], congrats!');
+    expect(sent.system).toMatch(/Layer 4/);
+    await user.click(screen.getByRole('button', { name: 'Save' }));
+    await user.click(screen.getByRole('button', { name: 'Log this chat' }));
+    expect(savedPerson('Amelie').experiences[0].text).toBe('Amelie got a new job at the library');
+    expect(savedState().journal.map(j => j.personId)).toEqual([savedPerson('Amelie').id]);
+    expect(savedPerson('Chloe').experiences).toEqual([]);
+  });
+
+  it('a group chat: everyone in it, tagged apart, each detail to its person, one log with all of them', async () => {
+    const bridge = fakeBridge({ hasKey: true });
+    bridge.runAnalysis = vi.fn(async () => ({ result: {
+      ...ANSWER,
+      transcript: [{ who: 'them 1', text: 'hi both' }, { who: 'them 2', text: 'hey [them 1]' }, { who: 'you', text: 'yo' }],
+      extractedInfo: [{ about: 'them 2', category: 'plans', text: '[them 2] is moving to Wellington', temporary: false }],
+    }, usage: { input: 1, output: 1 }, model: 'claude-haiku-4-5' }));
+    seedState({ profile: { name: 'Liam', focus: 'mix' }, people: [person('Amelie', { layer: 4 }), person('Chloe', { layer: 3 }), person('Zoe')] });
+    const { user } = renderApp();
+    await openAnalyse(user, 'Amelie');
+    const own = () => screen.getByLabelText('Your own chat');
+    // Chosen by hand: "Someone else" adds Chloe, and pasting then doesn't change it.
+    await user.click(within(own()).getByRole('button', { name: /Someone else/ }));
+    await user.click(within(own()).getByRole('button', { name: /Chloe/ }));
+    await user.click(within(own()).getByLabelText('The chat'));
+    await user.paste('Amelie: hi both\nChloe: hey Amelie\nLiam: yo');
+    expect(within(own()).getByRole('group', { name: "Who it's with" }).textContent).toMatch(/Amelie.*Chloe/);
+    expect(within(own()).getByText(/Amelie, Chloe's name and yours are swapped for tags/)).toBeTruthy();
+    await user.click(within(own()).getByRole('button', { name: 'Analyse with Claude' }));
+    await screen.findByText('Reconstructed conversation');
+    const sent = bridge.runAnalysis.mock.calls[0][0];
+    expect(sent.content.at(-1).text).toBe('The chat:\n\n[them 1]: hi both\n[them 2]: hey [them 1]\n[you]: yo');
+    expect(sent.schema.properties.extractedInfo.items.properties.about.enum).toEqual(['them 1', 'them 2']);
+    expect(screen.getByText('hey Amelie')).toBeTruthy();
+    expect(screen.getByText(/About Chloe · Category: Plans/)).toBeTruthy();
+    await user.click(screen.getByRole('button', { name: 'Save' }));
+    expect(savedPerson('Chloe').plans[0].text).toBe('Chloe is moving to Wellington');
+    expect(within(screen.getByLabelText('Log it')).getByText(/Messaged Amelie, Chloe/)).toBeTruthy();
+    await user.click(screen.getByRole('button', { name: 'Log this chat' }));
+    expect(savedState().journal.map(j => j.personId).sort()).toEqual([savedPerson('Amelie').id, savedPerson('Chloe').id].sort());
   });
 
   it("isn't offered in the browser, where there's nowhere safe for a key", async () => {

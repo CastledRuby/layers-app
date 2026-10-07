@@ -63,6 +63,8 @@ and how.
   - school/work and life topics become temporary "Important" items
   - custom text stays in the note only
 
+  *Changed 2026-10-07: Add detail is now what you did together, kept in the note.*
+
 **Journal (P2)**
 - Editing or deleting an entry changes the record, **not progress already added**. Taking
   progress back out would mean replaying everything since.
@@ -528,6 +530,24 @@ its own. Changes made while building are marked.
   box in the packaged app, with a temporary data folder as always.
 
 ## History
+
+### Chat analysis that knows who it's with, and logs it properly (after 1.0.35, not released yet)
+
+- **Who it's with**: Coach reads the names on the pasted messages ("Amelie: …", or
+  WhatsApp's with times) and puts those people in the card's **With** row, so a chat
+  with Amelie goes to Amelie even if someone else was picked. Several names make it a
+  group chat; **Someone else** adds a person by hand. Each detail found is saved to the
+  right person.
+- **A proper log**: the result's **Log it** card is filled in by Claude on the log's own
+  scales (how meaningful, the six "Rate each part" ratings, the active listening you
+  showed, a short note) and dated from the chat's timestamps. **Log this chat** saves it
+  as a Messaged log.
+- **Claude knows what to look for**: depth, follow-up questions, missed openings,
+  turning the topic to yourself, balance, matching their style, and whether they're
+  warming up or winding down, with what each score means.
+- **Screenshots are for the phone**: on the laptop the card takes pasted text only.
+- **Add detail** in a log is now what you did together (got coffee, studied together,
+  video call…), kept in the log's note. Interests are still added with "Something new".
 
 ### Didn't happen, a window that fills the screen, and trying other models (after 1.0.35, not released yet)
 

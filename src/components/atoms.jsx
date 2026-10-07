@@ -87,11 +87,12 @@ export function LayerBadge({ layerId }) {
   );
 }
 
-export function ChatBubble({ who, text }) {
+export function ChatBubble({ who, text, name }) {
   const isYou = who === 'you';
   return (
     <div className="flex mb-2" style={{ justifyContent: isYou ? 'flex-end' : 'flex-start' }}>
       <div style={{ maxWidth: '78%', background: isYou ? COLORS.accent : COLORS.paperRaised, color: isYou ? COLORS.onAccent : COLORS.ink, border: isYou ? 'none' : `1px solid ${COLORS.line}`, borderRadius: isYou ? '16px 16px 4px 16px' : '16px 16px 16px 4px', padding: '8px 12px' }}>
+        {name && !isYou && <p className="text-xs font-semibold mb-0.5" style={{ color: COLORS.inkSoft }}>{name}</p>}
         <p className="text-sm">{text}</p>
       </div>
     </div>

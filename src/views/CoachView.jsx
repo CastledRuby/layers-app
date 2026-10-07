@@ -3,14 +3,16 @@
 // who you're about to talk to, L logs the conversation with them, A
 // analyses a chat with them, O opens their profile.
 
-import { useEffect, useRef, useState } from 'react';
-import { Check, ImagePlus, X } from 'lucide-react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { Check, ImagePlus, Plus, X } from 'lucide-react';
 import { Avatar, ChatBubble, ConvStateBadge, Kbd, LabeledBar, LayerBadge } from '../components/atoms.jsx';
 import { hasOpenSheet, isTyping } from '../components/sheetLayer.js';
-import { ANALYSIS_MODELS, analysisCost, analysisModel, analysisRequest, analysisResult, DEFAULT_ANALYSIS_MODEL, MAX_SCREENSHOTS, typicalCost } from '../lib/analysis.js';
+import { ANALYSIS_MODELS, analysisCost, analysisModel, analysisRequest, analysisResult, DEFAULT_ANALYSIS_MODEL, detectPeople, MAX_SCREENSHOTS, typicalCost } from '../lib/analysis.js';
+import { DateDropdown } from '../components/pickers.jsx';
+import { parseISODay } from '../lib/dates.js';
 import { isPictureFile } from '../data/avatars.js';
 import { loadPhoto, shrinkForAnalysis } from '../lib/photo.js';
-import { categoryMeta, DIM_COLORS, getLayer } from '../data/constants.js';
+import { AL_ITEMS, categoryMeta, DIM_COLORS, DIM_LABELS, DIM_ORDER, getLayer, ML_LABELS } from '../data/constants.js';
 import { SCENARIOS } from '../data/scenarios.js';
 import { buildPotentialHooks, HOOKS } from '../lib/text.js';
 import { COLORS } from '../theme.js';
@@ -46,7 +48,9 @@ function ModelButtons({ label, value, onPick, done = {} }) {
 // analysing your own chat with Claude (onAnalyse sends the request built by
 // lib/analysis.js and resolves to { result, usage, model } or { error }).
 // model / onModel: which Claude (App keeps it while Layers is open).
-export function CoachView({ people, journal, initialPersonId, initialTab, onOpenLog, onApproveInfo, onLogFromAnalysis, onOpenPerson, analysisReady = 'none', onAnalyse, onOpenMe, yourName = '', model = DEFAULT_ANALYSIS_MODEL, onModel = () => {} }) {
+// onLogChat: saves your own chat's log ({ personIds, meaningfulness, ratings,
+// activeListening, summary, date, analysis }) as a normal log.
+export function CoachView({ people, journal, initialPersonId, initialTab, onOpenLog, onApproveInfo, onLogFromAnalysis, onLogChat, onOpenPerson, analysisReady = 'none', onAnalyse, onOpenMe, yourName = '', model = DEFAULT_ANALYSIS_MODEL, onModel = () => {} }) {
   const [tab, setTab] = useState(initialTab || 'prepare');
   const [preparePersonId, setPreparePersonId] = useState(initialPersonId || (people[0] && people[0].id) || null);
   const [analysisPersonId, setAnalysisPersonId] = useState(initialTab === 'analyse' ? initialPersonId || null : null);
@@ -67,7 +71,15 @@ export function CoachView({ people, journal, initialPersonId, initialTab, onOpen
   const [ownModel, setOwnModel] = useState(null); // whose answer is shown
   const [askingModel, setAskingModel] = useState(model);
   const [ownError, setOwnError] = useState(null);
+  // Who your chat is with: null is the person picked above; otherwise ids,
+  // read from the names on its messages ('chat') or chosen here ('you').
+  const [ownWith, setOwnWith] = useState(null);
+  const [ownWithFrom, setOwnWithFrom] = useState(null);
+  const [ownWithPicking, setOwnWithPicking] = useState(false);
+  const [ownLogDate, setOwnLogDate] = useState(() => new Date());
   const shotsInput = useRef(null);
+  // Screenshots are for the phone; on the laptop a chat is pasted.
+  const touch = useMemo(() => typeof window !== 'undefined' && typeof window.matchMedia === 'function' && window.matchMedia('(hover: none) and (pointer: coarse)').matches, []);
   // Counts requests, so an answer that arrives after you've moved on (another
   // person, back to the list, or a newer request) is dropped; and chats, so
   // each is its own session.
@@ -88,6 +100,8 @@ export function CoachView({ people, journal, initialPersonId, initialTab, onOpen
   const preparePerson = people.find(p => p.id === preparePersonId) || people[0] || null;
   const scenario = scenarioKey ? (scenarioKey.startsWith('own') ? (ownResults[ownModel] || {}).result || null : SCENARIOS[scenarioKey]) : null;
   const scenarioPerson = people.find(p => p.id === analysisPersonId) || null;
+  const ownPeople = (ownWith || (scenarioPerson ? [scenarioPerson.id] : [])).map(id => people.find(p => p.id === id)).filter(Boolean);
+  const nameOf = (id) => (people.find(p => p.id === id) || scenarioPerson || { name: 'them' }).name;
   const sessionKey = scenarioPerson && scenarioKey ? `${scenarioPerson.id}:${scenarioKey}` : null;
   const session = (sessionKey && sessions[sessionKey]) || { infoStatus: {}, logged: false };
   const infoStatus = session.infoStatus;
@@ -107,7 +121,18 @@ export function CoachView({ people, journal, initialPersonId, initialTab, onOpen
     setEditingIndex(null);
     setStep('loading');
   }
-  function resetAnalyse() { ownTicket.current += 1; setStep('pick'); setScenarioKey(null); }
+  function resetAnalyse() { ownTicket.current += 1; setStep('pick'); setScenarioKey(null); setOwnWith(null); setOwnWithFrom(null); setOwnWithPicking(false); }
+  // Pasting reads who it's with from the names on the messages (unless you
+  // chose who yourself), and Analyse follows them.
+  function changeOwnText(value) {
+    setOwnText(value);
+    setOwnError(null);
+    if (ownWithFrom === 'you') return;
+    const found = detectPeople(value, people, yourName);
+    if (found.length) { setOwnWith(found); setOwnWithFrom('chat'); setAnalysisPersonId(found[0]); }
+    else if (ownWithFrom === 'chat') { setOwnWith(null); setOwnWithFrom(null); }
+  }
+  function changeWith(ids) { setOwnWith(ids); setOwnWithFrom('you'); if (ids.length) setAnalysisPersonId(ids[0]); }
   async function addShots(files) {
     const pictures = [...files].filter(isPictureFile).slice(0, MAX_SCREENSHOTS - ownShots.length);
     const loaded = (await Promise.all(pictures.map(async file => { const img = await loadPhoto(file); return img ? { id: `${file.name}${file.size}${Math.random()}`, name: file.name, src: img.src, img } : null; }))).filter(Boolean);
@@ -116,9 +141,9 @@ export function CoachView({ people, journal, initialPersonId, initialTab, onOpen
   }
   // Sends your chat to Claude (only now), then shows its answer like a sample's.
   async function analyseOwn() {
-    if (!onAnalyse || !scenarioPerson || (!ownText.trim() && !ownShots.length)) return;
-    const chat = { run: ++ownChats.current, person: scenarioPerson, text: ownText, images: ownShots.map(s => shrinkForAnalysis(s.img)).filter(Boolean) };
-    if (await ask(chat, {}, model, 'pick')) { setOwnText(''); setOwnShots([]); }
+    if (!onAnalyse || !ownPeople.length || (!ownText.trim() && !ownShots.length)) return;
+    const chat = { run: ++ownChats.current, people: ownPeople, text: ownText, images: ownShots.map(s => shrinkForAnalysis(s.img)).filter(Boolean) };
+    if (await ask(chat, {}, model, 'pick')) { setOwnText(''); setOwnShots([]); setOwnWith(null); setOwnWithFrom(null); setOwnWithPicking(false); }
   }
   // One model's answer to a chat; on a problem, back to `backTo` saying so.
   async function ask(chat, results, withModel, backTo) {
@@ -126,11 +151,11 @@ export function CoachView({ people, journal, initialPersonId, initialTab, onOpen
     setOwnError(null);
     setAskingModel(withModel);
     setStep('asking');
-    const answer = await Promise.resolve(onAnalyse(analysisRequest({ person: chat.person, yourName, text: chat.text, images: chat.images, model: withModel }))).catch(() => null);
+    const answer = await Promise.resolve(onAnalyse(analysisRequest({ people: chat.people, yourName, text: chat.text, images: chat.images, model: withModel }))).catch(() => null);
     if (ticket !== ownTicket.current) return false;
     if (!answer || answer.error) { setOwnError((answer && answer.error) || "Couldn't analyse that chat."); setStep(backTo); return false; }
     const used = analysisModel(answer.model || withModel).id;
-    const result = analysisResult(answer.result, chat.person);
+    const result = analysisResult(answer.result, chat.people);
     setOwnChat(chat);
     setOwnResults({ ...results, [used]: { result, cost: analysisCost(answer.usage, used) } });
     showOwn(chat, used, result);
@@ -138,6 +163,7 @@ export function CoachView({ people, journal, initialPersonId, initialTab, onOpen
   }
   function showOwn(chat, withModel, result) {
     setOwnModel(withModel);
+    setOwnLogDate(result.log.date ? parseISODay(result.log.date) : new Date());
     setInfoDrafts(Object.fromEntries(result.extractedInfo.map((it, i) => [i, it.text])));
     setEditingIndex(null);
     setScenarioKey(`own:${chat.run}:${withModel}`);
@@ -155,7 +181,7 @@ export function CoachView({ people, journal, initialPersonId, initialTab, onOpen
     const it = scenario.extractedInfo[i];
     const text = String(infoDrafts[i] || '').trim();
     if (!text) return;
-    onApproveInfo(scenarioPerson.id, it.category, text, it.temporary);
+    onApproveInfo(it.personId || scenarioPerson.id, it.category, text, it.temporary);
     updateSession(s => ({ infoStatus: { ...s.infoStatus, [i]: 'saved' } }));
     setEditingIndex(null);
   }
@@ -183,6 +209,12 @@ export function CoachView({ people, journal, initialPersonId, initialTab, onOpen
     return () => window.removeEventListener('keydown', onKey);
   });
 
+  // Your own chat: a normal log, filled in by Claude, on the chat's day.
+  function logOwn() {
+    if (logged || !onLogChat) return;
+    onLogChat({ ...scenario.log, date: ownLogDate, analysis: { grading: scenario.grading, conversationState: scenario.conversationState, model: ownModel } });
+    updateSession(() => ({ logged: true }));
+  }
   function handleLogAnalysis() {
     if (logged) return;
     onLogFromAnalysis(scenarioPerson.id, scenario);
@@ -354,10 +386,28 @@ export function CoachView({ people, journal, initialPersonId, initialTab, onOpen
                   {analysisReady === 'ready' && (
                     <div className="rounded-2xl p-3.5 mb-4" style={{ background: COLORS.paperRaised, border: `1px solid ${COLORS.line}` }} aria-label="Your own chat">
                       <p className="text-sm font-semibold" style={{ color: COLORS.ink }}>Analyse your own chat</p>
-                      <textarea value={ownText} onChange={e => { setOwnText(e.target.value); setOwnError(null); }} aria-label="The chat" rows={5}
-                        placeholder={`Paste a chat with ${scenarioPerson.name}, or add screenshots below.`} className="w-full text-sm rounded-xl px-3 py-2.5 mt-2" style={{ border: `1px solid ${COLORS.line}`, resize: 'vertical' }} />
-                      <input ref={shotsInput} type="file" accept="image/*" multiple hidden aria-label="Add screenshots" onChange={e => { const files = e.target.files ? [...e.target.files] : []; e.target.value = ''; addShots(files); }} />
-                      <div className="flex items-center gap-2 flex-wrap mt-2">
+                      <div role="group" aria-label="Who it's with" className="flex items-center gap-1.5 flex-wrap mt-2">
+                        <span className="text-xs font-semibold mr-0.5" style={{ color: COLORS.ink }}>With</span>
+                        {ownPeople.map(p => (
+                          <span key={p.id} className="chip chip--on" style={{ padding: '3px 8px 3px 4px' }}>
+                            <Avatar person={p} size={20} ringColor={getLayer(p.layer).color} />{p.name}
+                            {ownPeople.length > 1 && <button type="button" onClick={() => changeWith(ownPeople.filter(x => x.id !== p.id).map(x => x.id))} aria-label={`Not with ${p.name}`} className="flex items-center"><X size={12} /></button>}
+                          </span>
+                        ))}
+                        {people.length > ownPeople.length && <button type="button" onClick={() => setOwnWithPicking(v => !v)} aria-expanded={ownWithPicking} className="chip" style={{ padding: '4px 10px' }}><Plus size={12} color={COLORS.accent} />Someone else</button>}
+                        {ownWithFrom === 'chat' && <span className="text-xs" style={{ color: COLORS.inkSoft }}>from the names in the chat</span>}
+                      </div>
+                      {ownWithPicking && (
+                        <div className="flex items-center gap-1.5 flex-wrap mt-2" aria-label="Add someone">
+                          {people.filter(p => !ownPeople.some(x => x.id === p.id)).map(p => (
+                            <button key={p.id} type="button" onClick={() => { changeWith([...ownPeople.map(x => x.id), p.id]); setOwnWithPicking(false); }} className="chip" style={{ padding: '3px 10px 3px 4px' }}><Avatar person={p} size={20} ringColor={getLayer(p.layer).color} />{p.name}</button>
+                          ))}
+                        </div>
+                      )}
+                      <textarea value={ownText} onChange={e => changeOwnText(e.target.value)} aria-label="The chat" rows={5}
+                        placeholder={`Paste the chat${touch ? ', or add screenshots below' : ''}. Names on the messages ("Amelie: hey") tell Layers who it's with.`} className="w-full text-sm rounded-xl px-3 py-2.5 mt-2" style={{ border: `1px solid ${COLORS.line}`, resize: 'vertical' }} />
+                      {touch && <input ref={shotsInput} type="file" accept="image/*" multiple hidden aria-label="Add screenshots" onChange={e => { const files = e.target.files ? [...e.target.files] : []; e.target.value = ''; addShots(files); }} />}
+                      {touch && <div className="flex items-center gap-2 flex-wrap mt-2">
                         {ownShots.map(s => (
                           <span key={s.id} className="relative">
                             <img src={s.src} alt={s.name} className="rounded-lg" style={{ width: 44, height: 64, objectFit: 'cover', border: `1px solid ${COLORS.line}` }} />
@@ -365,12 +415,12 @@ export function CoachView({ people, journal, initialPersonId, initialTab, onOpen
                           </span>
                         ))}
                         {ownShots.length < MAX_SCREENSHOTS && <button type="button" onClick={() => shotsInput.current && shotsInput.current.click()} className="chip"><ImagePlus size={14} color={COLORS.accent} /> Screenshots</button>}
-                      </div>
+                      </div>}
                       <p className="text-xs font-semibold mt-3 mb-1.5" style={{ color: COLORS.ink }}>Model</p>
                       <ModelButtons label="Model" value={model} onPick={onModel} />
-                      <p className="text-xs mt-2.5" style={{ color: COLORS.inkSoft }}>Pressing Analyse sends this chat, and only this chat, to Anthropic for {analysisModel(model).name} to read ({typicalCost(model)}{analysisModel(model).thinks ? '; it thinks first, so it takes longer and costs more' : ''}). {scenarioPerson.name}'s name and yours are hidden in pasted text; screenshots go as they are.</p>
+                      <p className="text-xs mt-2.5" style={{ color: COLORS.inkSoft }}>Pressing Analyse sends this chat, and only this chat, to Anthropic for {analysisModel(model).name} to read ({typicalCost(model)}{analysisModel(model).thinks ? '; it thinks first, so it takes longer and costs more' : ''}). {ownPeople.map(p => p.name.split(' ')[0]).join(', ')}'s name and yours are swapped for tags first{touch ? '; screenshots go as they are' : ''}.</p>
                       {ownError && <p className="text-xs mt-2 font-semibold" role="alert" style={{ color: COLORS.alert }}>{ownError}</p>}
-                      <button type="button" onClick={analyseOwn} disabled={!ownText.trim() && !ownShots.length} className="w-full text-sm font-semibold rounded-full py-2.5 mt-3" style={{ background: COLORS.accent, color: COLORS.onAccent, opacity: !ownText.trim() && !ownShots.length ? 0.5 : 1 }}>Analyse with Claude</button>
+                      <button type="button" onClick={analyseOwn} disabled={!ownPeople.length || (!ownText.trim() && !ownShots.length)} className="w-full text-sm font-semibold rounded-full py-2.5 mt-3" style={{ background: COLORS.accent, color: COLORS.onAccent, opacity: !ownPeople.length || (!ownText.trim() && !ownShots.length) ? 0.5 : 1 }}>Analyse with Claude</button>
                     </div>
                   )}
                   <p className="text-sm font-semibold mb-2" style={{ color: COLORS.ink }}>{analysisReady === 'ready' ? 'Or try a sample conversation' : 'Try a sample conversation'}</p>
@@ -416,7 +466,7 @@ export function CoachView({ people, journal, initialPersonId, initialTab, onOpen
 
               <p className="text-sm font-semibold mb-2" style={{ color: COLORS.ink }}>Reconstructed conversation</p>
               <div className="rounded-2xl p-3.5 mb-4" style={{ background: COLORS.paper, border: `1px solid ${COLORS.line}` }}>
-                {scenario.transcript.map((m, i) => (<ChatBubble key={i} who={m.who} text={m.text} />))}
+                {scenario.transcript.map((m, i) => (<ChatBubble key={i} who={m.who} text={m.text} name={m.name} />))}
               </div>
 
               <p className="text-sm font-semibold mb-2" style={{ color: COLORS.ink }}>Conversation state</p>
@@ -440,7 +490,7 @@ export function CoachView({ people, journal, initialPersonId, initialTab, onOpen
                   <LabeledBar label="Reciprocity" percent={scenario.grading.reciprocity} color={DIM_COLORS.reciprocity} />
                   <LabeledBar label="Naturalness" percent={scenario.grading.naturalness} color={COLORS.teal} />
                 </div>
-                <p className="text-xs mt-3" style={{ color: COLORS.inkSoft }}>Goal progress: <span style={{ color: COLORS.good, fontWeight: 700 }}>+{scenario.grading.goalImpact}%</span></p>
+                {typeof scenario.grading.goalImpact === 'number' && <p className="text-xs mt-3" style={{ color: COLORS.inkSoft }}>Goal progress: <span style={{ color: COLORS.good, fontWeight: 700 }}>+{scenario.grading.goalImpact}%</span></p>}
               </div>
 
               <div className="rounded-2xl p-4 mb-3" style={{ background: COLORS.paperRaised, border: `1px solid ${COLORS.line}` }}>
@@ -480,9 +530,9 @@ export function CoachView({ people, journal, initialPersonId, initialTab, onOpen
                         <p className="text-sm flex-1" style={{ color: COLORS.ink }}>{infoDrafts[i]}</p>
                       )}
                     </div>
-                    <p className="text-xs mt-1" style={{ color: COLORS.inkSoft }}>Category: {cat.label}{it.temporary ? ' (temporary)' : ''}</p>
+                    <p className="text-xs mt-1" style={{ color: COLORS.inkSoft }}>{it.name ? `About ${it.name} · ` : ''}Category: {cat.label}{it.temporary ? ' (temporary)' : ''}</p>
                     {status === 'saved' ? (
-                      <p className="text-xs mt-1.5 font-medium" style={{ color: COLORS.good }}><Check size={11} /> Saved to {scenarioPerson ? scenarioPerson.name : 'profile'}</p>
+                      <p className="text-xs mt-1.5 font-medium" style={{ color: COLORS.good }}><Check size={11} /> Saved to {it.personId ? nameOf(it.personId) : scenarioPerson ? scenarioPerson.name : 'profile'}</p>
                     ) : status === 'ignored' ? (
                       <p className="text-xs mt-1.5" style={{ color: COLORS.inkSoft }}>Ignored</p>
                     ) : (
@@ -526,13 +576,28 @@ export function CoachView({ people, journal, initialPersonId, initialTab, onOpen
                 </div>
               )}
 
-              <div className="mt-5">
+              {scenario.own ? (
+                <div className="rounded-2xl p-4 mt-5" style={{ background: COLORS.paperRaised, border: `1px solid ${COLORS.line}` }} aria-label="Log it">
+                  <p className="text-sm font-semibold" style={{ color: COLORS.ink }}>Log it</p>
+                  <p className="text-xs mt-1" style={{ color: COLORS.inkSoft }}>📱 Messaged {scenario.log.personIds.map(nameOf).join(', ')} · {ML_LABELS[scenario.log.meaningfulness - 1]} ({scenario.log.meaningfulness} of 5)</p>
+                  <div className="flex items-center gap-2 flex-wrap mt-2.5">
+                    <DateDropdown key={`${scenarioKey}:${scenario.log.date}`} compact value={ownLogDate} onChange={setOwnLogDate} maxDate={new Date()} />
+                    <span className="text-xs" style={{ color: COLORS.inkSoft }}>{scenario.log.date ? "from the chat's times" : 'no times in the chat, so today'}</span>
+                  </div>
+                  {DIM_ORDER.some(k => scenario.log.ratings[k]) && <p className="text-xs mt-2.5" style={{ color: COLORS.ink }}>{DIM_ORDER.filter(k => scenario.log.ratings[k]).map(k => `${DIM_LABELS[k]} ${scenario.log.ratings[k]}`).join(' · ')}</p>}
+                  {scenario.log.activeListening.length > 0 && <p className="text-xs mt-1.5" style={{ color: COLORS.good }}>✓ {scenario.log.activeListening.map(k => AL_ITEMS.find(a => a.key === k).label).join(' · ')}</p>}
+                  {scenario.log.summary && <p className="text-xs mt-1.5 italic" style={{ color: COLORS.inkSoft }}>Note: {scenario.log.summary}</p>}
+                  {logged
+                    ? <p className="text-sm text-center font-medium mt-3" style={{ color: COLORS.good }}>✓ Logged</p>
+                    : <button type="button" onClick={logOwn} className="w-full text-sm font-semibold rounded-full py-3 mt-3" style={{ background: COLORS.accent, color: COLORS.onAccent }}>Log this chat</button>}
+                </div>
+              ) : <div className="mt-5">
                 {logged ? (
                   <p className="text-sm text-center font-medium" style={{ color: COLORS.good }}>✓ Logged and updated {scenarioPerson ? scenarioPerson.name : 'their'} progress</p>
                 ) : (
                   <button onClick={handleLogAnalysis} className="w-full text-sm font-semibold rounded-full py-3" style={{ background: COLORS.accent, color: COLORS.onAccent }}>Log this as an interaction</button>
                 )}
-              </div>
+              </div>}
             </div>
           )}
             </>

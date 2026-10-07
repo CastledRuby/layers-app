@@ -202,39 +202,44 @@ describe('#12 Esc', () => {
   });
 });
 
-describe('#13 topics picked while logging', () => {
-  it('are saved to the profile when logging with one person', async () => {
+describe('#13 Add detail while logging', () => {
+  // Since 2026-10-07 it's what you did together, kept in the log's note;
+  // what you learned about someone is "Something new".
+  it("is what you did together, kept in the note and never filed on the profile", async () => {
     seedState({ people: [person('Morgan')] });
     const { user } = renderApp();
     const details = await startLog(user, { names: ['Morgan'] });
-    await addTopic(user, 'Sports', 'Football');
-    await addTopic(user, 'Life stuff', 'Moving house');
-    expect(within(details).getByText("Topics are also saved to Morgan's profile.")).toBeTruthy();
+    await user.click(within(details).getByRole('button', { name: /Add detail/ }));
+    expect(within(dialog('Add detail')).getByText('What did you do together?')).toBeTruthy();
+    expect(within(dialog('Add detail')).queryByRole('button', { name: /Sports$|Video games/ })).toBeNull();
+    await user.keyboard('{Escape}');
+    await addTopic(user, 'Food and drink', 'Got coffee');
+    await addTopic(user, 'School and work', 'Studied together');
     await saveLog(user, details);
     const morgan = savedPerson('Morgan');
-    expect(morgan.interests.map(i => i.text)).toEqual(['Football']);
-    expect(morgan.important.map(i => [i.text, i.temporary])).toEqual([['Moving house', true]]);
-    expect(savedState().journal[0].added).toEqual(['Football', 'Moving house']);
-    expect(savedState().skills.selfDisclosure.current).toBe(1);
+    expect(morgan.interests).toEqual([]);
+    expect(morgan.important).toEqual([]);
+    expect(savedState().journal[0]).toMatchObject({ summary: 'Got coffee, Studied together', added: [] });
   });
 
-  it("refresh an interest that's already saved instead of adding it twice", async () => {
-    seedState({ people: [person('Morgan', { interests: [{ id: 'i1', emoji: '⚽', text: 'Football', at: '2026-01-01', temporary: false, archived: true }] })] });
+  it('puts talking and online first for a message', async () => {
+    seedState({ people: [person('Morgan')] });
     const { user } = renderApp();
-    const details = await startLog(user, { names: ['Morgan'] });
-    await addTopic(user, 'Sports', 'Football');
-    await saveLog(user, details);
-    expect(savedPerson('Morgan').interests).toEqual([{ id: 'i1', emoji: '⚽', text: 'Football', at: TODAY, temporary: false, archived: false }]);
+    const details = await startLog(user, { names: ['Morgan'], type: /Messaged/ });
+    await user.click(within(details).getByRole('button', { name: /Add detail/ }));
+    const cats = within(dialog('Add detail')).getAllByRole('button').map(b => b.textContent);
+    expect(cats.findIndex(t => /Online and phone/.test(t))).toBeLessThan(cats.findIndex(t => /Food and drink/.test(t)));
+    expect(cats.findIndex(t => /Talking/.test(t))).toBeLessThan(cats.findIndex(t => /Food and drink/.test(t)));
   });
 
-  it('stay in the note only for a group log', async () => {
+  it('is the same for a group log', async () => {
     seedState({ people: [person('Morgan'), person('Riley')] });
     const { user } = renderApp();
     const details = await startLog(user, { names: ['Morgan', 'Riley'] });
-    await addTopic(user, 'Sports', 'Football');
+    await addTopic(user, 'Fun', 'Played video games');
     await saveLog(user, details);
     expect(savedPerson('Morgan').interests).toEqual([]);
-    expect(savedState().journal.map(j => j.summary)).toEqual(['Football', 'Football']);
+    expect(savedState().journal.map(j => j.summary)).toEqual(['Played video games', 'Played video games']);
   });
 });
 

@@ -1,4 +1,5 @@
-// Category -> item template picker ("Add detail", "Quick add interest").
+// Category -> item template picker ("Add detail": what you did, from
+// ACTIVITY_TEMPLATES; "Quick add interest": NOTE_TEMPLATES).
 
 import { useRef, useState } from 'react';
 import { Sheet } from '../components/Sheet.jsx';
@@ -16,9 +17,10 @@ import { COLORS } from '../theme.js';
 // (text, emoji) so callers that need an icon (interests) have one, and
 // callers that just want text (notes) can ignore the second argument. The
 // third is the NOTE_TEMPLATES category key ('custom' for typed text), which
-// the log uses to file a topic on the person's profile.
+// the log uses to file a topic on the person's profile. `templates`: the
+// categories (NOTE_TEMPLATES unless given).
 // Keys: 1-9 and 0 the topics, N your own words (Custom), Backspace back.
-export function TemplatePickerModal({ title, subtitle, onClose, onPick, allowMultiple }) {
+export function TemplatePickerModal({ title, subtitle, onClose, onPick, allowMultiple, templates = NOTE_TEMPLATES }) {
   const [cat, setCat] = useState(null); // null = category grid | 'custom' | a NOTE_TEMPLATES key
   const [customText, setCustomText] = useState('');
   const [pickedCount, setPickedCount] = useState(0);
@@ -26,7 +28,7 @@ export function TemplatePickerModal({ title, subtitle, onClose, onPick, allowMul
   const customRef = useRef(null);
   function openCat(key) { setDir('in'); setCat(key); }
   function back() { setDir('back'); setCat(null); }
-  const catData = cat && cat !== 'custom' ? NOTE_TEMPLATES.find(c => c.key === cat) : null;
+  const catData = cat && cat !== 'custom' ? templates.find(c => c.key === cat) : null;
 
   function pickItem(text, emoji, catKey) {
     onPick(text, emoji, catKey);
@@ -48,7 +50,7 @@ export function TemplatePickerModal({ title, subtitle, onClose, onPick, allowMul
     const key = e.key.toLowerCase();
     if (!cat) {
       const i = e.key === '0' ? 9 : /^[1-9]$/.test(e.key) ? Number(e.key) - 1 : -1;
-      if (i >= 0 && NOTE_TEMPLATES[i]) { e.preventDefault(); openCat(NOTE_TEMPLATES[i].key); }
+      if (i >= 0 && templates[i]) { e.preventDefault(); openCat(templates[i].key); }
       else if (key === 'n') { e.preventDefault(); openCat('custom'); }
     } else if (e.key === 'Backspace') { e.preventDefault(); back(); }
     else if (cat === 'custom' && key === 'n') { e.preventDefault(); if (customRef.current) customRef.current.focus(); }
@@ -61,7 +63,7 @@ export function TemplatePickerModal({ title, subtitle, onClose, onPick, allowMul
           <>
             {subtitle && <p className="text-xs mb-4" style={{ color: COLORS.inkSoft }}>{subtitle}{allowMultiple && pickedCount > 0 ? ` — ${pickedCount} added so far` : ''}</p>}
             <div className="grid grid-cols-3 gap-2.5">
-              {NOTE_TEMPLATES.map((c, i) => (
+              {templates.map((c, i) => (
                 <button key={c.key} type="button" onClick={() => openCat(c.key)} className="tile py-5 px-1 flex flex-col items-center gap-2">
                   {i < 10 && <Kbd>{i === 9 ? 0 : i + 1}</Kbd>}
                   <span style={{ fontSize: 24, lineHeight: 1 }}>{c.emoji}</span>

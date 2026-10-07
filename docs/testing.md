@@ -126,15 +126,20 @@ interact.
   left out, a yearly date without its year, the file name). The end-to-end tests save a
   real PDF of an example person.
 - `analysis.test.jsx` covers analysing your own chat (the main process and Claude stood
-  in for): the key added in Me (a bad one refused, never saved with your data) and
+  in for): who it's with read from the names on the messages (a chat with Amelie goes
+  to Amelie though Chloe was picked), a group chat (tagged apart, each detail to its
+  person, one log with everyone), the Log it card (Claude's ratings, the chat's date,
+  saved as a Messaged log), no screenshots on a laptop, the key added in Me (a bad one refused, never saved with your data) and
   removed, the pasted chat sent with names hidden only when Analyse is pressed, the answer
   shown with their name back (info saved, logged once), screenshots (six at most, each
   removable), an error keeping the chat, an answer dropped after moving to someone else,
   the model buttons (the cheapest by default and again after a restart, another picked,
   the same chat with another model in a click, shown again without asking twice, logged
-  once, an error keeping the first answer), and nothing offered in the browser. `src/analysis.test.js` covers hiding and restoring
-  names, the request, the schema (every object closed, every field required) and making
-  any answer safe; `src/analysisMain.test.js` covers `electron/analysis.cjs` (keys,
+  once, an error keeping the first answer), and nothing offered in the browser. `src/analysis.test.js` covers reading who a chat is with,
+  hiding and restoring names (groups too), the request, what Claude is told to look for,
+  the schema (every object closed, every field required, the reading before the scores)
+  and making any answer and its log safe (the chat's day only when it's real and within
+  the year); `src/analysisMain.test.js` covers `electron/analysis.cjs` (keys,
   the key kept encrypted, only text and screenshots let through, what's asked of Claude,
   and every failure in words, and only the offered models asked for). No test calls
   Claude. The end-to-end tests check a key

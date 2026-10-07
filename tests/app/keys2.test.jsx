@@ -31,7 +31,7 @@ describe('note boxes', () => {
     await user.keyboard('n111{Enter}d');
     expect(dialog('Add detail')).toBeTruthy();
     await user.keyboard('1');
-    expect(dialog('Sports')).toBeTruthy();
+    expect(dialog('Food and drink')).toBeTruthy();
     await user.keyboard('{Backspace}n');
     expect(document.activeElement).toBe(screen.getByLabelText('Your own'));
     await user.keyboard('Chess club{Enter}');
