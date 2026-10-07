@@ -3,7 +3,8 @@
 // answer made safe to show whatever comes back.
 import { describe, expect, it } from 'vitest';
 import { CATEGORIES } from './data/constants.js';
-import { ANALYSIS_SCHEMA, analysisCost, analysisRequest, analysisResult, hideNames, restoreNames } from './lib/analysis.js';
+import { MODELS } from '../electron/analysis.cjs';
+import { ANALYSIS_MODELS, ANALYSIS_SCHEMA, analysisCost, analysisRequest, analysisResult, DEFAULT_ANALYSIS_MODEL, hideNames, restoreNames, typicalCost } from './lib/analysis.js';
 
 const priya = { id: 'p1', name: 'Priya Shah', layer: 2 };
 
@@ -106,6 +107,23 @@ describe('the answer', () => {
     expect(r.extractedInfo.map(i => i.text)).toEqual(['yes']);
     expect(r.next).toEqual({ continueTopic: null, shareYourself: null, changeTopic: null, dontMessage: { text: 'Leave it', natural: '', playful: '', deeper: '' } });
     expect(analysisResult(null, priya)).toMatchObject({ transcript: [], wentWell: [], opportunity: '', encourager: null });
+  });
+
+  it('offers the models the main process allows, the cheapest first and by default', () => {
+    expect(ANALYSIS_MODELS.map(m => m.id)).toEqual(MODELS);
+    expect(DEFAULT_ANALYSIS_MODEL).toBe('claude-haiku-4-5');
+    const cost = (m) => m.price.input + m.price.output;
+    expect(ANALYSIS_MODELS.every((m, i) => i === 0 || cost(m) > cost(ANALYSIS_MODELS[i - 1]))).toBe(true);
+    expect(analysisRequest({ person: priya, yourName: '', text: 'hi', model: 'claude-opus-5-5' }).model).toBe('claude-opus-5-5');
+    expect(analysisRequest({ person: priya, yourName: '', text: 'hi', model: 'gpt-4' }).model).toBe('claude-haiku-4-5');
+    expect(analysisRequest({ person: priya, yourName: '', text: 'hi' }).model).toBe('claude-haiku-4-5');
+  });
+
+  it("prices each model's tokens, and roughly what a chat costs before sending it", () => {
+    expect(analysisCost({ input: 4000, output: 6000 }, 'claude-opus-5-5')).toBe('about US$0.14');
+    expect(analysisCost({ input: 4000, output: 6000 }, 'claude-fable-5-1')).toBe('about US$0.34');
+    expect(typicalCost('claude-haiku-4-5')).toBe('about US$0.02');
+    expect(typicalCost('claude-sonnet-5-5')).toBe('about US$0.07');
   });
 
   it('says roughly what it cost, from the tokens used', () => {

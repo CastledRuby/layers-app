@@ -5,7 +5,7 @@
 // before or after, P plans something that day.
 
 import { useMemo, useState } from 'react';
-import { Check, ChevronLeft, ChevronRight, Lightbulb } from 'lucide-react';
+import { Check, ChevronLeft, ChevronRight, Lightbulb, X } from 'lucide-react';
 import { Sheet } from '../components/Sheet.jsx';
 import { isTabbedToButton, isTyping } from '../components/sheetLayer.js';
 import { Kbd } from '../components/atoms.jsx';
@@ -76,11 +76,11 @@ export function DaySheet({ day, today, people, journal, events, generalGoals, on
           const t = templateFor(it.ev.template);
           const on = i === index;
           return (
-            <div key={it.ev.id} role="listitem" className={`rounded-2xl px-3 py-2.5${on ? ' pick-cursor' : ''}`} style={{ background: COLORS.paperRaised, border: `1px solid ${COLORS.line}`, opacity: it.done ? 0.7 : 1 }}>
+            <div key={it.ev.id} role="listitem" className={`rounded-2xl px-3 py-2.5${on ? ' pick-cursor' : ''}`} style={{ background: COLORS.paperRaised, border: `1px solid ${COLORS.line}`, opacity: it.done || it.missed ? 0.7 : 1 }}>
               <button type="button" onClick={() => onOpenEvent(it.ev.id, day)} className="w-full text-left flex items-center gap-2.5">
                 <span className="text-xs font-bold shrink-0" style={{ width: 58, color: COLORS.inkSoft, fontVariantNumeric: 'tabular-nums' }}>{it.start === null ? 'All day' : formatTime12(it.start)}</span>
-                {it.done ? <Check size={15} color={COLORS.good} strokeWidth={3} /> : <span aria-hidden="true">{t ? t.emoji : '📌'}</span>}
-                <span className="flex-1 min-w-0 text-sm font-semibold truncate" style={{ color: COLORS.ink, textDecoration: it.done ? 'line-through' : 'none' }}>{it.ev.title}</span>
+                {it.done ? <Check size={15} color={COLORS.good} strokeWidth={3} /> : it.missed ? <X size={15} color={COLORS.inkSoft} strokeWidth={3} aria-label="Didn't happen" /> : <span aria-hidden="true">{t ? t.emoji : '📌'}</span>}
+                <span className="flex-1 min-w-0 text-sm font-semibold truncate" style={{ color: COLORS.ink, textDecoration: it.done || it.missed ? 'line-through' : 'none' }}>{it.ev.title}</span>
                 {it.people.length > 0 && <AvatarStack people={it.people} size={22} />}
               </button>
               {it.people.length > 0 && (

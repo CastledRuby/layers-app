@@ -174,6 +174,7 @@ type Event = {                                // a plan on the calendar; see The
   goalId?: string;                            // one of its people's goals; logging the reminder moves only that goal
   doneAt?: string;                            // one-off: the day it was marked done. It's finished for good.
   doneDays?: string[];                        // recurring: recent days marked done or skipped (last 14; older saves have one doneOn)
+  missedDays?: string[];                      // days it didn't happen (last 14): nothing logged, not done, not asked about again
   createdAt: string;                          // 'YYYY-MM-DD' ('Today' before 1.0.27)
 };
 
@@ -435,8 +436,9 @@ phone later. It's unit-tested in `src/calendar.test.js`.
   - `logged`: the journal entries for that day
 - **`monthMarks`** gives the month grid's dots. Daily routines aren't counted, so special
   days stand out.
-- **`needsAnswer`**: plans with people that have ended and aren't done, for **How did it
-  go?** (**Log it** or **Just tick it**).
+- **`needsAnswer`**: plans with people that have ended and aren't done (or marked as
+  didn't happen), for **How did it go?** (**Log it**, **Just tick it** or **Didn't
+  happen**).
 - **`usualGap`** and **`quietDay`**: how long you usually go between logs with someone
   (the middle of the gaps between their last seven logged days), and the day they count as
   gone quiet: half as long again (7 to 60 days), or their layer's quiet days (below) until
@@ -469,7 +471,13 @@ phone later. It's unit-tested in `src/calendar.test.js`.
   people with nothing planned in the next week.
 - **`markDone(ev, day)`** (`lib/reminders.js`): a one-off gets `doneAt` and is finished
   for good; a repeating one adds the day to `doneDays` (the last 14). Logging a plan
-  ticks it off for that day, and only its linked goal (`goalId`) moves.
+  ticks it off for that day, and only its linked goal (`goalId`) moves. Done after all
+  takes the day back out of `missedDays`.
+- **`markMissed(ev, day)`**: it didn't happen. The day goes in `missedDays` (either
+  kind of plan; the last 14), and `isMissedOn` keeps it apart from done: nothing is
+  logged, it isn't counted as done, "How did it go?" stops asking, and it no longer
+  clashes, gets reminders or counts as planned for ideas. Today and the day popup show it
+  struck through with ✕ and "Didn't happen".
 - **One day of a repeating plan**: editing it from one of its days with **Only <day>**
   saves that day as a one-off of its own (moved, retimed, renamed as you like) and adds the
   day to the repeat's `skipDays`, so it isn't there twice; deleting **Only <day>** just
@@ -639,8 +647,16 @@ will be sent.
   arrives after you've moved to someone else is dropped.
 - **Nothing about it is saved** except what you choose: info you Save, and the log.
   The chat itself, the screenshots and Claude's answer are gone once you leave.
-- **Cost**: about US$0.01–0.03 a chat, from your Anthropic credit; the result says what
-  this one cost (`analysisCost`, from the tokens used at US$1 and US$5 per million).
+- **Which model** (`ANALYSIS_MODELS`): **Claude Haiku 4.5**, the cheapest, unless you
+  pick another with the card's **Model** buttons: Sonnet 5.5, Opus 5.5 or Fable 5.1, which
+  think first (slower, and more). `LayersApp` keeps the choice only while Layers is open,
+  so it's Haiku again each start. On a result, **The same chat with another model** sends
+  that chat to another one in a click; each model's answer is kept for that chat, so going
+  back to one shows it again without asking again, and the chat is logged only once.
+- **Cost**: about US$0.02 a chat with Haiku, up to about US$0.35 with Fable, from your
+  Anthropic credit. The card says roughly what one costs (`typicalCost`), and the result
+  what this one did (`analysisCost`, from the tokens used, thinking included, at each
+  model's price).
 - Only in the desktop app: the browser preview has nowhere safe for a key, so it shows
   the samples only.
 

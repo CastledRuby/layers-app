@@ -238,6 +238,43 @@ describe('After a plan', () => {
     expect(screen.queryByText('How did coffee with Morgan go?')).toBeNull();
   });
 
+  it("Didn't happen: nothing is logged, it isn't done, and it stops asking (X does it too)", async () => {
+    const morgan = person('Morgan');
+    seedState({ people: [morgan], events: [{ id: 'c', title: 'Coffee with Morgan', kind: 'oneoff', date: YESTERDAY, time: 600, duration: 60, personIds: [morgan.id], template: 'coffee' }] });
+    const { user } = renderApp();
+    await user.keyboard('{ArrowLeft}');
+    await user.click(screen.getByRole('button', { name: "Didn't happen" }));
+    expect(savedState().events[0]).toMatchObject({ missedDays: [YESTERDAY] });
+    expect(savedState().events[0].doneAt).toBeUndefined();
+    expect(savedState().journal).toEqual([]);
+    expect(toasts()).toContain("Noted: it didn't happen");
+    expect(screen.queryByText('How did coffee with Morgan go?')).toBeNull();
+    expect(screen.getByRole('button', { name: "Coffee with Morgan, didn't happen" })).toBeTruthy();
+    // Undo puts the question back; X answers it the same way.
+    await user.keyboard('{Control>}z{/Control}');
+    expect(screen.getByText('How did coffee with Morgan go?')).toBeTruthy();
+    await user.keyboard('x');
+    expect(savedState().events[0].missedDays).toEqual([YESTERDAY]);
+  });
+
+  it("a repeating plan that didn't happen one day still comes up the next, and logging it after all takes it back", async () => {
+    const morgan = person('Morgan');
+    seedState({ people: [morgan], events: [{ id: 'w', title: 'Walk with Morgan', kind: 'recurring', weekdays: [0, 1, 2, 3, 4, 5, 6], from: day(-3), time: 600, duration: 60, personIds: [morgan.id], template: 'walk' }] });
+    const { user } = renderApp();
+    await user.keyboard('{ArrowLeft}');
+    await user.click(screen.getByRole('button', { name: /^Walk with Morgan/ }));
+    const sheet = dialog(/Walk with Morgan/);
+    await user.click(within(sheet).getByRole('button', { name: /It didn't happen/ }));
+    expect(savedState().events[0].missedDays).toEqual([YESTERDAY]);
+    await user.keyboard('{ArrowLeft}');
+    expect(screen.getByText('How did walk with Morgan go?')).toBeTruthy(); // the day before still asks
+    await user.keyboard('{ArrowRight}');
+    await user.click(screen.getByRole('button', { name: "Walk with Morgan, didn't happen" }));
+    expect(within(dialog(/Walk with Morgan/)).getByText(/Marked as didn't happen/)).toBeTruthy();
+    await user.keyboard('{Enter}'); // done for this day after all
+    expect(savedState().events[0]).toMatchObject({ missedDays: [], doneDays: [YESTERDAY] });
+  });
+
   it('Log it opens the quick log filled in, and saving ticks the plan off', async () => {
     const morgan = person('Morgan');
     seedState({ people: [morgan], events: [{ id: 'c', title: 'Coffee with Morgan', kind: 'oneoff', date: YESTERDAY, time: 600, duration: 60, personIds: [morgan.id], template: 'coffee' }] });

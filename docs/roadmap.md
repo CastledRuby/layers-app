@@ -529,6 +529,19 @@ its own. Changes made while building are marked.
 
 ## History
 
+### Didn't happen, a window that fills the screen, and trying other models (after 1.0.35, not released yet)
+
+- **Didn't happen** on "How did it go?" (or **X**), and **It didn't happen** on a plan
+  that has started: nothing is logged, it isn't counted as done, and it stops asking.
+  Today shows it struck through. A repeating plan is marked for that day only; Undo, or
+  log it after all, takes it back.
+- **Layers always fills the screen**: it opens maximised, and the restore button in the
+  top right (or dragging the title bar) puts it straight back. Minimising still works.
+- **Chat analysis model buttons**: Haiku 4.5, the cheapest, unless you pick Sonnet 5.5,
+  Opus 5.5 or Fable 5.1 in Coach. On a result, **The same chat with another model** asks
+  another in a click, to compare; each answer is kept for that chat. It's back to Haiku
+  each time Layers starts.
+
 ### Analyse your own chat (after 1.0.35, not released yet)
 
 - **Coach → Analyse a chat → Analyse your own chat**: paste a chat, or add up to six

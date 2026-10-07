@@ -84,10 +84,28 @@ test('Layers.exe --quit closes a running Layers cleanly', async () => {
   await quit(relaunched.app);
 });
 
-test('a login launch (--hidden) starts in the tray', async () => {
+test('a login launch (--hidden) starts in the tray, and opens maximised when shown', async () => {
   const dataDir = tempDataDir();
   const { app } = await launch(dataDir, ['--hidden']);
   expect((await mainWindowState(app)).visible).toBe(false);
+  await new Promise((resolve) => { setTimeout(resolve, 1000); });
+  expect((await mainWindowState(app)).visible).toBe(false); // nothing maximised it into view
+  expect(await runExe(dataDir)).toBe(0); // a second launch shows it
+  await expect.poll(async () => { const s = await mainWindowState(app); return s.visible && s.maximized; }, { timeout: 5000 }).toBe(true);
+  await quit(app);
+});
+
+test('Layers always fills the screen: it opens maximised, and restoring it down puts it straight back', async () => {
+  const { app, page } = await launch(tempDataDir());
+  expect((await mainWindowState(app)).maximized).toBe(true);
+  await onboard(page);
+  await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].unmaximize()); // the title bar's restore button
+  await expect.poll(async () => (await mainWindowState(app)).maximized, { timeout: 5000 }).toBe(true);
+  // Closed to the tray and opened again: still maximised.
+  await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].close());
+  await expect.poll(async () => (await mainWindowState(app)).visible).toBe(false);
+  await app.evaluate(({ app: electronApp }) => electronApp.layersToggleWindow());
+  await expect.poll(async () => { const s = await mainWindowState(app); return s.visible && s.maximized; }, { timeout: 5000 }).toBe(true);
   await quit(app);
 });
 
@@ -189,8 +207,11 @@ test('Ctrl+Alt+L sends Layers back when it is in front, and brings it forward ag
   await expect.poll(async () => (await main()).focused, { timeout: 5000 }).toBe(true);
   await toggle();
   await expect.poll(async () => (await main()).minimized, { timeout: 5000 }).toBe(true);
+  await new Promise((resolve) => { setTimeout(resolve, 500); });
+  expect((await main()).minimized).toBe(true); // minimising stays minimised
   await toggle();
   await expect.poll(async () => { const s = await main(); return s.visible && !s.minimized; }, { timeout: 5000 }).toBe(true);
+  expect((await mainWindowState(app)).maximized).toBe(true);
   await quit(app);
 });
 

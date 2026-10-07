@@ -75,6 +75,15 @@ describe('asking Claude', () => {
     expect(sent).not.toHaveProperty('thinking');
   });
 
+  it('asks the model picked in Coach, if it is one Layers offers; otherwise the cheapest', async () => {
+    const opus = claude(reply('{}'));
+    expect(await runAnalysis({ ...request, model: 'claude-opus-5-5' }, { client: opus.client })).toMatchObject({ model: 'claude-opus-5-5' });
+    expect(opus.create.mock.calls[0][0].model).toBe('claude-opus-5-5');
+    const other = claude(reply('{}'));
+    expect(await runAnalysis({ ...request, model: 'claude-3-opus-20240229' }, { client: other.client })).toMatchObject({ model: 'claude-haiku-4-5' });
+    expect(other.create.mock.calls[0][0].model).toBe('claude-haiku-4-5');
+  });
+
   it("refuses requests Layers doesn't make, or with no key", async () => {
     const { client, create } = claude(reply('{}'));
     expect(await runAnalysis({ ...request, content: [{ type: 'tool_use' }] }, { client })).toMatchObject({ error: expect.any(String) });

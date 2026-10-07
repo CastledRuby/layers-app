@@ -64,7 +64,8 @@ interact.
     and making it repeat replaces the copies it covers, with Undo), and Plan it again
     (only offered before a plan starts, without Log it)
   - picking people by number or name
-  - "How did it go?", ideas and birthdays
+  - "How did it go?" (Log it, Just tick it, and Didn't happen: nothing logged, Undo, X,
+    a repeating plan for one day only, done after all), ideas and birthdays
   - what's handed to Windows (a fake `layersSystem`), and notification buttons pressed
     with Layers closed or open
 - `setup.test.jsx` covers knowing which page you're on (the tab marked, pages sliding
@@ -129,12 +130,17 @@ interact.
   removed, the pasted chat sent with names hidden only when Analyse is pressed, the answer
   shown with their name back (info saved, logged once), screenshots (six at most, each
   removable), an error keeping the chat, an answer dropped after moving to someone else,
-  and nothing offered in the browser. `src/analysis.test.js` covers hiding and restoring
+  the model buttons (the cheapest by default and again after a restart, another picked,
+  the same chat with another model in a click, shown again without asking twice, logged
+  once, an error keeping the first answer), and nothing offered in the browser. `src/analysis.test.js` covers hiding and restoring
   names, the request, the schema (every object closed, every field required) and making
   any answer safe; `src/analysisMain.test.js` covers `electron/analysis.cjs` (keys,
   the key kept encrypted, only text and screenshots let through, what's asked of Claude,
-  and every failure in words). No test calls Claude. The end-to-end tests check a key
-  that isn't Anthropic's is refused by the packaged app's main process.
+  and every failure in words, and only the offered models asked for). No test calls
+  Claude. The end-to-end tests check a key
+  that isn't Anthropic's is refused by the packaged app's main process. They also check
+  the window is always maximised: on opening, after its restore button, back from the
+  tray and from a minimise, and that a login launch stays hidden until it's shown.
 - `calendars.test.jsx` covers your Google Calendar (the main process stood in for):
   adding it in Me (a bad address refused), its event on Today marked as Google's and
   opened read-only, nothing of it handed to Windows as a reminder, planning's clash

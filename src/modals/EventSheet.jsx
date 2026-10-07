@@ -1,9 +1,9 @@
 // One plan on one day, opened from the day plan: when, who, how it repeats
 // and its reminder. Before it starts: Edit, Plan it again (a copy) and
-// Delete; Log it and Mark done come once it has started, since there's
-// nothing to log before then.
+// Delete; Log it, Mark done and Didn't happen come once it has started,
+// since there's nothing to log before then.
 // Keys: E edit, C plan it again, T Coach tips (PlanTipsSheet, for a plan with
-// people); once started, L log it and Enter done.
+// people); once started, L log it, Enter done and X didn't happen.
 
 import { useState } from 'react';
 import { Bell, Clock, Copy, Lightbulb, MapPin, Repeat, Target } from 'lucide-react';
@@ -11,7 +11,7 @@ import { Sheet } from '../components/Sheet.jsx';
 import { isTabbedToButton, isTyping } from '../components/sheetLayer.js';
 import { Kbd } from '../components/atoms.jsx';
 import { AvatarStack } from '../components/PersonPick.jsx';
-import { alertOf, durationOf, isDaily, isDoneOn, templateFor } from '../lib/calendar.js';
+import { alertOf, durationOf, isDaily, isDoneOn, isMissedOn, templateFor } from '../lib/calendar.js';
 import { formatCalendarDate, formatTime12, formatWeekdays, parseISODay } from '../lib/dates.js';
 import { PlanTipsSheet } from './PlanTipsSheet.jsx';
 import { COLORS } from '../theme.js';
@@ -31,11 +31,12 @@ function hasStarted(ev, day, today, now = new Date()) {
   return ev.allDay || typeof ev.time !== 'number' || ev.time <= now.getHours() * 60 + now.getMinutes();
 }
 
-export function EventSheet({ ev, day, today, people, goals, journal = [], generalGoals = [], onClose, onLog, onDone, onEdit, onCopy, onDelete, onPrepare }) {
+export function EventSheet({ ev, day, today, people, goals, journal = [], generalGoals = [], onClose, onLog, onDone, onMissed, onEdit, onCopy, onDelete, onPrepare }) {
   const [tips, setTips] = useState(false);
   const who = (ev.personIds || []).map(id => people.find(p => p.id === id)).filter(Boolean);
   const goal = ev.goalId ? goals.find(g => g.id === ev.goalId) : null;
   const done = isDoneOn(ev, day);
+  const missed = !done && isMissedOn(ev, day);
   const started = hasStarted(ev, day, today);
   const alert = alertOf(ev);
   const template = templateFor(ev.template);
@@ -58,6 +59,7 @@ export function EventSheet({ ev, day, today, people, goals, journal = [], genera
     const key = e.key.toLowerCase();
     if (key === 'l' && started && who.length) { e.preventDefault(); onLog(); }
     else if (e.key === 'Enter' && started && !done) { e.preventDefault(); onDone(); }
+    else if (key === 'x' && started && !done && !missed && onMissed) { e.preventDefault(); onMissed(); }
     else if (key === 'e') { e.preventDefault(); onEdit(); }
     else if (key === 'c') { e.preventDefault(); onCopy(); }
     else if (key === 't' && who.length) { e.preventDefault(); setTips(true); }
@@ -78,6 +80,9 @@ export function EventSheet({ ev, day, today, people, goals, journal = [], genera
           ) : (
             <button type="button" onClick={onEdit} className="primary-btn">Edit <Kbd onAccent>E</Kbd></button>
           )}
+          {started && !done && (missed
+            ? <p className="text-xs" style={{ color: COLORS.inkSoft }}>Marked as didn't happen. Log it or mark it done if it did.</p>
+            : onMissed && <button type="button" onClick={onMissed} className="text-xs font-semibold flex items-center gap-1.5 self-start" style={{ color: COLORS.inkSoft }}>It didn't happen <Kbd>X</Kbd></button>)}
           <div className="flex items-center justify-between gap-3">
             {started && <button type="button" onClick={onEdit} className="text-xs font-semibold flex items-center gap-1.5" style={{ color: COLORS.accent }}>Edit <Kbd>E</Kbd></button>}
             {copyButton}

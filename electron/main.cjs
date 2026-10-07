@@ -122,6 +122,7 @@ if (!gotSingleInstanceLock || quitRequested) {
 function showWindow() {
   if (!mainWindow || mainWindow.isDestroyed()) return;
   if (mainWindow.isMinimized()) mainWindow.restore();
+  if (!mainWindow.isMaximized()) mainWindow.maximize(); // always fills the screen
   if (!mainWindow.isVisible()) mainWindow.show();
   mainWindow.focus();
 }
@@ -259,10 +260,15 @@ function setupThemeSync() {
 }
 
 function createWindow() {
+  // The size it would have un-maximised; Layers itself is always maximised
+  // (below), so it isn't maximised from here: maximize() would show a window
+  // that a login launch keeps hidden.
   const windowState = windowStateKeeper({
     defaultWidth: 420,
     defaultHeight: 860,
     file: 'window-state.json',
+    maximize: false,
+    fullScreen: false,
   });
 
   mainWindow = new BrowserWindow({
@@ -272,7 +278,7 @@ function createWindow() {
     height: windowState.height,
     minWidth: 360,
     minHeight: 600,
-    show: !START_HIDDEN,
+    show: false,
     backgroundColor: BACKGROUNDS[savedTheme()],
     title: 'Layers',
     // The .ico has hand-simplified 16-32 px images for the taskbar and title bar.
@@ -286,6 +292,20 @@ function createWindow() {
   });
 
   windowState.manage(mainWindow);
+
+  // Layers always fills the screen: it opens maximised (a login launch waits
+  // in the tray, and showWindow() maximises it then), and the title bar's
+  // restore button, a double-click or dragging it off the top puts it
+  // straight back. Minimising still works.
+  if (!START_HIDDEN) {
+    mainWindow.maximize();
+    mainWindow.show();
+  }
+  mainWindow.on('unmaximize', () => {
+    setImmediate(() => {
+      if (mainWindow && !mainWindow.isDestroyed() && mainWindow.isVisible() && !mainWindow.isMinimized() && !mainWindow.isMaximized()) mainWindow.maximize();
+    });
+  });
 
   mainWindow.loadFile(path.join(__dirname, 'app', 'index.html'));
   // A reload starts a new page, which asks for waiting actions again.

@@ -6,7 +6,7 @@
 // is stood in for; jsdom can't decode pictures, so lib/photo.js is too.
 import { screen, waitFor, within } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { confirmDialog, nav, person, renderApp, savedPerson, savedState, seedState, toasts } from './harness.jsx';
+import { confirmDialog, nav, person, relaunch, renderApp, savedPerson, savedState, seedState, toasts } from './harness.jsx';
 
 vi.mock('../../src/lib/photo.js', () => ({
   MAX_PHOTO_BYTES: 25 * 1024 * 1024,
@@ -156,7 +156,7 @@ describe('chat analysis with Claude', () => {
     await openAnalyse(user, 'Priya');
     await user.type(within(screen.getByLabelText('Your own chat')).getByLabelText('The chat'), 'hello');
     await user.click(screen.getByRole('button', { name: 'Analyse with Claude' }));
-    expect(screen.getByText('Claude is reading the chat…')).toBeTruthy();
+    expect(screen.getByText('Claude Haiku 4.5 is reading the chat…')).toBeTruthy();
     await user.keyboard('1'); // Prepare
     await user.keyboard('{ArrowRight}'); // Morgan
     await user.keyboard('a'); // analyse a chat with Morgan
@@ -165,6 +165,61 @@ describe('chat analysis with Claude', () => {
     await new Promise((resolve) => { setTimeout(resolve, 50); });
     expect(screen.queryByText('Reconstructed conversation')).toBeNull();
     expect(screen.getByLabelText('Your own chat')).toBeTruthy();
+  });
+
+  it('uses the cheapest model unless you pick another, and tries the same chat with another in a click', async () => {
+    const bridge = fakeBridge({ hasKey: true });
+    bridge.runAnalysis = vi.fn(async (request) => ({ result: { ...ANSWER, opportunity: `From ${request.model}` }, usage: { input: 4000, output: 6000 }, model: request.model }));
+    seedState({ people: [person('Priya Shah')] });
+    const app = renderApp();
+    const { user } = app;
+    await openAnalyse(user, 'Priya');
+    const models = () => within(screen.getByRole('group', { name: 'Model' }));
+    expect(models().getByRole('button', { name: /Haiku 4\.5/ }).getAttribute('aria-pressed')).toBe('true');
+    expect(screen.getByText(/to Anthropic for Claude Haiku 4\.5 to read \(about US\$0\.02\)/)).toBeTruthy();
+    await user.click(models().getByRole('button', { name: /Opus 5\.5/ }));
+    expect(screen.getByText(/for Claude Opus 5\.5 to read \(about US\$0\.14; it thinks first/)).toBeTruthy();
+    await user.type(screen.getByLabelText('The chat'), 'Priya: hi');
+    await user.click(screen.getByRole('button', { name: 'Analyse with Claude' }));
+    await screen.findByText('From claude-opus-5-5');
+    expect(bridge.runAnalysis.mock.calls[0][0].model).toBe('claude-opus-5-5');
+    expect(screen.getByText(/Read by Claude Opus 5\.5: this one cost about US\$0\.14/)).toBeTruthy();
+
+    // The same chat with Sonnet: sent once, with the same content.
+    const again = () => within(screen.getByRole('group', { name: 'The same chat with' }));
+    await user.click(again().getByRole('button', { name: /Sonnet 5\.5/ }));
+    await screen.findByText('From claude-sonnet-5-5');
+    expect(bridge.runAnalysis).toHaveBeenCalledTimes(2);
+    expect(bridge.runAnalysis.mock.calls[1][0]).toMatchObject({ model: 'claude-sonnet-5-5', content: bridge.runAnalysis.mock.calls[0][0].content });
+    expect(screen.getByText(/Read by Claude Sonnet 5\.5: this one cost about US\$0\.07/)).toBeTruthy();
+    // Back to Opus: its answer again, without asking again.
+    await user.click(again().getByRole('button', { name: /Opus 5\.5/ }));
+    expect(screen.getByText('From claude-opus-5-5')).toBeTruthy();
+    expect(bridge.runAnalysis).toHaveBeenCalledTimes(2);
+    // One chat is logged once, whichever answer it's logged from.
+    await user.click(screen.getByRole('button', { name: 'Log this as an interaction' }));
+    await user.click(again().getByRole('button', { name: /Sonnet 5\.5/ }));
+    expect(screen.queryByRole('button', { name: 'Log this as an interaction' })).toBeNull();
+    expect(savedState().journal).toHaveLength(1);
+
+    // Started again, it's the cheapest again.
+    const next = relaunch(app);
+    await openAnalyse(next.user, 'Priya');
+    expect(models().getByRole('button', { name: /Haiku 4\.5/ }).getAttribute('aria-pressed')).toBe('true');
+  });
+
+  it('says what went wrong trying another model, and keeps the first answer', async () => {
+    const bridge = fakeBridge({ hasKey: true });
+    bridge.runAnalysis = vi.fn(async (request) => (request.model === 'claude-fable-5-1' ? { error: 'Your Anthropic credit has run out. Add some at console.anthropic.com.' } : { result: ANSWER, usage: { input: 1, output: 1 }, model: request.model }));
+    seedState({ people: [person('Priya Shah')] });
+    const { user } = renderApp();
+    await openAnalyse(user, 'Priya');
+    await user.type(screen.getByLabelText('The chat'), 'Priya: hi');
+    await user.click(screen.getByRole('button', { name: 'Analyse with Claude' }));
+    await screen.findByText('Reconstructed conversation');
+    await user.click(within(screen.getByRole('group', { name: 'The same chat with' })).getByRole('button', { name: /Fable 5\.1/ }));
+    expect((await screen.findByRole('alert')).textContent).toMatch(/credit has run out/);
+    expect(screen.getByText(/Read by Claude Haiku 4\.5/)).toBeTruthy();
   });
 
   it("isn't offered in the browser, where there's nowhere safe for a key", async () => {

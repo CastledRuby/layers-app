@@ -47,7 +47,7 @@ export function mainWindowState(app) {
   return app.evaluate(({ BrowserWindow }) => {
     const wins = BrowserWindow.getAllWindows();
     const w = wins[0];
-    return { count: wins.length, visible: w ? w.isVisible() : false, destroyed: w ? w.isDestroyed() : true, background: w ? w.getBackgroundColor() : null };
+    return { count: wins.length, visible: w ? w.isVisible() : false, destroyed: w ? w.isDestroyed() : true, background: w ? w.getBackgroundColor() : null, maximized: w ? w.isMaximized() : false };
   });
 }
 

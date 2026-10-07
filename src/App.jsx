@@ -17,7 +17,8 @@ import { advanceLayer, advanceSkillGoals, bumpSkills, chartDay, computeOverall, 
 import { MAX_BACKUP_BYTES, createBackup, validateBackup } from './lib/backup.js';
 import { NOTIFY_DEFAULTS, isDoneOn, notifySettings, parseActionUrl, snoozeUntil, templateFor } from './lib/calendar.js';
 import { useCalendarNotifications, useDailyBackup, useDailyCheckIn, useSlideAcross, useSystemDark, useToday, useWide } from './lib/hooks.js';
-import { followUpEvent, markDone } from './lib/reminders.js';
+import { followUpEvent, markDone, markMissed } from './lib/reminders.js';
+import { DEFAULT_ANALYSIS_MODEL } from './lib/analysis.js';
 import { getFeedCache, setFeedCache, getSyncSettings, setSyncSettings, getSnoozes, loadSavedState, persistState, setSnoozes } from './lib/storage.js';
 import { clamp, uid } from './lib/util.js';
 import { AddInfoModal } from './modals/AddInfoModal.jsx';
@@ -398,6 +399,9 @@ function LayersApp() {
   // --- Chat analysis with Claude (lib/analysis.js, electron/analysis.cjs) ---
   const analysisBridge = hasSystemBridge && window.layersSystem.runAnalysis ? window.layersSystem : null;
   const [hasAnalysisKey, setHasAnalysisKey] = useState(false);
+  // The model chats are analysed with: the cheapest each time Layers starts,
+  // and another only while you try it (Coach's model buttons).
+  const [analysisModelId, setAnalysisModelId] = useState(DEFAULT_ANALYSIS_MODEL);
   useEffect(() => {
     if (analysisBridge) Promise.resolve(analysisBridge.getAnalysisKeyStatus()).then(s => setHasAnalysisKey(Boolean(s && s.hasKey))).catch(() => {});
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -866,6 +870,13 @@ function LayersApp() {
     const snap = snapshot();
     setEvents(prev => prev.map(e => e.id === eventId ? markDone(e, day) : e));
     if (!quiet) pushToast('Marked done', { undo: snap });
+  }
+  // It didn't happen: no log, and "How did it go?" stops asking (a repeating
+  // plan for that day only).
+  function handleMarkEventMissed(eventId, day) {
+    const snap = snapshot();
+    setEvents(prev => prev.map(e => e.id === eventId ? markMissed(e, day) : e));
+    pushToast("Noted: it didn't happen", { undo: snap });
   }
   function handleSaveKeyDate(personId, kd) {
     setPeople(prev => prev.map(p => p.id !== personId ? p : { ...p, dates: [...(p.dates || []), { id: uid(), ...kd }] }));
@@ -1432,10 +1443,11 @@ function LayersApp() {
                     )}
                     {screen.name === 'tabs' && (
                       <>
-                        {activeTab === 'today' && <TodayView wide={wide} today={today} selectedDay={selectedDay || today} onSelectDay={(d) => setSelectedDay(d === today ? null : d)} mode={calendarMode} onSetMode={setCalendarMode} people={people} journal={journal} events={shownEvents} generalGoals={generalGoals} skills={skills} profile={profile} onPlan={openPlan} onOpenEvent={(eventId, day) => setEventView({ eventId, day })} onLogEvent={openLogFromEvent} onTickEvent={(ev, day) => handleMarkEventDone(ev.id, day)} onOpenPerson={openPerson} onAddPerson={() => setAddPersonOpen(true)} onOpenLog={() => openLog(null)} onSwitchTab={switchTab} onOpenGoals={openGoalsOverview} onOpenReview={setWeekReview} onOpenDay={setDayView} onOpenJump={() => { setJumpOpen(true); markTried('jump'); }} onHideFirstSteps={() => setProfile(p => ({ ...p, gettingStartedHidden: true }))} />}
+                        {activeTab === 'today' && <TodayView wide={wide} today={today} selectedDay={selectedDay || today} onSelectDay={(d) => setSelectedDay(d === today ? null : d)} mode={calendarMode} onSetMode={setCalendarMode} people={people} journal={journal} events={shownEvents} generalGoals={generalGoals} skills={skills} profile={profile} onPlan={openPlan} onOpenEvent={(eventId, day) => setEventView({ eventId, day })} onLogEvent={openLogFromEvent} onTickEvent={(ev, day) => handleMarkEventDone(ev.id, day)} onMissEvent={(ev, day) => handleMarkEventMissed(ev.id, day)} onOpenPerson={openPerson} onAddPerson={() => setAddPersonOpen(true)} onOpenLog={() => openLog(null)} onSwitchTab={switchTab} onOpenGoals={openGoalsOverview} onOpenReview={setWeekReview} onOpenDay={setDayView} onOpenJump={() => { setJumpOpen(true); markTried('jump'); }} onHideFirstSteps={() => setProfile(p => ({ ...p, gettingStartedHidden: true }))} />}
                         {activeTab === 'people' && <PeopleView people={people} journal={journal} onOpenPerson={openPerson} onAddPerson={() => setAddPersonOpen(true)} onAddPhotos={() => setPhotoFolderOpen(true)} />}
                         {activeTab === 'coach' && <div className="page-col"><CoachView people={people} journal={journal} initialPersonId={coachInit.personId} initialTab={coachInit.tab} onOpenLog={openLog} onApproveInfo={handleApproveInfo} onLogFromAnalysis={handleLogFromAnalysis} onOpenPerson={openPerson}
-                          analysisReady={!analysisBridge ? 'none' : hasAnalysisKey ? 'ready' : 'no-key'} onAnalyse={(request) => analysisBridge.runAnalysis(request)} onOpenMe={() => switchTab('me')} yourName={profile.name} /></div>}
+                          analysisReady={!analysisBridge ? 'none' : hasAnalysisKey ? 'ready' : 'no-key'} onAnalyse={(request) => analysisBridge.runAnalysis(request)} onOpenMe={() => switchTab('me')} yourName={profile.name}
+                          model={analysisModelId} onModel={setAnalysisModelId} /></div>}
                         {activeTab === 'journal' && <div className="page-col"><JournalView today={today} people={people} generalGoals={generalGoals} journal={journal} goalFilter={journalGoal} onGoalFilter={setJournalGoal}
                           personFilter={journalPerson} onPersonFilter={setJournalPerson} dayFilter={journalDay} onDayFilter={setJournalDay} onOpenPerson={openPerson} onEditEntry={setEditingEntryId} /></div>}
                         {activeTab === 'me' && <div className="page-col"><MeView people={people} journal={journal} skills={skills} generalGoals={generalGoals} profile={profile} onAddSample={handleAddSample} onRemoveSample={handleRemoveSample} hasSamplePeople={people.some(p => SAMPLE_PERSON_IDS.has(p.id))} canAddSample={INITIAL_PEOPLE.some(sp => !people.some(p => p.id === sp.id))} onStartOver={() => setStartOverOpen(true)} onExport={handleExportData} onImportClick={handleImportClick} backupInfo={backupInfo} onOpenBackups={handleOpenBackups} hasUpdater={hasUpdater} updateStatus={updateStatus} onCheckForUpdates={handleCheckForUpdates} onInstallUpdate={handleInstallUpdate} onOpenDownloadPage={handleOpenDownloadPage} shortcutStatus={shortcutStatus} themeMode={themeMode} onSetTheme={setThemeMode} onUpdateProfile={(changes) => setProfile(p => ({ ...p, ...changes }))} onEditProfile={() => setEditProfileOpen(true)} achievements={achievements || {}} hasSystemBridge={hasSystemBridge} autoLaunch={autoLaunch} onToggleAutoLaunch={handleToggleAutoLaunch} onOpenShortcuts={() => setShortcutsOpen(true)} appVersion={appVersion}
@@ -1474,7 +1486,7 @@ function LayersApp() {
             {planState && <PlanSheet people={people} events={shownEvents} today={today} prefill={planState} defaultAlert={notifySettings(profile).defaultAlert} onClose={() => setPlanState(null)} onSave={handleSavePlan} onDelete={handleDeleteEvent} onCreateGoal={handleQuickGoal} />}
             {eventView && shownEvents.some(e => e.id === eventView.eventId) && (() => {
               const ev = shownEvents.find(e => e.id === eventView.eventId);
-              return <EventSheet ev={ev} day={eventView.day} today={today} people={people} goals={[...people.flatMap(p => p.goals), ...generalGoals]} journal={journal} generalGoals={generalGoals} onPrepare={openPrepare} onClose={() => setEventView(null)} onLog={() => openLogFromEvent(ev, eventView.day)} onDone={() => { handleMarkEventDone(ev.id, eventView.day); setEventView(null); }} onEdit={() => openPlan({ event: ev, day: eventView.day })} onCopy={() => openPlan({ copyOf: ev, day: eventView.day })} onDelete={() => handleDeleteEvent(ev.id, eventView.day)} />;
+              return <EventSheet ev={ev} day={eventView.day} today={today} people={people} goals={[...people.flatMap(p => p.goals), ...generalGoals]} journal={journal} generalGoals={generalGoals} onPrepare={openPrepare} onClose={() => setEventView(null)} onLog={() => openLogFromEvent(ev, eventView.day)} onDone={() => { handleMarkEventDone(ev.id, eventView.day); setEventView(null); }} onMissed={() => { handleMarkEventMissed(ev.id, eventView.day); setEventView(null); }} onEdit={() => openPlan({ event: ev, day: eventView.day })} onCopy={() => openPlan({ copyOf: ev, day: eventView.day })} onDelete={() => handleDeleteEvent(ev.id, eventView.day)} />;
             })()}
             {dayView && (
               <DaySheet day={dayView} today={today} people={people} journal={journal} events={shownEvents} generalGoals={generalGoals}

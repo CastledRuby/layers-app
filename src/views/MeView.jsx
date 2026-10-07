@@ -59,8 +59,8 @@ function AnalysisKeyCard({ analysisKey, onSave, onRemove }) {
       <p className="text-sm font-semibold" style={{ color: COLORS.ink }}>Chat analysis (Claude)</p>
       <p className="text-xs mt-1.5" style={{ color: COLORS.inkSoft }}>
         {analysisKey.hasKey
-          ? 'Ready: Coach → Analyse a chat sends a chat you choose to Claude Haiku 4.5, only when you press Analyse. About US$0.03 a chat, from your Anthropic credit.'
-          : 'Analyse your own chats in Coach with Claude. Make an API key at console.anthropic.com (API keys), add a few dollars of credit there (about US$0.03 a chat with Claude Haiku 4.5), then paste the key here. Layers keeps it on this laptop, protected by Windows.'}
+          ? 'Ready: Coach → Analyse a chat sends a chat you choose to Claude, only when you press Analyse, from your Anthropic credit. It uses Claude Haiku 4.5, the cheapest (about US$0.02 a chat); pick a bigger model there to compare, until Layers is next started.'
+          : 'Analyse your own chats in Coach with Claude. Make an API key at console.anthropic.com (API keys), add a few dollars of credit there (about US$0.02 a chat with Claude Haiku 4.5, the cheapest), then paste the key here. Layers keeps it on this laptop, protected by Windows.'}
       </p>
       {analysisKey.hasKey ? (
         <button type="button" onClick={onRemove} className="text-xs font-semibold rounded-full px-3 py-2 mt-3" style={{ background: COLORS.paperRaised, color: COLORS.inkSoft, border: `1px solid ${COLORS.line}` }}>Remove the key</button>

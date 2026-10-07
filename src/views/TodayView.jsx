@@ -6,7 +6,7 @@
 // ← → move a day and ↑ ↓ a week, T comes back to today, and Enter (or
 // clicking the day that's picked) opens the day in a popup (DaySheet), with
 // Coach tips for its plans. L and J answer the first
-// "How did it go?" (Log it, Just tick it), I plans the first idea, and W
+// "How did it go?" (Log it, Just tick it, X didn't happen), I plans the first idea, and W
 // In a wide window (`wide`) the month grid sits beside the day all the time,
 // in place of the week strip and the Day/Month switch.
 // W opens the week's review (shown as a card on Sundays; on a Monday, last
@@ -14,7 +14,7 @@
 // (anywhere) plans something on the day shown; that one lives in App.jsx.
 
 import { useEffect, useMemo } from 'react';
-import { Bell, Check, ChevronLeft, ChevronRight, Plus, Repeat, Search } from 'lucide-react';
+import { Bell, Check, ChevronLeft, ChevronRight, Plus, Repeat, Search, X } from 'lucide-react';
 import { Kbd, ProgressBar } from '../components/atoms.jsx';
 import { AvatarStack } from '../components/PersonPick.jsx';
 import { hasOpenSheet, isTabbedToButton as isTabbed, isTyping } from '../components/sheetLayer.js';
@@ -116,12 +116,13 @@ function SectionTitle({ children, extra }) {
 }
 
 function EventRow({ item, now, onOpen }) {
-  const { ev, start, end, people, done } = item;
+  const { ev, start, end, people, missed } = item;
+  const done = item.done || missed; // either way it's over: shown faded and struck through
   const template = templateFor(ev.template);
   const past = end !== null && now !== null && end <= now;
   const alert = alertOf(ev);
   return (
-    <button type="button" onClick={onOpen} aria-label={`${ev.title}${done ? ', done' : ''}`} className="w-full flex items-stretch gap-3 text-left event-row">
+    <button type="button" onClick={onOpen} aria-label={`${ev.title}${missed ? ", didn't happen" : done ? ', done' : ''}`} className="w-full flex items-stretch gap-3 text-left event-row">
       <div className="shrink-0 text-right pt-2.5" style={{ width: 62 }}>
         {start === null ? (
           <p className="text-xs font-semibold" style={{ color: COLORS.inkSoft }}>All day</p>
@@ -134,11 +135,12 @@ function EventRow({ item, now, onOpen }) {
       </div>
       <div className="flex-1 min-w-0 rounded-2xl px-3.5 py-2.5 mb-2" style={{ background: done ? 'transparent' : COLORS.paperRaised, border: `1px solid ${COLORS.line}`, boxShadow: done ? 'none' : `inset 3px 0 0 ${ev.source === 'google' ? COLORS.line : people.length ? getLayer(Math.max(...people.map(p => p.layer))).color : COLORS.accent}`, opacity: done ? 0.6 : 1 }}>
         <div className="flex items-center gap-2">
-          {done ? <Check size={15} color={COLORS.good} strokeWidth={3} /> : ev.source === 'google' ? <span aria-hidden="true">📅</span> : template && <span aria-hidden="true">{template.emoji}</span>}
+          {missed ? <X size={15} color={COLORS.inkSoft} strokeWidth={3} /> : done ? <Check size={15} color={COLORS.good} strokeWidth={3} /> : ev.source === 'google' ? <span aria-hidden="true">📅</span> : template && <span aria-hidden="true">{template.emoji}</span>}
           <p className="text-sm font-semibold flex-1 min-w-0 truncate" style={{ color: COLORS.ink, textDecoration: done ? 'line-through' : 'none' }}>{ev.title}</p>
           {people.length > 0 && <AvatarStack people={people} size={22} />}
         </div>
         <p className="text-xs mt-0.5 flex items-center gap-1.5" style={{ color: COLORS.inkSoft }}>
+          {missed && <span className="shrink-0 font-semibold">Didn't happen</span>}
           {people.length > 0 && <span className="truncate">{people.map(p => p.name).join(', ')}</span>}
           {ev.source === 'google' && <span className="truncate">{ev.feedName || 'Google Calendar'}{ev.location ? ` · ${ev.location}` : ''}</span>}
           {ev.kind === 'recurring' && <span className="flex items-center gap-0.5 shrink-0"><Repeat size={11} />{isDaily(ev) ? 'Daily' : 'Weekly'}</span>}
@@ -149,7 +151,7 @@ function EventRow({ item, now, onOpen }) {
   );
 }
 
-export function TodayView({ today, selectedDay, onSelectDay, mode, onSetMode, people, journal, events, generalGoals, skills, profile, onPlan, onOpenEvent, onLogEvent, onTickEvent, onOpenPerson, onAddPerson, onOpenLog, onSwitchTab, onOpenGoals, onOpenReview, onOpenDay, onOpenJump, onHideFirstSteps, wide = false }) {
+export function TodayView({ today, selectedDay, onSelectDay, mode, onSetMode, people, journal, events, generalGoals, skills, profile, onPlan, onOpenEvent, onLogEvent, onTickEvent, onMissEvent, onOpenPerson, onAddPerson, onOpenLog, onSwitchTab, onOpenGoals, onOpenReview, onOpenDay, onOpenJump, onHideFirstSteps, wide = false }) {
   const state = useMemo(() => ({ people, journal, events, generalGoals }), [people, journal, events, generalGoals]);
   const day = selectedDay || today;
   const sel = parseISODay(day);
@@ -186,13 +188,14 @@ export function TodayView({ today, selectedDay, onSelectDay, mode, onSetMode, pe
       else if (e.key === 't' || e.key === 'T') { e.preventDefault(); onSelectDay(today); }
       else if ((e.key === 'l' || e.key === 'L') && waiting[0]) { e.preventDefault(); onLogEvent(waiting[0].ev, day); }
       else if ((e.key === 'j' || e.key === 'J') && waiting[0]) { e.preventDefault(); onTickEvent(waiting[0].ev, day); }
+      else if ((e.key === 'x' || e.key === 'X') && waiting[0] && onMissEvent) { e.preventDefault(); onMissEvent(waiting[0].ev, day); }
       else if ((e.key === 'i' || e.key === 'I') && ideas[0]) { e.preventDefault(); onPlan({ day, personIds: [ideas[0].person.id], template: ideas[0].template }); }
       // On a Monday the week has barely begun, so W shows the one just gone.
       else if ((e.key === 'w' || e.key === 'W') && onOpenReview) { e.preventDefault(); onOpenReview(sel.getDay() === 1 ? addDays(day, -1) : day); }
     }
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [mode, day, today, waiting, ideas, onSetMode, onSelectDay, onLogEvent, onTickEvent, onPlan, onOpenReview, onOpenDay]);
+  }, [mode, day, today, waiting, ideas, onSetMode, onSelectDay, onLogEvent, onTickEvent, onMissEvent, onPlan, onOpenReview, onOpenDay]);
   // Clicking the day that's already picked opens it in the popup.
   const pickDay = (d) => (d === day && onOpenDay ? onOpenDay(d) : onSelectDay(d));
 
@@ -256,6 +259,7 @@ export function TodayView({ today, selectedDay, onSelectDay, mode, onSetMode, pe
               <div className="flex items-center gap-2 mt-2.5">
                 <button type="button" onClick={() => onLogEvent(it.ev, day)} className="text-xs font-semibold rounded-full px-3.5 py-2 flex items-center gap-1.5" style={{ background: COLORS.accent, color: COLORS.onAccent }}>Log it{i === 0 && <Kbd onAccent>L</Kbd>}</button>
                 <button type="button" onClick={() => onTickEvent(it.ev, day)} className="chip">Just tick it{i === 0 && <Kbd>J</Kbd>}</button>
+                {onMissEvent && <button type="button" onClick={() => onMissEvent(it.ev, day)} className="chip">Didn't happen{i === 0 && <Kbd>X</Kbd>}</button>}
               </div>
             </div>
           ))}
@@ -269,7 +273,7 @@ export function TodayView({ today, selectedDay, onSelectDay, mode, onSetMode, pe
       {agenda.allDay.length > 0 && (
         <div className="flex flex-wrap gap-1.5 mb-3">
           {agenda.allDay.map(x => x.kind === 'event' ? (
-            <button key={x.id} type="button" onClick={() => onOpenEvent(x.ev.id, day)} className={`chip${x.done || x.ev.source === 'google' ? '' : ' chip--on'}`}>{x.done ? <Check size={12} /> : x.ev.source === 'google' ? '📅' : '📌'} {x.ev.title}</button>
+            <button key={x.id} type="button" onClick={() => onOpenEvent(x.ev.id, day)} className={`chip${x.done || x.missed || x.ev.source === 'google' ? '' : ' chip--on'}`}>{x.missed ? <X size={12} /> : x.done ? <Check size={12} /> : x.ev.source === 'google' ? '📅' : '📌'} {x.ev.title}</button>
           ) : (
             <button key={x.id} type="button" onClick={() => x.person ? onOpenPerson(x.person.id) : onOpenGoals()} className="chip">{x.emoji} {x.label}</button>
           ))}

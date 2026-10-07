@@ -17,6 +17,7 @@
 //                 0 (at the time), which is how reminders before 1.0.30 behaved.
 //     template?   a key of EVENT_TEMPLATES
 //     personIds, goalId?, defaultMeaningfulness, doneAt?, doneDays?,
+//     missedDays? days it didn't happen (nothing logged, not counted as done)
 //     createdAt, updatedAt? }
 // A person's key dates (person.dates) are { id, kind, label, date: 'YYYY-MM-DD',
 // yearly }: a yearly one (birthday) comes round on the same month and day.
@@ -92,6 +93,11 @@ export function isDoneOn(ev, day) {
   return (ev.doneDays || []).includes(day) || ev.doneOn === day;
 }
 
+// "Didn't happen" on that day: no log, and not asked about again.
+export function isMissedOn(ev, day) {
+  return (ev.missedDays || []).includes(day);
+}
+
 export const durationOf = (ev) => (typeof ev.duration === 'number' && ev.duration > 0 ? ev.duration : DEFAULT_DURATION);
 export const alertOf = (ev) => (ev.alert === undefined ? 0 : ev.alert);
 const timed = (ev) => !ev.allDay && typeof ev.time === 'number';
@@ -133,6 +139,7 @@ export function dayAgenda({ events = [], people = [], generalGoals = [], journal
     kind: 'event', id: ev.id, ev, day,
     people: (ev.personIds || []).map(id => peopleById[id]).filter(Boolean),
     done: isDoneOn(ev, day),
+    missed: isMissedOn(ev, day),
     start: timed(ev) ? ev.time : null,
     end: timed(ev) ? ev.time + durationOf(ev) : null,
   }));
@@ -177,16 +184,17 @@ export function recentPlans(events = [], limit = 4) {
 // `duration` minutes (leaving out the plan being edited, `exceptId`).
 export function clashesOn(state, day, start, duration, exceptId) {
   const events = (state.events || []).filter(ev => ev.id !== exceptId);
-  return dayAgenda({ ...state, events }, day).timed.filter(it => !it.done && it.start < start + duration && it.end > start);
+  return dayAgenda({ ...state, events }, day).timed.filter(it => !it.done && !it.missed && it.start < start + duration && it.end > start);
 }
 
 // Events whose time has passed today (or on an earlier day still being
-// looked at) that have people and aren't done: "How did it go?"
+// looked at) that have people and aren't done, or marked as didn't happen:
+// "How did it go?"
 export function needsAnswer(agenda, day, now = new Date()) {
   const today = toISODate(now);
   if (day > today) return [];
   const minutes = now.getHours() * 60 + now.getMinutes();
-  return agenda.timed.filter(it => !it.done && it.people.length > 0 && (day < today || it.end <= minutes));
+  return agenda.timed.filter(it => !it.done && !it.missed && it.people.length > 0 && (day < today || it.end <= minutes));
 }
 
 // People it's been a while since you logged anything with, and nothing is
@@ -196,7 +204,7 @@ const QUIET_DAYS = { 1: 35, 2: 21, 3: 14, 4: 7 };
 export function planIdeas({ people = [], journal = [], events = [] }, now = new Date(), max = 2) {
   const today = startOfDay(now);
   const nextWeek = Array.from({ length: 7 }, (_, i) => toISODate(addDays(today, i)));
-  const planned = new Set(events.filter(ev => nextWeek.some(day => occursOn(ev, day) && !isDoneOn(ev, day))).flatMap(ev => ev.personIds || []));
+  const planned = new Set(events.filter(ev => nextWeek.some(day => occursOn(ev, day) && !isDoneOn(ev, day) && !isMissedOn(ev, day))).flatMap(ev => ev.personIds || []));
   const last = new Map();
   journal.forEach(j => {
     const d = journalDaysAgo(j, now);
@@ -304,7 +312,7 @@ export function plannedNotifications(state, settings, from, to, snoozes = []) {
     if (s.reminderNotifications) {
       [...agenda.timed, ...agenda.allDay.filter(x => x.kind === 'event')].forEach(it => {
         const alert = alertOf(it.ev);
-        if (it.done || alert === null) return;
+        if (it.done || it.missed || alert === null) return;
         const start = it.start === null ? 9 * 60 : it.start;
         const who = withWho(it.ev);
         out.push({
@@ -316,7 +324,7 @@ export function plannedNotifications(state, settings, from, to, snoozes = []) {
     }
     if (s.askAfter) {
       agenda.timed.forEach(it => {
-        if (it.done || !it.people.length) return;
+        if (it.done || it.missed || !it.people.length) return;
         out.push({ tag: `f:${it.ev.id}:${day}`, at: at(day, it.end), kind: 'after', eventId: it.ev.id, day, title: `How did it go with ${withWho(it.ev)}?`, body: `${it.ev.title}. Log it, or just tick it off.` });
       });
     }
@@ -381,7 +389,7 @@ export function plannedNotifications(state, settings, from, to, snoozes = []) {
   const eventsById = Object.fromEntries((state.events || []).map(ev => [ev.id, ev]));
   snoozes.forEach(sn => {
     const ev = eventsById[sn.eventId];
-    if (!ev || isDoneOn(ev, sn.day)) return;
+    if (!ev || isDoneOn(ev, sn.day) || isMissedOn(ev, sn.day)) return;
     const who = withWho(ev);
     out.push({ tag: `s:${sn.id}`, at: sn.at, kind: 'snooze', eventId: ev.id, day: sn.day, title: ev.title, body: ['Snoozed reminder', who && `with ${who}`].filter(Boolean).join(' · ') });
   });

@@ -9,8 +9,10 @@ const path = require('path');
 const Anthropic = require('@anthropic-ai/sdk');
 
 const Client = Anthropic.Anthropic || Anthropic.default || Anthropic;
-// The model you picked on 2026-10-07: Claude Haiku 4.5, to start with.
-const MODEL = 'claude-haiku-4-5';
+// The models Coach may ask for (src/lib/analysis.js ANALYSIS_MODELS);
+// anything else gets the first, Claude Haiku 4.5, the cheapest.
+const MODELS = ['claude-haiku-4-5', 'claude-sonnet-5-5', 'claude-opus-5-5', 'claude-fable-5-1'];
+const MODEL = MODELS[0];
 const MAX_IMAGES = 6;
 const MAX_IMAGE_CHARS = 6 * 1024 * 1024; // base64, after the page shrinks them
 const MAX_TEXT_CHARS = 60000;
@@ -72,17 +74,19 @@ function errorText(e) {
   return "Couldn't analyse that chat.";
 }
 
-// Asks Claude for the analysis: { system, content, schema } from the page.
-// Resolves to { result, usage: { input, output }, model } or { error }.
+// Asks Claude for the analysis: { system, content, schema, model? } from the
+// page. Resolves to { result, usage: { input, output }, model } or { error }.
+// The bigger models think first, so it waits up to 5 minutes.
 // `client` is replaced in tests.
 async function runAnalysis(request, { apiKey, client = null } = {}) {
   const content = cleanContent(request && request.content);
   if (!content || typeof request.system !== 'string' || !request.schema || typeof request.schema !== 'object') return { error: 'That request isn’t one Layers makes.' };
   if (!apiKey && !client) return { error: 'Add your Anthropic API key in Me first.' };
-  const anthropic = client || new Client({ apiKey, timeout: 120000, maxRetries: 2 });
+  const model = MODELS.includes(request.model) ? request.model : MODEL;
+  const anthropic = client || new Client({ apiKey, timeout: 300000, maxRetries: 2 });
   try {
     const response = await anthropic.messages.create({
-      model: MODEL,
+      model,
       max_tokens: 16000,
       system: request.system,
       messages: [{ role: 'user', content }],
@@ -94,7 +98,7 @@ async function runAnalysis(request, { apiKey, client = null } = {}) {
     let result;
     try { result = JSON.parse(text); } catch { return { error: "Claude's answer couldn't be read. Try again." }; }
     const usage = response.usage || {};
-    return { result, model: MODEL, usage: { input: usage.input_tokens || 0, output: usage.output_tokens || 0 } };
+    return { result, model, usage: { input: usage.input_tokens || 0, output: usage.output_tokens || 0 } };
   } catch (e) {
     return { error: errorText(e) };
   }
@@ -111,4 +115,4 @@ async function checkKey(apiKey, { client = null } = {}) {
   }
 }
 
-module.exports = { checkKey, cleanContent, cleanKey, keyStore, MODEL, runAnalysis };
+module.exports = { checkKey, cleanContent, cleanKey, keyStore, MODEL, MODELS, runAnalysis };

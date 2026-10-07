@@ -6,9 +6,19 @@
 
 import { CATEGORIES, CONV_STATES, LAYERS } from '../data/constants.js';
 
-export const ANALYSIS_MODEL_NAME = 'Claude Haiku 4.5';
-// Claude Haiku 4.5's prices per million tokens (US$), for "this one cost about".
-const PRICE = { input: 1, output: 5 };
+// The models you can try it with, cheapest first. Haiku 4.5 is the cheapest
+// Claude and the one used unless you pick another (each time Layers starts,
+// it's Haiku again); the others think before answering, which is slower and
+// costs more. Prices are US$ per million tokens, for "this one cost about".
+// electron/analysis.cjs allows exactly these.
+export const ANALYSIS_MODELS = [
+  { id: 'claude-haiku-4-5', name: 'Claude Haiku 4.5', short: 'Haiku 4.5', price: { input: 1, output: 5 }, thinks: false },
+  { id: 'claude-sonnet-5-5', name: 'Claude Sonnet 5.5', short: 'Sonnet 5.5', price: { input: 2, output: 10 }, thinks: true },
+  { id: 'claude-opus-5-5', name: 'Claude Opus 5.5', short: 'Opus 5.5', price: { input: 4, output: 20 }, thinks: true },
+  { id: 'claude-fable-5-1', name: 'Claude Fable 5.1', short: 'Fable 5.1', price: { input: 10, output: 50 }, thinks: true },
+];
+export const DEFAULT_ANALYSIS_MODEL = ANALYSIS_MODELS[0].id;
+export const analysisModel = (id) => ANALYSIS_MODELS.find(m => m.id === id) || ANALYSIS_MODELS[0];
 export const MAX_SCREENSHOTS = 6;
 export const THEM = '[them]';
 export const YOU = '[you]';
@@ -80,15 +90,16 @@ export function restoreNames(value, theirName) {
   return value;
 }
 
-// The request for the main process: { system, content, schema }. images:
-// [{ mediaType, data }] (base64, already shrunk); text: pasted, names hidden.
-export function analysisRequest({ person, yourName, text, images = [] }) {
+// The request for the main process: { system, content, schema, model }.
+// images: [{ mediaType, data }] (base64, already shrunk); text: pasted, names
+// hidden; model: one of ANALYSIS_MODELS (the cheapest otherwise).
+export function analysisRequest({ person, yourName, text, images = [], model = DEFAULT_ANALYSIS_MODEL }) {
   const pasted = String(text || '').trim();
   const content = [
     ...images.slice(0, MAX_SCREENSHOTS).map(im => ({ type: 'image', source: { type: 'base64', media_type: im.mediaType, data: im.data } })),
     { type: 'text', text: pasted ? `The chat:\n\n${hideNames(pasted, { theirName: person.name, yourName })}` : `The chat is in the ${images.length === 1 ? 'screenshot' : 'screenshots'} above.` },
   ];
-  return { system: analysisSystem(person.layer), content, schema: ANALYSIS_SCHEMA };
+  return { system: analysisSystem(person.layer), content, schema: ANALYSIS_SCHEMA, model: analysisModel(model).id };
 }
 
 // The answer, checked and made safe to show: a "scenario" like the samples.
@@ -114,8 +125,16 @@ export function analysisResult(raw, person) {
   };
 }
 
-// "about US$0.02", from the tokens it used.
-export function analysisCost({ input = 0, output = 0 } = {}) {
-  const dollars = (input * PRICE.input + output * PRICE.output) / 1e6;
+// "about US$0.02", from the tokens it used (thinking counts as output).
+export function analysisCost({ input = 0, output = 0 } = {}, model = DEFAULT_ANALYSIS_MODEL) {
+  const { price } = analysisModel(model);
+  const dollars = (input * price.input + output * price.output) / 1e6;
   return dollars < 0.01 ? 'under US$0.01' : `about US$${dollars.toFixed(2)}`;
+}
+
+// Roughly what a typical chat costs with a model, before sending it: a few
+// thousand tokens in, the answer out (and the thinking, for those that think).
+// Screenshots add a little.
+export function typicalCost(model) {
+  return analysisCost({ input: 4000, output: analysisModel(model).thinks ? 6000 : 2500 }, model);
 }

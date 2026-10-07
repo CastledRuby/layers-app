@@ -7,7 +7,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Check, ImagePlus, X } from 'lucide-react';
 import { Avatar, ChatBubble, ConvStateBadge, Kbd, LabeledBar, LayerBadge } from '../components/atoms.jsx';
 import { hasOpenSheet, isTyping } from '../components/sheetLayer.js';
-import { ANALYSIS_MODEL_NAME, analysisCost, analysisRequest, analysisResult, MAX_SCREENSHOTS } from '../lib/analysis.js';
+import { ANALYSIS_MODELS, analysisCost, analysisModel, analysisRequest, analysisResult, DEFAULT_ANALYSIS_MODEL, MAX_SCREENSHOTS, typicalCost } from '../lib/analysis.js';
 import { isPictureFile } from '../data/avatars.js';
 import { loadPhoto, shrinkForAnalysis } from '../lib/photo.js';
 import { categoryMeta, DIM_COLORS, getLayer } from '../data/constants.js';
@@ -28,10 +28,25 @@ function Tones({ item, intro }) {
   );
 }
 
+// Which Claude reads your chat: one button per model, cheapest first. done:
+// the models that already answered this chat (shown again for free).
+function ModelButtons({ label, value, onPick, done = {} }) {
+  return (
+    <div role="group" aria-label={label} className="flex flex-wrap gap-1.5">
+      {ANALYSIS_MODELS.map(m => (
+        <button key={m.id} type="button" onClick={() => onPick(m.id)} aria-pressed={value === m.id} className={`chip${value === m.id ? ' chip--on' : ''}`} style={{ padding: '5px 10px' }}>
+          {done[m.id] && <Check size={12} />}{m.short}{m.id === DEFAULT_ANALYSIS_MODEL && <span style={{ opacity: 0.7, fontWeight: 500 }}>· cheapest</span>}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 // analysisReady: 'none' (no desktop bridge), 'no-key' or 'ready', for
 // analysing your own chat with Claude (onAnalyse sends the request built by
-// lib/analysis.js and resolves to { result, usage } or { error }).
-export function CoachView({ people, journal, initialPersonId, initialTab, onOpenLog, onApproveInfo, onLogFromAnalysis, onOpenPerson, analysisReady = 'none', onAnalyse, onOpenMe, yourName = '' }) {
+// lib/analysis.js and resolves to { result, usage, model } or { error }).
+// model / onModel: which Claude (App keeps it while Layers is open).
+export function CoachView({ people, journal, initialPersonId, initialTab, onOpenLog, onApproveInfo, onLogFromAnalysis, onOpenPerson, analysisReady = 'none', onAnalyse, onOpenMe, yourName = '', model = DEFAULT_ANALYSIS_MODEL, onModel = () => {} }) {
   const [tab, setTab] = useState(initialTab || 'prepare');
   const [preparePersonId, setPreparePersonId] = useState(initialPersonId || (people[0] && people[0].id) || null);
   const [analysisPersonId, setAnalysisPersonId] = useState(initialTab === 'analyse' ? initialPersonId || null : null);
@@ -45,13 +60,19 @@ export function CoachView({ people, journal, initialPersonId, initialTab, onOpen
   // Your own chat: pasted text and screenshots, then Claude's answer.
   const [ownText, setOwnText] = useState('');
   const [ownShots, setOwnShots] = useState([]); // [{ id, name, src, img }]
-  const [ownResult, setOwnResult] = useState(null);
-  const [ownCost, setOwnCost] = useState(null);
+  // The chat sent ({ run, person, text, images }), kept so it can be tried
+  // with another model, and each model's answer: { [model]: { result, cost } }.
+  const [ownChat, setOwnChat] = useState(null);
+  const [ownResults, setOwnResults] = useState({});
+  const [ownModel, setOwnModel] = useState(null); // whose answer is shown
+  const [askingModel, setAskingModel] = useState(model);
   const [ownError, setOwnError] = useState(null);
   const shotsInput = useRef(null);
-  // Counts analyses, so an answer that arrives after you've moved on (another
-  // person, or back to the list) is dropped, and each one is its own session.
-  const ownRun = useRef(0);
+  // Counts requests, so an answer that arrives after you've moved on (another
+  // person, back to the list, or a newer request) is dropped; and chats, so
+  // each is its own session.
+  const ownTicket = useRef(0);
+  const ownChats = useRef(0);
 
   useEffect(() => {
     if (step === 'loading') {
@@ -65,12 +86,13 @@ export function CoachView({ people, journal, initialPersonId, initialTab, onOpen
   // first person, and Analyse asks who the conversation was with: it used to
   // read the missing person's emoji and blank the whole window.
   const preparePerson = people.find(p => p.id === preparePersonId) || people[0] || null;
-  const scenario = scenarioKey ? (scenarioKey.startsWith('own') ? ownResult : SCENARIOS[scenarioKey]) : null;
+  const scenario = scenarioKey ? (scenarioKey.startsWith('own') ? (ownResults[ownModel] || {}).result || null : SCENARIOS[scenarioKey]) : null;
   const scenarioPerson = people.find(p => p.id === analysisPersonId) || null;
   const sessionKey = scenarioPerson && scenarioKey ? `${scenarioPerson.id}:${scenarioKey}` : null;
   const session = (sessionKey && sessions[sessionKey]) || { infoStatus: {}, logged: false };
   const infoStatus = session.infoStatus;
-  const logged = session.logged;
+  // One chat is logged once, whichever model's answer it's logged from.
+  const logged = session.logged || Boolean(scenario && scenario.own && ownChat && Object.entries(sessions).some(([k, s]) => s.logged && k.startsWith(`${scenarioPerson.id}:own:${ownChat.run}:`)));
   function updateSession(change) {
     setSessions(all => {
       const current = all[sessionKey] || { infoStatus: {}, logged: false };
@@ -85,7 +107,7 @@ export function CoachView({ people, journal, initialPersonId, initialTab, onOpen
     setEditingIndex(null);
     setStep('loading');
   }
-  function resetAnalyse() { ownRun.current += 1; setStep('pick'); setScenarioKey(null); }
+  function resetAnalyse() { ownTicket.current += 1; setStep('pick'); setScenarioKey(null); }
   async function addShots(files) {
     const pictures = [...files].filter(isPictureFile).slice(0, MAX_SCREENSHOTS - ownShots.length);
     const loaded = (await Promise.all(pictures.map(async file => { const img = await loadPhoto(file); return img ? { id: `${file.name}${file.size}${Math.random()}`, name: file.name, src: img.src, img } : null; }))).filter(Boolean);
@@ -95,22 +117,38 @@ export function CoachView({ people, journal, initialPersonId, initialTab, onOpen
   // Sends your chat to Claude (only now), then shows its answer like a sample's.
   async function analyseOwn() {
     if (!onAnalyse || !scenarioPerson || (!ownText.trim() && !ownShots.length)) return;
-    const run = ++ownRun.current;
-    const person = scenarioPerson;
+    const chat = { run: ++ownChats.current, person: scenarioPerson, text: ownText, images: ownShots.map(s => shrinkForAnalysis(s.img)).filter(Boolean) };
+    if (await ask(chat, {}, model, 'pick')) { setOwnText(''); setOwnShots([]); }
+  }
+  // One model's answer to a chat; on a problem, back to `backTo` saying so.
+  async function ask(chat, results, withModel, backTo) {
+    const ticket = ++ownTicket.current;
     setOwnError(null);
+    setAskingModel(withModel);
     setStep('asking');
-    const images = ownShots.map(s => shrinkForAnalysis(s.img)).filter(Boolean);
-    const answer = await Promise.resolve(onAnalyse(analysisRequest({ person, yourName, text: ownText, images }))).catch(() => null);
-    if (run !== ownRun.current) return;
-    if (!answer || answer.error) { setOwnError((answer && answer.error) || "Couldn't analyse that chat."); setStep('pick'); return; }
-    const result = analysisResult(answer.result, person);
-    setOwnResult(result);
-    setOwnCost(analysisCost(answer.usage));
+    const answer = await Promise.resolve(onAnalyse(analysisRequest({ person: chat.person, yourName, text: chat.text, images: chat.images, model: withModel }))).catch(() => null);
+    if (ticket !== ownTicket.current) return false;
+    if (!answer || answer.error) { setOwnError((answer && answer.error) || "Couldn't analyse that chat."); setStep(backTo); return false; }
+    const used = analysisModel(answer.model || withModel).id;
+    const result = analysisResult(answer.result, chat.person);
+    setOwnChat(chat);
+    setOwnResults({ ...results, [used]: { result, cost: analysisCost(answer.usage, used) } });
+    showOwn(chat, used, result);
+    return true;
+  }
+  function showOwn(chat, withModel, result) {
+    setOwnModel(withModel);
     setInfoDrafts(Object.fromEntries(result.extractedInfo.map((it, i) => [i, it.text])));
     setEditingIndex(null);
-    setScenarioKey(`own:${run}`);
+    setScenarioKey(`own:${chat.run}:${withModel}`);
     setStep('results');
-    setOwnText(''); setOwnShots([]);
+  }
+  // The same chat with another model: asked once, then shown again for free.
+  function tryModel(withModel) {
+    onModel(withModel);
+    if (!ownChat || withModel === ownModel) return;
+    if (ownResults[withModel]) { setOwnError(null); showOwn(ownChat, withModel, ownResults[withModel].result); }
+    else ask(ownChat, ownResults, withModel, 'results');
   }
   function changeAnalysisPerson() { setAnalysisPersonId(null); resetAnalyse(); }
   function saveInfoItem(i) {
@@ -328,7 +366,9 @@ export function CoachView({ people, journal, initialPersonId, initialTab, onOpen
                         ))}
                         {ownShots.length < MAX_SCREENSHOTS && <button type="button" onClick={() => shotsInput.current && shotsInput.current.click()} className="chip"><ImagePlus size={14} color={COLORS.accent} /> Screenshots</button>}
                       </div>
-                      <p className="text-xs mt-2.5" style={{ color: COLORS.inkSoft }}>Pressing Analyse sends this chat, and only this chat, to Anthropic for {ANALYSIS_MODEL_NAME} to read (about US$0.03). {scenarioPerson.name}'s name and yours are hidden in pasted text; screenshots go as they are.</p>
+                      <p className="text-xs font-semibold mt-3 mb-1.5" style={{ color: COLORS.ink }}>Model</p>
+                      <ModelButtons label="Model" value={model} onPick={onModel} />
+                      <p className="text-xs mt-2.5" style={{ color: COLORS.inkSoft }}>Pressing Analyse sends this chat, and only this chat, to Anthropic for {analysisModel(model).name} to read ({typicalCost(model)}{analysisModel(model).thinks ? '; it thinks first, so it takes longer and costs more' : ''}). {scenarioPerson.name}'s name and yours are hidden in pasted text; screenshots go as they are.</p>
                       {ownError && <p className="text-xs mt-2 font-semibold" role="alert" style={{ color: COLORS.alert }}>{ownError}</p>}
                       <button type="button" onClick={analyseOwn} disabled={!ownText.trim() && !ownShots.length} className="w-full text-sm font-semibold rounded-full py-2.5 mt-3" style={{ background: COLORS.accent, color: COLORS.onAccent, opacity: !ownText.trim() && !ownShots.length ? 0.5 : 1 }}>Analyse with Claude</button>
                     </div>
@@ -350,7 +390,8 @@ export function CoachView({ people, journal, initialPersonId, initialTab, onOpen
           {step === 'asking' && (
             <div className="flex flex-col items-center justify-center py-16" role="status">
               <div style={{ width: 30, height: 30, borderRadius: '50%', border: `3px solid ${COLORS.line}`, borderTopColor: COLORS.accent }} className="spin" />
-              <p className="text-sm mt-4" style={{ color: COLORS.inkSoft }}>Claude is reading the chat…</p>
+              <p className="text-sm mt-4" style={{ color: COLORS.inkSoft }}>{analysisModel(askingModel).name} is reading the chat…</p>
+              {analysisModel(askingModel).thinks && <p className="text-xs mt-1" style={{ color: COLORS.inkSoft }}>It thinks first, so this can take a minute.</p>}
             </div>
           )}
 
@@ -364,7 +405,14 @@ export function CoachView({ people, journal, initialPersonId, initialTab, onOpen
           {step === 'results' && scenario && (
             <div>
               <button onClick={resetAnalyse} className="text-xs font-medium mb-3" style={{ color: COLORS.inkSoft }}>{scenario.own ? '← Analyse another chat' : '← Try a different sample'}</button>
-              {scenario.own && ownCost && <p className="text-xs mb-3" style={{ color: COLORS.inkSoft }}>Read by {ANALYSIS_MODEL_NAME}: this one cost {ownCost}. These are a coach's suggestions, not facts.</p>}
+              {scenario.own && (
+                <div className="rounded-2xl p-3.5 mb-4" style={{ background: COLORS.paperRaised, border: `1px solid ${COLORS.line}` }}>
+                  <p className="text-xs" style={{ color: COLORS.inkSoft }}>Read by {analysisModel(ownModel).name}: this one cost {ownResults[ownModel].cost}. These are a coach's suggestions, not facts.</p>
+                  <p className="text-xs font-semibold mt-2.5 mb-1.5" style={{ color: COLORS.ink }}>The same chat with another model</p>
+                  <ModelButtons label="The same chat with" value={ownModel} onPick={tryModel} done={ownResults} />
+                  {ownError && <p className="text-xs mt-2 font-semibold" role="alert" style={{ color: COLORS.alert }}>{ownError}</p>}
+                </div>
+              )}
 
               <p className="text-sm font-semibold mb-2" style={{ color: COLORS.ink }}>Reconstructed conversation</p>
               <div className="rounded-2xl p-3.5 mb-4" style={{ background: COLORS.paper, border: `1px solid ${COLORS.line}` }}>
