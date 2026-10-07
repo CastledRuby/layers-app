@@ -93,10 +93,11 @@ describe('asking Claude', () => {
     expect(await runAnalysis(request, { apiKey: null })).toEqual({ error: 'Add your Anthropic API key in Me first.' });
   });
 
-  it('says so when Claude declines, runs out of room, or answers badly', async () => {
-    expect(await runAnalysis(request, claude(reply('', 'refusal')))).toEqual({ error: "Claude wouldn't analyse that chat." });
-    expect(await runAnalysis(request, claude(reply('{"a":', 'max_tokens')))).toMatchObject({ error: expect.stringMatching(/too long/) });
-    expect(await runAnalysis(request, claude(reply('not json')))).toMatchObject({ error: expect.stringMatching(/couldn't be read/) });
+  it("says so when Claude declines, runs out of room, or answers badly, with what it used (that's still charged)", async () => {
+    const used = { model: 'claude-haiku-4-5', usage: { input: 4000, output: 900 } };
+    expect(await runAnalysis(request, claude(reply('', 'refusal')))).toEqual({ error: "Claude wouldn't analyse that chat.", ...used });
+    expect(await runAnalysis(request, claude(reply('{"a":', 'max_tokens')))).toMatchObject({ error: expect.stringMatching(/too long/), ...used });
+    expect(await runAnalysis(request, claude(reply('not json')))).toMatchObject({ error: expect.stringMatching(/couldn't be read/), ...used });
   });
 
   it('puts what went wrong in words', async () => {

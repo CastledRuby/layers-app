@@ -4,7 +4,7 @@
 import { describe, expect, it } from 'vitest';
 import { CATEGORIES } from './data/constants.js';
 import { MODELS } from '../electron/analysis.cjs';
-import { ANALYSIS_MODELS, ANALYSIS_SCHEMA, analysisCost, analysisRequest, analysisResult, analysisSchema, analysisSystem, analysisToKeep, chatSpeakers, DEFAULT_ANALYSIS_MODEL, detectPeople, hideNames, restoreNames, typicalCost } from './lib/analysis.js';
+import { addSpend, ANALYSIS_MODELS, ANALYSIS_SCHEMA, analysisCost, analysisRequest, analysisResult, analysisSchema, analysisSystem, analysisToKeep, chatSpeakers, DEFAULT_ANALYSIS_MODEL, detectPeople, dollarsText, hideNames, restoreNames, spendSummary, typicalCost } from './lib/analysis.js';
 
 const priya = { id: 'p1', name: 'Priya Shah', layer: 2 };
 const amelie = { id: 'a', name: 'Amelie', layer: 4, interests: [{ text: 'Reading' }] };
@@ -218,6 +218,22 @@ describe('the answer', () => {
     expect(analysisCost({ input: 4000, output: 6000 }, 'claude-fable-5-1')).toBe('about US$0.34');
     expect(typicalCost('claude-haiku-4-5')).toBe('about US$0.02');
     expect(typicalCost('claude-sonnet-5-5')).toBe('about US$0.07');
+  });
+
+  it('adds up what each answer cost by month, and by model', () => {
+    const oct = new Date(2026, 9, 7);
+    let spend = {};
+    spend = addSpend(spend, { input: 4000, output: 6000 }, 'claude-opus-5-5', oct);
+    spend = addSpend(spend, { input: 4000, output: 2500 }, 'claude-haiku-4-5', oct);
+    spend = addSpend(spend, { input: 4000, output: 2500 }, 'claude-haiku-4-5', new Date(2026, 8, 30));
+    expect(addSpend(spend, null, 'claude-haiku-4-5', oct)).toBe(spend); // nothing used, nothing counted
+    const { thisMonth, lastMonth } = spendSummary(spend, oct);
+    expect(thisMonth.chats).toBe(2);
+    expect(thisMonth.dollars).toBeCloseTo(0.136 + 0.0165, 6);
+    expect(thisMonth.models).toEqual({ 'claude-opus-5-5': 1, 'claude-haiku-4-5': 1 });
+    expect(lastMonth.chats).toBe(1);
+    expect(spendSummary({}, oct).thisMonth).toEqual({ dollars: 0, chats: 0, models: {} });
+    expect([dollarsText(0.004), dollarsText(0.1526)]).toEqual(['under US$0.01', 'US$0.15']);
   });
 
   it('says roughly what it cost, from the tokens used', () => {

@@ -7,7 +7,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Check, ImagePlus, Plus, X } from 'lucide-react';
 import { Avatar, ChatBubble, ConvStateBadge, Kbd, LabeledBar, LayerBadge } from '../components/atoms.jsx';
 import { hasOpenSheet, isTyping } from '../components/sheetLayer.js';
-import { ANALYSIS_MODELS, analysisCost, analysisModel, analysisRequest, analysisResult, analysisToKeep, DEFAULT_ANALYSIS_MODEL, detectPeople, MAX_SCREENSHOTS, typicalCost } from '../lib/analysis.js';
+import { ANALYSIS_MODELS, analysisCost, analysisModel, analysisRequest, analysisResult, analysisToKeep, DEFAULT_ANALYSIS_MODEL, detectPeople, MAX_SCREENSHOTS, recordSpend, typicalCost } from '../lib/analysis.js';
 import { DateDropdown } from '../components/pickers.jsx';
 import { ChatExports } from '../components/ChatExports.jsx';
 import { chatPeople, conversationLabel, conversationText, isoDayOf, loadChatExports, readChatProgress, saveChatProgress } from '../lib/chatImport.js';
@@ -191,6 +191,7 @@ export function CoachView({ people, journal, initialPersonId, initialTab, onOpen
     setAskingModel(withModel);
     setStep('asking');
     const answer = await Promise.resolve(onAnalyse(analysisRequest({ people: chat.people, yourName, text: chat.text, images: chat.images, model: withModel }))).catch(() => null);
+    if (answer && answer.usage) recordSpend(answer.usage, answer.model || withModel); // charged, whatever happens next
     if (ticket !== ownTicket.current) return false;
     if (!answer || answer.error) { setOwnError((answer && answer.error) || "Couldn't analyse that chat."); setStep(backTo); return false; }
     const used = analysisModel(answer.model || withModel).id;

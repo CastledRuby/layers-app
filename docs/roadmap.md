@@ -223,7 +223,8 @@ You asked where an analysed chat goes, and picked these. They're released togeth
    (Mel, Ames), so chats signed with a nickname find the right person, and nicknames are
    hidden before a chat is sent. Ctrl+K, picking people by typing, and typed plans and
    logs ("coffee w mel fri") find them too.
-3. **What Claude has cost**: this month's spend on chat analysis, in Me.
+3. ✅ **What Claude has cost** (built 2026-10-07): Me → Chat analysis shows this month's
+   and last month's spend, by model, counting every answer Claude gave.
 4. **Skills over time**: your listening, depth, balance and naturalness from analysed
    chats, charted per person and in Me.
 5. **Chats in your week**: the Sunday week review lists chats with new conversations
@@ -550,6 +551,13 @@ its own. Changes made while building are marked.
   box in the packaged app, with a temporary data folder as always.
 
 ## History
+
+### What Claude has cost (after 1.0.35, not released yet)
+
+- **Me → Chat analysis** shows what chat analysis has cost this month and last, and with
+  which models. Every answer counts, including ones that couldn't be used, since those
+  are charged too. It's worked out on this laptop; console.anthropic.com has the exact
+  bill.
 
 ### Nicknames (after 1.0.35, not released yet)
 

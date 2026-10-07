@@ -137,7 +137,7 @@ interact.
   removed, the pasted chat sent with names hidden only when Analyse is pressed, the answer
   shown with their name back (info saved, logged once), screenshots (six at most, each
   removable), an error keeping the chat, an answer dropped after moving to someone else,
-  the model buttons (the cheapest by default and again after a restart, another picked,
+  what it has cost in Me (each answer once, by model), the model buttons (the cheapest by default and again after a restart, another picked,
   the same chat with another model in a click, shown again without asking twice, logged
   once, an error keeping the first answer), and nothing offered in the browser. `src/analysis.test.js` covers reading who a chat is with,
   hiding and restoring names (groups too), the request, what Claude is told to look for,

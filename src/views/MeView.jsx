@@ -7,6 +7,7 @@ import { LabeledBar } from '../components/atoms.jsx';
 import { ACHIEVEMENTS, FOCUS_LABELS, FOCUS_SKILL_KEY, SKILL_ORDER, SKILL_TIPS } from '../data/constants.js';
 import { achievementProgress, progressText } from '../lib/achievements.js';
 import { notifySettings } from '../lib/calendar.js';
+import { analysisModel, dollarsText, spendSummary } from '../lib/analysis.js';
 import { formatAbsoluteDate, formatCalendarDate, formatTime12, isJournalThisWeek, parseISODay, sortHistory } from '../lib/dates.js';
 import { updateStatusText } from '../lib/text.js';
 import { COLORS } from '../theme.js';
@@ -47,6 +48,8 @@ function AnalysisKeyCard({ analysisKey, onSave, onRemove }) {
   const [key, setKey] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
+  const [spend] = useState(() => spendSummary()); // read when Me opens
+  const byModel = (models) => Object.entries(models).map(([id, n]) => `${analysisModel(id).short} ${n}`).join(', ');
   async function save() {
     if (!key.trim() || busy) return;
     setBusy(true); setError(null);
@@ -62,6 +65,13 @@ function AnalysisKeyCard({ analysisKey, onSave, onRemove }) {
           ? 'Ready: Coach → Analyse a chat sends a chat you choose to Claude, only when you press Analyse, from your Anthropic credit. It uses Claude Haiku 4.5, the cheapest (about US$0.02 a chat); pick a bigger model there to compare, until Layers is next started.'
           : 'Analyse your own chats in Coach with Claude. Make an API key at console.anthropic.com (API keys), add a few dollars of credit there (about US$0.02 a chat with Claude Haiku 4.5, the cheapest), then paste the key here. Layers keeps it on this laptop, protected by Windows.'}
       </p>
+      {(spend.thisMonth.chats > 0 || spend.lastMonth.chats > 0) && (
+        <div className="mt-2.5 text-xs" aria-label="What Claude has cost" style={{ color: COLORS.ink }}>
+          <p><span className="font-semibold">This month:</span> about {dollarsText(spend.thisMonth.dollars)} for {spend.thisMonth.chats} {spend.thisMonth.chats === 1 ? 'chat' : 'chats'}{spend.thisMonth.chats ? ` (${byModel(spend.thisMonth.models)})` : ''}</p>
+          {spend.lastMonth.chats > 0 && <p className="mt-0.5"><span className="font-semibold">Last month:</span> about {dollarsText(spend.lastMonth.dollars)} for {spend.lastMonth.chats} {spend.lastMonth.chats === 1 ? 'chat' : 'chats'}</p>}
+          <p className="mt-0.5" style={{ color: COLORS.inkSoft }}>Worked out on this laptop from what each answer used; console.anthropic.com has the exact bill.</p>
+        </div>
+      )}
       {analysisKey.hasKey ? (
         <button type="button" onClick={onRemove} className="text-xs font-semibold rounded-full px-3 py-2 mt-3" style={{ background: COLORS.paperRaised, color: COLORS.inkSoft, border: `1px solid ${COLORS.line}` }}>Remove the key</button>
       ) : (

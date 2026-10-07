@@ -75,7 +75,9 @@ function errorText(e) {
 }
 
 // Asks Claude for the analysis: { system, content, schema, model? } from the
-// page. Resolves to { result, usage: { input, output }, model } or { error }.
+// page. Resolves to { result, usage: { input, output }, model } or { error },
+// with usage and model too when Claude answered but it couldn't be used
+// (that's still charged, so Me's spending counts it).
 // The bigger models think first, so it waits up to 5 minutes.
 // `client` is replaced in tests.
 async function runAnalysis(request, { apiKey, client = null } = {}) {
@@ -92,13 +94,14 @@ async function runAnalysis(request, { apiKey, client = null } = {}) {
       messages: [{ role: 'user', content }],
       output_config: { format: { type: 'json_schema', schema: request.schema } },
     });
-    if (response.stop_reason === 'refusal') return { error: "Claude wouldn't analyse that chat." };
-    if (response.stop_reason === 'max_tokens') return { error: 'That chat was too long to finish. Try a shorter part of it.' };
+    const used = response.usage || {};
+    const usage = { input: used.input_tokens || 0, output: used.output_tokens || 0 };
+    if (response.stop_reason === 'refusal') return { error: "Claude wouldn't analyse that chat.", model, usage };
+    if (response.stop_reason === 'max_tokens') return { error: 'That chat was too long to finish. Try a shorter part of it.', model, usage };
     const text = (response.content || []).filter(b => b.type === 'text').map(b => b.text).join('');
     let result;
-    try { result = JSON.parse(text); } catch { return { error: "Claude's answer couldn't be read. Try again." }; }
-    const usage = response.usage || {};
-    return { result, model, usage: { input: usage.input_tokens || 0, output: usage.output_tokens || 0 } };
+    try { result = JSON.parse(text); } catch { return { error: "Claude's answer couldn't be read. Try again.", model, usage }; }
+    return { result, model, usage };
   } catch (e) {
     return { error: errorText(e) };
   }

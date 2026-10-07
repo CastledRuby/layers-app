@@ -692,7 +692,13 @@ will be sent.
   back to one shows it again without asking again, and the chat is logged only once.
 - **Cost**: about US$0.02 a chat with Haiku, up to about US$0.35 with Fable, from your
   Anthropic credit. Most of it is Claude's written answer; pasted text costs a fraction of
-  a cent, and each screenshot about US$0.0015 with Haiku. The card says roughly what one costs (`typicalCost`), and the result
+  a cent, and each screenshot about US$0.0015 with Haiku.
+- **What it has cost** (Me → Chat analysis): every answer Claude gives is added to
+  `layers-analysis-spend` in localStorage by month (`recordSpend`: `{ 'YYYY-MM': {
+  dollars, chats, models } }`), including ones that couldn't be used (a refusal, too
+  long, unreadable), since those are charged too. Me shows this month and last, by
+  model (`spendSummary`). It's worked out from the tokens used at each model's price, on
+  this laptop only; console.anthropic.com has the exact bill. The card says roughly what one costs (`typicalCost`), and the result
   what this one did (`analysisCost`, from the tokens used, thinking included, at each
   model's price).
 - Only in the desktop app: the browser preview has nowhere safe for a key, so it shows

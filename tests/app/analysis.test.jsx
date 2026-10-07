@@ -51,7 +51,7 @@ function fakeBridge({ hasKey = false, answer = { result: ANSWER, usage: { input:
   window.layersSystem = b;
   return b;
 }
-afterEach(() => { delete window.layersSystem; delete window.matchMedia; });
+afterEach(() => { delete window.layersSystem; delete window.matchMedia; window.localStorage.removeItem('layers-analysis-spend'); });
 
 async function openAnalyse(user, name) {
   await user.click(nav('Coach'));
@@ -253,6 +253,12 @@ describe('chat analysis with Claude', () => {
     await user.click(again().getByRole('button', { name: /Sonnet 5\.5/ }));
     expect(screen.queryByRole('button', { name: 'Log this chat' })).toBeNull();
     expect(savedState().journal).toHaveLength(1);
+
+    // Me says what they cost: each answer once, by model.
+    await user.click(nav('Me'));
+    const spent = screen.getByLabelText('What Claude has cost');
+    expect(spent.textContent).toMatch(/This month: about US\$0\.20 for 2 chats \(Opus 5\.5 1, Sonnet 5\.5 1\)/);
+    await user.click(nav('Coach'));
 
     // Started again, it's the cheapest again.
     const next = relaunch(app);

@@ -303,11 +303,44 @@ export function analysisToKeep(result, { model, chat = '' } = {}) {
   };
 }
 
-// "about US$0.02", from the tokens it used (thinking counts as output).
-export function analysisCost({ input = 0, output = 0 } = {}, model = DEFAULT_ANALYSIS_MODEL) {
+// What some tokens cost with a model, in US$ (thinking counts as output).
+export function analysisDollars({ input = 0, output = 0 } = {}, model = DEFAULT_ANALYSIS_MODEL) {
   const { price } = analysisModel(model);
-  const dollars = (input * price.input + output * price.output) / 1e6;
+  return (input * price.input + output * price.output) / 1e6;
+}
+export const dollarsText = (d) => (d < 0.01 ? 'under US$0.01' : `US$${d.toFixed(2)}`);
+// "about US$0.02", from the tokens it used.
+export function analysisCost(usage, model = DEFAULT_ANALYSIS_MODEL) {
+  const dollars = analysisDollars(usage, model);
   return dollars < 0.01 ? 'under US$0.01' : `about US$${dollars.toFixed(2)}`;
+}
+
+// --- What it has cost (this laptop) ---------------------------------------------
+// Every answer Claude gives is charged, so each is added up here by month:
+// { 'YYYY-MM': { dollars, chats, models: { [model]: chats } } }. Worked out
+// from the tokens used at each model's price, so it's close to, not exactly,
+// what Anthropic bills (console.anthropic.com has that).
+const SPEND_KEY = 'layers-analysis-spend';
+const monthOf = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+export function readSpend() {
+  try { const v = JSON.parse(window.localStorage.getItem(SPEND_KEY) || '{}'); return v && typeof v === 'object' && !Array.isArray(v) ? v : {}; } catch { return {}; }
+}
+// One answer added to the months' spend.
+export function addSpend(all, usage, model, now = new Date()) {
+  if (!usage) return all;
+  const id = analysisModel(model).id;
+  const m = all[monthOf(now)] || { dollars: 0, chats: 0, models: {} };
+  return { ...all, [monthOf(now)]: { dollars: m.dollars + analysisDollars(usage, id), chats: m.chats + 1, models: { ...m.models, [id]: (m.models[id] || 0) + 1 } } };
+}
+export function recordSpend(usage, model, now = new Date()) {
+  const next = addSpend(readSpend(), usage, model, now);
+  try { window.localStorage.setItem(SPEND_KEY, JSON.stringify(next)); } catch { /* not counted */ }
+  return next;
+}
+// This month and last: { thisMonth, lastMonth }, each { dollars, chats, models }.
+export function spendSummary(spend = readSpend(), now = new Date()) {
+  const empty = { dollars: 0, chats: 0, models: {} };
+  return { thisMonth: spend[monthOf(now)] || empty, lastMonth: spend[monthOf(new Date(now.getFullYear(), now.getMonth() - 1, 1))] || empty };
 }
 
 // Roughly what a typical chat costs with a model, before sending it: a few
