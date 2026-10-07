@@ -4,20 +4,21 @@
 > Run `npm run docs:map` after changing anything under `src/`, `electron/*.cjs` or `package.json` scripts.
 > Hand-written explanations live in the other files under [`docs/`](../README.md).
 
-Package: `layers-web` v1.0.34 · `src/`: 73 files, 12156 lines, 98 components, 282 top-level functions, 153 constants.
+Package: `layers-web` v1.0.34 · `src/`: 76 files, 12396 lines, 99 components, 294 top-level functions, 157 constants.
 
 ## Source files
 
 | File | Lines | Declares | Imports from |
 |---|---|---|---|
 | [main.jsx](../../src/main.jsx) | 16 | quick | — |
-| [App.jsx](../../src/App.jsx) | 1499 | sampleData, SAMPLE_PERSON_IDS, SAMPLE_GOAL_IDS, skillsCameWithSamples, allSkillsZero, listNames, unlinkMissingPeople, addNotes, LayersApp | `components/BottomNav`, `components/ErrorBoundary`, `components/PageTransition`, `components/sheetLayer`, `data/constants`, `data/seed`, `lib/dates`, `lib/achievements`, `lib/progress`, `lib/backup`, `lib/calendar`, `lib/hooks`, `lib/reminders`, `lib/storage`, `lib/util`, `modals/AddInfoModal`, `modals/AddPersonModal`, `modals/ConfirmDialog`, `modals/EditEntryModal`, `modals/EditPersonModal`, `modals/EditProfileModal`, `modals/EventSheet`, `modals/GoalModal`, `modals/KeyDateSheet`, `modals/LogInteractionModal`, `modals/PlanSheet`, `modals/PhotoFolderSheet`, `lib/sync`, `lib/syncFile`, `modals/SyncSheet`, `lib/ics`, `modals/QuickAddInterestModal`, `modals/ShortcutsModal`, `modals/StartOverSheet`, `modals/DaySheet`, `modals/JumpSheet`, `lib/sentence`, `modals/TemplatePickerModal`, `modals/WeekReviewSheet`, `theme`, `views/CoachView`, `views/GoalsView`, `views/JournalView`, `views/MeView`, `views/OnboardingView`, `views/PeopleView`, `views/PersonProfile`, `components/ClosenessQuiz`, `views/TodayView` |
+| [App.jsx](../../src/App.jsx) | 1515 | sampleData, SAMPLE_PERSON_IDS, SAMPLE_GOAL_IDS, skillsCameWithSamples, allSkillsZero, listNames, unlinkMissingPeople, addNotes, LayersApp | `components/BottomNav`, `components/ErrorBoundary`, `components/PageTransition`, `components/sheetLayer`, `data/constants`, `data/seed`, `lib/dates`, `lib/achievements`, `lib/progress`, `lib/backup`, `lib/calendar`, `lib/hooks`, `lib/reminders`, `lib/storage`, `lib/util`, `modals/AddInfoModal`, `modals/AddPersonModal`, `modals/ConfirmDialog`, `modals/EditEntryModal`, `modals/EditPersonModal`, `modals/EditProfileModal`, `modals/EventSheet`, `modals/GoalModal`, `modals/KeyDateSheet`, `modals/LogInteractionModal`, `modals/PlanSheet`, `modals/PhotoFolderSheet`, `lib/sync`, `lib/syncFile`, `modals/SyncSheet`, `lib/ics`, `lib/summary`, `modals/QuickAddInterestModal`, `modals/ShortcutsModal`, `modals/StartOverSheet`, `modals/DaySheet`, `modals/JumpSheet`, `lib/sentence`, `modals/TemplatePickerModal`, `modals/WeekReviewSheet`, `theme`, `views/CoachView`, `views/GoalsView`, `views/JournalView`, `views/MeView`, `views/OnboardingView`, `views/PeopleView`, `views/PersonProfile`, `components/ClosenessQuiz`, `views/TodayView` |
 | [theme.js](../../src/theme.js) | 354 | THEME_LIGHT, THEME_DARK, COLORS, cssVarBlock, EASE, CSS | `fonts` |
 | [data/avatars.js](../../src/data/avatars.js) | 203 | AVATAR_COLS, AVATAR_GROUPS, findAvatars, INITIAL_COLORS, INITIALS_GROUP, isInitials, PHOTO_SIZE, PHOTO_GROUP, PHOTO_SRC, isPhoto, … (+16) | — |
 | [data/constants.js](../../src/data/constants.js) | 320 | LAYERS, getLayer, DIM_ORDER, DIM_LABELS, DIM_COLORS, LAYER_BASE_DIMS, CATEGORIES, categoryMeta, TABS, SHORTCUTS, … (+26) | `theme` |
 | [data/scenarios.js](../../src/data/scenarios.js) | 115 | SCENARIOS | — |
 | [data/seed.js](../../src/data/seed.js) | 176 | INITIAL_PEOPLE, INITIAL_GENERAL_GOALS, INITIAL_JOURNAL, INITIAL_SKILLS, EMPTY_SKILLS | — |
 | [lib/achievements.js](../../src/lib/achievements.js) | 37 | achievementProgress, newlyUnlocked, progressText | `data/constants` |
+| [lib/activity.js](../../src/lib/activity.js) | 48 | ACTIVITY_WEEKS, activityLevel, activityGrid | `lib/dates` |
 | [lib/backup.js](../../src/lib/backup.js) | 206 | BACKUP_VERSION, MAX_BACKUP_BYTES, createBackup, isObject, isText, isISODay, num, count, cleanHistory, cleanGoal, … (+5) | `lib/calendar`, `data/constants`, `data/seed`, `data/avatars`, `lib/util`, `lib/sync` |
 | [lib/calendar.js](../../src/lib/calendar.js) | 417 | WEEKDAY_NAMES, DEFAULT_DURATION, EVENT_TEMPLATES, templateFor, DATE_KINDS, dateKind, NOTIFY_DEFAULTS, notifySettings, dayDate, addDays, … (+27) | `lib/dates` |
 | [lib/closeness.js](../../src/lib/closeness.js) | 64 | QUIZ, ANSWERS, REACHED, inLayer, share, nextQuestion, quizPlacement | — |
@@ -30,11 +31,13 @@ Package: `layers-web` v1.0.34 · `src/`: 73 files, 12156 lines, 98 components, 2
 | [lib/reminders.js](../../src/lib/reminders.js) | 33 | markDone, followUpEvent | `lib/dates` |
 | [lib/sentence.js](../../src/lib/sentence.js) | 297 | WEEKDAYS, MONTHS, RATING_WORDS, TEMPLATE_WORDS, MEAL_TIMES, PART_TIMES, LOG_VERBS, LOG_NOUNS, FILLERS, PREPOSITIONS, … (+12) | `lib/calendar`, `lib/dates` |
 | [lib/storage.js](../../src/lib/storage.js) | 157 | STORAGE_KEY, DATA_VERSION, UNREADABLE_PREFIX, keepCopy, loadSavedState, persistState, LAST_NOTIFIED_KEY, getLastNotifiedDate, setLastNotifiedDate, NOTIFIED_REMINDERS_KEY, … (+11) | `lib/backup`, `lib/progress` |
+| [lib/summary.js](../../src/lib/summary.js) | 96 | LAYER_NAMES, esc, longDay, layerColor, layerDeep, layerTint, avatar, section, summaryHtml, summaryFileName | `data/constants`, `data/avatars`, `lib/activity`, `lib/calendar`, `lib/dates`, `lib/text`, `theme` |
 | [lib/sync.js](../../src/lib/sync.js) | 180 | KINDS, KEEP_DELETED_DAYS, COLLECTIONS, DAY_MS, prune, createStamper, cleanDeleted, stampOf, mergeList, mergeSkills, … (+3) | — |
 | [lib/syncFile.js](../../src/lib/syncFile.js) | 168 | SYNC_FORMAT, ITERATIONS, MAIN_FILE, subtle, enc, dec, toB64, fromB64, keys, KEYS, … (+5) | `lib/backup`, `lib/sync` |
 | [lib/text.js](../../src/lib/text.js) | 168 | summaryFor, updateStatusText, homeGoalTitle, generateSuggestions, getCheckInSuggestions, checkInReminder, HOOKS, buildPotentialHooks, focusSuggestion | `data/constants`, `lib/dates` |
 | [lib/tips.js](../../src/lib/tips.js) | 47 | SOON_DAYS, addDays, datesAround, planTips | `data/constants`, `lib/calendar`, `lib/dates`, `lib/text` |
 | [lib/util.js](../../src/lib/util.js) | 9 | clamp, uidCounter, uid | — |
+| [components/ActivityCalendar.jsx](../../src/components/ActivityCalendar.jsx) | 51 | CELL, GAP, shade, ActivityCalendar | `lib/activity`, `lib/dates`, `theme` |
 | [components/atoms.jsx](../../src/components/atoms.jsx) | 155 | CircularProgress, ProgressBar, LabeledBar, Avatar, LayerBadge, ChatBubble, Timeline, ConvStateBadge, Kbd, KeyedField | `data/constants`, `data/avatars`, `lib/dates`, `lib/util`, `theme` |
 | [components/avatarKeys.js](../../src/components/avatarKeys.js) | 135 | PICKER_GROUPS, EMOJI_FROM, useAvatarPicker | `data/avatars`, `lib/photo` |
 | [components/AvatarPicker.jsx](../../src/components/AvatarPicker.jsx) | 142 | VIEW, PhotoCrop, PhotoPanel, AvatarPicker, AvatarSheet | `components/Sheet`, `components/sheetLayer`, `components/avatarKeys`, `components/atoms`, `data/avatars`, `theme` |
@@ -75,11 +78,11 @@ Package: `layers-web` v1.0.34 · `src/`: 73 files, 12156 lines, 98 components, 2
 | [modals/WeekReviewSheet.jsx](../../src/modals/WeekReviewSheet.jsx) | 86 | addDays, short, Stat, WeekReviewSheet | `components/Sheet`, `components/sheetLayer`, `components/atoms`, `components/PersonPick`, `lib/calendar`, `lib/dates`, `theme` |
 | [views/CoachView.jsx](../../src/views/CoachView.jsx) | 420 | Tones, CoachView | `components/atoms`, `components/sheetLayer`, `data/constants`, `data/scenarios`, `lib/text`, `theme` |
 | [views/GoalsView.jsx](../../src/views/GoalsView.jsx) | 72 | GoalsView | `components/atoms`, `components/rows`, `data/constants`, `theme` |
-| [views/JournalView.jsx](../../src/views/JournalView.jsx) | 160 | PERIODS, Chip, JournalView | `data/constants`, `lib/dates`, `lib/text`, `theme` |
+| [views/JournalView.jsx](../../src/views/JournalView.jsx) | 179 | PERIODS, Chip, JournalView | `components/ActivityCalendar`, `data/constants`, `lib/dates`, `lib/text`, `theme` |
 | [views/MeView.jsx](../../src/views/MeView.jsx) | 331 | Toggle, Pick, syncedAgo, CalendarsCard, MeView | `components/atoms`, `data/constants`, `lib/achievements`, `lib/calendar`, `lib/dates`, `lib/text`, `theme` |
 | [views/OnboardingView.jsx](../../src/views/OnboardingView.jsx) | 301 | QUICK_NAMES, STEP_LABELS, KEYS_TO_KNOW, shortDate, listNames, Progress, Switch, OnboardingView | `components/atoms`, `components/ClosenessQuiz`, `components/AvatarPicker`, `modals/KeyDateSheet`, `components/sheetLayer`, `components/illustrations`, `data/constants`, `lib/calendar`, `lib/dates`, `lib/util`, `theme` |
 | [views/PeopleView.jsx](../../src/views/PeopleView.jsx) | 231 | PeopleView | `components/atoms`, `components/sheetLayer`, `components/illustrations`, `data/constants`, `lib/dates`, `lib/text`, `theme` |
-| [views/PersonProfile.jsx](../../src/views/PersonProfile.jsx) | 308 | shortDate, keyDatesInOrder, AdjustSlider, PrepareTipsModal, PersonProfile | `components/Sheet`, `components/atoms`, `components/rows`, `data/constants`, `lib/dates`, `lib/progress`, `lib/calendar`, `lib/dates`, `lib/text`, `theme` |
+| [views/PersonProfile.jsx](../../src/views/PersonProfile.jsx) | 318 | shortDate, keyDatesInOrder, AdjustSlider, PrepareTipsModal, PersonProfile | `components/ActivityCalendar`, `components/Sheet`, `components/atoms`, `components/rows`, `data/constants`, `lib/dates`, `lib/progress`, `lib/calendar`, `lib/dates`, `lib/text`, `theme` |
 | [views/TodayView.jsx](../../src/views/TodayView.jsx) | 398 | WEEKDAY_LONG, addDays, daysBetween, relativeLabel, fullDate, Dots, DayCell, WeekStrip, MonthGrid, SectionTitle, … (+4) | `components/atoms`, `components/PersonPick`, `components/sheetLayer`, `data/constants`, `lib/calendar`, `lib/dates`, `lib/text`, `theme` |
 | [fonts.js](../../src/fonts.js) | 28 | LATIN, LATIN_EXT, face, FONT_FACES | — |
 | [QuickAdd.jsx](../../src/QuickAdd.jsx) | 177 | RATING_LABELS, SAVED_MS, UNDO_MS, readSaved, listNames, whenText, MISSING_TEXT, QuickAdd | `components/atoms`, `lib/dates`, `lib/hooks`, `lib/sentence`, `lib/storage`, `theme` |
@@ -88,7 +91,8 @@ Package: `layers-web` v1.0.34 · `src/`: 73 files, 12156 lines, 98 components, 2
 
 | Component | Defined | Props | Rendered by |
 |---|---|---|---|
-| `LayersApp` | [App.jsx:99](../../src/App.jsx#L99) | — | — |
+| `LayersApp` | [App.jsx:100](../../src/App.jsx#L100) | — | — |
+| `ActivityCalendar` | [ActivityCalendar.jsx:15](../../src/components/ActivityCalendar.jsx#L15) | `journal`, `today`, `color`, `onPickDay`, `label` | `JournalView`, `PersonProfile` |
 | `CircularProgress` | [atoms.jsx:10](../../src/components/atoms.jsx#L10) | `percent`, `size`, `stroke`, `color`, `track`, `label` | `PersonProfile` |
 | `ProgressBar` | [atoms.jsx:30](../../src/components/atoms.jsx#L30) | `percent`, `color`, `height`, `track` | `LabeledBar`, `GoalRow`, `PeopleView`, `TodayView`, `GettingStarted` |
 | `LabeledBar` | [atoms.jsx:38](../../src/components/atoms.jsx#L38) | `label`, `percent`, `color`, `size` | `CoachView`, `MeView`, `PersonProfile` |
@@ -163,8 +167,8 @@ Package: `layers-web` v1.0.34 · `src/`: 73 files, 12156 lines, 98 components, 2
 | `Tones` | [CoachView.jsx:16](../../src/views/CoachView.jsx#L16) | `item`, `intro` | `CoachView` |
 | `CoachView` | [CoachView.jsx:28](../../src/views/CoachView.jsx#L28) | `people`, `journal`, `initialPersonId`, `initialTab`, `onOpenLog`, `onApproveInfo`, `onLogFromAnalysis`, `onOpenPerson` | `LayersApp` |
 | `GoalsView` | [GoalsView.jsx:10](../../src/views/GoalsView.jsx#L10) | `today`, `people`, `generalGoals`, `journal`, `onShowGoalLogs`, `onBack`, `onOpenPerson`, `onOpenGoalCreate`, `onOpenGoalEdit`, `onDeleteGoal`, `onBumpGoal` | `LayersApp` |
-| `Chip` | [JournalView.jsx:20](../../src/views/JournalView.jsx#L20) | `active`, `onClick`, `children`, `label`, `slim` | `JournalView` |
-| `JournalView` | [JournalView.jsx:28](../../src/views/JournalView.jsx#L28) | `today`, `people`, `generalGoals`, `journal`, `goalFilter`, `onGoalFilter`, `onOpenPerson`, `onEditEntry` | `LayersApp` |
+| `Chip` | [JournalView.jsx:21](../../src/views/JournalView.jsx#L21) | `active`, `onClick`, `children`, `label`, `slim` | `JournalView` |
+| `JournalView` | [JournalView.jsx:29](../../src/views/JournalView.jsx#L29) | `today`, `people`, `generalGoals`, `journal`, `goalFilter`, `onGoalFilter`, `personFilter`, `onPersonFilter`, `dayFilter`, `onDayFilter`, `onOpenPerson`, `onEditEntry` | `LayersApp` |
 | `Toggle` | [MeView.jsx:15](../../src/views/MeView.jsx#L15) | `on`, `onChange`, `label`, `hint`, `children` | `MeView` |
 | `Pick` | [MeView.jsx:31](../../src/views/MeView.jsx#L31) | — | `NewInfoSheet`, `ReflectionSheet`, `MeView` |
 | `CalendarsCard` | [MeView.jsx:46](../../src/views/MeView.jsx#L46) | `calendars`, `onAdd`, `onRemove`, `onRefresh` | `MeView` |
@@ -173,9 +177,9 @@ Package: `layers-web` v1.0.34 · `src/`: 73 files, 12156 lines, 98 components, 2
 | `Switch` | [OnboardingView.jsx:58](../../src/views/OnboardingView.jsx#L58) | `on`, `onChange`, `label`, `detail` | `OnboardingView` |
 | `OnboardingView` | [OnboardingView.jsx:72](../../src/views/OnboardingView.jsx#L72) | `initialName`, `initialFocus`, `initialNotify`, `onComplete`, `onRestore` | `LayersApp` |
 | `PeopleView` | [PeopleView.jsx:21](../../src/views/PeopleView.jsx#L21) | `people`, `journal`, `onOpenPerson`, `onAddPerson`, `onAddPhotos`, `split`, `selectedId` | `LayersApp` |
-| `AdjustSlider` | [PersonProfile.jsx:35](../../src/views/PersonProfile.jsx#L35) | `label`, `value`, `onChange`, `color` | `PersonProfile` |
-| `PrepareTipsModal` | [PersonProfile.jsx:47](../../src/views/PersonProfile.jsx#L47) | `person`, `journal`, `onClose`, `onOpenFullCoach` | `PersonProfile` |
-| `PersonProfile` | [PersonProfile.jsx:74](../../src/views/PersonProfile.jsx#L74) | `today`, `person`, `journal`, `onBack`, `onOpenLog`, `onOpenGoalCreate`, `onOpenGoalEdit`, `onDeleteGoal`, `onBumpGoal`, `onOpenAddInfo`, `onOpenQuickAddInterest`, `onSaveInfo`, `onDeleteInfo`, `onToggleTemporary`, `onToggleArchive`, `onAdjust`, `onOpenCoach`, `onEditPerson`, `onClearLevelUpFlag`, `onRemindFollowUp`, `onPlan`, `onAddKeyDate`, `onDeleteKeyDate`, `onRecheck`, `onShowGoalLogs` | — |
+| `AdjustSlider` | [PersonProfile.jsx:36](../../src/views/PersonProfile.jsx#L36) | `label`, `value`, `onChange`, `color` | `PersonProfile` |
+| `PrepareTipsModal` | [PersonProfile.jsx:48](../../src/views/PersonProfile.jsx#L48) | `person`, `journal`, `onClose`, `onOpenFullCoach` | `PersonProfile` |
+| `PersonProfile` | [PersonProfile.jsx:75](../../src/views/PersonProfile.jsx#L75) | `today`, `person`, `journal`, `onBack`, `onOpenLog`, `onOpenGoalCreate`, `onOpenGoalEdit`, `onDeleteGoal`, `onBumpGoal`, `onOpenAddInfo`, `onOpenQuickAddInterest`, `onSaveInfo`, `onDeleteInfo`, `onToggleTemporary`, `onToggleArchive`, `onAdjust`, `onOpenCoach`, `onEditPerson`, `onClearLevelUpFlag`, `onRemindFollowUp`, `onPlan`, `onAddKeyDate`, `onDeleteKeyDate`, `onRecheck`, `onShowGoalLogs`, `onShowDayLogs`, `onExportSummary` | — |
 | `Dots` | [TodayView.jsx:45](../../src/views/TodayView.jsx#L45) | `mark` | `DayCell` |
 | `DayCell` | [TodayView.jsx:55](../../src/views/TodayView.jsx#L55) | `day`, `today`, `selected`, `mark`, `onSelect`, `compact` | `WeekStrip`, `MonthGrid` |
 | `WeekStrip` | [TodayView.jsx:68](../../src/views/TodayView.jsx#L68) | `selected`, `today`, `marksFor`, `onSelect` | `TodayView` |
@@ -192,12 +196,12 @@ Package: `layers-web` v1.0.34 · `src/`: 73 files, 12156 lines, 98 components, 2
 | Function | Defined | Exported | Unit-tested |
 |---|---|---|---|
 | `quick` | [main.jsx:9](../../src/main.jsx#L9) |  |  |
-| `sampleData` | [App.jsx:59](../../src/App.jsx#L59) |  |  |
-| `skillsCameWithSamples` | [App.jsx:74](../../src/App.jsx#L74) |  |  |
-| `allSkillsZero` | [App.jsx:75](../../src/App.jsx#L75) |  |  |
-| `listNames` | [App.jsx:76](../../src/App.jsx#L76) |  |  |
-| `unlinkMissingPeople` | [App.jsx:79](../../src/App.jsx#L79) |  |  |
-| `addNotes` | [App.jsx:87](../../src/App.jsx#L87) |  |  |
+| `sampleData` | [App.jsx:60](../../src/App.jsx#L60) |  |  |
+| `skillsCameWithSamples` | [App.jsx:75](../../src/App.jsx#L75) |  |  |
+| `allSkillsZero` | [App.jsx:76](../../src/App.jsx#L76) |  |  |
+| `listNames` | [App.jsx:77](../../src/App.jsx#L77) |  |  |
+| `unlinkMissingPeople` | [App.jsx:80](../../src/App.jsx#L80) |  |  |
+| `addNotes` | [App.jsx:88](../../src/App.jsx#L88) |  |  |
 | `cssVarBlock` | [theme.js:60](../../src/theme.js#L60) |  |  |
 | `findAvatars` | [avatars.js:41](../../src/data/avatars.js#L41) | ✓ |  |
 | `isInitials` | [avatars.js:66](../../src/data/avatars.js#L66) | ✓ | ✓ |
@@ -221,6 +225,8 @@ Package: `layers-web` v1.0.34 · `src/`: 73 files, 12156 lines, 98 components, 2
 | `achievementProgress` | [achievements.js:9](../../src/lib/achievements.js#L9) | ✓ |  |
 | `newlyUnlocked` | [achievements.js:29](../../src/lib/achievements.js#L29) | ✓ |  |
 | `progressText` | [achievements.js:34](../../src/lib/achievements.js#L34) | ✓ |  |
+| `activityLevel` | [activity.js:12](../../src/lib/activity.js#L12) | ✓ | ✓ |
+| `activityGrid` | [activity.js:20](../../src/lib/activity.js#L20) | ✓ | ✓ |
 | `createBackup` | [backup.js:19](../../src/lib/backup.js#L19) | ✓ | ✓ |
 | `isObject` | [backup.js:23](../../src/lib/backup.js#L23) |  |  |
 | `isText` | [backup.js:24](../../src/lib/backup.js#L24) |  |  |
@@ -381,6 +387,15 @@ Package: `layers-web` v1.0.34 · `src/`: 73 files, 12156 lines, 98 components, 2
 | `setSyncSettings` | [storage.js:143](../../src/lib/storage.js#L143) | ✓ |  |
 | `getSnoozes` | [storage.js:147](../../src/lib/storage.js#L147) | ✓ |  |
 | `setSnoozes` | [storage.js:154](../../src/lib/storage.js#L154) | ✓ |  |
+| `esc` | [summary.js:16](../../src/lib/summary.js#L16) |  |  |
+| `longDay` | [summary.js:17](../../src/lib/summary.js#L17) |  |  |
+| `layerColor` | [summary.js:18](../../src/lib/summary.js#L18) |  |  |
+| `layerDeep` | [summary.js:19](../../src/lib/summary.js#L19) |  |  |
+| `layerTint` | [summary.js:20](../../src/lib/summary.js#L20) |  |  |
+| `avatar` | [summary.js:22](../../src/lib/summary.js#L22) |  |  |
+| `section` | [summary.js:34](../../src/lib/summary.js#L34) |  |  |
+| `summaryHtml` | [summary.js:39](../../src/lib/summary.js#L39) | ✓ | ✓ |
+| `summaryFileName` | [summary.js:93](../../src/lib/summary.js#L93) | ✓ | ✓ |
 | `prune` | [sync.js:25](../../src/lib/sync.js#L25) |  |  |
 | `createStamper` | [sync.js:33](../../src/lib/sync.js#L33) | ✓ | ✓ |
 | `cleanDeleted` | [sync.js:107](../../src/lib/sync.js#L107) | ✓ | ✓ |
@@ -415,6 +430,7 @@ Package: `layers-web` v1.0.34 · `src/`: 73 files, 12156 lines, 98 components, 2
 | `clamp` | [util.js:4](../../src/lib/util.js#L4) | ✓ | ✓ |
 | `uidCounter` | [util.js:6](../../src/lib/util.js#L6) |  |  |
 | `uid` | [util.js:8](../../src/lib/util.js#L8) | ✓ |  |
+| `shade` | [ActivityCalendar.jsx:13](../../src/components/ActivityCalendar.jsx#L13) |  |  |
 | `useAvatarPicker` | [avatarKeys.js:26](../../src/components/avatarKeys.js#L26) | ✓ |  |
 | `useCloseness` | [closenessKeys.js:10](../../src/components/closenessKeys.js#L10) | ✓ |  |
 | `quizKey` | [closenessKeys.js:33](../../src/components/closenessKeys.js#L33) | ✓ |  |
@@ -463,8 +479,8 @@ Package: `layers-web` v1.0.34 · `src/`: 73 files, 12156 lines, 98 components, 2
 | `syncedAgo` | [MeView.jsx:34](../../src/views/MeView.jsx#L34) |  |  |
 | `shortDate` | [OnboardingView.jsx:42](../../src/views/OnboardingView.jsx#L42) |  |  |
 | `listNames` | [OnboardingView.jsx:43](../../src/views/OnboardingView.jsx#L43) |  |  |
-| `shortDate` | [PersonProfile.jsx:18](../../src/views/PersonProfile.jsx#L18) |  |  |
-| `keyDatesInOrder` | [PersonProfile.jsx:23](../../src/views/PersonProfile.jsx#L23) |  |  |
+| `shortDate` | [PersonProfile.jsx:19](../../src/views/PersonProfile.jsx#L19) |  |  |
+| `keyDatesInOrder` | [PersonProfile.jsx:24](../../src/views/PersonProfile.jsx#L24) |  |  |
 | `addDays` | [TodayView.jsx:28](../../src/views/TodayView.jsx#L28) |  |  |
 | `daysBetween` | [TodayView.jsx:29](../../src/views/TodayView.jsx#L29) |  |  |
 | `relativeLabel` | [TodayView.jsx:31](../../src/views/TodayView.jsx#L31) |  |  |
@@ -478,8 +494,8 @@ Package: `layers-web` v1.0.34 · `src/`: 73 files, 12156 lines, 98 components, 2
 
 | Constant | Defined |
 |---|---|
-| `SAMPLE_PERSON_IDS` | [App.jsx:71](../../src/App.jsx#L71) |
-| `SAMPLE_GOAL_IDS` | [App.jsx:72](../../src/App.jsx#L72) |
+| `SAMPLE_PERSON_IDS` | [App.jsx:72](../../src/App.jsx#L72) |
+| `SAMPLE_GOAL_IDS` | [App.jsx:73](../../src/App.jsx#L73) |
 | `THEME_LIGHT` | [theme.js:6](../../src/theme.js#L6) |
 | `THEME_DARK` | [theme.js:31](../../src/theme.js#L31) |
 | `COLORS` | [theme.js:58](../../src/theme.js#L58) |
@@ -534,6 +550,7 @@ Package: `layers-web` v1.0.34 · `src/`: 73 files, 12156 lines, 98 components, 2
 | `INITIAL_JOURNAL` | [seed.js:149](../../src/data/seed.js#L149) |
 | `INITIAL_SKILLS` | [seed.js:159](../../src/data/seed.js#L159) |
 | `EMPTY_SKILLS` | [seed.js:168](../../src/data/seed.js#L168) |
+| `ACTIVITY_WEEKS` | [activity.js:8](../../src/lib/activity.js#L8) |
 | `BACKUP_VERSION` | [backup.js:14](../../src/lib/backup.js#L14) |
 | `MAX_BACKUP_BYTES` | [backup.js:16](../../src/lib/backup.js#L16) |
 | `WEEKDAY_NAMES` | [calendar.js:25](../../src/lib/calendar.js#L25) |
@@ -578,6 +595,7 @@ Package: `layers-web` v1.0.34 · `src/`: 73 files, 12156 lines, 98 components, 2
 | `SNOOZES_KEY` | [storage.js:113](../../src/lib/storage.js#L113) |
 | `FEEDS_KEY` | [storage.js:119](../../src/lib/storage.js#L119) |
 | `SYNC_KEY` | [storage.js:134](../../src/lib/storage.js#L134) |
+| `LAYER_NAMES` | [summary.js:15](../../src/lib/summary.js#L15) |
 | `KINDS` | [sync.js:18](../../src/lib/sync.js#L18) |
 | `KEEP_DELETED_DAYS` | [sync.js:21](../../src/lib/sync.js#L21) |
 | `COLLECTIONS` | [sync.js:22](../../src/lib/sync.js#L22) |
@@ -588,6 +606,8 @@ Package: `layers-web` v1.0.34 · `src/`: 73 files, 12156 lines, 98 components, 2
 | `KEYS` | [syncFile.js:82](../../src/lib/syncFile.js#L82) |
 | `HOOKS` | [text.js:78](../../src/lib/text.js#L78) |
 | `SOON_DAYS` | [tips.js:13](../../src/lib/tips.js#L13) |
+| `CELL` | [ActivityCalendar.jsx:11](../../src/components/ActivityCalendar.jsx#L11) |
+| `GAP` | [ActivityCalendar.jsx:12](../../src/components/ActivityCalendar.jsx#L12) |
 | `PICKER_GROUPS` | [avatarKeys.js:23](../../src/components/avatarKeys.js#L23) |
 | `EMOJI_FROM` | [avatarKeys.js:24](../../src/components/avatarKeys.js#L24) |
 | `VIEW` | [AvatarPicker.jsx:17](../../src/components/AvatarPicker.jsx#L17) |
@@ -619,7 +639,7 @@ Package: `layers-web` v1.0.34 · `src/`: 73 files, 12156 lines, 98 components, 2
 | `HOLD_MS` | [StartOverSheet.jsx:18](../../src/modals/StartOverSheet.jsx#L18) |
 | `PARTS` | [StartOverSheet.jsx:21](../../src/modals/StartOverSheet.jsx#L21) |
 | `MIN_PASSPHRASE` | [SyncSheet.jsx:14](../../src/modals/SyncSheet.jsx#L14) |
-| `PERIODS` | [JournalView.jsx:13](../../src/views/JournalView.jsx#L13) |
+| `PERIODS` | [JournalView.jsx:14](../../src/views/JournalView.jsx#L14) |
 | `QUICK_NAMES` | [OnboardingView.jsx:32](../../src/views/OnboardingView.jsx#L32) |
 | `STEP_LABELS` | [OnboardingView.jsx:33](../../src/views/OnboardingView.jsx#L33) |
 | `KEYS_TO_KNOW` | [OnboardingView.jsx:35](../../src/views/OnboardingView.jsx#L35) |
@@ -638,41 +658,42 @@ Package: `layers-web` v1.0.34 · `src/`: 73 files, 12156 lines, 98 components, 2
 
 | Channel | Direction | Defined |
 |---|---|---|
-| `update-status` | main → renderer push | [main.cjs:135](../../electron/main.cjs#L135) |
-| `open-download-page` | invoke → handle | [main.cjs:161](../../electron/main.cjs#L161) |
-| `check-for-updates` | invoke → handle | [main.cjs:173](../../electron/main.cjs#L173) |
-| `quit-and-install` | send → on | [main.cjs:174](../../electron/main.cjs#L174) |
-| `check-for-updates` | invoke → handle | [main.cjs:198](../../electron/main.cjs#L198) |
-| `quit-and-install` | send → on | [main.cjs:209](../../electron/main.cjs#L209) |
-| `set-theme` | send → on | [main.cjs:244](../../electron/main.cjs#L244) |
-| `get-app-version` | invoke → handle | [main.cjs:364](../../electron/main.cjs#L364) |
-| `show-window` | send → on | [main.cjs:370](../../electron/main.cjs#L370) |
-| `get-auto-launch` | invoke → handle | [main.cjs:383](../../electron/main.cjs#L383) |
-| `set-auto-launch` | invoke → handle | [main.cjs:393](../../electron/main.cjs#L393) |
-| `get-shortcut-status` | invoke → handle | [main.cjs:410](../../electron/main.cjs#L410) |
-| `quick-add-show` | main → renderer push | [main.cjs:467](../../electron/main.cjs#L467) |
-| `quick-add` | send → on | [main.cjs:485](../../electron/main.cjs#L485) |
-| `quick-add` | main → renderer push | [main.cjs:504](../../electron/main.cjs#L504) |
-| `calendar-action` | main → renderer push | [main.cjs:526](../../electron/main.cjs#L526) |
-| `save-daily-backup` | invoke → handle | [main.cjs:534](../../electron/main.cjs#L534) |
-| `backups-info` | invoke → handle | [main.cjs:537](../../electron/main.cjs#L537) |
-| `open-backups-folder` | invoke → handle | [main.cjs:538](../../electron/main.cjs#L538) |
-| `find-faces` | invoke → handle | [main.cjs:549](../../electron/main.cjs#L549) |
-| `sync-info` | invoke → handle | [main.cjs:559](../../electron/main.cjs#L559) |
-| `sync-read` | invoke → handle | [main.cjs:560](../../electron/main.cjs#L560) |
-| `sync-write` | invoke → handle | [main.cjs:561](../../electron/main.cjs#L561) |
-| `sync-remove-copies` | invoke → handle | [main.cjs:562](../../electron/main.cjs#L562) |
-| `sync-set-aside` | invoke → handle | [main.cjs:563](../../electron/main.cjs#L563) |
-| `sync-passphrase-get` | invoke → handle | [main.cjs:564](../../electron/main.cjs#L564) |
-| `sync-passphrase-set` | invoke → handle | [main.cjs:565](../../electron/main.cjs#L565) |
-| `sync-passphrase-clear` | invoke → handle | [main.cjs:566](../../electron/main.cjs#L566) |
-| `sync-open-folder` | invoke → handle | [main.cjs:567](../../electron/main.cjs#L567) |
-| `feeds-list` | invoke → handle | [main.cjs:578](../../electron/main.cjs#L578) |
-| `feeds-add` | invoke → handle | [main.cjs:579](../../electron/main.cjs#L579) |
-| `feeds-remove` | invoke → handle | [main.cjs:586](../../electron/main.cjs#L586) |
-| `feeds-fetch` | invoke → handle | [main.cjs:587](../../electron/main.cjs#L587) |
-| `schedule-notifications` | invoke → handle | [main.cjs:595](../../electron/main.cjs#L595) |
-| `calendar-ready` | invoke → handle | [main.cjs:596](../../electron/main.cjs#L596) |
+| `update-status` | main → renderer push | [main.cjs:136](../../electron/main.cjs#L136) |
+| `open-download-page` | invoke → handle | [main.cjs:162](../../electron/main.cjs#L162) |
+| `check-for-updates` | invoke → handle | [main.cjs:174](../../electron/main.cjs#L174) |
+| `quit-and-install` | send → on | [main.cjs:175](../../electron/main.cjs#L175) |
+| `check-for-updates` | invoke → handle | [main.cjs:199](../../electron/main.cjs#L199) |
+| `quit-and-install` | send → on | [main.cjs:210](../../electron/main.cjs#L210) |
+| `set-theme` | send → on | [main.cjs:245](../../electron/main.cjs#L245) |
+| `get-app-version` | invoke → handle | [main.cjs:365](../../electron/main.cjs#L365) |
+| `show-window` | send → on | [main.cjs:371](../../electron/main.cjs#L371) |
+| `get-auto-launch` | invoke → handle | [main.cjs:384](../../electron/main.cjs#L384) |
+| `set-auto-launch` | invoke → handle | [main.cjs:394](../../electron/main.cjs#L394) |
+| `get-shortcut-status` | invoke → handle | [main.cjs:411](../../electron/main.cjs#L411) |
+| `quick-add-show` | main → renderer push | [main.cjs:468](../../electron/main.cjs#L468) |
+| `quick-add` | send → on | [main.cjs:486](../../electron/main.cjs#L486) |
+| `quick-add` | main → renderer push | [main.cjs:505](../../electron/main.cjs#L505) |
+| `calendar-action` | main → renderer push | [main.cjs:527](../../electron/main.cjs#L527) |
+| `save-daily-backup` | invoke → handle | [main.cjs:535](../../electron/main.cjs#L535) |
+| `backups-info` | invoke → handle | [main.cjs:538](../../electron/main.cjs#L538) |
+| `open-backups-folder` | invoke → handle | [main.cjs:539](../../electron/main.cjs#L539) |
+| `find-faces` | invoke → handle | [main.cjs:550](../../electron/main.cjs#L550) |
+| `sync-info` | invoke → handle | [main.cjs:560](../../electron/main.cjs#L560) |
+| `sync-read` | invoke → handle | [main.cjs:561](../../electron/main.cjs#L561) |
+| `sync-write` | invoke → handle | [main.cjs:562](../../electron/main.cjs#L562) |
+| `sync-remove-copies` | invoke → handle | [main.cjs:563](../../electron/main.cjs#L563) |
+| `sync-set-aside` | invoke → handle | [main.cjs:564](../../electron/main.cjs#L564) |
+| `sync-passphrase-get` | invoke → handle | [main.cjs:565](../../electron/main.cjs#L565) |
+| `sync-passphrase-set` | invoke → handle | [main.cjs:566](../../electron/main.cjs#L566) |
+| `sync-passphrase-clear` | invoke → handle | [main.cjs:567](../../electron/main.cjs#L567) |
+| `sync-open-folder` | invoke → handle | [main.cjs:568](../../electron/main.cjs#L568) |
+| `feeds-list` | invoke → handle | [main.cjs:579](../../electron/main.cjs#L579) |
+| `feeds-add` | invoke → handle | [main.cjs:580](../../electron/main.cjs#L580) |
+| `feeds-remove` | invoke → handle | [main.cjs:587](../../electron/main.cjs#L587) |
+| `feeds-fetch` | invoke → handle | [main.cjs:588](../../electron/main.cjs#L588) |
+| `export-summary` | invoke → handle | [main.cjs:599](../../electron/main.cjs#L599) |
+| `schedule-notifications` | invoke → handle | [main.cjs:626](../../electron/main.cjs#L626) |
+| `calendar-ready` | invoke → handle | [main.cjs:627](../../electron/main.cjs#L627) |
 
 ### Preload bridges (what the renderer can call)
 
@@ -706,16 +727,17 @@ Package: `layers-web` v1.0.34 · `src/`: 73 files, 12156 lines, 98 components, 2
 | `window.layersSystem.addFeed()` | `feeds-add` | [preload.cjs:43](../../electron/preload.cjs#L43) |
 | `window.layersSystem.removeFeed()` | `feeds-remove` | [preload.cjs:44](../../electron/preload.cjs#L44) |
 | `window.layersSystem.fetchFeeds()` | `feeds-fetch` | [preload.cjs:45](../../electron/preload.cjs#L45) |
-| `window.layersSystem.findFaces()` | `find-faces` | [preload.cjs:48](../../electron/preload.cjs#L48) |
-| `window.layersSystem.onCalendarAction()` | `calendar-action` | [preload.cjs:49](../../electron/preload.cjs#L49) |
-| `window.layersSystem.onQuickAdd()` | `quick-add` | [preload.cjs:55](../../electron/preload.cjs#L55) |
-| `window.layersQuick.submit()` | `quick-add` | [preload.cjs:65](../../electron/preload.cjs#L65) |
-| `window.layersQuick.open()` | `quick-add` | [preload.cjs:66](../../electron/preload.cjs#L66) |
-| `window.layersQuick.undo()` | `quick-add` | [preload.cjs:67](../../electron/preload.cjs#L67) |
-| `window.layersQuick.redo()` | `quick-add` | [preload.cjs:68](../../electron/preload.cjs#L68) |
-| `window.layersQuick.hide()` | `quick-add` | [preload.cjs:69](../../electron/preload.cjs#L69) |
-| `window.layersQuick.resize()` | `quick-add` | [preload.cjs:70](../../electron/preload.cjs#L70) |
-| `window.layersQuick.onShow()` | `quick-add-show` | [preload.cjs:71](../../electron/preload.cjs#L71) |
+| `window.layersSystem.exportSummary()` | `export-summary` | [preload.cjs:48](../../electron/preload.cjs#L48) |
+| `window.layersSystem.findFaces()` | `find-faces` | [preload.cjs:51](../../electron/preload.cjs#L51) |
+| `window.layersSystem.onCalendarAction()` | `calendar-action` | [preload.cjs:52](../../electron/preload.cjs#L52) |
+| `window.layersSystem.onQuickAdd()` | `quick-add` | [preload.cjs:58](../../electron/preload.cjs#L58) |
+| `window.layersQuick.submit()` | `quick-add` | [preload.cjs:68](../../electron/preload.cjs#L68) |
+| `window.layersQuick.open()` | `quick-add` | [preload.cjs:69](../../electron/preload.cjs#L69) |
+| `window.layersQuick.undo()` | `quick-add` | [preload.cjs:70](../../electron/preload.cjs#L70) |
+| `window.layersQuick.redo()` | `quick-add` | [preload.cjs:71](../../electron/preload.cjs#L71) |
+| `window.layersQuick.hide()` | `quick-add` | [preload.cjs:72](../../electron/preload.cjs#L72) |
+| `window.layersQuick.resize()` | `quick-add` | [preload.cjs:73](../../electron/preload.cjs#L73) |
+| `window.layersQuick.onShow()` | `quick-add-show` | [preload.cjs:74](../../electron/preload.cjs#L74) |
 
 ### Channel mismatches
 

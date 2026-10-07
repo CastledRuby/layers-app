@@ -317,3 +317,19 @@ test('your Google Calendar: the packaged app refuses an address that is not a ca
   expect(fs.existsSync(path.join(dataDir, 'calendars.bin'))).toBe(false);
   await quit(app);
 });
+
+test('a one-page summary of someone is saved as a real PDF', async () => {
+  const dataDir = tempDataDir();
+  const out = tempDataDir();
+  const { app, page } = await launch(dataDir, [], { LAYERS_SUMMARY_DIR: out });
+  await onboard(page, 'Sam'); // the example people
+  await page.locator('.nav-bar').getByRole('button', { name: 'People', exact: true }).click();
+  await page.getByRole('button', { name: /Priya/ }).first().click();
+  await page.getByRole('button', { name: /Summary/ }).click();
+  await expect(page.getByText(/^Summary saved: Priya summary .+\.pdf$/)).toBeVisible({ timeout: 20000 });
+  const [file] = fs.readdirSync(out).filter(n => n.endsWith('.pdf'));
+  const pdf = fs.readFileSync(path.join(out, file));
+  expect(pdf.subarray(0, 5).toString()).toBe('%PDF-');
+  expect(pdf.length).toBeGreaterThan(5000);
+  await quit(app);
+});

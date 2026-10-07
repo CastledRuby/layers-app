@@ -1,7 +1,8 @@
 // One person's profile screen.
 
 import { useEffect, useMemo, useState } from 'react';
-import { ChevronLeft, Pencil, Plus, X } from 'lucide-react';
+import { ChevronLeft, FileText, Pencil, Plus, X } from 'lucide-react';
+import { ActivityCalendar } from '../components/ActivityCalendar.jsx';
 import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { Sheet } from '../components/Sheet.jsx';
 import { Avatar, CircularProgress, LabeledBar, LayerBadge, Timeline } from '../components/atoms.jsx';
@@ -71,7 +72,7 @@ function PrepareTipsModal({ person, journal, onClose, onOpenFullCoach }) {
   );
 }
 
-export function PersonProfile({ today, person, journal, onBack, onOpenLog, onOpenGoalCreate, onOpenGoalEdit, onDeleteGoal, onBumpGoal, onOpenAddInfo, onOpenQuickAddInterest, onSaveInfo, onDeleteInfo, onToggleTemporary, onToggleArchive, onAdjust, onOpenCoach, onEditPerson, onClearLevelUpFlag, onRemindFollowUp, onPlan, onAddKeyDate, onDeleteKeyDate, onRecheck, onShowGoalLogs }) {
+export function PersonProfile({ today, person, journal, onBack, onOpenLog, onOpenGoalCreate, onOpenGoalEdit, onDeleteGoal, onBumpGoal, onOpenAddInfo, onOpenQuickAddInterest, onSaveInfo, onDeleteInfo, onToggleTemporary, onToggleArchive, onAdjust, onOpenCoach, onEditPerson, onClearLevelUpFlag, onRemindFollowUp, onPlan, onAddKeyDate, onDeleteKeyDate, onRecheck, onShowGoalLogs, onShowDayLogs, onExportSummary }) {
   const [prepareOpen, setPrepareOpen] = useState(false);
   const [showAdjust, setShowAdjust] = useState(false);
   const [draft, setDraft] = useState(person.dims);
@@ -102,9 +103,12 @@ export function PersonProfile({ today, person, journal, onBack, onOpenLog, onOpe
         <button onClick={onBack} className="flex items-center gap-1 text-sm font-medium" style={{ color: COLORS.inkSoft }}>
           <ChevronLeft size={18} /> Back
         </button>
-        <button onClick={onEditPerson} className="flex items-center gap-1 text-xs font-medium" style={{ color: COLORS.inkSoft }}>
-          <Pencil size={13} /> Edit
-        </button>
+        <span className="flex items-center gap-3">
+          {onExportSummary && <button onClick={() => onExportSummary(person.id)} title="A one-page PDF of what you know" className="flex items-center gap-1 text-xs font-medium" style={{ color: COLORS.inkSoft }}><FileText size={13} /> Summary</button>}
+          <button onClick={onEditPerson} className="flex items-center gap-1 text-xs font-medium" style={{ color: COLORS.inkSoft }}>
+            <Pencil size={13} /> Edit
+          </button>
+        </span>
       </div>
 
       <div className="flex flex-col items-center text-center">
@@ -283,6 +287,12 @@ export function PersonProfile({ today, person, journal, onBack, onOpenLog, onOpe
         <div className="mt-3">
           <Timeline steps={[...sortByDay(person.timeline || []), { label: `Current: Layer ${person.layer}, ${l.name}`, at: today, prefix: 'As of ', current: true }]} />
         </div>
+      </div>
+
+      <div className="mt-2 mb-6">
+        <p className="font-display mb-3" style={{ fontSize: 18, color: COLORS.ink }}>Activity</p>
+        <ActivityCalendar journal={journal.filter(j => j.personId === person.id)} today={today} color={l.color} label={`Activity with ${person.name}`}
+          onPickDay={onShowDayLogs ? (day) => onShowDayLogs(person.id, day) : undefined} />
       </div>
 
       <div className="mt-2">

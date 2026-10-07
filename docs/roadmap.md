@@ -192,7 +192,7 @@ comes back to you first.
    minutes; nothing is sent. Its events show on Today, in the month and in planning's
    clash warning, marked as from Google, **with no reminders** (Google already reminds
    you).
-5. **Activity and a one-page summary**: a six-month activity calendar on each profile
+5. ✅ **Activity and a one-page summary** (built 2026-10-07): a six-month activity calendar on each profile
    and on the Journal, and Export summary, a one-page PDF of someone.
 6. **Real conversation analysis**: a **cloud AI, only when you ask**, sending only the
    chat you chose, with a warning each time. Which AI is decided when we get there, in
@@ -526,6 +526,15 @@ its own. Changes made while building are marked.
   box in the packaged app, with a temporary data folder as always.
 
 ## History
+
+### Activity and a one-page summary (after 1.0.34, not released yet)
+
+- **Activity** on each profile, and on the Journal for everyone: the last six months as
+  a grid of days, darker for more and more meaningful logs. Tap a day to see its logs in
+  the Journal (with that person, from a profile); the day's chip clears it.
+- **Summary** on a profile: a one-page PDF of what you know about someone (their layer,
+  how you are with each other, what you know, key dates, goals, timeline, recent logs
+  and activity), made on this computer and saved where you pick.
 
 ### Your Google Calendar, read-only (after 1.0.34, not released yet)
 

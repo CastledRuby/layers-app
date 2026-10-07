@@ -3,7 +3,8 @@
 // kept by LayersApp, so a goal's "N logs" can open the Journal on it.
 
 import { useMemo, useState } from 'react';
-import { Check, Pencil, Search, Target } from 'lucide-react';
+import { Check, Pencil, Search, Target, X } from 'lucide-react';
+import { ActivityCalendar } from '../components/ActivityCalendar.jsx';
 import { CONV_STATES, DIM_LABELS, DIM_ORDER, getLayer, STANDOUTS, TYPE_META } from '../data/constants.js';
 import { journalDateLabel, journalDaysAgo, parseISODay } from '../lib/dates.js';
 import { summaryFor } from '../lib/text.js';
@@ -25,8 +26,9 @@ function Chip({ active, onClick, children, label, slim }) {
   );
 }
 
-export function JournalView({ today, people, generalGoals = [], journal, goalFilter = 'all', onGoalFilter = () => {}, onOpenPerson, onEditEntry }) {
-  const [filterPerson, setFilterPerson] = useState('all');
+export function JournalView({ today, people, generalGoals = [], journal, goalFilter = 'all', onGoalFilter = () => {}, personFilter = 'all', onPersonFilter = () => {}, dayFilter = null, onDayFilter = () => {}, onOpenPerson, onEditEntry }) {
+  const filterPerson = personFilter;
+  const setFilterPerson = onPersonFilter;
   const [filterType, setFilterType] = useState('all');
   const [period, setPeriod] = useState('all');
   const [query, setQuery] = useState('');
@@ -49,6 +51,7 @@ export function JournalView({ today, people, generalGoals = [], journal, goalFil
     const p = peopleById[j.personId];
     if (!p) return false;
     if (filterPerson !== 'all' && j.personId !== filterPerson) return false;
+    if (dayFilter && j.at !== dayFilter) return false;
     if (filterType !== 'all' && j.type !== filterType) return false;
     if (goalFilter !== 'all' && !(j.goalIds || []).includes(goalFilter)) return false;
     if (days !== null && journalDaysAgo(j, now) >= days) return false;
@@ -58,8 +61,10 @@ export function JournalView({ today, people, generalGoals = [], journal, goalFil
     }
     return true;
   });
-  const filtering = filterPerson !== 'all' || filterType !== 'all' || period !== 'all' || goalFilter !== 'all' || !!q;
-  function clearFilters() { setFilterPerson('all'); setFilterType('all'); setPeriod('all'); setQuery(''); onGoalFilter('all'); }
+  const filtering = filterPerson !== 'all' || filterType !== 'all' || period !== 'all' || goalFilter !== 'all' || !!dayFilter || !!q;
+  function clearFilters() { setFilterPerson('all'); setFilterType('all'); setPeriod('all'); setQuery(''); onGoalFilter('all'); onDayFilter(null); }
+  // The activity calendar shows whoever's picked (everyone otherwise).
+  const shownLogs = useMemo(() => journal.filter(j => peopleById[j.personId] && (filterPerson === 'all' || j.personId === filterPerson)), [journal, peopleById, filterPerson]);
 
   const sorted = [...filtered].sort((a, b) => journalDaysAgo(a, now) - journalDaysAgo(b, now));
   const groups = [];
@@ -112,6 +117,20 @@ export function JournalView({ today, people, generalGoals = [], journal, goalFil
           </select>
         </div>
       )}
+
+      {dayFilter && (
+        <div className="flex items-center gap-1.5 mt-2">
+          <span className="text-xs font-semibold rounded-full pl-3 pr-1 py-1 flex items-center gap-1" style={{ background: COLORS.accentSoft, color: COLORS.accent }}>
+            {journalDateLabel({ at: dayFilter }, now)}
+            <button type="button" onClick={() => onDayFilter(null)} aria-label="Any day" className="rounded-full flex items-center justify-center" style={{ width: 18, height: 18 }}><X size={12} /></button>
+          </span>
+        </div>
+      )}
+
+      <div className="mt-4 rounded-2xl p-3" style={{ background: COLORS.paperRaised, border: `1px solid ${COLORS.line}` }}>
+        <ActivityCalendar journal={shownLogs} today={today} label={filterPerson === 'all' ? 'Activity' : `Activity with ${(peopleById[filterPerson] || {}).name || ''}`}
+          color={filterPerson === 'all' ? COLORS.accent : getLayer((peopleById[filterPerson] || { layer: 1 }).layer).color} onPickDay={(d) => onDayFilter(d === dayFilter ? null : d)} />
+      </div>
 
       {filtering && (
         <button onClick={clearFilters} className="text-xs font-semibold mt-2" style={{ color: COLORS.accent }}>Clear filters ({filtered.length} of {journal.filter(j => peopleById[j.personId]).length} shown)</button>

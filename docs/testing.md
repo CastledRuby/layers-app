@@ -118,6 +118,12 @@ interact.
 - `keys2.test.jsx` covers the second live test's keys: N into a note box and Esc out
   (the quick log, Add detail, editing a journal entry), Redo with Ctrl+Y and
   Ctrl+Shift+Z (and not once something else changed), and Ctrl+K's O, L, P and R.
+- `activity.test.jsx` covers the activity calendars (a profile's days with logs, one
+  opening the Journal on that person that day, the Journal's for everyone) and Summary
+  handing the page to a stand-in main process; `src/activity.test.js` the grid (26 weeks,
+  ending with this week, levels) and the summary page (everything escaped, archived details
+  left out, a yearly date without its year, the file name). The end-to-end tests save a
+  real PDF of an example person.
 - `calendars.test.jsx` covers your Google Calendar (the main process stood in for):
   adding it in Me (a bad address refused), its event on Today marked as Google's and
   opened read-only, nothing of it handed to Windows as a reminder, planning's clash

@@ -1,4 +1,4 @@
-const { app, BrowserWindow, Tray, Menu, nativeImage, nativeTheme, ipcMain, globalShortcut, safeStorage, shell } = require('electron');
+const { app, BrowserWindow, Tray, Menu, dialog, nativeImage, nativeTheme, ipcMain, globalShortcut, safeStorage, shell } = require('electron');
 const { execFileSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
@@ -95,6 +95,7 @@ if (!gotSingleInstanceLock || quitRequested) {
     setupFaces();
     setupSync();
     setupFeeds();
+    setupSummary();
     setupQuickAdd();
     registerGlobalShortcut();
 
@@ -588,6 +589,36 @@ function setupFeeds() {
     const got = await fetchFeed(url);
     return got.error ? { id, name, error: got.error } : { id, name, text: got.text };
   })));
+}
+
+// --- A one-page summary of someone as a PDF ---------------------------------
+// The page makes the summary (src/lib/summary.js); here it's drawn in a
+// hidden window with no scripts, printed to A4, saved where you pick (in the
+// end-to-end tests, LAYERS_SUMMARY_DIR) and opened.
+function setupSummary() {
+  ipcMain.handle('export-summary', async (_event, html, fileName) => {
+    if (typeof html !== 'string' || html.length > 20 * 1024 * 1024) return { error: 'The summary is too large.' };
+    const name = path.basename(String(fileName || 'Summary.pdf')).replace(/[\\/:*?"<>|]/g, '') || 'Summary.pdf';
+    const win = new BrowserWindow({ show: false, webPreferences: { javascript: false, sandbox: true } });
+    try {
+      await win.loadURL(`data:text/html;charset=utf-8;base64,${Buffer.from(html, 'utf8').toString('base64')}`);
+      const pdf = await win.webContents.printToPDF({ printBackground: true, preferCSSPageSize: true });
+      let target = null;
+      if (process.env.LAYERS_SUMMARY_DIR) target = path.join(process.env.LAYERS_SUMMARY_DIR, name);
+      else {
+        const picked = await dialog.showSaveDialog(mainWindow, { title: 'Save the summary', defaultPath: path.join(app.getPath('documents'), name), filters: [{ name: 'PDF', extensions: ['pdf'] }] });
+        if (picked.canceled || !picked.filePath) return { canceled: true };
+        target = picked.filePath;
+      }
+      fs.writeFileSync(target, pdf);
+      if (!process.env.LAYERS_SUMMARY_DIR) shell.openPath(target);
+      return { saved: target };
+    } catch (e) {
+      return { error: e.message };
+    } finally {
+      win.destroy();
+    }
+  });
 }
 
 function setupCalendar() {

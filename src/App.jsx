@@ -36,6 +36,7 @@ import { createStamper } from './lib/sync.js';
 import { SyncError, syncErrorText, syncOnce } from './lib/syncFile.js';
 import { SyncSheet } from './modals/SyncSheet.jsx';
 import { calendarItems, parseCalendar } from './lib/ics.js';
+import { summaryFileName, summaryHtml } from './lib/summary.js';
 import { QuickAddInterestModal } from './modals/QuickAddInterestModal.jsx';
 import { ShortcutsModal } from './modals/ShortcutsModal.jsx';
 import { StartOverSheet } from './modals/StartOverSheet.jsx';
@@ -126,6 +127,8 @@ function LayersApp() {
   const [calendarMode, setCalendarMode] = useState('day');
   const [planState, setPlanState] = useState(null); // PlanSheet's prefill while it's open
   const [journalGoal, setJournalGoal] = useState('all'); // the Journal's goal filter
+  const [journalPerson, setJournalPerson] = useState('all'); // ...its person filter
+  const [journalDay, setJournalDay] = useState(null); // ...and a day picked on an activity calendar
   const [weekReview, setWeekReview] = useState(null); // a day in the week WeekReviewSheet shows
   const [eventView, setEventView] = useState(null); // { eventId, day } in EventSheet
   const [dayView, setDayView] = useState(null); // a day open in DaySheet
@@ -589,6 +592,16 @@ function LayersApp() {
   function switchTab(tab) { setActiveTab(tab); setScreen({ name: 'tabs' }); }
   // A goal's "N logs": the Journal, showing the logs that moved it.
   function showGoalLogs(goalId) { setJournalGoal(goalId); switchTab('journal'); }
+  // A day on someone's activity calendar: the Journal, on their logs that day.
+  function showDayLogs(personId, day) { setJournalPerson(personId || 'all'); setJournalDay(day); setJournalGoal('all'); switchTab('journal'); }
+  // Export summary on a profile: a one-page PDF (lib/summary.js), saved where you pick.
+  async function handleExportSummary(personId) {
+    const p = people.find(x => x.id === personId);
+    if (!p || !hasSystemBridge || !window.layersSystem.exportSummary) return;
+    const result = await window.layersSystem.exportSummary(summaryHtml(p, { journal, today }), summaryFileName(p, today));
+    if (result && result.saved) pushToast(`Summary saved: ${result.saved.split(/[\\/]/).pop()}`);
+    else if (result && result.error) pushToast(`Couldn't save the summary: ${result.error}`);
+  }
   function openCoach(personId, tab) { setCoachInit({ personId: personId || null, tab: tab || 'prepare' }); setActiveTab('coach'); setScreen({ name: 'tabs' }); }
   // Ctrl+K's row picked (JumpSheet, lib/jump.js). Going somewhere closes the
   // sheets that were open; an action like Dark mode leaves them be.
@@ -1359,6 +1372,8 @@ function LayersApp() {
       onDeleteKeyDate={handleDeleteKeyDate}
       onRecheck={() => setRecheckFor(selectedPerson.id)}
       onShowGoalLogs={showGoalLogs}
+      onShowDayLogs={showDayLogs}
+      onExportSummary={hasSystemBridge && window.layersSystem.exportSummary ? handleExportSummary : null}
     />
   );
   useEffect(() => { if (scrollRef.current) scrollRef.current.scrollTop = 0; }, [pageKey]);
@@ -1397,7 +1412,8 @@ function LayersApp() {
                         {activeTab === 'today' && <TodayView wide={wide} today={today} selectedDay={selectedDay || today} onSelectDay={(d) => setSelectedDay(d === today ? null : d)} mode={calendarMode} onSetMode={setCalendarMode} people={people} journal={journal} events={shownEvents} generalGoals={generalGoals} skills={skills} profile={profile} onPlan={openPlan} onOpenEvent={(eventId, day) => setEventView({ eventId, day })} onLogEvent={openLogFromEvent} onTickEvent={(ev, day) => handleMarkEventDone(ev.id, day)} onOpenPerson={openPerson} onAddPerson={() => setAddPersonOpen(true)} onOpenLog={() => openLog(null)} onSwitchTab={switchTab} onOpenGoals={openGoalsOverview} onOpenReview={setWeekReview} onOpenDay={setDayView} onOpenJump={() => { setJumpOpen(true); markTried('jump'); }} onHideFirstSteps={() => setProfile(p => ({ ...p, gettingStartedHidden: true }))} />}
                         {activeTab === 'people' && <PeopleView people={people} journal={journal} onOpenPerson={openPerson} onAddPerson={() => setAddPersonOpen(true)} onAddPhotos={() => setPhotoFolderOpen(true)} />}
                         {activeTab === 'coach' && <div className="page-col"><CoachView people={people} journal={journal} initialPersonId={coachInit.personId} initialTab={coachInit.tab} onOpenLog={openLog} onApproveInfo={handleApproveInfo} onLogFromAnalysis={handleLogFromAnalysis} onOpenPerson={openPerson} /></div>}
-                        {activeTab === 'journal' && <div className="page-col"><JournalView today={today} people={people} generalGoals={generalGoals} journal={journal} goalFilter={journalGoal} onGoalFilter={setJournalGoal} onOpenPerson={openPerson} onEditEntry={setEditingEntryId} /></div>}
+                        {activeTab === 'journal' && <div className="page-col"><JournalView today={today} people={people} generalGoals={generalGoals} journal={journal} goalFilter={journalGoal} onGoalFilter={setJournalGoal}
+                          personFilter={journalPerson} onPersonFilter={setJournalPerson} dayFilter={journalDay} onDayFilter={setJournalDay} onOpenPerson={openPerson} onEditEntry={setEditingEntryId} /></div>}
                         {activeTab === 'me' && <div className="page-col"><MeView people={people} journal={journal} skills={skills} generalGoals={generalGoals} profile={profile} onAddSample={handleAddSample} onRemoveSample={handleRemoveSample} hasSamplePeople={people.some(p => SAMPLE_PERSON_IDS.has(p.id))} canAddSample={INITIAL_PEOPLE.some(sp => !people.some(p => p.id === sp.id))} onStartOver={() => setStartOverOpen(true)} onExport={handleExportData} onImportClick={handleImportClick} backupInfo={backupInfo} onOpenBackups={handleOpenBackups} hasUpdater={hasUpdater} updateStatus={updateStatus} onCheckForUpdates={handleCheckForUpdates} onInstallUpdate={handleInstallUpdate} onOpenDownloadPage={handleOpenDownloadPage} shortcutStatus={shortcutStatus} themeMode={themeMode} onSetTheme={setThemeMode} onUpdateProfile={(changes) => setProfile(p => ({ ...p, ...changes }))} onEditProfile={() => setEditProfileOpen(true)} achievements={achievements || {}} hasSystemBridge={hasSystemBridge} autoLaunch={autoLaunch} onToggleAutoLaunch={handleToggleAutoLaunch} onOpenShortcuts={() => setShortcutsOpen(true)} appVersion={appVersion}
                           sync={syncBridge ? { ...syncSettings, dir: syncInfo && syncInfo.dir } : null}
                           calendars={feedBridge ? { feeds, fetchedAt: feedCache.fetchedAt, errors: feedCache.errors, count: (id) => feedCache.items.filter(it => it.feedId === id).length } : null}

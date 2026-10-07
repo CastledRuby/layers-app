@@ -43,6 +43,9 @@ contextBridge.exposeInMainWorld('layersSystem', {
   addFeed: (address) => ipcRenderer.invoke('feeds-add', address),
   removeFeed: (id) => ipcRenderer.invoke('feeds-remove', id),
   fetchFeeds: () => ipcRenderer.invoke('feeds-fetch'),
+  // A one-page summary of someone (src/lib/summary.js) as a PDF, saved where
+  // you pick: { saved }, { canceled } or { error }.
+  exportSummary: (html, fileName) => ipcRenderer.invoke('export-summary', html, fileName),
   // Where the faces are in chosen pictures (File objects), from Windows' own
   // face detector (faces.cjs): one { width, height, faces } or null each.
   findFaces: (files) => ipcRenderer.invoke('find-faces', [...files].map(file => { try { return webUtils.getPathForFile(file) || null; } catch { return null; } })),
