@@ -286,7 +286,7 @@ export function TodayView({ today, selectedDay, onSelectDay, mode, onSetMode, pe
       {isEmpty && (
         <button type="button" onClick={() => onPlan({ day })} className="w-full rounded-2xl p-5 text-center" style={{ border: `1.5px dashed ${COLORS.line}`, color: COLORS.inkSoft }}>
           <p className="text-sm font-semibold" style={{ color: COLORS.ink }}>Nothing planned{day === today ? ' today' : ''}</p>
-          <p className="text-xs mt-1">Tap to plan something, or press P.</p>
+          <p className="text-xs mt-1">Tap to plan something<span className="keys-hint">, or press P</span>.</p>
         </button>
       )}
 

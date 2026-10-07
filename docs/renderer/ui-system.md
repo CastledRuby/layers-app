@@ -287,6 +287,30 @@ ARIA attribute carries the state:
 Older controls don't all have them yet, but new ones should. Screen readers need them,
 and the app tests find controls by them (`getByRole('switch', …)`).
 
+## Touch screens
+
+Layers is laid out phone-first, and on a touch screen (`(hover: none) and (pointer:
+coarse)`, as on a phone) it works by tapping alone. The keys stay for the laptop. In
+`theme.js`:
+
+- **Key hints go**: every `Kbd`, a `KeyedField`'s letter, and anything marked
+  `.keys-hint` (a hint that's only about keys, like "↑ ↓ move · ↵ go"). Mark a new hint
+  `.keys-hint` when it means nothing without a keyboard; a hint mixing words and keys
+  keeps the words ("Drag to move").
+- **Room for a finger**: chips at least 38 px tall, icon buttons 40 px, skin-tone swatches
+  32 px.
+- **Text boxes are 16 px**, which stops iPhones zooming in when you tap one.
+- **Hover effects don't stick** after a tap (the avatar choices, swatches and big buttons).
+- **Safe areas**: the frame is `100dvh` with the notch's inset at the top, and the tab
+  bar and sheet footers leave room for the home bar (`env(safe-area-inset-*)`, 0
+  elsewhere).
+- **Nothing is keys-only**: the day popup has buttons for the day before and after;
+  Ctrl+K's person rows have a ⋯ button for Log, Plan and Prepare (and the name chip
+  goes back); Today has a search button that opens Ctrl+K.
+
+Checked by emulating an iPhone-sized touch screen in the packaged app (Chrome DevTools'
+touch emulation through Playwright, a temporary data folder).
+
 ## Motion
 
 All the keyframes are in `CSS`, with one easing for most of them (`EASE`: quick to

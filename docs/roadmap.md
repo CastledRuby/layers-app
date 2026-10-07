@@ -181,7 +181,7 @@ comes back to you first.
      syncs **automatically**: on start, a few seconds after a change, and on closing;
      Me shows when it last synced, with Sync now. It also works between two Windows
      PCs; the phone joins later.
-   - **Every screen by touch**: at phone size, everything works by tapping, with
+   - ✅ **Every screen by touch** (built 2026-10-07): at phone size, everything works by tapping, with
      nothing that needs a keyboard or a hover. The keys stay for the laptop.
    - **The iPhone project** (Capacitor) and a **GitHub build** that compiles it for the
      iPhone simulator, pushed to GitHub after the release (the repository is public,
@@ -525,6 +525,15 @@ its own. Changes made while building are marked.
   box in the packaged app, with a temporary data folder as always.
 
 ## History
+
+### Every screen by touch (after 1.0.33, not released yet)
+
+On a touch screen, as on a phone, Layers now works by tapping alone; nothing changes on
+the laptop. Key hints are hidden, buttons are finger-sized, text boxes don't make an
+iPhone zoom in, and the notch and home bar are left clear. The few things only keys
+could do have buttons now: the day popup's day before and after, a person's Log, Plan
+and Prepare in the search box (⋯), and a **search button on Today** (the same as
+Ctrl+K, handy with the mouse too).
 
 ### Sync through OneDrive (after 1.0.33, not released yet)
 
