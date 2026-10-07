@@ -312,10 +312,10 @@ export function PersonProfile({ today, person, journal, onBack, onOpenLog, onOpe
         <p className="font-display" style={{ fontSize: 18, color: COLORS.ink }}>Progress</p>
         <div className="mt-3" style={{ width: '100%', height: 170 }}>
           <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={sortHistory(person.history)} margin={{ top: 8, right: 14, left: -12, bottom: 0 }}>
+            <LineChart data={sortHistory(person.history)} margin={{ top: 8, right: 14, left: 0, bottom: 0 }}>
               <CartesianGrid stroke={COLORS.line} strokeDasharray="3 3" vertical={false} />
               <XAxis dataKey="date" tick={{ fontSize: 10, fill: COLORS.inkSoft }} axisLine={{ stroke: COLORS.line }} tickLine={false} interval={0} padding={{ left: 18, right: 18 }} />
-              <YAxis domain={[0, 100]} tick={{ fontSize: 10, fill: COLORS.inkSoft }} axisLine={false} tickLine={false} width={26} />
+              <YAxis domain={[0, 100]} tick={{ fontSize: 10, fill: COLORS.inkSoft }} axisLine={false} tickLine={false} width={30} />
               <Tooltip formatter={(v) => [`${v}%`, 'Progress']} contentStyle={{ borderRadius: 12, border: `1px solid ${COLORS.line}`, fontSize: 12 }} />
               <Line type="monotone" dataKey="value" stroke={l.color} strokeWidth={2.5} dot={{ r: 3, fill: l.color }} activeDot={{ r: 5 }} />
             </LineChart>

@@ -257,7 +257,7 @@ describe('chat analysis with Claude', () => {
     // Me says what they cost: each answer once, by model.
     await user.click(nav('Me'));
     const spent = screen.getByLabelText('What Claude has cost');
-    expect(spent.textContent).toMatch(/This month: about US\$0\.20 for 2 chats \(Opus 5\.5 1, Sonnet 5\.5 1\)/);
+    expect(spent.textContent).toMatch(/This month: about US\$0\.20 for 2 chats \(1 with Opus 5\.5, 1 with Sonnet 5\.5\)/);
     await user.click(nav('Coach'));
 
     // Started again, it's the cheapest again.

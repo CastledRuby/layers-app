@@ -28,10 +28,10 @@ export function ChatTrendChart({ points, label = 'Skills from analysed chats' })
       {points.length > 1 && (
         <div className="mt-3" style={{ width: '100%', height: 170 }}>
           <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={points} margin={{ top: 8, right: 14, left: -12, bottom: 0 }}>
+            <LineChart data={points} margin={{ top: 8, right: 14, left: 0, bottom: 0 }}>
               <CartesianGrid stroke={COLORS.line} strokeDasharray="3 3" vertical={false} />
               <XAxis dataKey="date" tick={{ fontSize: 10, fill: COLORS.inkSoft }} axisLine={{ stroke: COLORS.line }} tickLine={false} padding={{ left: 18, right: 18 }} />
-              <YAxis domain={[0, 100]} tick={{ fontSize: 10, fill: COLORS.inkSoft }} axisLine={false} tickLine={false} width={26} />
+              <YAxis domain={[0, 100]} tick={{ fontSize: 10, fill: COLORS.inkSoft }} axisLine={false} tickLine={false} width={30} />
               <Tooltip contentStyle={{ borderRadius: 12, border: `1px solid ${COLORS.line}`, fontSize: 12 }} />
               {TREND_LINES.map(l => <Line key={l.key} type="monotone" dataKey={l.key} name={l.label} stroke={COLOR[l.key]} strokeWidth={2} dot={{ r: 2.5, fill: COLOR[l.key] }} connectNulls />)}
             </LineChart>

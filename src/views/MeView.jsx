@@ -51,7 +51,8 @@ function AnalysisKeyCard({ analysisKey, onSave, onRemove }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
   const [spend] = useState(() => spendSummary()); // read when Me opens
-  const byModel = (models) => Object.entries(models).map(([id, n]) => `${analysisModel(id).short} ${n}`).join(', ');
+  // "Haiku 4.5" for one model; "2 with Haiku 4.5, 1 with Opus 5.5" for more.
+  const byModel = (models) => { const list = Object.entries(models); return list.length === 1 ? analysisModel(list[0][0]).short : list.map(([id, n]) => `${n} with ${analysisModel(id).short}`).join(', '); };
   async function save() {
     if (!key.trim() || busy) return;
     setBusy(true); setError(null);
@@ -223,10 +224,10 @@ export function MeView({ people, journal, skills, profile, generalGoals = [], on
         </div>
         <div className="mt-3" style={{ width: '100%', height: 170 }}>
           <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={chartData} margin={{ top: 8, right: 14, left: -12, bottom: 0 }}>
+            <LineChart data={chartData} margin={{ top: 8, right: 14, left: 0, bottom: 0 }}>
               <CartesianGrid stroke={COLORS.line} strokeDasharray="3 3" vertical={false} />
               <XAxis dataKey="date" tick={{ fontSize: 10, fill: COLORS.inkSoft }} axisLine={{ stroke: COLORS.line }} tickLine={false} interval={0} padding={{ left: 18, right: 18 }} />
-              <YAxis domain={[0, 100]} tick={{ fontSize: 10, fill: COLORS.inkSoft }} axisLine={false} tickLine={false} width={26} />
+              <YAxis domain={[0, 100]} tick={{ fontSize: 10, fill: COLORS.inkSoft }} axisLine={false} tickLine={false} width={30} />
               <Tooltip formatter={(v) => [`${v}%`, skills[chartSkill].label]} contentStyle={{ borderRadius: 12, border: `1px solid ${COLORS.line}`, fontSize: 12 }} />
               <Line type="monotone" dataKey="value" stroke={COLORS.accent} strokeWidth={2.5} dot={{ r: 3, fill: COLORS.accent }} activeDot={{ r: 5 }} />
             </LineChart>
