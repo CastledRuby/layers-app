@@ -4,7 +4,7 @@
 import { describe, expect, it } from 'vitest';
 import { CATEGORIES } from './data/constants.js';
 import { MODELS } from '../electron/analysis.cjs';
-import { ANALYSIS_MODELS, ANALYSIS_SCHEMA, analysisCost, analysisRequest, analysisResult, analysisSchema, analysisSystem, chatSpeakers, DEFAULT_ANALYSIS_MODEL, detectPeople, hideNames, restoreNames, typicalCost } from './lib/analysis.js';
+import { ANALYSIS_MODELS, ANALYSIS_SCHEMA, analysisCost, analysisRequest, analysisResult, analysisSchema, analysisSystem, analysisToKeep, chatSpeakers, DEFAULT_ANALYSIS_MODEL, detectPeople, hideNames, restoreNames, typicalCost } from './lib/analysis.js';
 
 const priya = { id: 'p1', name: 'Priya Shah', layer: 2 };
 const amelie = { id: 'a', name: 'Amelie', layer: 4, interests: [{ text: 'Reading' }] };
@@ -188,6 +188,19 @@ describe('the answer', () => {
     expect(r.next).toEqual({ continueTopic: null, shareYourself: null, changeTopic: null, dontMessage: { text: 'Leave it', natural: '', playful: '', deeper: '' } });
     expect(r.log).toEqual({ personIds: ['p1'], meaningfulness: 5, ratings: { trust: 5 }, activeListening: ['listened'], summary: '', date: null });
     expect(analysisResult(null, priya)).toMatchObject({ transcript: [], wentWell: [], opportunity: '', encourager: null, log: { meaningfulness: 3, ratings: {}, date: null } });
+  });
+
+  it('keeps the review and the chat with the log: the chat as given, or for screenshots its reading, up to its last 20,000 characters', () => {
+    const r = analysisResult(answer, amelie, { today: TODAY });
+    const kept = analysisToKeep(r, { model: 'claude-haiku-4-5', chat: 'Amelie: Got the job!\nLiam: No way, Amelie!' });
+    expect(kept).toEqual({
+      grading: r.grading, conversationState: 'engaged', model: 'claude-haiku-4-5', chat: 'Amelie: Got the job!\nLiam: No way, Amelie!',
+      review: { wentWell: r.wentWell, opportunity: r.opportunity, tryNextTime: r.tryNextTime, encourager: r.encourager, emotionalCues: r.emotionalCues, recommendation: null, next: r.next },
+    });
+    expect(analysisToKeep(r).chat).toBe('Them: Got the job!\nYou: No way, Amelie!');
+    const long = analysisToKeep(r, { chat: 'y'.repeat(25000) }).chat;
+    expect(long.startsWith('(Earlier messages left out.)\n')).toBe(true);
+    expect(long.length).toBe(20000 + '(Earlier messages left out.)\n'.length);
   });
 
   it('offers the models the main process allows, the cheapest first and by default', () => {

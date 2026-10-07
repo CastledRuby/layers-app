@@ -108,6 +108,23 @@ describe('validateBackup repairs or skips damaged records', () => {
     expect(j.meaningfulness).toBe(5);
     expect(j.added).toEqual([]);
   });
+  it("keeps an analysed chat's scores, review and chat on its log, tidied, and drops one without scores", () => {
+    const review = { wentWell: ['You asked back', 7], opportunity: 'Ask more', tryNextTime: 3, encourager: { type: 'odd', line: 'no way' }, emotionalCues: [{ emoji: '🎉', text: 'Excited' }, 'x'], recommendation: null, next: { continueTopic: { text: 'Ask', natural: 'so?' }, changeTopic: 'nope' } };
+    const { data } = validateBackup({ version: 1, people: [person()], journal: [
+      { id: 'j1', personId: 'p1', type: 'messaged', analysis: { grading: { overall: 70, depth: 'deep', reciprocity: 60 }, conversationState: 'engaged', model: 'claude-haiku-4-5', review, chat: 'Riley: hi' } },
+      { id: 'j2', personId: 'p1', type: 'analysed', analysis: { grading: { overall: 80 }, conversationState: 'engaged' } },
+      { id: 'j3', personId: 'p1', type: 'talked', analysis: { conversationState: 'engaged' } },
+      { id: 'j4', personId: 'p1', type: 'talked', analysis: { grading: { overall: 50 }, chat: 'x'.repeat(30000) } },
+    ] });
+    const [j1, j2, j3, j4] = data.journal;
+    expect(j1.analysis).toEqual({
+      grading: { overall: 70, reciprocity: 60 }, conversationState: 'engaged', model: 'claude-haiku-4-5', chat: 'Riley: hi',
+      review: { wentWell: ['You asked back'], opportunity: 'Ask more', tryNextTime: '', encourager: { type: 'improve', line: 'no way', why: '' }, emotionalCues: [{ emoji: '🎉', text: 'Excited' }], recommendation: null, next: { continueTopic: { text: 'Ask', natural: 'so?', playful: '', deeper: '' }, shareYourself: null, changeTopic: null, dontMessage: null } },
+    });
+    expect(j2.analysis).toEqual({ grading: { overall: 80 }, conversationState: 'engaged' }); // a sample's, from before
+    expect(j3).not.toHaveProperty('analysis');
+    expect(j4.analysis.chat.length).toBe(20040);
+  });
   it('skips goals without a title and saved details without text', () => {
     const result = validateBackup({ version: 1, people: [person({ goals: [{ id: 'g1', title: 'Hang out', progress: 140 }, { id: 'g2' }], interests: [{ text: 'Chess' }, { emoji: '⭐' }] })] });
     const [p] = result.data.people;

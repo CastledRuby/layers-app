@@ -154,7 +154,7 @@ type JournalEntry = {
   ratings?: { [dimension]: 1|2|3|4|5 };       // "How did each part go?" (More details); only rated dimensions
   goalIds?: string[];                         // the goals this log moved (logs from 2026-10-06 on); the Journal's goal filter
   standouts?: string[];                       // older 1.0.28 builds' "What stood out?" picks; shown, no longer written
-  analysis?: { grading: object; conversationState: string }; // from Coach → Analyse
+  analysis?: { grading: object; conversationState: string; model?: string; review?: object; chat?: string }; // from Coach → Analyse: since 2026-10-07 your own chat's review and the chat itself (its last 20,000 characters)
 };
 
 type Event = {                                // a plan on the calendar; see The calendar
@@ -672,8 +672,17 @@ will be sent.
   message's day; not in the future or more than a year back), otherwise today, and the
   date can be changed. The entry keeps `analysis` (grading, state, model). The sample
   chats still log the old way (`handleLogFromAnalysis`, type `analysed`).
-- **Nothing about it is saved** except what you choose: info you Save, and the log.
-  The chat itself, the screenshots and Claude's answer are gone once you leave.
+- **What's saved** is what you choose: info you Save, and the log. **Log this chat**
+  keeps, on the Journal entry (`analysisToKeep`), the scores and state, which model read
+  it, Claude's review (what went well, the opportunity, try next time, encourager use,
+  emotional cues, the recommendation and what to say next) and the chat itself: as you
+  gave it, with real names, or for screenshots Claude's reading of them; only its last
+  20,000 characters (`KEPT_CHAT`). So it's in your backups, and in the sync file if sync
+  is on. The Journal's **Review** button opens it (`ChatReviewSheet`), and the Journal's
+  search looks in kept chats and reviews. Saved data is checked at startup like a
+  backup (`cleanAnalysis` in `lib/backup.js`): a log whose analysis has no scores loses
+  it. Without logging, nothing is kept: the screenshots and Claude's answer are gone
+  once you leave.
 - **Which model** (`ANALYSIS_MODELS`): **Claude Haiku 4.5**, the cheapest, unless you
   pick another with the card's **Model** buttons: Sonnet 5.5, Opus 5.5 or Fable 5.1, which
   think first (slower, and more). `LayersApp` keeps the choice only while Layers is open,

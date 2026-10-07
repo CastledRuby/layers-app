@@ -3,7 +3,7 @@
 // kept by LayersApp, so a goal's "N logs" can open the Journal on it.
 
 import { useMemo, useState } from 'react';
-import { Check, Pencil, Search, Target, X } from 'lucide-react';
+import { Check, MessageSquareText, Pencil, Search, Target, X } from 'lucide-react';
 import { ActivityCalendar } from '../components/ActivityCalendar.jsx';
 import { CONV_STATES, DIM_LABELS, DIM_ORDER, getLayer, STANDOUTS, TYPE_META } from '../data/constants.js';
 import { journalDateLabel, journalDaysAgo, parseISODay } from '../lib/dates.js';
@@ -26,7 +26,7 @@ function Chip({ active, onClick, children, label, slim }) {
   );
 }
 
-export function JournalView({ today, people, generalGoals = [], journal, goalFilter = 'all', onGoalFilter = () => {}, personFilter = 'all', onPersonFilter = () => {}, dayFilter = null, onDayFilter = () => {}, onOpenPerson, onEditEntry }) {
+export function JournalView({ today, people, generalGoals = [], journal, goalFilter = 'all', onGoalFilter = () => {}, personFilter = 'all', onPersonFilter = () => {}, dayFilter = null, onDayFilter = () => {}, onOpenPerson, onEditEntry, onOpenReview }) {
   const filterPerson = personFilter;
   const setFilterPerson = onPersonFilter;
   const [filterType, setFilterType] = useState('all');
@@ -56,7 +56,10 @@ export function JournalView({ today, people, generalGoals = [], journal, goalFil
     if (goalFilter !== 'all' && !(j.goalIds || []).includes(goalFilter)) return false;
     if (days !== null && journalDaysAgo(j, now) >= days) return false;
     if (q) {
-      const haystack = [p.name, summaryFor(j), j.reflection || '', ...(j.added || [])].join(' ').toLowerCase();
+      // An analysed chat's review and the chat itself are searched too.
+      const a = j.analysis || {};
+      const r = a.review || {};
+      const haystack = [p.name, summaryFor(j), j.reflection || '', ...(j.added || []), a.chat || '', ...(r.wentWell || []), r.opportunity || '', r.tryNextTime || ''].join(' ').toLowerCase();
       if (!haystack.includes(q)) return false;
     }
     return true;
@@ -167,6 +170,7 @@ export function JournalView({ today, people, generalGoals = [], journal, goalFil
                     {entry.analysis && (<p className="text-xs mt-1" style={{ color: l.deep }}>{CONV_STATES[entry.analysis.conversationState] ? `${CONV_STATES[entry.analysis.conversationState].emoji} ${CONV_STATES[entry.analysis.conversationState].label}, ` : ''}grading {entry.analysis.grading.overall}%</p>)}
                   </button>
                   <button onClick={() => onEditEntry(entry.id)} aria-label={`Edit entry: ${p.name}, ${grp.date}`} className="absolute p-1.5" style={{ top: 10, right: 10 }}><Pencil size={14} color={COLORS.inkSoft} /></button>
+                  {entry.analysis && entry.analysis.review && onOpenReview && <button onClick={() => onOpenReview(entry.id)} aria-label={`Chat review: ${p.name}, ${grp.date}`} className="absolute p-1.5" style={{ bottom: 8, right: 10 }}><MessageSquareText size={15} color={l.deep} /></button>}
                 </div>
               );
             })}

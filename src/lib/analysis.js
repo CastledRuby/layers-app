@@ -276,6 +276,27 @@ export function analysisResult(raw, people, { today = new Date() } = {}) {
   };
 }
 
+// --- What's kept with the log ------------------------------------------------
+// Logging an analysed chat keeps, on the Journal entry, the scores and state,
+// Claude's review and the chat itself (your choice on 2026-10-07): the chat
+// as you gave it, or for screenshots Claude's reading of them, with real
+// names. Only its last KEPT_CHAT characters, so saved data stays small.
+export const KEPT_CHAT = 20000;
+export function analysisToKeep(result, { model, chat = '' } = {}) {
+  const text = String(chat || '').trim()
+    || result.transcript.map(m => `${m.who === 'you' ? 'You' : m.name || 'Them'}: ${m.text}`).join('\n');
+  return {
+    grading: result.grading,
+    conversationState: result.conversationState,
+    ...(model ? { model } : {}),
+    review: {
+      wentWell: result.wentWell, opportunity: result.opportunity, tryNextTime: result.tryNextTime,
+      encourager: result.encourager, emotionalCues: result.emotionalCues, recommendation: result.recommendation, next: result.next,
+    },
+    chat: text.length > KEPT_CHAT ? `(Earlier messages left out.)\n${text.slice(-KEPT_CHAT)}` : text,
+  };
+}
+
 // "about US$0.02", from the tokens it used (thinking counts as output).
 export function analysisCost({ input = 0, output = 0 } = {}, model = DEFAULT_ANALYSIS_MODEL) {
   const { price } = analysisModel(model);

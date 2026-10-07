@@ -129,7 +129,7 @@ interact.
   in for): who it's with read from the names on the messages (a chat with Amelie goes
   to Amelie though Chloe was picked), a group chat (tagged apart, each detail to its
   person, one log with everyone), the Log it card (Claude's ratings, the chat's date,
-  saved as a Messaged log), no screenshots on a laptop, the key added in Me (a bad one refused, never saved with your data) and
+  saved as a Messaged log, keeping the review and the chat, read again from the Journal's Review and found by its search), no screenshots on a laptop, the key added in Me (a bad one refused, never saved with your data) and
   removed, the pasted chat sent with names hidden only when Analyse is pressed, the answer
   shown with their name back (info saved, logged once), screenshots (six at most, each
   removable), an error keeping the chat, an answer dropped after moving to someone else,

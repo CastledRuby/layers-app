@@ -7,7 +7,7 @@
 import { screen, waitFor, within } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { toISODate } from '../../src/lib/dates.js';
-import { confirmDialog, nav, person, relaunch, renderApp, savedPerson, savedState, seedState, toasts } from './harness.jsx';
+import { confirmDialog, dialog, nav, person, relaunch, renderApp, savedPerson, savedState, seedState, toasts } from './harness.jsx';
 
 vi.mock('../../src/lib/photo.js', () => ({
   MAX_PHOTO_BYTES: 25 * 1024 * 1024,
@@ -124,7 +124,7 @@ describe('chat analysis with Claude', () => {
     expect(savedState().journal).toEqual([expect.objectContaining({
       type: 'messaged', at: YESTERDAY, meaningfulness: 4, summary: 'Her new job at the library', activeListening: ['followup'],
       ratings: { depth: 3, trust: 4, reciprocity: 3, interaction: 5, sharedExperiences: 1, listening: 4 },
-      analysis: { grading: expect.objectContaining({ overall: 80 }), conversationState: 'engaged', model: 'claude-haiku-4-5' },
+      analysis: expect.objectContaining({ grading: expect.objectContaining({ overall: 80 }), conversationState: 'engaged', model: 'claude-haiku-4-5' }),
     })]);
     expect(toasts()).toContain('Logged time with Priya Shah');
     expect(within(log()).queryByRole('button', { name: 'Log this chat' })).toBeNull();
@@ -132,6 +132,27 @@ describe('chat analysis with Claude', () => {
     // Another chat starts empty, as its own session.
     await user.click(screen.getByRole('button', { name: '← Analyse another chat' }));
     expect(within(own()).getByLabelText('The chat').value).toBe('');
+
+    // The log keeps Claude's review and the chat itself (with real names), to read again from the Journal.
+    expect(savedState().journal[0].analysis).toMatchObject({
+      chat: 'Priya: I got the job!!\nSam: No way Priya, congrats!',
+      review: { wentWell: ['You celebrated Priya straight away'], opportunity: 'Ask what Priya is looking forward to.', next: { continueTopic: { playful: 'Librarian era!' } } },
+    });
+    await user.click(nav('Journal'));
+    await user.click(screen.getByRole('button', { name: /^Chat review: Priya Shah/ }));
+    const sheet = dialog('Chat review: Priya Shah');
+    expect(within(sheet).getByText(/You celebrated Priya straight away/)).toBeTruthy();
+    expect(within(sheet).getByText('Librarian era!')).toBeTruthy();
+    expect(within(sheet).queryByLabelText('The chat')).toBeNull();
+    await user.click(within(sheet).getByRole('button', { name: 'Show the chat' }));
+    expect(within(sheet).getByLabelText('The chat').textContent).toBe('Priya: I got the job!!\nSam: No way Priya, congrats!');
+    await user.keyboard('{Escape}');
+    // The Journal's search looks in kept chats too.
+    await user.type(screen.getByLabelText('Search the journal'), 'congrats');
+    expect(screen.getByRole('button', { name: /^Chat review: Priya Shah/ })).toBeTruthy();
+    await user.clear(screen.getByLabelText('Search the journal'));
+    await user.type(screen.getByLabelText('Search the journal'), 'pineapple');
+    expect(screen.queryByRole('button', { name: /^Chat review: Priya Shah/ })).toBeNull();
   });
 
   it("on a laptop it's for pasting: no screenshots", async () => {

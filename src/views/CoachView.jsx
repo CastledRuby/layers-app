@@ -7,7 +7,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Check, ImagePlus, Plus, X } from 'lucide-react';
 import { Avatar, ChatBubble, ConvStateBadge, Kbd, LabeledBar, LayerBadge } from '../components/atoms.jsx';
 import { hasOpenSheet, isTyping } from '../components/sheetLayer.js';
-import { ANALYSIS_MODELS, analysisCost, analysisModel, analysisRequest, analysisResult, DEFAULT_ANALYSIS_MODEL, detectPeople, MAX_SCREENSHOTS, typicalCost } from '../lib/analysis.js';
+import { ANALYSIS_MODELS, analysisCost, analysisModel, analysisRequest, analysisResult, analysisToKeep, DEFAULT_ANALYSIS_MODEL, detectPeople, MAX_SCREENSHOTS, typicalCost } from '../lib/analysis.js';
 import { DateDropdown } from '../components/pickers.jsx';
 import { ChatExports } from '../components/ChatExports.jsx';
 import { chatPeople, conversationLabel, conversationText, isoDayOf, loadChatExports, readChatProgress, saveChatProgress } from '../lib/chatImport.js';
@@ -249,10 +249,11 @@ export function CoachView({ people, journal, initialPersonId, initialTab, onOpen
     return () => window.removeEventListener('keydown', onKey);
   });
 
-  // Your own chat: a normal log, filled in by Claude, on the chat's day.
+  // Your own chat: a normal log, filled in by Claude, on the chat's day, with
+  // Claude's review and the chat kept on it (the Journal's Review).
   function logOwn() {
     if (logged || !onLogChat) return;
-    onLogChat({ ...scenario.log, date: ownLogDate, analysis: { grading: scenario.grading, conversationState: scenario.conversationState, model: ownModel } });
+    onLogChat({ ...scenario.log, date: ownLogDate, analysis: analysisToKeep(scenario, { model: ownModel, chat: ownChat && ownChat.text }) });
     updateSession(() => ({ logged: true }));
   }
   function handleLogAnalysis() {
@@ -636,6 +637,7 @@ export function CoachView({ people, journal, initialPersonId, initialTab, onOpen
                   {DIM_ORDER.some(k => scenario.log.ratings[k]) && <p className="text-xs mt-2.5" style={{ color: COLORS.ink }}>{DIM_ORDER.filter(k => scenario.log.ratings[k]).map(k => `${DIM_LABELS[k]} ${scenario.log.ratings[k]}`).join(' · ')}</p>}
                   {scenario.log.activeListening.length > 0 && <p className="text-xs mt-1.5" style={{ color: COLORS.good }}>✓ {scenario.log.activeListening.map(k => AL_ITEMS.find(a => a.key === k).label).join(' · ')}</p>}
                   {scenario.log.summary && <p className="text-xs mt-1.5 italic" style={{ color: COLORS.inkSoft }}>Note: {scenario.log.summary}</p>}
+                  <p className="text-xs mt-2" style={{ color: COLORS.inkSoft }}>The log keeps this review and the chat, to read again from the Journal.</p>
                   {logged
                     ? <p className="text-sm text-center font-medium mt-3" style={{ color: COLORS.good }}>✓ Logged</p>
                     : <button type="button" onClick={logOwn} className="w-full text-sm font-semibold rounded-full py-3 mt-3" style={{ background: COLORS.accent, color: COLORS.onAccent }}>Log this chat</button>}

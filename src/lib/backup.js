@@ -10,6 +10,7 @@ import { EMPTY_SKILLS } from '../data/seed.js';
 import { cleanAvatar } from '../data/avatars.js';
 import { clamp, uid } from './util.js';
 import { cleanDeleted } from './sync.js';
+import { KEPT_CHAT } from './analysis.js';
 
 export const BACKUP_VERSION = 1;
 // Far beyond any real backup; stops a wrong file (a video, say) being read into memory.
@@ -86,6 +87,37 @@ function cleanPerson(p, skipped) {
   return person;
 }
 
+// A chat analysis kept on a log: its scores and state, and since 2026-10-07
+// Claude's review and the chat itself. Anything not the right kind is
+// dropped, and a log whose analysis has no scores loses it.
+const GRADES = ['overall', 'depth', 'activeListening', 'reciprocity', 'naturalness', 'goalImpact'];
+const text = (s) => (typeof s === 'string' ? s : '');
+const tone = (t) => (isObject(t) && typeof t.text === 'string' ? { text: t.text, natural: text(t.natural), playful: text(t.playful), deeper: text(t.deeper) } : null);
+function cleanAnalysis(a) {
+  if (!isObject(a) || !isObject(a.grading)) return null;
+  const out = {
+    grading: Object.fromEntries(GRADES.filter(k => typeof a.grading[k] === 'number' && isFinite(a.grading[k])).map(k => [k, a.grading[k]])),
+    conversationState: text(a.conversationState) || 'unclear',
+  };
+  if (typeof out.grading.overall !== 'number') return null;
+  if (isText(a.model)) out.model = a.model;
+  if (typeof a.chat === 'string') out.chat = a.chat.slice(-(KEPT_CHAT + 40));
+  if (isObject(a.review)) {
+    const r = a.review;
+    const next = isObject(r.next) ? r.next : {};
+    out.review = {
+      wentWell: (Array.isArray(r.wentWell) ? r.wentWell : []).filter(s => typeof s === 'string'),
+      opportunity: text(r.opportunity),
+      tryNextTime: text(r.tryNextTime),
+      encourager: isObject(r.encourager) && typeof r.encourager.line === 'string' ? { type: r.encourager.type === 'good' ? 'good' : 'improve', line: r.encourager.line, why: text(r.encourager.why) } : null,
+      emotionalCues: (Array.isArray(r.emotionalCues) ? r.emotionalCues : []).filter(c => isObject(c) && typeof c.text === 'string').map(c => ({ emoji: text(c.emoji), text: c.text })),
+      recommendation: typeof r.recommendation === 'string' ? r.recommendation : null,
+      next: { continueTopic: tone(next.continueTopic), shareYourself: tone(next.shareYourself), changeTopic: tone(next.changeTopic), dontMessage: tone(next.dontMessage) },
+    };
+  }
+  return out;
+}
+
 function cleanEntry(j, personIds, skipped) {
   if (!isObject(j) || !personIds.has(j.personId)) { skipped.entries++; return null; }
   const entry = {
@@ -106,6 +138,7 @@ function cleanEntry(j, personIds, skipped) {
   }
   // The goals the log moved: ids only (a goal deleted since is just not shown).
   if ('goalIds' in entry) entry.goalIds = (Array.isArray(entry.goalIds) ? entry.goalIds : []).filter(isText);
+  if ('analysis' in entry) { const a = cleanAnalysis(entry.analysis); if (a) entry.analysis = a; else delete entry.analysis; }
   return entry;
 }
 

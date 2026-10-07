@@ -355,7 +355,7 @@ export function MeView({ people, journal, skills, profile, generalGoals = [], on
 
       <div className="mt-4 rounded-2xl p-4" style={{ background: COLORS.paperRaised, border: `1px solid ${COLORS.line}` }}>
         <p className="text-sm font-semibold" style={{ color: COLORS.ink }}>Privacy</p>
-        <p className="text-xs mt-1.5" style={{ color: COLORS.inkSoft }}>Layers is a private personal-development tool. Everything is saved on this device{sync && sync.on ? ', and in an encrypted copy in your OneDrive that only your passphrase opens' : ' only'}. A chat is only analysed when you press Analyse (and then sent to Claude), and anything found in it waits for your approval before it's saved.</p>
+        <p className="text-xs mt-1.5" style={{ color: COLORS.inkSoft }}>Layers is a private personal-development tool. Everything is saved on this device{sync && sync.on ? ', and in an encrypted copy in your OneDrive that only your passphrase opens' : ' only'}. A chat is only analysed when you press Analyse (and then sent to Claude), and anything found in it waits for your approval before it's saved. Logging an analysed chat keeps the chat and Claude's review with the log, so they're in your backups too.</p>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 12, flexWrap: 'wrap' }}>
           {hasSamplePeople && <button onClick={onRemoveSample} className="text-xs font-semibold rounded-full px-3 py-2" style={{ background: COLORS.accentSoft, color: COLORS.accent }}>Remove sample people</button>}
           {canAddSample && <button onClick={onAddSample} className="text-xs font-semibold rounded-full px-3 py-2" style={{ background: COLORS.accentSoft, color: COLORS.accent }}>Add sample people</button>}

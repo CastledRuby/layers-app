@@ -45,6 +45,7 @@ import { DaySheet } from './modals/DaySheet.jsx';
 import { JumpSheet } from './modals/JumpSheet.jsx';
 import { planFieldsOf } from './lib/sentence.js';
 import { TemplatePickerModal } from './modals/TemplatePickerModal.jsx';
+import { ChatReviewSheet } from './modals/ChatReviewSheet.jsx';
 import { WeekReviewSheet } from './modals/WeekReviewSheet.jsx';
 import { COLORS, CSS, THEME_DARK, THEME_LIGHT } from './theme.js';
 import { CoachView } from './views/CoachView.jsx';
@@ -164,6 +165,7 @@ function LayersApp() {
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
   const [startOverOpen, setStartOverOpen] = useState(false);
   const [standaloneDetailOpen, setStandaloneDetailOpen] = useState(false);
+  const [reviewEntryId, setReviewEntryId] = useState(null); // an analysed chat's review, from the Journal
   const [editPersonOpen, setEditPersonOpen] = useState(false);
   const [editingEntryId, setEditingEntryId] = useState(null);
   const [editProfileOpen, setEditProfileOpen] = useState(false);
@@ -1452,7 +1454,7 @@ function LayersApp() {
                           analysisReady={!analysisBridge ? 'none' : hasAnalysisKey ? 'ready' : 'no-key'} onAnalyse={(request) => analysisBridge.runAnalysis(request)} onOpenMe={() => switchTab('me')} yourName={profile.name}
                           model={analysisModelId} onModel={setAnalysisModelId} chatExports={chatsBridge} /></div>}
                         {activeTab === 'journal' && <div className="page-col"><JournalView today={today} people={people} generalGoals={generalGoals} journal={journal} goalFilter={journalGoal} onGoalFilter={setJournalGoal}
-                          personFilter={journalPerson} onPersonFilter={setJournalPerson} dayFilter={journalDay} onDayFilter={setJournalDay} onOpenPerson={openPerson} onEditEntry={setEditingEntryId} /></div>}
+                          personFilter={journalPerson} onPersonFilter={setJournalPerson} dayFilter={journalDay} onDayFilter={setJournalDay} onOpenPerson={openPerson} onEditEntry={setEditingEntryId} onOpenReview={setReviewEntryId} /></div>}
                         {activeTab === 'me' && <div className="page-col"><MeView people={people} journal={journal} skills={skills} generalGoals={generalGoals} profile={profile} onAddSample={handleAddSample} onRemoveSample={handleRemoveSample} hasSamplePeople={people.some(p => SAMPLE_PERSON_IDS.has(p.id))} canAddSample={INITIAL_PEOPLE.some(sp => !people.some(p => p.id === sp.id))} onStartOver={() => setStartOverOpen(true)} onExport={handleExportData} onImportClick={handleImportClick} backupInfo={backupInfo} onOpenBackups={handleOpenBackups} hasUpdater={hasUpdater} updateStatus={updateStatus} onCheckForUpdates={handleCheckForUpdates} onInstallUpdate={handleInstallUpdate} onOpenDownloadPage={handleOpenDownloadPage} shortcutStatus={shortcutStatus} themeMode={themeMode} onSetTheme={setThemeMode} onUpdateProfile={(changes) => setProfile(p => ({ ...p, ...changes }))} onEditProfile={() => setEditProfileOpen(true)} achievements={achievements || {}} hasSystemBridge={hasSystemBridge} autoLaunch={autoLaunch} onToggleAutoLaunch={handleToggleAutoLaunch} onOpenShortcuts={() => setShortcutsOpen(true)} appVersion={appVersion}
                           sync={syncBridge ? { ...syncSettings, dir: syncInfo && syncInfo.dir } : null}
                           calendars={feedBridge ? { feeds, fetchedAt: feedCache.fetchedAt, errors: feedCache.errors, count: (id) => feedCache.items.filter(it => it.feedId === id).length } : null}
@@ -1539,6 +1541,10 @@ function LayersApp() {
             {editingEntryId && journal.some(j => j.id === editingEntryId) && (() => {
               const entry = journal.find(j => j.id === editingEntryId);
               return <EditEntryModal entry={entry} personName={(people.find(p => p.id === entry.personId) || {}).name} onClose={() => setEditingEntryId(null)} onSave={(changes) => handleUpdateEntry(entry.id, changes)} onDelete={() => handleDeleteEntry(entry.id)} />;
+            })()}
+            {reviewEntryId && journal.some(j => j.id === reviewEntryId && j.analysis) && (() => {
+              const entry = journal.find(j => j.id === reviewEntryId);
+              return <ChatReviewSheet entry={entry} person={people.find(p => p.id === entry.personId)} onClose={() => setReviewEntryId(null)} />;
             })()}
             {confirmState && (
               <ConfirmDialog title={confirmState.title} message={confirmState.message} confirmLabel={confirmState.confirmLabel} danger={confirmState.danger} hideCancel={confirmState.hideCancel} onConfirm={confirmState.onConfirm} altLabel={confirmState.altLabel} onAlt={confirmState.onAlt} onCancel={confirmState.onCancel} />

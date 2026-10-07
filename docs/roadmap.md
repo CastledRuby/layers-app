@@ -210,6 +210,23 @@ iMessage and Instagram, and WhatsApp's Export chat shared straight to Layers.
 **Dropped:** the other avatar styles, and the 20-question survey. **Later:** code
 signing (P8), only needed for other people's laptops.
 
+### Next batch (decided 2026-10-07), then 1.0.36
+
+You asked where an analysed chat goes, and picked these. They're released together as
+1.0.36 once you've tried the chat exports.
+
+1. ✅ **Keep the review and the chat with the log** (built 2026-10-07): Log this chat
+   keeps Claude's review and the chat itself on the Journal entry; **Review** on the
+   entry reads it again, and the Journal's search finds words in kept chats. The Log
+   button stays (you check it before it's logged).
+2. **Nicknames on profiles**: "Also known as" (Mel, Ames), so chats signed with a
+   nickname find the right person, and nicknames are hidden before a chat is sent.
+3. **What Claude has cost**: this month's spend on chat analysis, in Me.
+4. **Skills over time**: your listening, depth, balance and naturalness from analysed
+   chats, charted per person and in Me.
+5. **Chats in your week**: the Sunday week review lists chats with new conversations
+   to analyse.
+
 ## Drafted next (2026-10-06)
 
 Everything still open, in one place, drafted on 2026-10-06 after the plan fixes. It
@@ -531,6 +548,12 @@ its own. Changes made while building are marked.
   box in the packaged app, with a temporary data folder as always.
 
 ## History
+
+### Analysed chats kept with their logs (after 1.0.35, not released yet)
+
+- **Log this chat** now keeps Claude's review (what went well, what to try, what to say
+  next) and the chat itself with the log. The Journal entry's **Review** button reads it
+  again, and the Journal's search finds words in kept chats.
 
 ### Chats from your exports (after 1.0.35, not released yet)
 
