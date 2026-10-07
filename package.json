@@ -1,7 +1,7 @@
 {
   "name": "layers-web",
   "private": true,
-  "version": "1.0.33",
+  "version": "1.0.34",
   "author": "CastledRuby",
   "type": "module",
   "main": "electron/main.cjs",
