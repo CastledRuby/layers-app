@@ -7,7 +7,7 @@
 import { act, screen, within } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { toISODate } from '../../src/lib/dates.js';
-import { nav, person, renderApp, savedPerson, savedState, seedState } from './harness.jsx';
+import { dialog, nav, person, renderApp, savedPerson, savedState, seedState } from './harness.jsx';
 
 const DAY = 24 * 3600 * 1000;
 const at = (daysAgo, h, m) => { const d = new Date(Date.now() - daysAgo * DAY); d.setHours(h, m, 0, 0); return d; };
@@ -126,6 +126,23 @@ describe('chats from your exports', () => {
     await user.click(within(card).getByRole('button', { name: /Amelie.*Instagram.*1 new/ }));
     await user.click(within(card).getByRole('button', { name: /2 messages/ }));
     expect(screen.getByLabelText('The chat').value).toMatch(/\] Amelie: did you see this\n\[.*\] Liam: haha yes$/);
+  });
+
+  it("lists chats with new conversations in the week review, and opens one in Coach", async () => {
+    fakeBridge({
+      'WhatsApp Chat - Amelie.zip': whatsapp('Amelie', [wa(at(1, 21, 0), 'Amelie', 'I got the job!!'), wa(at(1, 21, 1), 'Liam', 'congrats')]),
+      'WhatsApp Chat - Jess.zip': whatsapp('Jess', [wa(at(1, 9, 0), 'Jess', 'hey')]),
+    });
+    seedState({ profile: { name: 'Liam', focus: 'mix' }, people: [person('Amelie', { layer: 4 })] });
+    const { user } = renderApp();
+    await user.keyboard('w');
+    const week = dialog('Your week');
+    const row = await within(week).findByRole('button', { name: /Amelie.*WhatsApp.*1 new conversation/ });
+    expect(within(week).queryByRole('button', { name: /Jess/ })).toBeNull(); // not in Layers
+    await user.click(row);
+    expect(nav('Coach').getAttribute('aria-current')).toBe('page');
+    const card = await screen.findByLabelText('From your chats');
+    expect(await within(card).findByRole('button', { name: /2 messages.*Amelie: I got the job!!/ })).toBeTruthy(); // that chat, opened
   });
 
   it("asks which name is you when it can't tell, then uses it", async () => {

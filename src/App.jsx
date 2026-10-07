@@ -633,7 +633,8 @@ function LayersApp() {
     if (result && result.saved) pushToast(`Summary saved: ${result.saved.split(/[\\/]/).pop()}`);
     else if (result && result.error) pushToast(`Couldn't save the summary: ${result.error}`);
   }
-  function openCoach(personId, tab) { setCoachInit({ personId: personId || null, tab: tab || 'prepare' }); setActiveTab('coach'); setScreen({ name: 'tabs' }); }
+  // chatKey: a chat from your exports to show opened in Analyse (from the week review).
+  function openCoach(personId, tab, chatKey = null) { setCoachInit({ personId: personId || null, tab: tab || 'prepare', chatKey }); setActiveTab('coach'); setScreen({ name: 'tabs' }); }
   // Ctrl+K's row picked (JumpSheet, lib/jump.js). Going somewhere closes the
   // sheets that were open; an action like Dark mode leaves them be.
   function closeSheets() {
@@ -1454,7 +1455,7 @@ function LayersApp() {
                         {activeTab === 'coach' && <div className="page-col"><CoachView people={people} journal={journal} initialPersonId={coachInit.personId} initialTab={coachInit.tab} onOpenLog={openLog} onApproveInfo={handleApproveInfo} onLogFromAnalysis={handleLogFromAnalysis} onOpenPerson={openPerson}
                           onLogChat={(l) => handleLogSubmit({ personIds: l.personIds.filter(id => people.some(p => p.id === id)), type: 'messaged', meaningfulness: l.meaningfulness, notes: [], activeListening: l.activeListening, summary: l.summary || undefined, pickedDate: l.date, ratings: l.ratings, analysis: l.analysis })}
                           analysisReady={!analysisBridge ? 'none' : hasAnalysisKey ? 'ready' : 'no-key'} onAnalyse={(request) => analysisBridge.runAnalysis(request)} onOpenMe={() => switchTab('me')} yourName={profile.name}
-                          model={analysisModelId} onModel={setAnalysisModelId} chatExports={chatsBridge} /></div>}
+                          model={analysisModelId} onModel={setAnalysisModelId} chatExports={chatsBridge} initialChatKey={coachInit.chatKey || null} /></div>}
                         {activeTab === 'journal' && <div className="page-col"><JournalView today={today} people={people} generalGoals={generalGoals} journal={journal} goalFilter={journalGoal} onGoalFilter={setJournalGoal}
                           personFilter={journalPerson} onPersonFilter={setJournalPerson} dayFilter={journalDay} onDayFilter={setJournalDay} onOpenPerson={openPerson} onEditEntry={setEditingEntryId} onOpenReview={setReviewEntryId} /></div>}
                         {activeTab === 'me' && <div className="page-col"><MeView people={people} journal={journal} skills={skills} generalGoals={generalGoals} profile={profile} onAddSample={handleAddSample} onRemoveSample={handleRemoveSample} hasSamplePeople={people.some(p => SAMPLE_PERSON_IDS.has(p.id))} canAddSample={INITIAL_PEOPLE.some(sp => !people.some(p => p.id === sp.id))} onStartOver={() => setStartOverOpen(true)} onExport={handleExportData} onImportClick={handleImportClick} backupInfo={backupInfo} onOpenBackups={handleOpenBackups} hasUpdater={hasUpdater} updateStatus={updateStatus} onCheckForUpdates={handleCheckForUpdates} onInstallUpdate={handleInstallUpdate} onOpenDownloadPage={handleOpenDownloadPage} shortcutStatus={shortcutStatus} themeMode={themeMode} onSetTheme={setThemeMode} onUpdateProfile={(changes) => setProfile(p => ({ ...p, ...changes }))} onEditProfile={() => setEditProfileOpen(true)} achievements={achievements || {}} hasSystemBridge={hasSystemBridge} autoLaunch={autoLaunch} onToggleAutoLaunch={handleToggleAutoLaunch} onOpenShortcuts={() => setShortcutsOpen(true)} appVersion={appVersion}
@@ -1500,7 +1501,8 @@ function LayersApp() {
                 onDay={(d) => { setDayView(d); setSelectedDay(d === today ? null : d); }}
                 onOpenEvent={(eventId, d) => setEventView({ eventId, day: d })} onPlan={openPlan} onPrepare={openPrepare} onClose={() => setDayView(null)} />
             )}
-            {weekReview && <WeekReviewSheet day={weekReview} people={people} journal={journal} events={events} generalGoals={generalGoals} onClose={() => setWeekReview(null)} onPlan={openPlan} />}
+            {weekReview && <WeekReviewSheet day={weekReview} people={people} journal={journal} events={events} generalGoals={generalGoals} onClose={() => setWeekReview(null)} onPlan={openPlan}
+              chatExports={hasAnalysisKey ? chatsBridge : null} yourName={profile.name} onOpenChat={(key) => { setWeekReview(null); openCoach(null, 'analyse', key); }} />}
             {recheckFor && people.some(p => p.id === recheckFor) && (() => {
               const p = people.find(x => x.id === recheckFor);
               return <QuizSheet name={p.name} person={p} now={{ layer: p.layer, overall: p.overall }} onClose={() => setRecheckFor(null)} onDone={(placement) => handleRecheck(p.id, placement)} />;

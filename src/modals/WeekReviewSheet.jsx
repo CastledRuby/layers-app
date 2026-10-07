@@ -1,17 +1,19 @@
 // "Your week": the weekly review, from Sunday evening's notification, the
 // catch-up list's notification, Today's Sunday card or W on Today. Who you
-// saw, what got done and which goals moved, then who to catch up with and
-// next week planned in one go.
+// saw, what got done and which goals moved, chats from your exports with new
+// conversations to analyse (chatExports, once there's a key), then who to
+// catch up with and next week planned in one go.
 // Keys: 1-5 plan with someone to catch up with, Enter plans next week, and
 // the arrows move a week back or on.
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { Sheet } from '../components/Sheet.jsx';
 import { isTabbedToButton, isTyping } from '../components/sheetLayer.js';
 import { Kbd } from '../components/atoms.jsx';
 import { AvatarStack } from '../components/PersonPick.jsx';
 import { planIdeas, templateFor, weekSummary } from '../lib/calendar.js';
+import { chatRows, loadChatExports, readChatProgress } from '../lib/chatImport.js';
 import { MONTH_NAMES, parseISODay, toISODate, WEEKDAY_SHORT } from '../lib/dates.js';
 import { COLORS } from '../theme.js';
 
@@ -30,8 +32,18 @@ function Stat({ value, label, children }) {
   );
 }
 
-export function WeekReviewSheet({ day: startDay, people, journal, events, generalGoals, onClose, onPlan }) {
+export function WeekReviewSheet({ day: startDay, people, journal, events, generalGoals, onClose, onPlan, chatExports = null, yourName = '', onOpenChat }) {
   const [day, setDay] = useState(startDay);
+  // Chats with new conversations, from the Layers chats folder.
+  const [chats, setChats] = useState([]);
+  const [now] = useState(() => Date.now());
+  useEffect(() => {
+    if (!chatExports) return undefined;
+    let live = true;
+    loadChatExports(chatExports).then(r => { if (live) setChats(r.chats); }).catch(() => {});
+    return () => { live = false; };
+  }, [chatExports]);
+  const toAnalyse = useMemo(() => chatRows(chats, { people, yourName, progress: readChatProgress(), now }).filter(r => r.ids.length && r.fresh.length).slice(0, 5), [chats, people, yourName, now]);
   const week = useMemo(() => weekSummary({ people, journal, events, generalGoals }, day), [people, journal, events, generalGoals, day]);
   const ideas = useMemo(() => planIdeas({ people, journal, events }, parseISODay(week.nextMonday), 5), [people, journal, events, week.nextMonday]);
   const planNextWeek = () => onPlan({ day: week.nextMonday });
@@ -61,6 +73,21 @@ export function WeekReviewSheet({ day: startDay, people, journal, events, genera
         <Stat value={`${week.done} of ${week.planned}`} label="plans done" />
         <Stat value={week.goalsMoved.length} label={week.goalsMoved.length === 1 ? 'goal moved' : 'goals moved'} />
       </div>
+
+      {toAnalyse.length > 0 && onOpenChat && (
+        <>
+          <p className="text-xs font-bold mt-6 mb-2" style={{ color: COLORS.inkSoft, letterSpacing: '0.06em', textTransform: 'uppercase' }}>Chats to analyse</p>
+          <div className="flex flex-col gap-1.5">
+            {toAnalyse.map(({ chat, ids, fresh }) => (
+              <button key={chat.key} type="button" onClick={() => onOpenChat(chat.key)} className="flex items-center gap-3 rounded-2xl p-2.5 text-left" style={{ background: COLORS.paperRaised, border: `1px solid ${COLORS.line}` }}>
+                <AvatarStack people={ids.map(id => people.find(p => p.id === id)).filter(Boolean)} size={30} />
+                <span className="text-sm flex-1 min-w-0" style={{ color: COLORS.ink }}>{chat.title} <span style={{ color: COLORS.inkSoft }}>· {chat.source === 'instagram' ? 'Instagram' : 'WhatsApp'}</span></span>
+                <span className="text-xs font-semibold shrink-0" style={{ color: COLORS.accent }}>{fresh.length} new {fresh.length === 1 ? 'conversation' : 'conversations'}</span>
+              </button>
+            ))}
+          </div>
+        </>
+      )}
 
       {ideas.length > 0 && (
         <>

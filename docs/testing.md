@@ -156,7 +156,7 @@ interact.
 - `chats.test.jsx` covers chats from your exports (the folder stood in for): a
   WhatsApp chat's new conversation picked and its text written with exact times, the log
   on its day, the chat moving on (and its earlier conversations still there), how to add
-  one, the folder opened, a new export noticed, Instagram (you found as the name in
+  one, the folder opened, a new export noticed, the week review listing a chat to analyse and opening it in Coach, Instagram (you found as the name in
   every chat, chats with people not in Layers tucked away, an HTML download named) and
   "Which of these is you?". `src/chatImport.test.js` covers reading WhatsApp (iOS and
   Android, notices, attachments, several lines, day or month first) and Instagram

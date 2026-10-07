@@ -270,6 +270,24 @@ export function conversationLabel(conv) {
   return `${DAYS[a.getDay()]} ${a.getDate()} ${MONTHS[a.getMonth()]}${a.getFullYear() !== new Date().getFullYear() ? ` ${a.getFullYear()}` : ''} · ${time} · ${n} message${n === 1 ? '' : 's'}`;
 }
 
+// Each chat with its conversations and which are new, for Coach's list and
+// the week review: [{ chat, owner, ids (your people in it), convs (newest
+// first), fresh (the new ones), last }], chats with something new first. A
+// conversation is new after the last one you analysed from that chat, or,
+// for a chat Layers hasn't seen before, if it's from the last `newDays`.
+export const NEW_DAYS = 14;
+export function chatRows(chats, { people = [], yourName = '', progress = {}, now = Date.now(), newDays = NEW_DAYS } = {}) {
+  const everywhere = everywhereName(chats.filter(c => c.source === 'instagram'));
+  return chats.map(chat => {
+    const mine = progress[chat.key] || {};
+    const owner = ownerOf(chat, { yourName, picked: mine.me, everywhere });
+    const { ids } = chatPeople(chat, people, owner);
+    const convs = splitConversations(chat.messages).reverse();
+    const since = mine.at || now - newDays * 86400000;
+    return { chat, owner, ids, convs, fresh: convs.filter(c => c.end > since), last: chat.messages[chat.messages.length - 1].at };
+  }).sort((a, b) => Number(b.fresh.length > 0) - Number(a.fresh.length > 0) || b.last - a.last);
+}
+
 // --- Where you got up to (this computer only) ------------------------------------
 // { [chat key]: { at: the last message analysed (ms), me?: which name is you } }
 export function readChatProgress() {

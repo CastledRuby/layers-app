@@ -54,7 +54,7 @@ function ModelButtons({ label, value, onPick, done = {} }) {
 // activeListening, summary, date, analysis }) as a normal log. chatExports:
 // the main process's Layers chats folder (listChatExports, readChatExport,
 // openChatsFolder, onChatExportsChanged), or null.
-export function CoachView({ people, journal, initialPersonId, initialTab, onOpenLog, onApproveInfo, onLogFromAnalysis, onLogChat, onOpenPerson, analysisReady = 'none', onAnalyse, onOpenMe, yourName = '', model = DEFAULT_ANALYSIS_MODEL, onModel = () => {}, chatExports = null }) {
+export function CoachView({ people, journal, initialPersonId, initialTab, onOpenLog, onApproveInfo, onLogFromAnalysis, onLogChat, onOpenPerson, analysisReady = 'none', onAnalyse, onOpenMe, yourName = '', model = DEFAULT_ANALYSIS_MODEL, onModel = () => {}, chatExports = null, initialChatKey = null }) {
   const [tab, setTab] = useState(initialTab || 'prepare');
   const [preparePersonId, setPreparePersonId] = useState(initialPersonId || (people[0] && people[0].id) || null);
   const [analysisPersonId, setAnalysisPersonId] = useState(initialTab === 'analyse' ? initialPersonId || null : null);
@@ -396,7 +396,7 @@ export function CoachView({ people, journal, initialPersonId, initialTab, onOpen
             <p className="text-sm" style={{ color: COLORS.inkSoft }}>Add someone in the People tab first, then come back to analyse a conversation with them.</p>
           ) : !scenarioPerson ? (
             <>
-              {exportsOn && <ChatExports state={exportsState} people={people} yourName={yourName} progress={chatProgress} folder={chatsFolder || undefined} onPick={pickConversation} onPickMe={(key, name) => setChatProgress(saveChatProgress(key, { me: name }))} onOpenFolder={chatExports.openChatsFolder ? () => chatExports.openChatsFolder() : null} />}
+              {exportsOn && <ChatExports state={exportsState} people={people} yourName={yourName} progress={chatProgress} folder={chatsFolder || undefined} onPick={pickConversation} onPickMe={(key, name) => setChatProgress(saveChatProgress(key, { me: name }))} onOpenFolder={chatExports.openChatsFolder ? () => chatExports.openChatsFolder() : null} initialOpen={initialChatKey} />}
               {ownSource && <p className="text-xs mb-2 font-semibold" style={{ color: COLORS.accent }}>Nobody in that chat is in Layers yet. Who is it with?</p>}
               <p className="text-sm font-semibold mb-2" style={{ color: COLORS.ink }}>Who is this conversation with?</p>
               <div style={{ display: 'flex', flexWrap: 'wrap', columnGap: 8, rowGap: 12, paddingBottom: 4, maxHeight: 168, overflowY: 'auto' }}>

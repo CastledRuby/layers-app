@@ -1,7 +1,7 @@
 # Roadmap
 
 Where Layers stands against [vision.md](vision.md), what was decided along the way, and
-what comes next. Last updated 2026-10-07, after 1.0.32 (anything since is at the top of
+what comes next. Last updated 2026-10-07, after 1.0.35 (anything since is at the top of
 [History](#history), marked not released yet). **What's next is
 [The plan from here](#the-plan-from-here-2026-10-07).**
 
@@ -228,8 +228,9 @@ You asked where an analysed chat goes, and picked these. They're released togeth
 4. ✅ **Skills over time** (built 2026-10-07): your listening, depth, balance and
    naturalness from the chats you analysed and logged, on each profile ("Your chats with
    …") and in Me ("Your chats over time"), with how each has moved since the first.
-5. **Chats in your week**: the Sunday week review lists chats with new conversations
-   to analyse.
+5. ✅ **Chats in your week** (built 2026-10-07): the week review (Sunday evening, or W
+   on Today) lists chats with your people that have new conversations; tapping one opens
+   it in Coach's Analyse.
 
 ## Drafted next (2026-10-06)
 
@@ -553,6 +554,11 @@ its own. Changes made while building are marked.
 
 ## History
 
+### Chats in your week (after 1.0.35, not released yet)
+
+- **Your week** (Sunday evening, or W on Today) lists your chats with new conversations
+  to analyse, from the Layers chats folder. Tapping one opens it in Coach.
+
 ### Skills over time (after 1.0.35, not released yet)
 
 - **Your chats with …** on a profile, and **Your chats over time** in Me: listening,
@@ -640,7 +646,7 @@ its own. Changes made while building are marked.
   afterwards, only what you choose to save. Each result says what it cost (usually
   about US$0.01–0.03).
 
-### Activity and a one-page summary (after 1.0.34, not released yet)
+### Activity and a one-page summary (1.0.35)
 
 - **Activity** on each profile, and on the Journal for everyone: the last six months as
   a grid of days, darker for more and more meaningful logs. Tap a day to see its logs in
@@ -649,7 +655,7 @@ its own. Changes made while building are marked.
   how you are with each other, what you know, key dates, goals, timeline, recent logs
   and activity), made on this computer and saved where you pick.
 
-### Your Google Calendar, read-only (after 1.0.34, not released yet)
+### Your Google Calendar, read-only (1.0.35)
 
 - **Me → Your Google Calendar**: paste the calendar's **Secret address in iCal format**
   (Google Calendar on the web → Settings → your calendar → Integrate calendar). Add more
@@ -661,21 +667,21 @@ its own. Changes made while building are marked.
   address works like a password for that calendar, so it stays on this laptop, protected
   by Windows; **Remove** forgets it.
 
-### The iPhone project (after 1.0.33, not released yet)
+### The iPhone project (1.0.34)
 
 Layers now has an iPhone app project: the same Layers, wrapped with Capacitor, with the
 rings as its icon. GitHub's Macs build it for the iPhone simulator after each change, so
 it's checked without a Mac. Putting it on your phone waits for the Apple Developer
 account. See [build-and-release.md](build-and-release.md#the-iphone-app-built-on-github-no-apple-account-yet).
 
-### Housekeeping (after 1.0.33, not released yet)
+### Housekeeping (1.0.34)
 
 - **Analyse** suggests every next message in three tones (natural, playful, deeper), not
   only "continue the topic". Where it says "don't message yet", the tones are a light
   close, if you'd still like to say something.
 - Packaging by hand can't ship an old build of the page any more (the stale-build guard).
 
-### Every screen by touch (after 1.0.33, not released yet)
+### Every screen by touch (1.0.34)
 
 On a touch screen, as on a phone, Layers now works by tapping alone; nothing changes on
 the laptop. Key hints are hidden, buttons are finger-sized, text boxes don't make an
@@ -684,7 +690,7 @@ could do have buttons now: the day popup's day before and after, a person's Log,
 and Prepare in the search box (⋯), and a **search button on Today** (the same as
 Ctrl+K, handy with the mouse too).
 
-### Sync through OneDrive (after 1.0.33, not released yet)
+### Sync through OneDrive (1.0.34)
 
 - **Me → Sync through OneDrive → Turn on sync**: choose a passphrase (twice; at least 8
   characters), and Layers keeps one encrypted copy of your data in
@@ -697,14 +703,14 @@ Ctrl+K, handy with the mouse too).
 - The passphrase is remembered on this laptop, encrypted by Windows for your account.
   Without it the file can't be read by anyone, and Layers can't recover it.
 
-### Ready for syncing (after 1.0.32, not released yet)
+### Ready for syncing (1.0.33)
 
 Step 1 of Layers on your phone. Nothing looks different: what Layers saves (and every
 backup) now says when each person, log, plan, goal and your profile last changed, and
 what was deleted in the last 90 days. A merge that brings two copies together record by
 record is written and tested, ready for the phone and the OneDrive sync file.
 
-### Photos from a folder (after 1.0.32, not released yet)
+### Photos from a folder (1.0.33)
 
 - **Photos** on People (or Ctrl+K, "Add photos from a folder"): choose a folder, then go
   through its pictures one at a time. Each starts in the circle (the upper middle of a
@@ -720,7 +726,7 @@ record is written and tested, ready for the phone and the OneDrive sync file.
   your PFP pictures in under two seconds. Pictures without a face start on the upper
   middle. The avatar picker's single Photo does the same.
 
-### Keys for the last sheets, and focus (after 1.0.32, not released yet)
+### Keys for the last sheets, and focus (1.0.33)
 
 - **A goal** (Add goal on a profile or Goals, and Edit): **1–7** a relationship goal,
   **S** the next skill goal, **C** your own, **V** its more specific versions (the
@@ -737,7 +743,7 @@ record is written and tested, ready for the phone and the OneDrive sync file.
   for Tab and screen readers. A dialog that deletes something starts on **Cancel**, so
   Enter there is safe. The calendar picker's month arrows are labelled too.
 
-### Key dates while setting up (after 1.0.32, not released yet)
+### Key dates while setting up (1.0.33)
 
 - Each person's card while setting up has **🎂 Birthday**; **D** adds one for the newest
   person. Type the day ("14 Mar", "14/3", or with the year, "14 March 2008"), then
@@ -745,7 +751,7 @@ record is written and tested, ready for the phone and the OneDrive sync file.
 - The same typed box is in **Add date** on a profile, with **Y** for every year or just
   once and Backspace to go back. The calendar picker is still there.
 
-### Goals on journal entries (after 1.0.32, not released yet)
+### Goals on journal entries (1.0.33)
 
 - Each log remembers which goals it moved. The Journal says so on the entry ("Moved:
   Learn more") and has a **goal filter** (the 🎯 list, under the periods). Logs from
@@ -753,7 +759,7 @@ record is written and tested, ready for the phone and the OneDrive sync file.
 - A goal that logs have moved shows **N logs** (on Goals and on the profile), which opens
   the Journal on them.
 
-### One day of a repeating plan (after 1.0.32, not released yet)
+### One day of a repeating plan (1.0.33)
 
 - Editing a repeating plan from one of its days asks what to change: **Only Thu 8** (O)
   or **Every time**. Only that day makes it a plan of its own, so it can move to another

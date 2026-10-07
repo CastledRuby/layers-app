@@ -8,10 +8,9 @@ import { useState } from 'react';
 import { ChevronRight, FolderOpen } from 'lucide-react';
 import { Avatar } from './atoms.jsx';
 import { getLayer } from '../data/constants.js';
-import { chatPeople, conversationLabel, everywhereName, ownerOf, splitConversations } from '../lib/chatImport.js';
+import { chatRows, conversationLabel } from '../lib/chatImport.js';
 import { COLORS } from '../theme.js';
 
-const NEW_DAYS = 14;
 const SOURCE = { whatsapp: { emoji: '💬', label: 'WhatsApp' }, instagram: { emoji: '📷', label: 'Instagram' } };
 
 function Help({ folder }) {
@@ -24,23 +23,16 @@ function Help({ folder }) {
   );
 }
 
-export function ChatExports({ state, people, yourName, progress, folder = 'Documents → Layers chats', onPick, onPickMe, onOpenFolder }) {
-  const [open, setOpen] = useState(null); // the chat shown
+// initialOpen: a chat to show opened (from the week review).
+export function ChatExports({ state, people, yourName, progress, folder = 'Documents → Layers chats', onPick, onPickMe, onOpenFolder, initialOpen = null }) {
+  const [open, setOpen] = useState(initialOpen); // the chat shown
   const [showEarlier, setShowEarlier] = useState(false);
   const [showOthers, setShowOthers] = useState(false);
   const [help, setHelp] = useState(false);
   const [now] = useState(() => Date.now()); // "new" is reckoned from when this was opened
   const card = { background: COLORS.paperRaised, border: `1px solid ${COLORS.line}` };
 
-  const everywhere = state ? everywhereName(state.chats.filter(c => c.source === 'instagram')) : [];
-  const rows = (state ? state.chats : []).map(chat => {
-    const mine = progress[chat.key] || {};
-    const owner = ownerOf(chat, { yourName, picked: mine.me, everywhere });
-    const { ids } = chatPeople(chat, people, owner);
-    const convs = splitConversations(chat.messages).reverse();
-    const since = mine.at || now - NEW_DAYS * 86400000;
-    return { chat, owner, ids, convs, fresh: convs.filter(c => c.end > since), last: chat.messages[chat.messages.length - 1].at };
-  }).sort((a, b) => Number(b.fresh.length > 0) - Number(a.fresh.length > 0) || b.last - a.last);
+  const rows = chatRows(state ? state.chats : [], { people, yourName, progress, now });
   const yours = rows.filter(r => r.ids.length);
   const others = rows.filter(r => !r.ids.length);
 

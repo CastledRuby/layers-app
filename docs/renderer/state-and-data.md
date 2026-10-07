@@ -754,6 +754,10 @@ Coach → Analyse a chat → **From your chats**: chats saved in the **Layers ch
   messages under your name in Layers and theirs under theirs, so both are hidden as
   usual; a very long one keeps its last 50,000 characters. The log is dated on the
   conversation's day. Once it's analysed, that chat moves on to what's after it.
+- **In the week review**: `WeekReviewSheet` lists, under "Chats to analyse", up to five
+  chats with your people that have new conversations (`chatRows`, the same reckoning as
+  Coach's list); tapping one opens Coach's Analyse with that chat open
+  (`openCoach(null, 'analyse', chatKey)`). Only once there's a key.
 - **Where you got up to** is `layers-chat-progress` in localStorage (`{ [chat]: { at, me
   } }`), on this computer only; parsed files are kept in memory until they change.
 
