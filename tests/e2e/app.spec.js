@@ -270,6 +270,7 @@ test('sync: two copies of Layers sharing a folder end up the same, with the pass
   await onboard(page, 'Sam');
   await me(page);
   await page.getByRole('button', { name: 'Turn on sync' }).click();
+  await expect(page.getByLabel('Passphrase', { exact: true })).toBeFocused(); // the sheet opens once it knows the folder
   await page.keyboard.type(PASS);
   await page.keyboard.press('Enter');
   await page.keyboard.type(PASS);
@@ -290,6 +291,7 @@ test('sync: two copies of Layers sharing a folder end up the same, with the pass
   await page.getByRole('button', { name: 'Go to Today' }).click();
   await me(page);
   await page.getByRole('button', { name: 'Turn on sync' }).click();
+  await expect(page.getByLabel('Passphrase', { exact: true })).toBeFocused();
   await page.keyboard.type(PASS);
   await page.keyboard.press('Enter');
   await expect(page.getByText('Synced: changes from your other device')).toBeVisible({ timeout: 20000 });
