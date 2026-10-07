@@ -1,8 +1,9 @@
 # Roadmap
 
 Where Layers stands against [vision.md](vision.md), what was decided along the way, and
-what comes next. Last updated 2026-10-06, after 1.0.32 (anything since is at the top of
-[History](#history), marked not released yet).
+what comes next. Last updated 2026-10-07, after 1.0.32 (anything since is at the top of
+[History](#history), marked not released yet). **What's next is
+[The plan from here](#the-plan-from-here-2026-10-07).**
 
 **How it got here:**
 
@@ -165,6 +166,45 @@ anyone else whose Windows has it on. It also removes Windows'
 certificate, which is paid: roughly US$100–400 a year, or Azure Trusted Signing at about
 US$10 a month. Once there is one, `npm run release` can sign with it.
 
+## The plan from here (2026-10-07)
+
+You asked to do everything that doesn't need the US$99 Apple Developer account, and to
+finish plotting the roadmap. Your answers to two rounds of questions set this order;
+each step is committed and installed on its own, and anything bigger than drafted
+comes back to you first.
+
+1. **Release 1.0.33**: everything built since 1.0.32.
+2. **The phone, before the Apple account**:
+   - **Sync through OneDrive, on the laptop now**: one encrypted sync file in OneDrive,
+     merged record by record (step 1's `mergeData`). The **passphrase is typed once in
+     Me and remembered on this laptop**, protected by Windows for your account. It
+     syncs **automatically**: on start, a few seconds after a change, and on closing;
+     Me shows when it last synced, with Sync now. It also works between two Windows
+     PCs; the phone joins later.
+   - **Every screen by touch**: at phone size, everything works by tapping, with
+     nothing that needs a keyboard or a hover. The keys stay for the laptop.
+   - **The iPhone project** (Capacitor) and a **GitHub build** that compiles it for the
+     iPhone simulator, pushed to GitHub after the release (the repository is public,
+     so GitHub's Macs are free; your data never goes there).
+3. **Housekeeping**: the stale-build guard, and more suggestion tones in Analyse.
+4. **Your Google Calendar, read-only**: from its secret iCal address (Google Calendar
+   → Settings → your calendar → Integrate calendar), fetched on start and every 30
+   minutes; nothing is sent. Its events show on Today, in the month and in planning's
+   clash warning, marked as from Google, **with no reminders** (Google already reminds
+   you).
+5. **Activity and a one-page summary**: a six-month activity calendar on each profile
+   and on the Journal, and Export summary, a one-page PDF of someone.
+6. **Real conversation analysis**: a **cloud AI, only when you ask**, sending only the
+   chat you chose, with a warning each time. Which AI is decided when we get there, in
+   its own proposal.
+
+**Waiting for the Apple account** (when you're ready): checking the phone can reach the
+OneDrive file, the iPhone app on your phone through TestFlight, the phone syncing, and
+later the Watch.
+
+**Dropped:** the other avatar styles, and the 20-question survey. **Later:** code
+signing (P8), only needed for other people's laptops.
+
 ## Drafted next (2026-10-06)
 
 Everything still open, in one place, drafted on 2026-10-06 after the plan fixes. It
@@ -219,7 +259,9 @@ after anyone. Two ways to use them; **you picked 7, built 2026-10-06** (see Hist
 9. **Layers on your phone** *(picked)*: the proposal is
    [below](#proposal-layers-on-your-phone-2026-10-06), waiting for your answers.
 
-The other three stay here for later:
+The other three, in the order you picked on 2026-10-07 (see
+[The plan from here](#the-plan-from-here-2026-10-07)): your calendars (Google, read-only),
+then activity and the summary, then analysis by a cloud AI only when you ask.
 
 10. **Your other calendars** (school, uni, work, Google or Outlook): read-only first,
    from a calendar's private link, so Today shows your timetable and planning warns about
@@ -244,11 +286,11 @@ The other three stay here for later:
 
 ### Later, or dropped
 
-- **Other avatar styles**: drawn faces, one flat emoji set, a rings monogram, line icons.
+- ~~**Other avatar styles**: drawn faces, one flat emoji set, a rings monogram, line
+  icons.~~ Dropped on 2026-10-07: initials, photos and emoji are enough.
 - **Code signing** (P8): only needed for other people's laptops.
-- **The 20-question survey** for someone you already know: covered by the closeness
+- ~~**The 20-question survey** for someone you already know~~: covered by the closeness
   questions ("How close are you two?" when adding, "Where are we now?" on a profile).
-  Dropped unless you still want the longer version.
 - Already done from the old lists: a version number on saved data, Undo for deletes,
   per-dimension ratings and desktop notifications.
 
