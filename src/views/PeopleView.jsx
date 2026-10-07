@@ -111,7 +111,7 @@ export function PeopleView({ people, journal, onOpenPerson, onAddPerson, onAddPh
               </button>
             ))}
             {onAddPhotos && <button type="button" onClick={onAddPhotos} title="Add photos from a folder (also in Ctrl+K)" aria-label="Add photos from a folder" className="flex items-center gap-1 text-xs font-semibold rounded-full px-2.5 py-1.5" style={{ color: COLORS.inkSoft, border: `1px solid ${COLORS.line}` }}><ImagePlus size={13} /> Photos</button>}
-            <span className="flex items-center gap-1 text-xs ml-auto" style={{ color: COLORS.inkSoft }}><Kbd>↑</Kbd><Kbd>↓</Kbd>{!selectedId && <> <Kbd>↵</Kbd></>}</span>
+            <span className="keys-hint flex items-center gap-1 text-xs ml-auto" style={{ color: COLORS.inkSoft }}><Kbd>↑</Kbd><Kbd>↓</Kbd>{!selectedId && <> <Kbd>↵</Kbd></>}</span>
           </div>
 
           {filteredPeople.length === 0 ? (

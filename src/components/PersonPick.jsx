@@ -41,7 +41,7 @@ export function PeopleGrid({ keys, pickedIds }) {
           {target ? <>· Enter picks {target.name} <Kbd>↵</Kbd></> : '· nobody by that name'}
         </p>
       ) : shown.length > 9 && (
-        <p className="text-xs mb-2 flex items-center gap-1 flex-wrap" style={{ color: COLORS.inkSoft }}>
+        <p className="keys-hint text-xs mb-2 flex items-center gap-1 flex-wrap" style={{ color: COLORS.inkSoft }}>
           <Kbd>1</Kbd>–<Kbd>9</Kbd> the first nine · the rest: type a name, or <Kbd>←</Kbd><Kbd>→</Kbd> then <Kbd>Space</Kbd>
         </p>
       )}

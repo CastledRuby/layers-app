@@ -52,7 +52,7 @@ function PhotoPanel({ picker, current }) {
         <div className="flex flex-col items-center gap-3">
           <PhotoCrop photo={p} onMove={movePhoto} onZoom={zoomPhoto} />
           <p className="text-xs flex items-center gap-1 flex-wrap justify-center" style={{ color: COLORS.inkSoft }}>
-            Drag or <Kbd>←</Kbd><Kbd>→</Kbd><Kbd>↑</Kbd><Kbd>↓</Kbd> to move · <Kbd>+</Kbd><Kbd>−</Kbd> zoom ·
+            Drag<span className="keys-hint flex items-center gap-1"> or <Kbd>←</Kbd><Kbd>→</Kbd><Kbd>↑</Kbd><Kbd>↓</Kbd></span> to move<span className="keys-hint flex items-center gap-1"> · <Kbd>+</Kbd><Kbd>−</Kbd> zoom</span> ·
             <button type="button" onClick={choosePhoto} className="font-semibold" style={{ color: COLORS.accent }}>another picture</button><Kbd>U</Kbd>
           </p>
         </div>
@@ -88,7 +88,7 @@ export function AvatarPicker({ picker, name, layer = 1, current = null }) {
         {PICKER_GROUPS.map((g, i) => (
           <button key={g.key} type="button" onClick={() => picker.showGroup(i)} aria-pressed={!finding && i === group} className={`chip${!finding && i === group ? ' chip--on' : ''}`} style={{ padding: '3px 10px', fontSize: 12 }}>{g.label}</button>
         ))}
-        <span className="flex items-center gap-1 text-xs ml-auto" style={{ color: COLORS.inkSoft }}><Kbd>G</Kbd> group · <Kbd>←</Kbd><Kbd>→</Kbd><Kbd>↑</Kbd><Kbd>↓</Kbd> pick</span>
+        <span className="keys-hint flex items-center gap-1 text-xs ml-auto" style={{ color: COLORS.inkSoft }}><Kbd>G</Kbd> group · <Kbd>←</Kbd><Kbd>→</Kbd><Kbd>↑</Kbd><Kbd>↓</Kbd> pick</span>
       </div>
       {finding && shown.items.length === 0 && <p className="text-sm py-3" style={{ color: COLORS.inkSoft }}>No avatar called “{picker.query.trim()}”.</p>}
       {shown.photo && <PhotoPanel picker={picker} current={current} />}

@@ -5,7 +5,7 @@
 // before or after, P plans something that day.
 
 import { useMemo, useState } from 'react';
-import { Check, Lightbulb } from 'lucide-react';
+import { Check, ChevronLeft, ChevronRight, Lightbulb } from 'lucide-react';
 import { Sheet } from '../components/Sheet.jsx';
 import { isTabbedToButton, isTyping } from '../components/sheetLayer.js';
 import { Kbd } from '../components/atoms.jsx';
@@ -53,7 +53,9 @@ export function DaySheet({ day, today, people, journal, events, generalGoals, on
     <Sheet title={dayTitle(day, today)} onClose={onClose} onKey={onKey} tall
       footer={<button type="button" onClick={() => onPlan({ day })} className="primary-btn">Plan something <Kbd onAccent>P</Kbd></button>}>
       <p className="text-xs -mt-1 mb-3 flex items-center gap-1 flex-wrap" style={{ color: COLORS.inkSoft }}>
-        <Kbd>←</Kbd><Kbd>→</Kbd> another day{plans.length > 1 && <> · <Kbd>↑</Kbd><Kbd>↓</Kbd> pick a plan</>}{plans.length > 0 && <> · <Kbd>↵</Kbd> open it</>}
+        <button type="button" onClick={() => onDay(addDays(day, -1))} aria-label="The day before" className="icon-btn -ml-2"><ChevronLeft size={17} color={COLORS.inkSoft} /></button>
+        <button type="button" onClick={() => onDay(addDays(day, 1))} aria-label="The day after" className="icon-btn"><ChevronRight size={17} color={COLORS.inkSoft} /></button>
+        <span className="keys-hint flex items-center gap-1 flex-wrap"><Kbd>←</Kbd><Kbd>→</Kbd> another day{plans.length > 1 && <> · <Kbd>↑</Kbd><Kbd>↓</Kbd> pick a plan</>}{plans.length > 0 && <> · <Kbd>↵</Kbd> open it</>}</span>
       </p>
 
       {dates.length > 0 && (
@@ -65,7 +67,7 @@ export function DaySheet({ day, today, people, journal, events, generalGoals, on
       {plans.length === 0 && (
         <button type="button" onClick={() => onPlan({ day })} className="w-full rounded-2xl p-5 text-center" style={{ border: `1.5px dashed ${COLORS.line}`, color: COLORS.inkSoft }}>
           <p className="text-sm font-semibold" style={{ color: COLORS.ink }}>Nothing planned</p>
-          <p className="text-xs mt-1">Press P to plan something.</p>
+          <p className="text-xs mt-1 flex items-center justify-center gap-1">Plan something for this day <Kbd>P</Kbd></p>
         </button>
       )}
 

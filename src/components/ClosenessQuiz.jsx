@@ -78,7 +78,7 @@ export function QuizResult({ quiz, name, person, now = null }) {
       </div>
       <p className="text-sm font-semibold mt-5 mb-2 flex items-center justify-between gap-2" style={{ color: COLORS.ink }}>
         {quiz.fromQuiz ? 'Not quite? Pick their layer' : 'Where are you starting from?'}
-        <span className="flex items-center gap-1 text-xs" style={{ color: COLORS.inkSoft }}><Kbd>1</Kbd>–<Kbd>4</Kbd></span>
+        <span className="keys-hint flex items-center gap-1 text-xs" style={{ color: COLORS.inkSoft }}><Kbd>1</Kbd>–<Kbd>4</Kbd></span>
       </p>
       <div className="grid grid-cols-2 gap-2" role="group" aria-label="Their layer">
         {LAYERS.map(x => {

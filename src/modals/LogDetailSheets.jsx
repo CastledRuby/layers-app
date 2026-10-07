@@ -79,7 +79,7 @@ export function RateSheet({ ratings, setRatings, cursor, setCursor, onClose }) {
   const rated = DIM_ORDER.filter(k => ratings[k]).length;
   return (
     <Sheet title="How did each part go?" onClose={onClose} onKey={onKey} footer={<DoneButton onClick={onClose} />}>
-      <p className="text-xs mb-1 flex items-center gap-1.5 flex-wrap" style={{ color: COLORS.inkSoft }}>
+      <p className="keys-hint text-xs mb-1 flex items-center gap-1.5 flex-wrap" style={{ color: COLORS.inkSoft }}>
         Type <Kbd>1</Kbd>–<Kbd>5</Kbd> for each, top to bottom. <Kbd>⌫</Kbd> goes back.
       </p>
       <p className="text-xs mb-3" style={{ color: COLORS.inkSoft }}>Any you skip use "How meaningful".</p>

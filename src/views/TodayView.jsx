@@ -14,7 +14,7 @@
 // (anywhere) plans something on the day shown; that one lives in App.jsx.
 
 import { useEffect, useMemo } from 'react';
-import { Bell, Check, ChevronLeft, ChevronRight, Plus, Repeat } from 'lucide-react';
+import { Bell, Check, ChevronLeft, ChevronRight, Plus, Repeat, Search } from 'lucide-react';
 import { Kbd, ProgressBar } from '../components/atoms.jsx';
 import { AvatarStack } from '../components/PersonPick.jsx';
 import { hasOpenSheet, isTabbedToButton as isTabbed, isTyping } from '../components/sheetLayer.js';
@@ -222,7 +222,10 @@ export function TodayView({ today, selectedDay, onSelectDay, mode, onSetMode, pe
   return (
     <div className={wide ? 'px-8 pt-8 pb-4 today-wide' : 'px-5 pt-6 pb-4'}>
       <div className="min-w-0">
-      <p className="text-sm" style={{ color: COLORS.inkSoft }}>{greeting}{profile && profile.name ? `, ${profile.name}` : ''}</p>
+      <div className="flex items-center justify-between gap-2">
+        <p className="text-sm" style={{ color: COLORS.inkSoft }}>{greeting}{profile && profile.name ? `, ${profile.name}` : ''}</p>
+        {onOpenJump && <button type="button" onClick={onOpenJump} aria-label="Search, or type a plan" title="Search, or type a plan (Ctrl+K)" className="icon-btn -mr-2"><Search size={18} color={COLORS.inkSoft} /></button>}
+      </div>
       <div className="flex items-end justify-between gap-3 mt-0.5">
         <div className="min-w-0">
           <h1 className="font-display" style={{ fontSize: 30, lineHeight: 1.1, color: COLORS.ink, margin: 0 }}>{relativeLabel(day, today)}</h1>

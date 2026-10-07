@@ -93,7 +93,8 @@ input, textarea { font-family: 'Manrope', ui-sans-serif, system-ui, sans-serif; 
   width: 100%;
   background: ${COLORS.paper}; position: relative; overflow: hidden;
   border-radius: 0px; box-shadow: 0 0 0 1px ${COLORS.line};
-  height: 100vh; display: flex; flex-direction: column;
+  height: 100vh; height: 100dvh; display: flex; flex-direction: column;
+  padding-top: env(safe-area-inset-top);
   font-family: 'Manrope', ui-sans-serif, system-ui, sans-serif;
   transition: background-color .25s ease;
 }
@@ -327,6 +328,24 @@ input[type="range"] { width: 100%; }
 
 @keyframes spin { to { transform: rotate(360deg); } }
 .spin { animation: spin 1s linear infinite; }
+
+/* A phone's notch and home bar (0 everywhere else). */
+.nav-bar { padding-bottom: calc(12px + env(safe-area-inset-bottom)); }
+.sheet-footer { padding-bottom: calc(22px + env(safe-area-inset-bottom)); }
+
+/* A touch screen (a phone, later): the keys stay for the laptop. Key hints
+   (Kbd, and whole hints about keys, .keys-hint) go; buttons get room for a
+   finger; text boxes are 16 px, which stops iPhones zooming in on them; and
+   hover effects don't stick after a tap. */
+@media (hover: none) and (pointer: coarse) {
+  .kbd, .keys-hint, .keyed-field-key { display: none !important; }
+  .keyed-field input, .keyed-field textarea { padding-right: 12px !important; }
+  input, textarea, select { font-size: 16px !important; }
+  .chip { min-height: 38px; }
+  .icon-btn { min-width: 40px; min-height: 40px; }
+  .tone-swatch { width: 32px; height: 32px; }
+  .avatar-choice:hover, .tone-swatch:hover, .avatar-choice--initials:hover, .add-person-btn:hover, .fab-btn:hover { transform: none; }
+}
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }

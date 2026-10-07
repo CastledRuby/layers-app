@@ -150,7 +150,7 @@ export function PhotoFolderSheet({ people, onClose, onApply }) {
           <div className="flex flex-col items-center gap-2 mb-4">
             {photo ? <PhotoCrop photo={photo} onMove={move} onZoom={zoom} />
               : <div className="photo-crop flex items-center justify-center text-xs text-center px-4" style={{ width: 168, height: 168, color: COLORS.inkSoft }}>{unreadable ? "Layers can't read this one. Enter skips it." : 'Opening…'}</div>}
-            {photo && <p className="text-xs flex items-center gap-1 flex-wrap justify-center" style={{ color: COLORS.inkSoft }}>Drag, or <Kbd>Shift</Kbd>+<Kbd>←</Kbd><Kbd>→</Kbd><Kbd>↑</Kbd><Kbd>↓</Kbd> to move · <Kbd>+</Kbd><Kbd>−</Kbd> zoom</p>}
+            {photo && <p className="text-xs flex items-center gap-1 flex-wrap justify-center" style={{ color: COLORS.inkSoft }}>Drag<span className="keys-hint flex items-center gap-1">, or <Kbd>Shift</Kbd>+<Kbd>←</Kbd><Kbd>→</Kbd><Kbd>↑</Kbd><Kbd>↓</Kbd></span> to move, the slider to zoom</p>}
           </div>
           <p className="text-xs font-bold mb-2 flex items-center gap-1.5" style={{ color: COLORS.inkSoft, letterSpacing: '0.06em', textTransform: 'uppercase' }}>Who is it? <Kbd>1–9</Kbd></p>
           <PeopleGrid keys={peopleKeys} pickedIds={who ? [who] : []} />

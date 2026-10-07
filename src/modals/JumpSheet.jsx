@@ -9,7 +9,7 @@
 // storage, a convenience only).
 
 import { useMemo, useRef, useState } from 'react';
-import { ChevronRight, Search } from 'lucide-react';
+import { ChevronLeft, ChevronRight, MoreHorizontal, Search } from 'lucide-react';
 import { Sheet } from '../components/Sheet.jsx';
 import { Avatar, Kbd } from '../components/atoms.jsx';
 import { jumpResults, personActionRows } from '../lib/jump.js';
@@ -69,7 +69,7 @@ export function JumpSheet({ people, events, today, has, onRun, onClose }) {
     <Sheet title="Jump to" onClose={onClose} top>
       <div className="flex items-center gap-2 rounded-2xl px-3 py-2.5 mb-2" style={{ border: `1.5px solid ${COLORS.accent}`, background: COLORS.paper }}>
         <Search size={17} color={COLORS.accent} className="shrink-0" />
-        {personFor && <span className="chip chip--on shrink-0" style={{ padding: '1px 8px', fontSize: 12 }}>{personFor.name}</span>}
+        {personFor && <button type="button" onClick={back} aria-label={`Back from ${personFor.name}`} className="chip chip--on shrink-0 flex items-center gap-0.5" style={{ padding: '1px 8px 1px 4px', fontSize: 12 }}><ChevronLeft size={13} />{personFor.name}</button>}
         <input ref={inputRef} autoFocus value={query} onChange={e => { setQuery(e.target.value); setActive(0); setPersonFor(null); }} onKeyDown={onKeyDown}
           aria-label="Jump to" placeholder={personFor ? 'Pick what to do' : 'A person, plan or page, or type a plan: coffee w Sam fri 10am'} className="jump-input flex-1 min-w-0 text-sm"
           style={{ background: 'transparent', border: 'none', outline: 'none', color: COLORS.ink }} />
@@ -83,7 +83,8 @@ export function JumpSheet({ people, events, today, has, onRun, onClose }) {
           // A person's own avatar (their initials, say), for their rows.
           const who = row.group === 'person' || (row.run && row.run.type === 'personAction') ? people.find(p => p.id === row.run.id) : null;
           return (
-            <button key={row.id} type="button" role="option" aria-selected={on} onClick={() => run(row)} onMouseMove={() => { if (!on) setActive(i); }}
+            <div key={row.id} className="relative">
+            <button type="button" role="option" aria-selected={on} onClick={() => run(row)} onMouseMove={() => { if (!on) setActive(i); }}
               className="w-full flex items-center gap-2.5 rounded-xl px-2.5 py-2 text-left" style={{ background: on ? COLORS.accentSoft : 'transparent' }}>
               <span className="shrink-0 flex justify-center" style={{ width: 24, fontSize: 17 }} aria-hidden="true">{who && row.group === 'person' ? <Avatar person={who} size={24} ringColor="transparent" /> : row.emoji}</span>
               <span className="flex-1 min-w-0">
@@ -93,12 +94,18 @@ export function JumpSheet({ people, events, today, has, onRun, onClose }) {
               {row.group === 'person' && !personFor && on && <span className="flex items-center gap-1 text-xs shrink-0" style={{ color: COLORS.inkSoft }}>log, plan, prepare <Kbd>→</Kbd></span>}
               {personFor && row.key ? <Kbd>{row.key}</Kbd> : row.group !== 'person' && <span className="text-xs shrink-0" style={{ color: COLORS.inkSoft }}>{GROUP_LABEL[row.group]}</span>}
               {on && <ChevronRight size={15} color={COLORS.accent} className="shrink-0" />}
+              {row.group === 'person' && !personFor && <span className="shrink-0" style={{ width: 34 }} aria-hidden="true" />}
             </button>
+            {row.group === 'person' && !personFor && (
+              <button type="button" onClick={() => showActions(row.person)} aria-label={`Log, plan or prepare with ${row.person.name}`} title="Log, plan or prepare (→)"
+                className="icon-btn absolute" style={{ right: 4, top: '50%', transform: 'translateY(-50%)' }}><MoreHorizontal size={16} color={COLORS.inkSoft} /></button>
+            )}
+            </div>
           );
         })}
       </div>
 
-      <p className="text-xs mt-3 flex items-center gap-1 flex-wrap" style={{ color: COLORS.inkSoft }}>
+      <p className="keys-hint text-xs mt-3 flex items-center gap-1 flex-wrap" style={{ color: COLORS.inkSoft }}>
         <Kbd>↑</Kbd><Kbd>↓</Kbd> move · <Kbd>↵</Kbd> go
         {current && current.group === 'sentence' && <> · <Kbd>Ctrl</Kbd><Kbd>↵</Kbd> open it in full</>}
         {personFor && <> · <Kbd>O</Kbd><Kbd>L</Kbd><Kbd>P</Kbd><Kbd>R</Kbd><Kbd>W</Kbd> pick · <Kbd>←</Kbd> back</>}

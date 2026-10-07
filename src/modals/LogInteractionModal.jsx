@@ -247,7 +247,7 @@ export function LogInteractionModal({ people, defaultPersonId, prefill, onClose,
               </div>
             </div>
 
-            <SectionLabel extra={<span className="flex items-center gap-1 text-xs" style={{ color: COLORS.inkSoft }}><Kbd>1</Kbd>–<Kbd>5</Kbd></span>}>How meaningful was it?</SectionLabel>
+            <SectionLabel extra={<span className="keys-hint flex items-center gap-1 text-xs" style={{ color: COLORS.inkSoft }}><Kbd>1</Kbd>–<Kbd>5</Kbd></span>}>How meaningful was it?</SectionLabel>
             <Scale value={meaningfulness} onChange={setMeaningfulness} label="How meaningful was it?" />
             <p key={meaningfulness} className="text-xs font-semibold text-center mt-2 mb-6 fade-anim" style={{ color: COLORS.accent }}>{ML_LABELS[meaningfulness - 1]}</p>
 
