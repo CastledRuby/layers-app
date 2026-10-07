@@ -12,6 +12,19 @@ import { SCENARIOS } from '../data/scenarios.js';
 import { buildPotentialHooks, HOOKS } from '../lib/text.js';
 import { COLORS } from '../theme.js';
 
+// A suggestion's three versions, where it has them: how you might actually word it.
+function Tones({ item, intro }) {
+  if (!item || !(item.natural || item.playful || item.deeper)) return null;
+  return (
+    <div className="mt-2 space-y-1">
+      {intro && <p className="text-xs italic" style={{ color: COLORS.inkSoft }}>{intro}</p>}
+      {[['natural', 'Natural'], ['playful', 'Playful'], ['deeper', 'Deeper']].filter(([k]) => item[k]).map(([k, label]) => (
+        <p key={k} className="text-xs" style={{ color: COLORS.inkSoft }}><span className="font-semibold">{label}:</span> {item[k]}</p>
+      ))}
+    </div>
+  );
+}
+
 export function CoachView({ people, journal, initialPersonId, initialTab, onOpenLog, onApproveInfo, onLogFromAnalysis, onOpenPerson }) {
   const [tab, setTab] = useState(initialTab || 'prepare');
   const [preparePersonId, setPreparePersonId] = useState(initialPersonId || (people[0] && people[0].id) || null);
@@ -363,29 +376,28 @@ export function CoachView({ people, journal, initialPersonId, initialTab, onOpen
                 <div className="rounded-2xl p-3.5 mb-2" style={{ background: COLORS.paperRaised, border: `1px solid ${COLORS.line}` }}>
                   <p className="text-xs font-semibold" style={{ color: COLORS.accent }}>Continue the current topic</p>
                   <p className="text-xs mt-1" style={{ color: COLORS.ink }}>{scenario.next.continueTopic.text}</p>
-                  <div className="mt-2 space-y-1">
-                    <p className="text-xs" style={{ color: COLORS.inkSoft }}><span className="font-semibold">Natural:</span> {scenario.next.continueTopic.natural}</p>
-                    <p className="text-xs" style={{ color: COLORS.inkSoft }}><span className="font-semibold">Playful:</span> {scenario.next.continueTopic.playful}</p>
-                    <p className="text-xs" style={{ color: COLORS.inkSoft }}><span className="font-semibold">Deeper:</span> {scenario.next.continueTopic.deeper}</p>
-                  </div>
+                  <Tones item={scenario.next.continueTopic} />
                 </div>
               )}
               {scenario.next.shareYourself && (
                 <div className="rounded-2xl p-3.5 mb-2" style={{ background: COLORS.paperRaised, border: `1px solid ${COLORS.line}` }}>
                   <p className="text-xs font-semibold" style={{ color: COLORS.accent }}>Share something yourself</p>
                   <p className="text-xs mt-1" style={{ color: COLORS.ink }}>{scenario.next.shareYourself.text}</p>
+                  <Tones item={scenario.next.shareYourself} />
                 </div>
               )}
               {scenario.next.changeTopic && (
                 <div className="rounded-2xl p-3.5 mb-2" style={{ background: COLORS.paperRaised, border: `1px solid ${COLORS.line}` }}>
                   <p className="text-xs font-semibold" style={{ color: COLORS.accent }}>Change topic naturally</p>
                   <p className="text-xs mt-1" style={{ color: COLORS.ink }}>{scenario.next.changeTopic.text}</p>
+                  <Tones item={scenario.next.changeTopic} />
                 </div>
               )}
               {scenario.next.dontMessage && (
                 <div className="rounded-2xl p-3.5 mb-2" style={{ background: COLORS.layer4Tint }}>
                   <p className="text-xs font-semibold" style={{ color: COLORS.layer4Deep }}>Don't message yet</p>
                   <p className="text-xs mt-1" style={{ color: COLORS.ink }}>{scenario.next.dontMessage.text}</p>
+                  <Tones item={scenario.next.dontMessage} intro="If you'd still like to say something, keep it light and closing:" />
                 </div>
               )}
 

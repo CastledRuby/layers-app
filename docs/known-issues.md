@@ -18,7 +18,7 @@ the layer's band. See
 
 ## Build & release
 
-### 1. The desktop app can silently run old code *(mitigated in 1.0.24 and 1.0.27)*
+### 1. The desktop app can silently run old code *(mitigated in 1.0.24 and 1.0.27; guarded since 2026-10-07)*
 
 Electron loads only the committed build artifact `electron/app/index.html`. If you
 change `src/` and package without `npm run build:electron`, or install a build without
@@ -27,8 +27,13 @@ bumping `version`, the app runs stale code that looks current. That happened wit
 Follow the checklist in [build-and-release.md](build-and-release.md). `npm run release`
 rebuilds the renderer itself, and since 1.0.27 it also runs the end-to-end tests on the
 packaged build it's about to publish ([testing.md](testing.md#in-the-release)). Packaging
-by hand (`electron-builder` on its own) still skips both, so consider a `prepackage` guard
-that fails when `electron/app/index.html` is older than the files in `src/`.
+by hand (`electron-builder` on its own) skips both, so since 2026-10-07 electron-builder's
+`beforePack` runs [`scripts/check-fresh-build.cjs`](../scripts/check-fresh-build.cjs): it
+refuses to package unless `electron/app/index.html` carries the fingerprint of `src/`,
+`index.html` and `public/` as they are now, which `sync-app.mjs` writes into it when it
+copies a build. (File times wouldn't do: the install hook puts the tracked page back after
+building, which makes an old page look new.) Installing a build without bumping
+`version` is still on you; the install hook names local builds `x.y.z+local.<commit>`.
 
 ## Resolved
 

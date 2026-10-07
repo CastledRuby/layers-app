@@ -139,7 +139,11 @@ interact.
   back, with a deleting dialog starting on Cancel.
 - `qol.test.jsx` covers the quality-of-life batches: Undo from a toast and with
   Ctrl+Z, a birthday reminder's Plan something, daily backups (a fake bridge), Match
-  Windows, rating a plan from its notification, and the weekly review. `src/backups.test.js` checks `electron/backups.cjs` on a temporary folder:
+  Windows, rating a plan from its notification, and the weekly review.
+  `src/freshBuild.test.js` checks the stale-build guard (a page built from `src/` as it is
+  passes; one built before a change, without a fingerprint, or missing, doesn't; line
+  endings don't count), and `src/scenarios.test.js` that every Analyse suggestion has its
+  natural, playful and deeper versions. `src/backups.test.js` checks `electron/backups.cjs` on a temporary folder:
   one file a day, never overwritten, the newest 14 kept.
 - `polish.test.jsx` covers the quick log redesign:
   - the quick log asks for little

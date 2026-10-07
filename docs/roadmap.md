@@ -186,7 +186,7 @@ comes back to you first.
    - **The iPhone project** (Capacitor) and a **GitHub build** that compiles it for the
      iPhone simulator, pushed to GitHub after the release (the repository is public,
      so GitHub's Macs are free; your data never goes there).
-3. **Housekeeping**: the stale-build guard, and more suggestion tones in Analyse.
+3. ✅ **Housekeeping**: the stale-build guard, and more suggestion tones in Analyse.
 4. **Your Google Calendar, read-only**: from its secret iCal address (Google Calendar
    → Settings → your calendar → Integrate calendar), fetched on start and every 30
    minutes; nothing is sent. Its events show on Today, in the month and in planning's
@@ -277,10 +277,11 @@ then activity and the summary, then analysis by a cloud AI only when you ask.
 
 ### F. Housekeeping (nothing you'd notice; these can just be done)
 
-13. **Stale-build guard** for packaging by hand: fail if `electron/app/index.html` is
+13. ✅ **Stale-build guard** (2026-10-07) for packaging by hand: fail if `electron/app/index.html` is
     older than `src/` ([known-issues.md](known-issues.md)).
-14. **Analyse: more suggestion tones.** Only "continue the topic" has natural, playful
-    and deeper versions; two sample chats have none.
+14. ✅ **Analyse: more suggestion tones** (2026-10-07). Every suggestion in the four
+    sample chats now has natural, playful and deeper versions; where the advice is "don't
+    message yet", they're a light close, if you'd still like to say something.
 15. ✅ **`PFP/` kept out of git**, in this laptop's own exclude list (`.git/info/exclude`),
     so local builds aren't labelled "uncommitted" and releases aren't held up by it.
 
@@ -525,6 +526,13 @@ its own. Changes made while building are marked.
   box in the packaged app, with a temporary data folder as always.
 
 ## History
+
+### Housekeeping (after 1.0.33, not released yet)
+
+- **Analyse** suggests every next message in three tones (natural, playful, deeper), not
+  only "continue the topic". Where it says "don't message yet", the tones are a light
+  close, if you'd still like to say something.
+- Packaging by hand can't ship an old build of the page any more (the stale-build guard).
 
 ### Every screen by touch (after 1.0.33, not released yet)
 

@@ -71,6 +71,7 @@
     "directories": {
       "output": "release"
     },
+    "beforePack": "./scripts/check-fresh-build.cjs",
     "files": [
       "electron/main.cjs",
       "electron/preload.cjs",

@@ -66,7 +66,9 @@ GitHub untouched.
    versions strictly higher than the installed one, so every release needs a new number.
 3. **Verify and build:** `docs:map`, then `verify` (lint, code-map check, unit and app
    tests, renderer build), then `build:electron` and
-   `electron-builder --win --x64 --publish never`. Each version builds into its own folder,
+   `electron-builder --win --x64 --publish never` (whose `beforePack`,
+   `scripts/check-fresh-build.cjs`, refuses a page not built from `src/` as it is now:
+   `build:electron` writes that fingerprint). Each version builds into its own folder,
    `release/x.y.z/`, because a previous build's `win-unpacked` can stay locked (antivirus,
    or an app holding its `app.asar` open), and electron-builder fails if it can't replace it.
    electron-builder writes the Layers name, icon, version and company (`author` in

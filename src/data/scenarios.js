@@ -27,8 +27,8 @@ export const SCENARIOS = {
     ],
     next: {
       continueTopic: { text: 'Ask what it would take for them to actually book Silverstone tickets.', natural: 'Silverstone would be unreal, you should look into ticket prices!', playful: "okay but if you go to Silverstone you HAVE to send me videos", deeper: "That's such a cool goal! What got you into F1 in the first place?" },
-      shareYourself: { text: "Tell them about a race or sports event you've been to, or want to go to." },
-      changeTopic: { text: "Ask what else they've been up to this week." },
+      shareYourself: { text: "Tell them about a race or sports event you've been to, or want to go to.", natural: "I went to a race once and the noise was unreal, I'd go again in a heartbeat", playful: "I've only watched F1 from my couch but I'd be a very loud fan in person", deeper: "I've always wanted to see something like that live, it's on my list too. What would make the day perfect for you?" },
+      changeTopic: { text: "Ask what else they've been up to this week.", natural: 'What else has your week looked like?', playful: 'okay enough F1, what else is new with you', deeper: "Besides F1, what's been taking up most of your headspace lately?" },
       dontMessage: null,
     },
   },
@@ -56,7 +56,7 @@ export const SCENARIOS = {
       continueTopic: null,
       shareYourself: null,
       changeTopic: null,
-      dontMessage: { text: 'The conversation appears to have wound down naturally. It may be fine to leave it here for now.' },
+      dontMessage: { text: 'The conversation appears to have wound down naturally. It may be fine to leave it here for now.', natural: "Fair enough, get some rest! Hope the results are kind", playful: 'go nap, you earned it after maths', deeper: "Exams take a lot out of you. Rest up, and I hope you're proud you got through it" },
     },
   },
   c: {
@@ -80,7 +80,7 @@ export const SCENARIOS = {
     extractedInfo: [{ category: 'interests', text: 'Skateboarding (just started)', temporary: false }],
     next: {
       continueTopic: { text: 'Ask what got them into skating.', natural: 'What made you want to pick it up?', playful: 'okay but real talk, worst wipeout so far?', deeper: 'Would you want to learn together sometime, or do you already have people you go with?' },
-      shareYourself: { text: 'Tell them about your own first few months learning.' },
+      shareYourself: { text: 'Tell them about your own first few months learning.', natural: "I picked up something new last year and the first few months were rough, it does click eventually", playful: "honestly my first month learning anything is 90% falling over, so you're right on track", deeper: "Starting something new as an adult takes guts. I found the hardest part was not being instantly good at it. Has that been you too?" },
       changeTopic: null,
       dontMessage: null,
     },
@@ -108,7 +108,7 @@ export const SCENARIOS = {
       continueTopic: null,
       shareYourself: null,
       changeTopic: null,
-      dontMessage: { text: 'This felt like a complete, meaningful moment. Let it sit rather than following up with something lighter right away.' },
+      dontMessage: { text: 'This felt like a complete, meaningful moment. Let it sit rather than following up with something lighter right away.', natural: "Thanks for telling me. I'm glad you did", playful: "you're not faking it, you know. but I'll keep reminding you until you believe me", deeper: "I'm really glad you felt you could tell me. Whenever the second-guessing gets loud, you can say it out loud to me too" },
     },
   },
 };
