@@ -219,8 +219,10 @@ You asked where an analysed chat goes, and picked these. They're released togeth
    keeps Claude's review and the chat itself on the Journal entry; **Review** on the
    entry reads it again, and the Journal's search finds words in kept chats. The Log
    button stays (you check it before it's logged).
-2. **Nicknames on profiles**: "Also known as" (Mel, Ames), so chats signed with a
-   nickname find the right person, and nicknames are hidden before a chat is sent.
+2. ✅ **Nicknames on profiles** (built 2026-10-07): "Also known as" when editing someone
+   (Mel, Ames), so chats signed with a nickname find the right person, and nicknames are
+   hidden before a chat is sent. Ctrl+K, picking people by typing, and typed plans and
+   logs ("coffee w mel fri") find them too.
 3. **What Claude has cost**: this month's spend on chat analysis, in Me.
 4. **Skills over time**: your listening, depth, balance and naturalness from analysed
    chats, charted per person and in Me.
@@ -548,6 +550,12 @@ its own. Changes made while building are marked.
   box in the packaged app, with a temporary data folder as always.
 
 ## History
+
+### Nicknames (after 1.0.35, not released yet)
+
+- **Also known as** when editing someone: their nicknames (Mel, Ames), shown on their
+  profile. A chat signed with one goes to them, and it's hidden before the chat is sent.
+  Ctrl+K, picking people by typing, and the quick-add box find them by a nickname too.
 
 ### Analysed chats kept with their logs (after 1.0.35, not released yet)
 

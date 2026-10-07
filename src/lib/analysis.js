@@ -71,14 +71,19 @@ export function isYou(name, yourName = '') {
   const me = String(yourName || '').trim().toLowerCase();
   return s === 'you' || s === 'me' || (!!me && (s === me || firstName(s) === firstName(me)));
 }
-// The person a chat name means: the same full name, or the same first name
-// when only one person has it ("Amelie R" is Amelie). Emoji and symbols
-// around it don't count. Null if it's nobody, or can't be told.
+// Everything a person is called: their name, then any nicknames ("Also
+// known as" on their profile).
+export const namesOf = (p) => [p.name, ...(Array.isArray(p.aka) ? p.aka : [])];
+
+// The person a chat name means: the same full name or nickname, or the same
+// first name when only one person has it ("Amelie R" is Amelie, "Mel" is
+// Amelie if she's also known as Mel). Emoji and symbols around it don't
+// count. Null if it's nobody, or can't be told.
 export function personNamed(name, people = []) {
   const s = String(name || '').replace(/[^\p{L}\p{M}\s'.-]/gu, ' ').replace(/\s+/g, ' ').trim().toLowerCase();
   if (!s) return null;
-  const full = people.filter(p => p.name.trim().toLowerCase() === s);
-  const byFirst = people.filter(p => firstName(p.name) === firstName(s));
+  const full = people.filter(p => namesOf(p).some(n => n.trim().toLowerCase() === s));
+  const byFirst = people.filter(p => namesOf(p).some(n => firstName(n) === firstName(s)));
   return full.length === 1 ? full[0] : byFirst.length === 1 ? byFirst[0] : null;
 }
 
@@ -177,12 +182,13 @@ function nameParts(name) {
 }
 
 // Pasted text with each person's name(s) as their tag ([them], or [them 1],
-// [them 2]… for `names`) and yours as [you]. Whole words, any case; longer
-// names first, and a part two people share goes to the first.
+// [them 2]… for `names`, where each is a name or a list of a person's names
+// and nicknames) and yours as [you]. Whole words, any case; longer names
+// first, and a part two people share goes to the first.
 export function hideNames(text, { names, theirName, yourName }) {
   const theirs = names || (theirName ? [theirName] : []);
   const tokens = tokensFor(theirs.length);
-  const pairs = [...theirs.flatMap((n, i) => nameParts(n).map(part => [part, `[${tokens[i]}]`])), ...nameParts(yourName).map(part => [part, YOU])]
+  const pairs = [...theirs.flatMap((n, i) => [].concat(n).flatMap(nameParts).map(part => [part, `[${tokens[i]}]`])), ...nameParts(yourName).map(part => [part, YOU])]
     .sort((a, b) => b[0].length - a[0].length);
   const done = new Set();
   let out = String(text || '');
@@ -216,7 +222,7 @@ export function analysisRequest({ people, person, yourName, text, images = [], m
   const pasted = String(text || '').trim();
   const content = [
     ...images.slice(0, MAX_SCREENSHOTS).map(im => ({ type: 'image', source: { type: 'base64', media_type: im.mediaType, data: im.data } })),
-    { type: 'text', text: pasted ? `The chat:\n\n${hideNames(pasted, { names: group.map(p => p.name), yourName })}` : `The chat is in the ${images.length === 1 ? 'screenshot' : 'screenshots'} above.` },
+    { type: 'text', text: pasted ? `The chat:\n\n${hideNames(pasted, { names: group.map(namesOf), yourName })}` : `The chat is in the ${images.length === 1 ? 'screenshot' : 'screenshots'} above.` },
   ];
   return {
     system: analysisSystem({ layers: group.map(p => p.layer), today, ...(dayFirst === undefined ? {} : { dayFirst }) }),

@@ -129,7 +129,7 @@ export function jumpResults(query, { people = [], events = [], today, now = new 
     : [];
   const sentence = sentenceRow(query, { people, today, now });
   const scored = [
-    ...people.map(p => { const s = matchScore(p.name, q); return { row: personRow(p), score: s && s + 5 }; }),
+    ...people.map(p => { const s = Math.max(matchScore(p.name, q), ...(p.aka || []).map(n => matchScore(n, q))); return { row: personRow(p), score: s && s + 5 }; }),
     ...plans.map(r => ({ row: r, score: Math.max(matchScore(r.label, q), matchScore('', q, r.words)) })),
     ...PAGES.map(r => ({ row: { ...r, group: 'page' }, score: matchScore(r.label, q, r.words) })),
     ...actions.map(r => ({ row: { ...r, group: 'action' }, score: matchScore(r.label, q, r.words) })),

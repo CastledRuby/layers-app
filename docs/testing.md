@@ -119,6 +119,10 @@ interact.
 - `keys2.test.jsx` covers the second live test's keys: N into a note box and Esc out
   (the quick log, Add detail, editing a journal entry), Redo with Ctrl+Y and
   Ctrl+Shift+Z (and not once something else changed), and Ctrl+K's O, L, P and R.
+- `nicknames.test.jsx` covers nicknames: added when editing someone, shown on the
+  profile, and a chat signed with one going to them with the nickname hidden.
+  `src/nicknames.test.js` covers keeping them tidy and finding someone by one in chat
+  names, Ctrl+K and typed plans.
 - `activity.test.jsx` covers the activity calendars (a profile's days with logs, one
   opening the Journal on that person that day, the Journal's for everyone) and Summary
   handing the page to a stand-in main process; `src/activity.test.js` the grid (26 weeks,

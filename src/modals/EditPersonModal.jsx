@@ -1,5 +1,6 @@
-// Rename / change the avatar of / remove a person. Out of the name box (Esc
-// or Tab), the avatar picker's keys work (arrows, T, G) and Enter saves.
+// Rename / nicknames / change the avatar of / remove a person. Out of the
+// text boxes (Esc or Tab), the avatar picker's keys work (arrows, T, G) and
+// Enter saves. Nicknames ("Also known as") are typed with commas between.
 
 import { useState } from 'react';
 import { Trash2 } from 'lucide-react';
@@ -13,9 +14,10 @@ import { COLORS } from '../theme.js';
 export function EditPersonModal({ person, onClose, onSave, onDelete }) {
   const [look, setLook] = useState({ emoji: person.emoji, avatar: person.avatar || null }); // an emoji, or initials
   const [name, setName] = useState(person.name);
+  const [aka, setAka] = useState((person.aka || []).join(', '));
   const canSave = name.trim().length > 0;
   const picker = useAvatarPicker(look, setLook);
-  function save() { if (canSave) onSave({ name: name.trim(), emoji: look.emoji, avatar: look.avatar }); }
+  function save() { if (canSave) onSave({ name: name.trim(), aka: aka.split(',').map(s => s.trim()).filter(Boolean), emoji: look.emoji, avatar: look.avatar }); }
   function onKey(e) {
     if (isTyping()) return;
     if (e.key === 'Enter' && !e.ctrlKey && !isTabbedToButton()) { e.preventDefault(); save(); return; }
@@ -32,6 +34,10 @@ export function EditPersonModal({ person, onClose, onSave, onDelete }) {
           <input autoFocus value={name} onChange={e => setName(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); save(); } }} aria-label="Name" className="w-full text-sm rounded-xl px-3 py-2.5" style={{ border: `1px solid ${COLORS.line}` }} />
         </div>
       </div>
+      <p className="text-sm font-semibold mb-1.5" style={{ color: COLORS.ink }}>Also known as</p>
+      <input value={aka} onChange={e => setAka(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); save(); } }} aria-label="Also known as" placeholder="Nicknames, with commas: Mel, Ames"
+        className="w-full text-sm rounded-xl px-3 py-2.5" style={{ border: `1px solid ${COLORS.line}` }} />
+      <p className="text-xs mt-1.5 mb-5" style={{ color: COLORS.inkSoft }}>Chats signed with one of these find {name.trim() || 'them'}, and they're hidden before a chat is analysed. Ctrl+K and picking people find them too.</p>
       <p className="text-sm font-semibold mb-2" style={{ color: COLORS.ink }}>Avatar</p>
       <div className="mb-6"><AvatarPicker picker={picker} name={name} layer={person.layer} current={person.avatar} /></div>
       <button onClick={onDelete} className="w-full flex items-center justify-center gap-1.5 text-xs font-semibold rounded-full py-3" style={{ background: COLORS.layer4Tint, color: COLORS.layer4Deep }}><Trash2 size={13} /> Remove this person</button>

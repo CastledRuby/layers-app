@@ -63,6 +63,12 @@ function cleanPerson(p, skipped) {
     history: cleanHistory(p.history),
     timeline: (Array.isArray(p.timeline) ? p.timeline : []).filter(t => isObject(t) && isText(t.label)),
   };
+  // Nicknames ("Also known as"): short text, each once, not the name itself.
+  if ('aka' in p) {
+    const seen = new Set([person.name.toLowerCase()]);
+    person.aka = (Array.isArray(p.aka) ? p.aka : []).filter(isText).map(s => s.trim().slice(0, 40))
+      .filter(s => s && !seen.has(s.toLowerCase()) && seen.add(s.toLowerCase())).slice(0, 10);
+  }
   // Initials or a photo instead of the emoji; anything else is dropped, so the emoji shows.
   if ('avatar' in p) {
     const avatar = cleanAvatar(p.avatar);

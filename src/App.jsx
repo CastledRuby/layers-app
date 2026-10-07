@@ -1177,10 +1177,12 @@ function LayersApp() {
     const names = list.map(c => (people.find(p => p.id === c.personId) || {}).name).filter(Boolean);
     pushToast(`Photos added for ${names.length <= 2 ? names.join(' and ') : `${names.slice(0, 2).join(', ')} and ${names.length - 2} more`}`, { undo: snap });
   }
-  function handleSavePersonEdit(personId, { name, emoji, avatar }) {
+  function handleSavePersonEdit(personId, { name, aka = [], emoji, avatar }) {
     setPeople(prev => prev.map(p => {
       if (p.id !== personId) return p;
       const next = { ...p, name, emoji };
+      const nicknames = [...new Set(aka.map(s => s.trim()).filter(s => s && s.toLowerCase() !== name.toLowerCase()))];
+      if (nicknames.length) next.aka = nicknames; else delete next.aka;
       if (avatar) next.avatar = avatar; else delete next.avatar;
       return next;
     }));

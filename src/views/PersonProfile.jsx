@@ -114,6 +114,7 @@ export function PersonProfile({ today, person, journal, onBack, onOpenLog, onOpe
       <div className="flex flex-col items-center text-center">
         <Avatar person={person} size={72} ringColor={l.color} />
         <p className="font-display mt-3" style={{ fontSize: 24, color: COLORS.ink }}>{person.name}</p>
+        {person.aka && person.aka.length > 0 && <p className="text-xs" style={{ color: COLORS.inkSoft }}>Also known as {person.aka.join(', ')}</p>}
         <p className="text-xs mt-1" style={{ color: COLORS.inkSoft }}>Current relationship stage</p>
         <div className="mt-1.5"><LayerBadge layerId={person.layer} /></div>
         <div className="flex items-center gap-2 mt-4">

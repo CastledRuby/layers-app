@@ -93,6 +93,7 @@ These shapes are inferred from the seed data and handlers. There are no runtime 
 ```ts
 type Person = {
   id: string; name: string; emoji: string;    // the emoji, with any skin tone in it
+  aka?: string[];                             // nicknames, "Also known as" (Edit person): up to 10, 40 characters each, never the name itself
   avatar?: { style: 'initials'; color: string } // their initials instead (INITIAL_COLORS key; 'layer' follows their layer), the default for new people
          | { style: 'photo'; src: string };     // or a photo: a 160 px JPEG data URL (under 300 KB of text). cleanAvatar keeps only these two
   layer: 1 | 2 | 3 | 4;                       // see LAYERS
@@ -636,8 +637,8 @@ will be sent.
 - **Who it's with** (the card's **With** row): the person picked, until a pasted chat
   says otherwise. `detectPeople` reads the names its messages are signed with ("Amelie:
   hi", and WhatsApp's "[6/10/26, 9:41 pm] Amelie: hi" or "6/10/26, 9:41 pm - Amelie:
-  hi"), matches them to your people (full name, or a first name only one person has;
-  your own name, "you" and "me" are you) and puts them in the row, "from the names in
+  hi"), matches them to your people (full name or nickname, or a first name only one person has;
+  your own name, "you" and "me" are you; nicknames count, `namesOf`) and puts them in the row, "from the names in
   the chat". Several names make it a group chat. **Someone else** adds a person by hand,
   and × takes one out; once you've chosen, pasting doesn't change it. This runs on the
   computer; nothing is sent to find out.

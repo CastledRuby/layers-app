@@ -185,10 +185,10 @@ export function readSentence(text, { people = [], today, now = new Date() } = {}
   }
 
   // People: full names first ("isla b"), then first names, closest first when
-  // two share one.
+  // two share one. Nicknames ("Also known as") count as names.
   const byCloseness = [...people].sort((a, b) => (b.layer - a.layer) || ((b.overall || 0) - (a.overall || 0)));
   const personIds = [];
-  const names = byCloseness.map(p => ({ p, words: p.name.toLowerCase().split(/\s+/) }));
+  const names = byCloseness.flatMap(p => [p.name, ...(p.aka || [])].map(n => ({ p, words: n.toLowerCase().split(/\s+/) })));
   for (let i = 0; i < t.length; i++) {
     if (used[i]) continue;
     const full = names

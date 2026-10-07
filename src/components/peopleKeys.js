@@ -29,9 +29,11 @@ export function usePeopleKeys(people, pickedIds, toggle) {
   const attachGrid = useCallback((el) => { grid.current = el; }, []); // PeopleGrid's element
   const ordered = useMemo(() => [...people].sort((a, b) => (b.layer - a.layer) || ((b.overall || 0) - (a.overall || 0))), [people]);
   const q = query.toLowerCase();
+  // A nickname ("Also known as") finds them too.
+  const called = (p) => [p.name, ...(p.aka || [])];
   const shown = !q ? ordered : ordered
-    .filter(p => p.name.toLowerCase().includes(q))
-    .sort((a, b) => Number(!startsWord(a.name, q)) - Number(!startsWord(b.name, q)));
+    .filter(p => called(p).some(n => n.toLowerCase().includes(q)))
+    .sort((a, b) => Number(!called(a).some(n => startsWord(n, q))) - Number(!called(b).some(n => startsWord(n, q))));
   const at = cursor === null || !shown.length ? null : Math.min(cursor, shown.length - 1);
 
   function find(next) { setQuery(next); setCursor(null); }

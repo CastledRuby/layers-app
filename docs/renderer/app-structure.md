@@ -162,7 +162,7 @@ Every modal is a `Sheet` (or `ConfirmDialog`). Most are opened by a boolean flag
 | `AddInfoModal` | "+" on an info category (`openAddInfo`) | `LayersApp` |
 | `QuickAddInterestModal` | "Quick add" interests (`openQuickAddInterest`) | `LayersApp` |
 | `AddPersonModal` | People's Add person (A), Ctrl+Shift+A, Ctrl+K | `LayersApp` |
-| `EditPersonModal` | Profile "Edit" | `LayersApp` |
+| `EditPersonModal` | Profile "Edit": name, nicknames ("Also known as", with commas), avatar | `LayersApp` |
 | `EditEntryModal` | The pencil on a Journal entry | `LayersApp` (`editingEntryId`) |
 | `EditProfileModal` | Me's profile card "Edit" | `LayersApp` (`editProfileOpen`) |
 | `ShortcutsModal` | `?`, Me tab | `LayersApp` |
