@@ -30,7 +30,17 @@ function Toggle({ on, onChange, label, hint, children }) {
 }
 const Pick = ({ on, onClick, children }) => <button type="button" onClick={onClick} aria-pressed={on} className={`chip${on ? ' chip--on' : ''}`} style={{ padding: '3px 10px' }}>{children}</button>;
 
-export function MeView({ people, journal, skills, profile, generalGoals = [], onUpdateProfile, onEditProfile, achievements, onAddSample, onRemoveSample, hasSamplePeople, canAddSample, onStartOver, onExport, onImportClick, backupInfo, onOpenBackups, hasUpdater, updateStatus, onCheckForUpdates, onInstallUpdate, onOpenDownloadPage, shortcutStatus, themeMode, onSetTheme, hasSystemBridge, autoLaunch, onToggleAutoLaunch, onOpenShortcuts, appVersion }) {
+// "just now", "5 minutes ago", "3 hours ago", or the day.
+function syncedAgo(iso) {
+  const mins = Math.round((Date.now() - new Date(iso).getTime()) / 60000);
+  if (mins < 1) return 'just now';
+  if (mins < 60) return `${mins} minute${mins === 1 ? '' : 's'} ago`;
+  const hours = Math.round(mins / 60);
+  if (hours < 24) return `${hours} hour${hours === 1 ? '' : 's'} ago`;
+  return formatCalendarDate(new Date(iso));
+}
+
+export function MeView({ people, journal, skills, profile, generalGoals = [], onUpdateProfile, onEditProfile, achievements, onAddSample, onRemoveSample, hasSamplePeople, canAddSample, onStartOver, onExport, onImportClick, backupInfo, onOpenBackups, hasUpdater, updateStatus, onCheckForUpdates, onInstallUpdate, onOpenDownloadPage, shortcutStatus, themeMode, onSetTheme, hasSystemBridge, autoLaunch, onToggleAutoLaunch, onOpenShortcuts, appVersion, sync = null, onSyncTurnOn, onSyncNow, onSyncOff, onOpenSyncFolder }) {
   const [chartSkill, setChartSkill] = useState(FOCUS_SKILL_KEY);
 
   // Strength is your highest skill and focus your lowest. Until something has
@@ -239,9 +249,31 @@ export function MeView({ people, journal, skills, profile, generalGoals = [], on
         )}
       </div>
 
+      {sync && (
+        <div className="mt-4 rounded-2xl p-4" style={{ background: COLORS.paperRaised, border: `1px solid ${COLORS.line}` }} aria-label="Sync">
+          <p className="text-sm font-semibold" style={{ color: COLORS.ink }}>Sync through OneDrive</p>
+          <p className="text-xs mt-1.5" style={{ color: sync.on && sync.error ? COLORS.alert : COLORS.inkSoft }} role="status">
+            {!sync.on ? 'Keep your other computers (and, later, your phone) the same, through one encrypted file in OneDrive that only your passphrase opens.'
+              : sync.error ? sync.error
+                : `On. ${sync.lastSynced ? `Last synced ${syncedAgo(sync.lastSynced)}` : 'Syncing shortly'}${sync.dir ? `, in ${sync.dir.split(/[\\/]/).slice(-2).join('\\')}` : ''}.`}
+          </p>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 12, flexWrap: 'wrap' }}>
+            {!sync.on ? (
+              <button type="button" onClick={onSyncTurnOn} className="text-xs font-semibold rounded-full px-3 py-2" style={{ background: COLORS.accent, color: COLORS.onAccent }}>Turn on sync</button>
+            ) : (
+              <>
+                <button type="button" onClick={onSyncNow} className="text-xs font-semibold rounded-full px-3 py-2" style={{ background: COLORS.accentSoft, color: COLORS.accent }}>Sync now</button>
+                <button type="button" onClick={onOpenSyncFolder} className="text-xs font-semibold rounded-full px-3 py-2" style={{ background: COLORS.paperRaised, color: COLORS.ink, border: `1px solid ${COLORS.line}` }}>Open folder</button>
+                <button type="button" onClick={onSyncOff} className="text-xs font-semibold rounded-full px-3 py-2" style={{ background: COLORS.paperRaised, color: COLORS.inkSoft, border: `1px solid ${COLORS.line}` }}>Turn off</button>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
       <div className="mt-4 rounded-2xl p-4" style={{ background: COLORS.paperRaised, border: `1px solid ${COLORS.line}` }}>
         <p className="text-sm font-semibold" style={{ color: COLORS.ink }}>Privacy</p>
-        <p className="text-xs mt-1.5" style={{ color: COLORS.inkSoft }}>Layers is a private personal-development tool. Everything is saved only on this device. Screenshot analysis never happens automatically, and extracted information always waits for your approval before it's saved.</p>
+        <p className="text-xs mt-1.5" style={{ color: COLORS.inkSoft }}>Layers is a private personal-development tool. Everything is saved on this device{sync && sync.on ? ', and in an encrypted copy in your OneDrive that only your passphrase opens' : ' only'}. Screenshot analysis never happens automatically, and extracted information always waits for your approval before it's saved.</p>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 12, flexWrap: 'wrap' }}>
           {hasSamplePeople && <button onClick={onRemoveSample} className="text-xs font-semibold rounded-full px-3 py-2" style={{ background: COLORS.accentSoft, color: COLORS.accent }}>Remove sample people</button>}
           {canAddSample && <button onClick={onAddSample} className="text-xs font-semibold rounded-full px-3 py-2" style={{ background: COLORS.accentSoft, color: COLORS.accent }}>Add sample people</button>}

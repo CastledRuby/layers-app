@@ -77,6 +77,7 @@
       "electron/toasts.cjs",
       "electron/backups.cjs",
       "electron/faces.cjs",
+      "electron/sync.cjs",
       "electron/icon.png",
       "electron/icon.ico",
       "electron/tray-icon-dark.png",

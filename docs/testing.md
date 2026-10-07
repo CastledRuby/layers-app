@@ -118,6 +118,16 @@ interact.
 - `keys2.test.jsx` covers the second live test's keys: N into a note box and Esc out
   (the quick log, Add detail, editing a journal entry), Redo with Ctrl+Y and
   Ctrl+Shift+Z (and not once something else changed), and Ctrl+K's O, L, P and R.
+- `syncing.test.jsx` covers sync through OneDrive in the app (the folder and Windows'
+  passphrase keeping stood in for, the encryption real): turning it on with the
+  passphrase typed twice, a wrong passphrase refused and the right one bringing another
+  device's people in (and sending this one's back), Sync now, and turning it off.
+  `src/syncFile.test.js` covers the encrypted file (only the passphrase opens it; a
+  changed byte makes it unreadable) and `syncOnce` (the first write, nothing written
+  when nothing changed, two devices settling, a wrong passphrase writing nothing, OneDrive's
+  copies merged and removed, an unreadable file put aside); `src/syncFolder.test.js`
+  covers `electron/sync.cjs` on a temporary folder. The end-to-end tests run two copies of
+  Layers sharing one folder, with Windows really keeping the passphrase.
 - `sync.test.jsx` covers being ready for syncing: a deleted plan remembered and Undo
   forgetting it (with Redo still working), only changed records getting a new time, and
   a backup carrying them. `src/sync.test.js` covers `createStamper` and `mergeData`

@@ -175,7 +175,7 @@ comes back to you first.
 
 1. **Release 1.0.33**: everything built since 1.0.32.
 2. **The phone, before the Apple account**:
-   - **Sync through OneDrive, on the laptop now**: one encrypted sync file in OneDrive,
+   - ✅ **Sync through OneDrive, on the laptop now** (built 2026-10-07): one encrypted sync file in OneDrive,
      merged record by record (step 1's `mergeData`). The **passphrase is typed once in
      Me and remembered on this laptop**, protected by Windows for your account. It
      syncs **automatically**: on start, a few seconds after a change, and on closing;
@@ -525,6 +525,19 @@ its own. Changes made while building are marked.
   box in the packaged app, with a temporary data folder as always.
 
 ## History
+
+### Sync through OneDrive (after 1.0.33, not released yet)
+
+- **Me → Sync through OneDrive → Turn on sync**: choose a passphrase (twice; at least 8
+  characters), and Layers keeps one encrypted copy of your data in
+  Documents\Layers sync, in OneDrive. On another computer, Turn on sync asks for the same
+  passphrase once and brings everything in.
+- It syncs by itself: on start, a few seconds after a change, every five minutes, and
+  when the window shows or hides. Me shows when it last synced, with Sync now, Open folder
+  and Turn off. Changes from another device arrive with a message; changes on both sides
+  are merged person by person, log by log.
+- The passphrase is remembered on this laptop, encrypted by Windows for your account.
+  Without it the file can't be read by anyone, and Layers can't recover it.
 
 ### Ready for syncing (after 1.0.32, not released yet)
 

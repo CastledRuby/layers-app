@@ -18,7 +18,7 @@ import { MAX_BACKUP_BYTES, createBackup, validateBackup } from './lib/backup.js'
 import { NOTIFY_DEFAULTS, isDoneOn, notifySettings, parseActionUrl, snoozeUntil, templateFor } from './lib/calendar.js';
 import { useCalendarNotifications, useDailyBackup, useDailyCheckIn, useSlideAcross, useSystemDark, useToday, useWide } from './lib/hooks.js';
 import { followUpEvent, markDone } from './lib/reminders.js';
-import { getSnoozes, loadSavedState, persistState, setSnoozes } from './lib/storage.js';
+import { getSyncSettings, setSyncSettings, getSnoozes, loadSavedState, persistState, setSnoozes } from './lib/storage.js';
 import { clamp, uid } from './lib/util.js';
 import { AddInfoModal } from './modals/AddInfoModal.jsx';
 import { AddPersonModal } from './modals/AddPersonModal.jsx';
@@ -33,6 +33,8 @@ import { LogInteractionModal } from './modals/LogInteractionModal.jsx';
 import { PlanSheet } from './modals/PlanSheet.jsx';
 import { PhotoFolderSheet } from './modals/PhotoFolderSheet.jsx';
 import { createStamper } from './lib/sync.js';
+import { SyncError, syncErrorText, syncOnce } from './lib/syncFile.js';
+import { SyncSheet } from './modals/SyncSheet.jsx';
 import { QuickAddInterestModal } from './modals/QuickAddInterestModal.jsx';
 import { ShortcutsModal } from './modals/ShortcutsModal.jsx';
 import { StartOverSheet } from './modals/StartOverSheet.jsx';
@@ -232,6 +234,102 @@ function LayersApp() {
   useDailyBackup(onboarded && hasSystemBridge, today,
     () => JSON.stringify(createBackup({ ...stamped(), skills, achievements })),
     setBackupInfo);
+  // --- Sync through OneDrive (lib/syncFile.js, electron/sync.cjs) ----------
+  // Automatic once it's on: on start, a few seconds after a change, every
+  // five minutes, and when the window shows or hides. A sync that brings in
+  // changes from another device takes them without stamping them as changed
+  // here, and clears Undo (it would undo them too).
+  const syncBridge = hasSystemBridge && window.layersSystem.readSyncFiles ? window.layersSystem : null;
+  const [syncSettings, setSyncState] = useState(() => getSyncSettings());
+  const [syncInfo, setSyncInfo] = useState(null); // { dir, hasFile }
+  const [syncSheetOpen, setSyncSheetOpen] = useState(false);
+  const syncLocal = useRef(null);
+  useEffect(() => { syncLocal.current = () => ({ ...stamped(), skills, achievements: achievements || {} }); });
+  const syncRun = useRef({ running: null, again: false, fromSync: false });
+  function saveSync(change) {
+    setSyncState(s => { const next = { ...s, ...change }; setSyncSettings(next); return next; });
+  }
+  function applySynced(m) {
+    stamper.adopt(m);
+    syncRun.current.fromSync = true;
+    quietAchievements.current = true;
+    setPeople(m.people); setJournal(m.journal); setEvents(m.events); setGeneralGoals(m.generalGoals);
+    setProfile(m.profile); setSkills(m.skills); setAchievements(m.achievements);
+    lastUndo.current = null; lastRedo.current = null;
+    setToasts(t => t.filter(x => !x.undo && !x.redo));
+    pushToast('Synced: changes from your other device');
+  }
+  function runSync(passphrase) {
+    const r = syncRun.current;
+    if (!syncBridge || !syncLocal.current) return Promise.resolve(null);
+    if (r.running) { r.again = true; return r.running; }
+    r.running = (async () => {
+      try {
+        const pass = passphrase || await syncBridge.getSyncPassphrase();
+        if (!pass) throw new SyncError('no-passphrase');
+        const result = await syncOnce({ bridge: syncBridge, passphrase: pass, local: syncLocal.current() });
+        if (result.changed) applySynced(result.merged);
+        if (!passphrase) saveSync({ lastSynced: new Date().toISOString(), error: null });
+        return null;
+      } catch (e) {
+        if (!passphrase) saveSync({ error: syncErrorText(e) });
+        return e;
+      } finally {
+        r.running = null;
+        if (r.again && !passphrase) { r.again = false; runSync(); }
+      }
+    })();
+    return r.running;
+  }
+  const syncOn = Boolean(syncBridge && onboarded && syncSettings.on);
+  useEffect(() => {
+    if (!syncOn) return undefined;
+    const first = setTimeout(() => runSync(), 2000);
+    const every = setInterval(() => runSync(), 5 * 60 * 1000);
+    const onShow = () => runSync();
+    document.addEventListener('visibilitychange', onShow);
+    return () => { clearTimeout(first); clearInterval(every); document.removeEventListener('visibilitychange', onShow); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [syncOn]);
+  useEffect(() => {
+    if (!syncOn) return undefined;
+    if (syncRun.current.fromSync) { syncRun.current.fromSync = false; return undefined; }
+    const soon = setTimeout(() => runSync(), 5000);
+    return () => clearTimeout(soon);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [syncOn, people, journal, events, generalGoals, profile, skills, achievements]);
+  function openSyncSheet() {
+    if (!syncBridge) return;
+    Promise.resolve(syncBridge.getSyncInfo()).then(info => { setSyncInfo(info); setSyncSheetOpen(true); }).catch(() => {});
+  }
+  // From SyncSheet: sync once with this passphrase; only if that works is it
+  // remembered and sync turned on. Resolves to what went wrong, or null.
+  async function handleSyncTurnOn(passphrase) {
+    const problem = await runSync(passphrase);
+    if (problem) return syncErrorText(problem);
+    const kept = await syncBridge.setSyncPassphrase(passphrase);
+    if (kept && kept.error) return `Windows couldn't keep the passphrase: ${kept.error}`;
+    saveSync({ on: true, lastSynced: new Date().toISOString(), error: null });
+    setSyncSheetOpen(false);
+    pushToast('Sync is on');
+    return null;
+  }
+  function handleSyncOff() {
+    askConfirm({
+      title: 'Turn off sync?',
+      message: 'This laptop stops syncing and forgets the passphrase. The sync file stays in OneDrive for your other devices, and everything here stays as it is.',
+      confirmLabel: 'Turn off',
+      onConfirm: () => { Promise.resolve(syncBridge.clearSyncPassphrase()).catch(() => {}); saveSync({ on: false, error: null }); pushToast('Sync is off'); },
+    });
+  }
+  function handleOpenSyncFolder() {
+    Promise.resolve(syncBridge.openSyncFolder()).then(r => { if (r && r.error) pushToast(`Couldn't open the sync folder: ${r.error}`); }).catch(() => {});
+  }
+  useEffect(() => {
+    if (syncBridge && syncBridge.getSyncInfo) Promise.resolve(syncBridge.getSyncInfo()).then(setSyncInfo).catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   function handleOpenBackups() {
     Promise.resolve(window.layersSystem.openBackupsFolder()).then(r => { if (r && r.error) pushToast(`Couldn't open the backups folder: ${r.error}`); }).catch(() => {});
   }
@@ -1052,8 +1150,13 @@ function LayersApp() {
   // From StartOverSheet: clear the parts picked ({ people, journal, plans,
   // progress, settings }). Clearing people (and so their journal) goes back
   // to the welcome screen to set up again; otherwise you stay in Me.
+  // Starting over here never wipes your other devices: what's cleared isn't
+  // counted as deleted, and sync turns off on this computer (turning it on
+  // again brings their data back).
   function handleStartOver(parts) {
     const snap = snapshot();
+    stamper.forget();
+    if (syncSettings.on && syncBridge) { Promise.resolve(syncBridge.clearSyncPassphrase()).catch(() => {}); saveSync({ on: false, error: null }); }
     quietAchievements.current = true;
     if (parts.people) { setPeople([]); setCoachInit(c => ({ ...c, personId: null })); }
     if (parts.people || parts.journal) setJournal([]);
@@ -1109,6 +1212,7 @@ function LayersApp() {
         confirmLabel: 'Import',
         danger: true,
         onConfirm: () => {
+          stamper.forget(); // what's replaced isn't counted as deleted (lib/sync.js)
           // Backups from before `at` existed: read their labels as of the export.
           setPeople(migrateDimsToLayers(backfillPeopleDates(data.people, data.exportedAt)).people);
           setJournal(backfillJournalDates(data.journal, data.exportedAt));
@@ -1132,6 +1236,7 @@ function LayersApp() {
   // left at its default isn't saved, so it follows the default. `then` is
   // 'plan' to plan something straight away.
   function handleOnboardingComplete({ name, focus, startFresh, newPeople, notify = {}, then }) {
+    stamper.forget(); // the people shown before setting up weren't yours (lib/sync.js)
     setProfile(p => {
       const next = { ...p, name, focus };
       delete next.gettingStartedHidden;
@@ -1231,7 +1336,8 @@ function LayersApp() {
                         {activeTab === 'people' && <PeopleView people={people} journal={journal} onOpenPerson={openPerson} onAddPerson={() => setAddPersonOpen(true)} onAddPhotos={() => setPhotoFolderOpen(true)} />}
                         {activeTab === 'coach' && <div className="page-col"><CoachView people={people} journal={journal} initialPersonId={coachInit.personId} initialTab={coachInit.tab} onOpenLog={openLog} onApproveInfo={handleApproveInfo} onLogFromAnalysis={handleLogFromAnalysis} onOpenPerson={openPerson} /></div>}
                         {activeTab === 'journal' && <div className="page-col"><JournalView today={today} people={people} generalGoals={generalGoals} journal={journal} goalFilter={journalGoal} onGoalFilter={setJournalGoal} onOpenPerson={openPerson} onEditEntry={setEditingEntryId} /></div>}
-                        {activeTab === 'me' && <div className="page-col"><MeView people={people} journal={journal} skills={skills} generalGoals={generalGoals} profile={profile} onAddSample={handleAddSample} onRemoveSample={handleRemoveSample} hasSamplePeople={people.some(p => SAMPLE_PERSON_IDS.has(p.id))} canAddSample={INITIAL_PEOPLE.some(sp => !people.some(p => p.id === sp.id))} onStartOver={() => setStartOverOpen(true)} onExport={handleExportData} onImportClick={handleImportClick} backupInfo={backupInfo} onOpenBackups={handleOpenBackups} hasUpdater={hasUpdater} updateStatus={updateStatus} onCheckForUpdates={handleCheckForUpdates} onInstallUpdate={handleInstallUpdate} onOpenDownloadPage={handleOpenDownloadPage} shortcutStatus={shortcutStatus} themeMode={themeMode} onSetTheme={setThemeMode} onUpdateProfile={(changes) => setProfile(p => ({ ...p, ...changes }))} onEditProfile={() => setEditProfileOpen(true)} achievements={achievements || {}} hasSystemBridge={hasSystemBridge} autoLaunch={autoLaunch} onToggleAutoLaunch={handleToggleAutoLaunch} onOpenShortcuts={() => setShortcutsOpen(true)} appVersion={appVersion} /></div>}
+                        {activeTab === 'me' && <div className="page-col"><MeView people={people} journal={journal} skills={skills} generalGoals={generalGoals} profile={profile} onAddSample={handleAddSample} onRemoveSample={handleRemoveSample} hasSamplePeople={people.some(p => SAMPLE_PERSON_IDS.has(p.id))} canAddSample={INITIAL_PEOPLE.some(sp => !people.some(p => p.id === sp.id))} onStartOver={() => setStartOverOpen(true)} onExport={handleExportData} onImportClick={handleImportClick} backupInfo={backupInfo} onOpenBackups={handleOpenBackups} hasUpdater={hasUpdater} updateStatus={updateStatus} onCheckForUpdates={handleCheckForUpdates} onInstallUpdate={handleInstallUpdate} onOpenDownloadPage={handleOpenDownloadPage} shortcutStatus={shortcutStatus} themeMode={themeMode} onSetTheme={setThemeMode} onUpdateProfile={(changes) => setProfile(p => ({ ...p, ...changes }))} onEditProfile={() => setEditProfileOpen(true)} achievements={achievements || {}} hasSystemBridge={hasSystemBridge} autoLaunch={autoLaunch} onToggleAutoLaunch={handleToggleAutoLaunch} onOpenShortcuts={() => setShortcutsOpen(true)} appVersion={appVersion}
+                          sync={syncBridge ? { ...syncSettings, dir: syncInfo && syncInfo.dir } : null} onSyncTurnOn={openSyncSheet} onSyncNow={() => runSync()} onSyncOff={handleSyncOff} onOpenSyncFolder={handleOpenSyncFolder} /></div>}
                       </>
                     )}
                   </>
@@ -1290,6 +1396,7 @@ function LayersApp() {
               <JumpSheet people={people} events={events} today={today} has={{ bridge: hasSystemBridge, updater: hasUpdater }}
                 onRun={runJump} onClose={() => setJumpOpen(false)} />
             )}
+            {syncSheetOpen && <SyncSheet hasFile={!!(syncInfo && syncInfo.hasFile)} folder={syncInfo && syncInfo.dir ? syncInfo.dir.split(/[\\/]/).slice(-2).join('\\') : 'OneDrive'} onClose={() => setSyncSheetOpen(false)} onTurnOn={handleSyncTurnOn} />}
             {startOverOpen && <StartOverSheet counts={{ people: people.length, journal: journal.length, events: events.length, goals: generalGoals.length + people.reduce((n, p) => n + p.goals.length, 0) }} onExport={handleExportData} onClose={() => setStartOverOpen(false)} onConfirm={handleStartOver} />}
             {editProfileOpen && <EditProfileModal profile={profile} onClose={() => setEditProfileOpen(false)} onSave={(vals) => { setProfile(p => ({ ...p, ...vals })); setEditProfileOpen(false); pushToast('Profile updated'); }} />}
             {standaloneDetailOpen && (

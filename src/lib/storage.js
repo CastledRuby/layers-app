@@ -112,6 +112,21 @@ export function addNotifiedReminder(key) {
 // than in the saved state (and backups); ones a day past are dropped.
 const SNOOZES_KEY = 'layers-snoozes';
 
+// Sync through OneDrive, for this computer only: { on, lastSynced, error }.
+// The passphrase isn't here: the main process keeps it, encrypted by Windows.
+const SYNC_KEY = 'layers-sync';
+export function getSyncSettings() {
+  try {
+    const s = JSON.parse(window.localStorage.getItem(SYNC_KEY) || 'null');
+    return s && typeof s === 'object' ? { on: !!s.on, lastSynced: typeof s.lastSynced === 'string' ? s.lastSynced : null, error: typeof s.error === 'string' ? s.error : null } : { on: false, lastSynced: null, error: null };
+  } catch {
+    return { on: false, lastSynced: null, error: null };
+  }
+}
+export function setSyncSettings(s) {
+  try { window.localStorage.setItem(SYNC_KEY, JSON.stringify(s)); } catch { /* storage full: it shows again next time */ }
+}
+
 export function getSnoozes(now = Date.now()) {
   try {
     const list = JSON.parse(window.localStorage.getItem(SNOOZES_KEY) || '[]');

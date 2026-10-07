@@ -26,6 +26,17 @@ contextBridge.exposeInMainWorld('layersSystem', {
   saveDailyBackup: (day, json) => ipcRenderer.invoke('save-daily-backup', day, json),
   getBackupsInfo: () => ipcRenderer.invoke('backups-info'),
   openBackupsFolder: () => ipcRenderer.invoke('open-backups-folder'),
+  // Sync through OneDrive (sync.cjs): the folder and whether a sync file is
+  // there, reading and writing it, and the passphrase Windows keeps.
+  getSyncInfo: () => ipcRenderer.invoke('sync-info'),
+  readSyncFiles: () => ipcRenderer.invoke('sync-read'),
+  writeSyncFile: (text) => ipcRenderer.invoke('sync-write', text),
+  removeSyncCopies: (names) => ipcRenderer.invoke('sync-remove-copies', names),
+  setAsideSyncFile: () => ipcRenderer.invoke('sync-set-aside'),
+  getSyncPassphrase: () => ipcRenderer.invoke('sync-passphrase-get'),
+  setSyncPassphrase: (passphrase) => ipcRenderer.invoke('sync-passphrase-set', passphrase),
+  clearSyncPassphrase: () => ipcRenderer.invoke('sync-passphrase-clear'),
+  openSyncFolder: () => ipcRenderer.invoke('sync-open-folder'),
   // Where the faces are in chosen pictures (File objects), from Windows' own
   // face detector (faces.cjs): one { width, height, faces } or null each.
   findFaces: (files) => ipcRenderer.invoke('find-faces', [...files].map(file => { try { return webUtils.getPathForFile(file) || null; } catch { return null; } })),

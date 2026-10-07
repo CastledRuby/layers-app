@@ -51,6 +51,16 @@ describe('createStamper', () => {
     expect(back.events[0].updatedAt).toBe(T3); // brought back is a change
   });
 
+  it('forgets data replaced wholesale without counting it as deleted', () => {
+    const s = createStamper();
+    s.stamp({ people: [person('alex'), person('sam')] }, T1);
+    s.forget();
+    const out = s.stamp({ people: [person('kai')] }, T2);
+    expect(out.deleted).toEqual([]);
+    expect(out.people[0].updatedAt).toBeUndefined(); // only remembered, as on starting up
+    expect(s.stamp({ people: [] }, T3).deleted).toEqual([{ id: 'kai', kind: 'person', at: T3 }]); // and after that, as usual
+  });
+
   it('keeps the deletions it was given, for 90 days', () => {
     const s = createStamper([{ id: 'old', kind: 'entry', at: '2026-06-01T00:00:00.000Z' }, { id: 'new', kind: 'entry', at: '2026-10-01T00:00:00.000Z' }]);
     expect(s.stamp({ journal: [] }, T1).deleted.map(d => d.id)).toEqual(['new']);

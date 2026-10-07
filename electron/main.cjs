@@ -1,4 +1,4 @@
-const { app, BrowserWindow, Tray, Menu, nativeImage, nativeTheme, ipcMain, globalShortcut, shell } = require('electron');
+const { app, BrowserWindow, Tray, Menu, nativeImage, nativeTheme, ipcMain, globalShortcut, safeStorage, shell } = require('electron');
 const { execFileSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
@@ -6,6 +6,7 @@ const windowStateKeeper = require('electron-window-state');
 const { createScheduler } = require('./toasts.cjs');
 const { backupDir, backupsInfo, saveDailyBackup } = require('./backups.cjs');
 const { findFaces } = require('./faces.cjs');
+const { FILE: SYNC_FILE, passphraseStore, readSyncFiles, removeSyncCopies, setAsideSyncFile, syncDir, writeSyncFile } = require('./sync.cjs');
 
 // Windows groups taskbar entries, toast notifications, and jump lists by
 // this identity string. It must be set before the app is ready, and it
@@ -91,6 +92,7 @@ if (!gotSingleInstanceLock || quitRequested) {
     setupCalendar();
     setupBackups();
     setupFaces();
+    setupSync();
     setupQuickAdd();
     registerGlobalShortcut();
 
@@ -543,6 +545,27 @@ function setupBackups() {
 // Windows finds; the page sends the pictures' paths.
 function setupFaces() {
   ipcMain.handle('find-faces', (_event, paths) => findFaces(paths));
+}
+
+// --- Sync through OneDrive (sync.cjs) --------------------------------------
+// The page encrypts, decrypts and merges; here the file is only read and
+// written, and the passphrase kept, encrypted by Windows for this user.
+function setupSync() {
+  const dir = () => syncDir({ documents: app.getPath('documents'), userData: app.getPath('userData') });
+  const secret = passphraseStore(path.join(app.getPath('userData'), 'sync-passphrase.bin'), safeStorage);
+  const guard = (fn) => async (...args) => { try { return await fn(...args); } catch (e) { return { error: e.message }; } };
+  ipcMain.handle('sync-info', () => ({ dir: dir(), hasFile: fs.existsSync(path.join(dir(), SYNC_FILE)) }));
+  ipcMain.handle('sync-read', guard(() => readSyncFiles(dir())));
+  ipcMain.handle('sync-write', guard((_event, text) => writeSyncFile(dir(), text)));
+  ipcMain.handle('sync-remove-copies', guard((_event, names) => removeSyncCopies(dir(), names)));
+  ipcMain.handle('sync-set-aside', guard(() => setAsideSyncFile(dir())));
+  ipcMain.handle('sync-passphrase-get', () => secret.get());
+  ipcMain.handle('sync-passphrase-set', guard((_event, passphrase) => secret.set(passphrase)));
+  ipcMain.handle('sync-passphrase-clear', () => secret.clear());
+  ipcMain.handle('sync-open-folder', async () => {
+    try { fs.mkdirSync(dir(), { recursive: true }); } catch { /* openPath says why */ }
+    return { error: (await shell.openPath(dir())) || null };
+  });
 }
 
 function setupCalendar() {

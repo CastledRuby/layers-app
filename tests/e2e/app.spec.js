@@ -256,3 +256,49 @@ test('photos from a folder: Windows is asked where the faces are, and the photos
   expect((await avatar()).src.length).toBeLessThan(60000);
   await quit(app);
 });
+
+test('sync: two copies of Layers sharing a folder end up the same, with the passphrase kept by Windows', async () => {
+  const PASS = 'correct horse battery';
+  const shared = tempDataDir(); // stands in for OneDrive's Documents\Layers sync
+  const first = tempDataDir();
+  const second = tempDataDir();
+  const me = (page) => page.locator('.nav-bar').getByRole('button', { name: 'Me', exact: true }).click();
+  const people = (page) => page.evaluate(() => JSON.parse(localStorage.getItem('layers-app-state-v1')).people.map(p => p.name).sort());
+
+  // The first copy: the example people, sync turned on.
+  let { app, page } = await launch(first, [], { LAYERS_SYNC_DIR: shared });
+  await onboard(page, 'Sam');
+  await me(page);
+  await page.getByRole('button', { name: 'Turn on sync' }).click();
+  await page.keyboard.type(PASS);
+  await page.keyboard.press('Enter');
+  await page.keyboard.type(PASS);
+  await page.keyboard.press('Enter');
+  await expect(page.getByText('Sync is on')).toBeVisible({ timeout: 20000 });
+  const file = fs.readFileSync(path.join(shared, 'layers-sync.json'), 'utf8');
+  expect(file).not.toContain('Priya'); // encrypted
+  const kept = fs.readFileSync(path.join(first, 'sync-passphrase.bin'));
+  expect(kept.toString('latin1')).not.toContain(PASS); // Windows keeps it encrypted
+  const examples = await people(page);
+  await quit(app);
+
+  // The second copy starts with nobody, and gets them all with the same passphrase.
+  ({ app, page } = await launch(second, [], { LAYERS_SYNC_DIR: shared }));
+  await page.getByLabel('Your name').fill('Sam');
+  await page.getByRole('button', { name: 'Start fresh with my own people' }).click();
+  await page.keyboard.press('Enter'); // nobody yet: on
+  await page.getByRole('button', { name: 'Go to Today' }).click();
+  await me(page);
+  await page.getByRole('button', { name: 'Turn on sync' }).click();
+  await page.keyboard.type(PASS);
+  await page.keyboard.press('Enter');
+  await expect(page.getByText('Synced: changes from your other device')).toBeVisible({ timeout: 20000 });
+  await expect.poll(() => people(page), { timeout: 10000 }).toEqual(examples);
+  await quit(app);
+
+  // Started again, it syncs by itself with the remembered passphrase.
+  ({ app, page } = await launch(second, [], { LAYERS_SYNC_DIR: shared }));
+  await me(page);
+  await expect(page.getByLabel('Sync').getByRole('status')).toContainText('Last synced just now', { timeout: 20000 });
+  await quit(app);
+});

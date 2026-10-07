@@ -35,6 +35,9 @@ These keys are saved as one JSON blob under `localStorage['layers-app-state-v1']
 | `achievements` | `{ [key]: 'YYYY-MM-DD' }`, or `null` until worked out | `null` (saved as `{}`). See [Achievements](#achievements). |
 | `deleted` | `{ id, kind: 'person'\|'entry'\|'event'\|'goal', at }[]`: what was deleted in the last 90 days | `[]`. Saved only; see [Ready for syncing](#ready-for-syncing). |
 
+`layers-sync` holds this computer's sync settings (`{ on, lastSynced, error }`), which
+aren't synced themselves ([Syncing through OneDrive](#syncing-through-onedrive)).
+
 Three more keys belong to notifications ([below](#notifications)):
 - `layers-last-notified-date`: the day the check-in nudge last fired
 - `layers-notified-reminders`: notifications Layers already showed itself, in a browser
@@ -586,6 +589,44 @@ so a phone's copy can be merged with this one later. Nothing syncs yet.
   deletion wins over changes before it and loses to changes after it; skills keep the
   copy that's further on, and achievements the day first earned. It isn't used yet: the
   phone and the OneDrive sync file come in later steps. `src/sync.test.js` covers it.
+
+### Syncing through OneDrive
+
+Turned on in Me (**Turn on sync**, `SyncSheet`): Layers keeps one encrypted copy of the
+data in `Documents\Layers sync\layers-sync.json`, which OneDrive carries to your other
+devices ([electron.md](../electron.md) has the file side).
+
+- **The file** ([`lib/syncFile.js`](../../src/lib/syncFile.js)): `{ layersSync: 1, salt,
+  iv, iterations, data }`, where `data` is the payload (people, journal, plans, goals,
+  profile, skills, achievements, deleted, `savedAt`) encrypted with AES-GCM under a key
+  made from the passphrase (PBKDF2, SHA-256, 310,000 rounds). Plain Web Crypto, so a phone
+  can use the same code. A wrong passphrase and a changed file both fail AES-GCM's check,
+  so nothing wrong is ever read.
+- **The passphrase**: at least 8 characters, typed twice for a new file (or once to open
+  another device's). Only if the first sync works with it is it remembered: the main
+  process keeps it encrypted by Windows for this account. Layers can't recover it.
+  **Turn off** forgets it and stops syncing; the file stays for the other devices.
+- **One sync** (`syncOnce`): read every sync file, check each like a backup
+  (`validateBackup`), merge record by record with this computer's data
+  ([`mergeData`](#ready-for-syncing)), write the result back if it differs, and remove
+  the copies OneDrive made. Both sides are compared and written in the tidied form a
+  backup is read in, and in one order (`sameData`), so two devices settle instead of
+  rewriting the file for differences that don't matter. A wrong passphrase, or a file from
+  a newer Layers, stops it before anything is written; a file that can't be read at all is
+  put aside and a new one written.
+- **When**: on start (after 2 s), 5 s after a change, every 5 minutes, and when the window
+  shows or hides. One at a time; a sync asked for during one runs after it.
+- **Bringing in another device's changes**: the stamper adopts them with their own times
+  (`createStamper().adopt`), so they aren't stamped as changed here and sent back; Undo
+  and Redo are cleared (they'd undo them too), and a message says "Synced: changes from
+  your other device".
+- **Data replaced wholesale** (finishing setting up, **Start over**, restoring a backup)
+  isn't counted as deleted (`createStamper().forget`), so it never wipes other devices.
+  Start over also turns sync off on this computer; turning it on again brings the other
+  devices' data back. (Before this, a fresh install's example people, replaced when you
+  start fresh, would have been "deleted" everywhere.)
+- **Me** shows it's on and when it last synced (or what went wrong), with **Sync now**,
+  **Open folder** and **Turn off**.
 
 ## Backup format
 

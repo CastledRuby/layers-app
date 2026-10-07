@@ -80,7 +80,27 @@ export function createStamper(deleted = []) {
     result.deleted = gone;
     return result;
   }
-  return { stamp };
+  // The data a sync brought in (lib/syncFile.js), with its own times:
+  // remembered as it is, so the next save keeps those times rather than
+  // stamping it as changed here, and its deletions taken on.
+  function adopt(data) {
+    seen.clear();
+    COLLECTIONS.forEach(([key, kind]) => (data[key] || []).forEach(rec => {
+      seen.set(`${kind}:${rec.id}`, { ref: rec, out: rec });
+      if (kind === 'person') (rec.goals || []).forEach(g => seen.set(`goal:${g.id}`, { ref: g, out: g }));
+    }));
+    if (data.profile) seen.set('profile:me', { ref: data.profile, out: data.profile });
+    gone = [...(data.deleted || [])];
+    primed = true;
+  }
+  // Starting from different data altogether (finishing setting up, starting
+  // over, restoring a backup): what was there is forgotten, not counted as
+  // deleted, so other devices keep theirs; the next save only remembers.
+  function forget() {
+    seen.clear();
+    primed = false;
+  }
+  return { stamp, adopt, forget };
 }
 
 // The deleted list from a save or a backup: well-formed entries only.
