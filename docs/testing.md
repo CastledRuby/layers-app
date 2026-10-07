@@ -124,6 +124,17 @@ interact.
   ending with this week, levels) and the summary page (everything escaped, archived details
   left out, a yearly date without its year, the file name). The end-to-end tests save a
   real PDF of an example person.
+- `analysis.test.jsx` covers analysing your own chat (the main process and Claude stood
+  in for): the key added in Me (a bad one refused, never saved with your data) and
+  removed, the pasted chat sent with names hidden only when Analyse is pressed, the answer
+  shown with their name back (info saved, logged once), screenshots (six at most, each
+  removable), an error keeping the chat, an answer dropped after moving to someone else,
+  and nothing offered in the browser. `src/analysis.test.js` covers hiding and restoring
+  names, the request, the schema (every object closed, every field required) and making
+  any answer safe; `src/analysisMain.test.js` covers `electron/analysis.cjs` (keys,
+  the key kept encrypted, only text and screenshots let through, what's asked of Claude,
+  and every failure in words). No test calls Claude. The end-to-end tests check a key
+  that isn't Anthropic's is refused by the packaged app's main process.
 - `calendars.test.jsx` covers your Google Calendar (the main process stood in for):
   adding it in Me (a bad address refused), its event on Today marked as Google's and
   opened read-only, nothing of it handed to Windows as a reminder, planning's clash

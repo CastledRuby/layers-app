@@ -27,6 +27,7 @@
     "electron:publish:win": "npm run build:electron && electron-builder --win --x64 --publish always"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.131.0",
     "electron-updater": "^6.8.9",
     "electron-window-state": "^5.0.3"
   },
@@ -83,6 +84,7 @@
       "electron/faces.cjs",
       "electron/sync.cjs",
       "electron/feeds.cjs",
+      "electron/analysis.cjs",
       "electron/icon.png",
       "electron/icon.ico",
       "electron/tray-icon-dark.png",

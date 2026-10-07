@@ -318,6 +318,24 @@ test('your Google Calendar: the packaged app refuses an address that is not a ca
   await quit(app);
 });
 
+test('chat analysis: the packaged app refuses a key that is not an Anthropic key, keeping nothing and asking nobody', async () => {
+  const dataDir = tempDataDir();
+  const { app, page } = await launch(dataDir);
+  await onboard(page, 'Sam');
+  await page.locator('.nav-bar').getByRole('button', { name: 'Me', exact: true }).click();
+  const card = page.getByLabel('Chat analysis');
+  await card.getByLabel('Anthropic API key').fill('sk-proj-not-an-anthropic-key-1234567890');
+  await card.getByRole('button', { name: 'Save' }).click();
+  await expect(card.getByRole('alert')).toContainText("doesn't look like an Anthropic API key");
+  expect(fs.existsSync(path.join(dataDir, 'anthropic-key.bin'))).toBe(false);
+  // Coach offers it, pointing to Me for the key.
+  await page.locator('.nav-bar').getByRole('button', { name: 'Coach', exact: true }).click();
+  await page.getByRole('button', { name: 'Analyse a chat' }).click();
+  await page.getByRole('button', { name: /Priya/ }).first().click();
+  await expect(page.getByRole('button', { name: 'Add a key in Me' })).toBeVisible();
+  await quit(app);
+});
+
 test('a one-page summary of someone is saved as a real PDF', async () => {
   const dataDir = tempDataDir();
   const out = tempDataDir();

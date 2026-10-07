@@ -7,6 +7,7 @@ const { createScheduler } = require('./toasts.cjs');
 const { backupDir, backupsInfo, saveDailyBackup } = require('./backups.cjs');
 const { findFaces } = require('./faces.cjs');
 const { calendarName, cleanFeedUrl, feedStore, fetchFeed } = require('./feeds.cjs');
+const { checkKey, cleanKey, keyStore, runAnalysis } = require('./analysis.cjs');
 const { FILE: SYNC_FILE, passphraseStore, readSyncFiles, removeSyncCopies, setAsideSyncFile, syncDir, writeSyncFile } = require('./sync.cjs');
 
 // Windows groups taskbar entries, toast notifications, and jump lists by
@@ -96,6 +97,7 @@ if (!gotSingleInstanceLock || quitRequested) {
     setupSync();
     setupFeeds();
     setupSummary();
+    setupAnalysis();
     setupQuickAdd();
     registerGlobalShortcut();
 
@@ -619,6 +621,22 @@ function setupSummary() {
       win.destroy();
     }
   });
+}
+
+// --- Chat analysis with Claude (analysis.cjs) ------------------------------
+// Your Anthropic API key stays here, encrypted by Windows; a chat goes to
+// Claude only when you press Analyse in Coach.
+function setupAnalysis() {
+  const store = keyStore(path.join(app.getPath('userData'), 'anthropic-key.bin'), safeStorage);
+  ipcMain.handle('analysis-key-status', () => ({ hasKey: Boolean(store.get()) }));
+  ipcMain.handle('analysis-key-set', async (_event, text) => {
+    const key = cleanKey(text);
+    if (!key) return { error: "That doesn't look like an Anthropic API key (they start with sk-ant-)." };
+    const checked = await checkKey(key);
+    return checked.error ? checked : store.set(key);
+  });
+  ipcMain.handle('analysis-key-clear', () => store.clear());
+  ipcMain.handle('analysis-run', (_event, request) => runAnalysis(request, { apiKey: store.get() }));
 }
 
 function setupCalendar() {

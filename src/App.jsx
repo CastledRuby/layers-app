@@ -395,6 +395,29 @@ function LayersApp() {
     });
   }
 
+  // --- Chat analysis with Claude (lib/analysis.js, electron/analysis.cjs) ---
+  const analysisBridge = hasSystemBridge && window.layersSystem.runAnalysis ? window.layersSystem : null;
+  const [hasAnalysisKey, setHasAnalysisKey] = useState(false);
+  useEffect(() => {
+    if (analysisBridge) Promise.resolve(analysisBridge.getAnalysisKeyStatus()).then(s => setHasAnalysisKey(Boolean(s && s.hasKey))).catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  async function handleSaveAnalysisKey(key) {
+    const result = await analysisBridge.setAnalysisKey(key);
+    if (result && result.error) return result.error;
+    setHasAnalysisKey(true);
+    pushToast('Chat analysis is ready in Coach');
+    return null;
+  }
+  function handleRemoveAnalysisKey() {
+    askConfirm({
+      title: 'Remove your API key?',
+      message: 'This laptop forgets it, and chat analysis stops until you add a key again. Your Anthropic account is unchanged.',
+      confirmLabel: 'Remove',
+      onConfirm: () => { Promise.resolve(analysisBridge.clearAnalysisKey()).catch(() => {}); setHasAnalysisKey(false); },
+    });
+  }
+
   function handleOpenBackups() {
     Promise.resolve(window.layersSystem.openBackupsFolder()).then(r => { if (r && r.error) pushToast(`Couldn't open the backups folder: ${r.error}`); }).catch(() => {});
   }
@@ -1411,13 +1434,15 @@ function LayersApp() {
                       <>
                         {activeTab === 'today' && <TodayView wide={wide} today={today} selectedDay={selectedDay || today} onSelectDay={(d) => setSelectedDay(d === today ? null : d)} mode={calendarMode} onSetMode={setCalendarMode} people={people} journal={journal} events={shownEvents} generalGoals={generalGoals} skills={skills} profile={profile} onPlan={openPlan} onOpenEvent={(eventId, day) => setEventView({ eventId, day })} onLogEvent={openLogFromEvent} onTickEvent={(ev, day) => handleMarkEventDone(ev.id, day)} onOpenPerson={openPerson} onAddPerson={() => setAddPersonOpen(true)} onOpenLog={() => openLog(null)} onSwitchTab={switchTab} onOpenGoals={openGoalsOverview} onOpenReview={setWeekReview} onOpenDay={setDayView} onOpenJump={() => { setJumpOpen(true); markTried('jump'); }} onHideFirstSteps={() => setProfile(p => ({ ...p, gettingStartedHidden: true }))} />}
                         {activeTab === 'people' && <PeopleView people={people} journal={journal} onOpenPerson={openPerson} onAddPerson={() => setAddPersonOpen(true)} onAddPhotos={() => setPhotoFolderOpen(true)} />}
-                        {activeTab === 'coach' && <div className="page-col"><CoachView people={people} journal={journal} initialPersonId={coachInit.personId} initialTab={coachInit.tab} onOpenLog={openLog} onApproveInfo={handleApproveInfo} onLogFromAnalysis={handleLogFromAnalysis} onOpenPerson={openPerson} /></div>}
+                        {activeTab === 'coach' && <div className="page-col"><CoachView people={people} journal={journal} initialPersonId={coachInit.personId} initialTab={coachInit.tab} onOpenLog={openLog} onApproveInfo={handleApproveInfo} onLogFromAnalysis={handleLogFromAnalysis} onOpenPerson={openPerson}
+                          analysisReady={!analysisBridge ? 'none' : hasAnalysisKey ? 'ready' : 'no-key'} onAnalyse={(request) => analysisBridge.runAnalysis(request)} onOpenMe={() => switchTab('me')} yourName={profile.name} /></div>}
                         {activeTab === 'journal' && <div className="page-col"><JournalView today={today} people={people} generalGoals={generalGoals} journal={journal} goalFilter={journalGoal} onGoalFilter={setJournalGoal}
                           personFilter={journalPerson} onPersonFilter={setJournalPerson} dayFilter={journalDay} onDayFilter={setJournalDay} onOpenPerson={openPerson} onEditEntry={setEditingEntryId} /></div>}
                         {activeTab === 'me' && <div className="page-col"><MeView people={people} journal={journal} skills={skills} generalGoals={generalGoals} profile={profile} onAddSample={handleAddSample} onRemoveSample={handleRemoveSample} hasSamplePeople={people.some(p => SAMPLE_PERSON_IDS.has(p.id))} canAddSample={INITIAL_PEOPLE.some(sp => !people.some(p => p.id === sp.id))} onStartOver={() => setStartOverOpen(true)} onExport={handleExportData} onImportClick={handleImportClick} backupInfo={backupInfo} onOpenBackups={handleOpenBackups} hasUpdater={hasUpdater} updateStatus={updateStatus} onCheckForUpdates={handleCheckForUpdates} onInstallUpdate={handleInstallUpdate} onOpenDownloadPage={handleOpenDownloadPage} shortcutStatus={shortcutStatus} themeMode={themeMode} onSetTheme={setThemeMode} onUpdateProfile={(changes) => setProfile(p => ({ ...p, ...changes }))} onEditProfile={() => setEditProfileOpen(true)} achievements={achievements || {}} hasSystemBridge={hasSystemBridge} autoLaunch={autoLaunch} onToggleAutoLaunch={handleToggleAutoLaunch} onOpenShortcuts={() => setShortcutsOpen(true)} appVersion={appVersion}
                           sync={syncBridge ? { ...syncSettings, dir: syncInfo && syncInfo.dir } : null}
                           calendars={feedBridge ? { feeds, fetchedAt: feedCache.fetchedAt, errors: feedCache.errors, count: (id) => feedCache.items.filter(it => it.feedId === id).length } : null}
-                          onAddCalendar={handleAddFeed} onRemoveCalendar={handleRemoveFeed} onRefreshCalendars={refreshFeeds} onSyncTurnOn={openSyncSheet} onSyncNow={() => runSync()} onSyncOff={handleSyncOff} onOpenSyncFolder={handleOpenSyncFolder} /></div>}
+                          onAddCalendar={handleAddFeed} onRemoveCalendar={handleRemoveFeed} onRefreshCalendars={refreshFeeds}
+                          analysisKey={analysisBridge ? { hasKey: hasAnalysisKey } : null} onSaveAnalysisKey={handleSaveAnalysisKey} onRemoveAnalysisKey={handleRemoveAnalysisKey} onSyncTurnOn={openSyncSheet} onSyncNow={() => runSync()} onSyncOff={handleSyncOff} onOpenSyncFolder={handleOpenSyncFolder} /></div>}
                       </>
                     )}
                   </>

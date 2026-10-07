@@ -40,6 +40,43 @@ function syncedAgo(iso) {
   return formatCalendarDate(new Date(iso));
 }
 
+// Chat analysis with Claude: the Anthropic API key, kept by Windows on this
+// laptop (only whether there is one comes back). onSave resolves to what went
+// wrong, or null.
+function AnalysisKeyCard({ analysisKey, onSave, onRemove }) {
+  const [key, setKey] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState(null);
+  async function save() {
+    if (!key.trim() || busy) return;
+    setBusy(true); setError(null);
+    const problem = await onSave(key.trim());
+    setBusy(false);
+    if (problem) setError(problem); else setKey('');
+  }
+  return (
+    <div className="mt-4 rounded-2xl p-4" style={{ background: COLORS.paperRaised, border: `1px solid ${COLORS.line}` }} aria-label="Chat analysis">
+      <p className="text-sm font-semibold" style={{ color: COLORS.ink }}>Chat analysis (Claude)</p>
+      <p className="text-xs mt-1.5" style={{ color: COLORS.inkSoft }}>
+        {analysisKey.hasKey
+          ? 'Ready: Coach → Analyse a chat sends a chat you choose to Claude Haiku 4.5, only when you press Analyse. About US$0.03 a chat, from your Anthropic credit.'
+          : 'Analyse your own chats in Coach with Claude. Make an API key at console.anthropic.com (API keys), add a few dollars of credit there (about US$0.03 a chat with Claude Haiku 4.5), then paste the key here. Layers keeps it on this laptop, protected by Windows.'}
+      </p>
+      {analysisKey.hasKey ? (
+        <button type="button" onClick={onRemove} className="text-xs font-semibold rounded-full px-3 py-2 mt-3" style={{ background: COLORS.paperRaised, color: COLORS.inkSoft, border: `1px solid ${COLORS.line}` }}>Remove the key</button>
+      ) : (
+        <div className="flex items-center gap-2 mt-3">
+          <input type="password" value={key} onChange={e => { setKey(e.target.value); setError(null); }} onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); save(); } }}
+            aria-label="Anthropic API key" placeholder="sk-ant-…" autoComplete="off" spellCheck={false}
+            className="flex-1 min-w-0 text-xs rounded-xl px-3 py-2.5" style={{ border: `1px solid ${COLORS.line}` }} />
+          <button type="button" onClick={save} disabled={!key.trim() || busy} className="text-xs font-semibold rounded-full px-3 py-2 shrink-0" style={{ background: COLORS.accent, color: COLORS.onAccent, opacity: !key.trim() || busy ? 0.5 : 1 }}>{busy ? 'Checking…' : 'Save'}</button>
+        </div>
+      )}
+      {error && <p className="text-xs mt-2" role="alert" style={{ color: COLORS.alert }}>{error}</p>}
+    </div>
+  );
+}
+
 // Other calendars, read-only: the ones shown, and adding one by pasting its
 // secret iCal address (Google Calendar: Settings, your calendar, Integrate
 // calendar). onAdd resolves to what went wrong, or null.
@@ -81,7 +118,7 @@ function CalendarsCard({ calendars, onAdd, onRemove, onRefresh }) {
   );
 }
 
-export function MeView({ people, journal, skills, profile, generalGoals = [], onUpdateProfile, onEditProfile, achievements, onAddSample, onRemoveSample, hasSamplePeople, canAddSample, onStartOver, onExport, onImportClick, backupInfo, onOpenBackups, hasUpdater, updateStatus, onCheckForUpdates, onInstallUpdate, onOpenDownloadPage, shortcutStatus, themeMode, onSetTheme, hasSystemBridge, autoLaunch, onToggleAutoLaunch, onOpenShortcuts, appVersion, sync = null, onSyncTurnOn, onSyncNow, onSyncOff, onOpenSyncFolder, calendars = null, onAddCalendar, onRemoveCalendar, onRefreshCalendars }) {
+export function MeView({ people, journal, skills, profile, generalGoals = [], onUpdateProfile, onEditProfile, achievements, onAddSample, onRemoveSample, hasSamplePeople, canAddSample, onStartOver, onExport, onImportClick, backupInfo, onOpenBackups, hasUpdater, updateStatus, onCheckForUpdates, onInstallUpdate, onOpenDownloadPage, shortcutStatus, themeMode, onSetTheme, hasSystemBridge, autoLaunch, onToggleAutoLaunch, onOpenShortcuts, appVersion, sync = null, onSyncTurnOn, onSyncNow, onSyncOff, onOpenSyncFolder, calendars = null, onAddCalendar, onRemoveCalendar, onRefreshCalendars, analysisKey = null, onSaveAnalysisKey, onRemoveAnalysisKey }) {
   const [chartSkill, setChartSkill] = useState(FOCUS_SKILL_KEY);
 
   // Strength is your highest skill and focus your lowest. Until something has
@@ -290,6 +327,8 @@ export function MeView({ people, journal, skills, profile, generalGoals = [], on
         )}
       </div>
 
+      {analysisKey && <AnalysisKeyCard analysisKey={analysisKey} onSave={onSaveAnalysisKey} onRemove={onRemoveAnalysisKey} />}
+
       {calendars && <CalendarsCard calendars={calendars} onAdd={onAddCalendar} onRemove={onRemoveCalendar} onRefresh={onRefreshCalendars} />}
 
       {sync && (
@@ -316,7 +355,7 @@ export function MeView({ people, journal, skills, profile, generalGoals = [], on
 
       <div className="mt-4 rounded-2xl p-4" style={{ background: COLORS.paperRaised, border: `1px solid ${COLORS.line}` }}>
         <p className="text-sm font-semibold" style={{ color: COLORS.ink }}>Privacy</p>
-        <p className="text-xs mt-1.5" style={{ color: COLORS.inkSoft }}>Layers is a private personal-development tool. Everything is saved on this device{sync && sync.on ? ', and in an encrypted copy in your OneDrive that only your passphrase opens' : ' only'}. Screenshot analysis never happens automatically, and extracted information always waits for your approval before it's saved.</p>
+        <p className="text-xs mt-1.5" style={{ color: COLORS.inkSoft }}>Layers is a private personal-development tool. Everything is saved on this device{sync && sync.on ? ', and in an encrypted copy in your OneDrive that only your passphrase opens' : ' only'}. A chat is only analysed when you press Analyse (and then sent to Claude), and anything found in it waits for your approval before it's saved.</p>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 12, flexWrap: 'wrap' }}>
           {hasSamplePeople && <button onClick={onRemoveSample} className="text-xs font-semibold rounded-full px-3 py-2" style={{ background: COLORS.accentSoft, color: COLORS.accent }}>Remove sample people</button>}
           {canAddSample && <button onClick={onAddSample} className="text-xs font-semibold rounded-full px-3 py-2" style={{ background: COLORS.accentSoft, color: COLORS.accent }}>Add sample people</button>}

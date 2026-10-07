@@ -3,10 +3,13 @@
 // who you're about to talk to, L logs the conversation with them, A
 // analyses a chat with them, O opens their profile.
 
-import { useEffect, useState } from 'react';
-import { Check } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { Check, ImagePlus, X } from 'lucide-react';
 import { Avatar, ChatBubble, ConvStateBadge, Kbd, LabeledBar, LayerBadge } from '../components/atoms.jsx';
 import { hasOpenSheet, isTyping } from '../components/sheetLayer.js';
+import { ANALYSIS_MODEL_NAME, analysisCost, analysisRequest, analysisResult, MAX_SCREENSHOTS } from '../lib/analysis.js';
+import { isPictureFile } from '../data/avatars.js';
+import { loadPhoto, shrinkForAnalysis } from '../lib/photo.js';
 import { categoryMeta, DIM_COLORS, getLayer } from '../data/constants.js';
 import { SCENARIOS } from '../data/scenarios.js';
 import { buildPotentialHooks, HOOKS } from '../lib/text.js';
@@ -25,7 +28,10 @@ function Tones({ item, intro }) {
   );
 }
 
-export function CoachView({ people, journal, initialPersonId, initialTab, onOpenLog, onApproveInfo, onLogFromAnalysis, onOpenPerson }) {
+// analysisReady: 'none' (no desktop bridge), 'no-key' or 'ready', for
+// analysing your own chat with Claude (onAnalyse sends the request built by
+// lib/analysis.js and resolves to { result, usage } or { error }).
+export function CoachView({ people, journal, initialPersonId, initialTab, onOpenLog, onApproveInfo, onLogFromAnalysis, onOpenPerson, analysisReady = 'none', onAnalyse, onOpenMe, yourName = '' }) {
   const [tab, setTab] = useState(initialTab || 'prepare');
   const [preparePersonId, setPreparePersonId] = useState(initialPersonId || (people[0] && people[0].id) || null);
   const [analysisPersonId, setAnalysisPersonId] = useState(initialTab === 'analyse' ? initialPersonId || null : null);
@@ -36,6 +42,16 @@ export function CoachView({ people, journal, initialPersonId, initialTab, onOpen
   // What's been saved, ignored and logged for each person + sample, so going
   // back and picking the same sample again can't save it twice.
   const [sessions, setSessions] = useState({});
+  // Your own chat: pasted text and screenshots, then Claude's answer.
+  const [ownText, setOwnText] = useState('');
+  const [ownShots, setOwnShots] = useState([]); // [{ id, name, src, img }]
+  const [ownResult, setOwnResult] = useState(null);
+  const [ownCost, setOwnCost] = useState(null);
+  const [ownError, setOwnError] = useState(null);
+  const shotsInput = useRef(null);
+  // Counts analyses, so an answer that arrives after you've moved on (another
+  // person, or back to the list) is dropped, and each one is its own session.
+  const ownRun = useRef(0);
 
   useEffect(() => {
     if (step === 'loading') {
@@ -49,7 +65,7 @@ export function CoachView({ people, journal, initialPersonId, initialTab, onOpen
   // first person, and Analyse asks who the conversation was with: it used to
   // read the missing person's emoji and blank the whole window.
   const preparePerson = people.find(p => p.id === preparePersonId) || people[0] || null;
-  const scenario = scenarioKey ? SCENARIOS[scenarioKey] : null;
+  const scenario = scenarioKey ? (scenarioKey.startsWith('own') ? ownResult : SCENARIOS[scenarioKey]) : null;
   const scenarioPerson = people.find(p => p.id === analysisPersonId) || null;
   const sessionKey = scenarioPerson && scenarioKey ? `${scenarioPerson.id}:${scenarioKey}` : null;
   const session = (sessionKey && sessions[sessionKey]) || { infoStatus: {}, logged: false };
@@ -69,7 +85,33 @@ export function CoachView({ people, journal, initialPersonId, initialTab, onOpen
     setEditingIndex(null);
     setStep('loading');
   }
-  function resetAnalyse() { setStep('pick'); setScenarioKey(null); }
+  function resetAnalyse() { ownRun.current += 1; setStep('pick'); setScenarioKey(null); }
+  async function addShots(files) {
+    const pictures = [...files].filter(isPictureFile).slice(0, MAX_SCREENSHOTS - ownShots.length);
+    const loaded = (await Promise.all(pictures.map(async file => { const img = await loadPhoto(file); return img ? { id: `${file.name}${file.size}${Math.random()}`, name: file.name, src: img.src, img } : null; }))).filter(Boolean);
+    setOwnShots(list => [...list, ...loaded].slice(0, MAX_SCREENSHOTS));
+    setOwnError(loaded.length < pictures.length ? "Some of those aren't pictures Layers can read." : null);
+  }
+  // Sends your chat to Claude (only now), then shows its answer like a sample's.
+  async function analyseOwn() {
+    if (!onAnalyse || !scenarioPerson || (!ownText.trim() && !ownShots.length)) return;
+    const run = ++ownRun.current;
+    const person = scenarioPerson;
+    setOwnError(null);
+    setStep('asking');
+    const images = ownShots.map(s => shrinkForAnalysis(s.img)).filter(Boolean);
+    const answer = await Promise.resolve(onAnalyse(analysisRequest({ person, yourName, text: ownText, images }))).catch(() => null);
+    if (run !== ownRun.current) return;
+    if (!answer || answer.error) { setOwnError((answer && answer.error) || "Couldn't analyse that chat."); setStep('pick'); return; }
+    const result = analysisResult(answer.result, person);
+    setOwnResult(result);
+    setOwnCost(analysisCost(answer.usage));
+    setInfoDrafts(Object.fromEntries(result.extractedInfo.map((it, i) => [i, it.text])));
+    setEditingIndex(null);
+    setScenarioKey(`own:${run}`);
+    setStep('results');
+    setOwnText(''); setOwnShots([]);
+  }
   function changeAnalysisPerson() { setAnalysisPersonId(null); resetAnalyse(); }
   function saveInfoItem(i) {
     const it = scenario.extractedInfo[i];
@@ -96,7 +138,7 @@ export function CoachView({ people, journal, initialPersonId, initialTab, onOpen
           setPreparePersonId(people[(i + (e.key === 'ArrowLeft' ? people.length - 1 : 1)) % people.length].id);
         });
       } else if (key === 'l') act(() => onOpenLog(preparePerson.id));
-      else if (key === 'a') act(() => { setAnalysisPersonId(preparePerson.id); setTab('analyse'); });
+      else if (key === 'a') act(() => { if (preparePerson.id !== analysisPersonId) resetAnalyse(); setAnalysisPersonId(preparePerson.id); setTab('analyse'); });
       else if (key === 'o') act(() => onOpenPerson(preparePerson.id));
     }
     window.addEventListener('keydown', onKey);
@@ -229,7 +271,7 @@ export function CoachView({ people, journal, initialPersonId, initialTab, onOpen
 
           <div className="flex items-center gap-2 mt-5">
             <button onClick={() => onOpenLog(preparePerson ? preparePerson.id : null)} className="flex-1 flex items-center justify-center gap-1.5 text-sm font-semibold rounded-full py-3 text-center" style={{ background: COLORS.accent, color: COLORS.onAccent }}>Log this conversation <Kbd onAccent>L</Kbd></button>
-            <button onClick={() => { setAnalysisPersonId(preparePerson ? preparePerson.id : null); setTab('analyse'); }} className="flex-1 flex items-center justify-center gap-1.5 text-sm font-semibold rounded-full py-3 text-center" style={{ background: COLORS.paperRaised, color: COLORS.accent, border: `1px solid ${COLORS.accent}` }}>Analyse a screenshot <Kbd>A</Kbd></button>
+            <button onClick={() => { const id = preparePerson ? preparePerson.id : null; if (id !== analysisPersonId) resetAnalyse(); setAnalysisPersonId(id); setTab('analyse'); }} className="flex-1 flex items-center justify-center gap-1.5 text-sm font-semibold rounded-full py-3 text-center" style={{ background: COLORS.paperRaised, color: COLORS.accent, border: `1px solid ${COLORS.accent}` }}>Analyse a screenshot <Kbd>A</Kbd></button>
           </div>
 
           <p className="text-xs text-center mt-5" style={{ color: COLORS.inkSoft }}>Good social skills are about noticing, responding and adapting, not forcing a particular outcome.</p>
@@ -263,8 +305,35 @@ export function CoachView({ people, journal, initialPersonId, initialTab, onOpen
                     <Avatar person={scenarioPerson} size={30} ringColor={getLayer(scenarioPerson.layer).color} />
                     <p className="text-sm" style={{ color: COLORS.inkSoft }}>Analysing a conversation with <span className="font-semibold" style={{ color: COLORS.ink }}>{scenarioPerson.name}</span></p>
                   </div>
-                  <p className="text-xs rounded-xl p-3 mb-4" style={{ background: COLORS.accentSoft, color: COLORS.accent }}>🔒 Only analyse conversations you're allowed to share. This is a prototype. Try a sample conversation below to see how analysis works.</p>
-                  <p className="text-sm font-semibold mb-2" style={{ color: COLORS.ink }}>Try a sample conversation</p>
+                  <p className="text-xs rounded-xl p-3 mb-4" style={{ background: COLORS.accentSoft, color: COLORS.accent }}>🔒 Only analyse conversations you're allowed to share.</p>
+                  {analysisReady === 'no-key' && (
+                    <div className="rounded-2xl p-3.5 mb-4" style={{ background: COLORS.paperRaised, border: `1px dashed ${COLORS.line}` }}>
+                      <p className="text-sm font-semibold" style={{ color: COLORS.ink }}>Analyse your own chat</p>
+                      <p className="text-xs mt-1" style={{ color: COLORS.inkSoft }}>Paste a chat or add screenshots, and Claude reads it. It needs your Anthropic API key first, in Me.</p>
+                      {onOpenMe && <button type="button" onClick={onOpenMe} className="text-xs font-semibold rounded-full px-3 py-1.5 mt-2.5" style={{ background: COLORS.accentSoft, color: COLORS.accent }}>Add a key in Me</button>}
+                    </div>
+                  )}
+                  {analysisReady === 'ready' && (
+                    <div className="rounded-2xl p-3.5 mb-4" style={{ background: COLORS.paperRaised, border: `1px solid ${COLORS.line}` }} aria-label="Your own chat">
+                      <p className="text-sm font-semibold" style={{ color: COLORS.ink }}>Analyse your own chat</p>
+                      <textarea value={ownText} onChange={e => { setOwnText(e.target.value); setOwnError(null); }} aria-label="The chat" rows={5}
+                        placeholder={`Paste a chat with ${scenarioPerson.name}, or add screenshots below.`} className="w-full text-sm rounded-xl px-3 py-2.5 mt-2" style={{ border: `1px solid ${COLORS.line}`, resize: 'vertical' }} />
+                      <input ref={shotsInput} type="file" accept="image/*" multiple hidden aria-label="Add screenshots" onChange={e => { const files = e.target.files ? [...e.target.files] : []; e.target.value = ''; addShots(files); }} />
+                      <div className="flex items-center gap-2 flex-wrap mt-2">
+                        {ownShots.map(s => (
+                          <span key={s.id} className="relative">
+                            <img src={s.src} alt={s.name} className="rounded-lg" style={{ width: 44, height: 64, objectFit: 'cover', border: `1px solid ${COLORS.line}` }} />
+                            <button type="button" onClick={() => setOwnShots(list => list.filter(x => x.id !== s.id))} aria-label={`Remove ${s.name}`} className="absolute flex items-center justify-center rounded-full" style={{ top: -6, right: -6, width: 20, height: 20, background: COLORS.ink }}><X size={11} color={COLORS.paper} /></button>
+                          </span>
+                        ))}
+                        {ownShots.length < MAX_SCREENSHOTS && <button type="button" onClick={() => shotsInput.current && shotsInput.current.click()} className="chip"><ImagePlus size={14} color={COLORS.accent} /> Screenshots</button>}
+                      </div>
+                      <p className="text-xs mt-2.5" style={{ color: COLORS.inkSoft }}>Pressing Analyse sends this chat, and only this chat, to Anthropic for {ANALYSIS_MODEL_NAME} to read (about US$0.03). {scenarioPerson.name}'s name and yours are hidden in pasted text; screenshots go as they are.</p>
+                      {ownError && <p className="text-xs mt-2 font-semibold" role="alert" style={{ color: COLORS.alert }}>{ownError}</p>}
+                      <button type="button" onClick={analyseOwn} disabled={!ownText.trim() && !ownShots.length} className="w-full text-sm font-semibold rounded-full py-2.5 mt-3" style={{ background: COLORS.accent, color: COLORS.onAccent, opacity: !ownText.trim() && !ownShots.length ? 0.5 : 1 }}>Analyse with Claude</button>
+                    </div>
+                  )}
+                  <p className="text-sm font-semibold mb-2" style={{ color: COLORS.ink }}>{analysisReady === 'ready' ? 'Or try a sample conversation' : 'Try a sample conversation'}</p>
                   {Object.values(SCENARIOS).map(sc => (
                     <button key={sc.key} onClick={() => pickScenario(sc.key)} className="w-full flex items-center gap-3 rounded-2xl p-3.5 mb-2 text-left" style={{ background: COLORS.paperRaised, border: `1px solid ${COLORS.line}` }}>
                       <span style={{ fontSize: 22 }}>📸</span>
@@ -278,6 +347,13 @@ export function CoachView({ people, journal, initialPersonId, initialTab, onOpen
                 </>
               )}
 
+          {step === 'asking' && (
+            <div className="flex flex-col items-center justify-center py-16" role="status">
+              <div style={{ width: 30, height: 30, borderRadius: '50%', border: `3px solid ${COLORS.line}`, borderTopColor: COLORS.accent }} className="spin" />
+              <p className="text-sm mt-4" style={{ color: COLORS.inkSoft }}>Claude is reading the chat…</p>
+            </div>
+          )}
+
           {step === 'loading' && (
             <div className="flex flex-col items-center justify-center py-16">
               <div style={{ width: 30, height: 30, borderRadius: '50%', border: `3px solid ${COLORS.line}`, borderTopColor: COLORS.accent }} className="spin" />
@@ -287,7 +363,8 @@ export function CoachView({ people, journal, initialPersonId, initialTab, onOpen
 
           {step === 'results' && scenario && (
             <div>
-              <button onClick={resetAnalyse} className="text-xs font-medium mb-3" style={{ color: COLORS.inkSoft }}>← Try a different sample</button>
+              <button onClick={resetAnalyse} className="text-xs font-medium mb-3" style={{ color: COLORS.inkSoft }}>{scenario.own ? '← Analyse another chat' : '← Try a different sample'}</button>
+              {scenario.own && ownCost && <p className="text-xs mb-3" style={{ color: COLORS.inkSoft }}>Read by {ANALYSIS_MODEL_NAME}: this one cost {ownCost}. These are a coach's suggestions, not facts.</p>}
 
               <p className="text-sm font-semibold mb-2" style={{ color: COLORS.ink }}>Reconstructed conversation</p>
               <div className="rounded-2xl p-3.5 mb-4" style={{ background: COLORS.paper, border: `1px solid ${COLORS.line}` }}>
@@ -327,21 +404,21 @@ export function CoachView({ people, journal, initialPersonId, initialTab, onOpen
                 <p className="text-xs" style={{ color: COLORS.inkSoft }}>{scenario.tryNextTime}</p>
               </div>
 
-              <div className="rounded-2xl p-4 mb-3" style={{ background: COLORS.paperRaised, border: `1px solid ${COLORS.line}` }}>
+              {scenario.encourager && <div className="rounded-2xl p-4 mb-3" style={{ background: COLORS.paperRaised, border: `1px solid ${COLORS.line}` }}>
                 <p className="text-sm font-semibold mb-1.5" style={{ color: COLORS.ink }}>Encourager use</p>
                 <p className="text-xs font-medium" style={{ color: scenario.encourager.type === 'good' ? COLORS.good : COLORS.alert }}>{scenario.encourager.type === 'good' ? 'Good use' : 'Could improve'}: {scenario.encourager.line}</p>
                 <p className="text-xs mt-1" style={{ color: COLORS.inkSoft }}>{scenario.encourager.why}</p>
-              </div>
+              </div>}
 
-              <div className="rounded-2xl p-4 mb-3" style={{ background: COLORS.paperRaised, border: `1px solid ${COLORS.line}` }}>
+              {scenario.emotionalCues.length > 0 && <div className="rounded-2xl p-4 mb-3" style={{ background: COLORS.paperRaised, border: `1px solid ${COLORS.line}` }}>
                 <p className="text-sm font-semibold mb-1.5" style={{ color: COLORS.ink }}>Possible emotional cues</p>
                 {scenario.emotionalCues.map((e, i) => (
                   <p key={i} className="text-xs mt-1" style={{ color: COLORS.inkSoft }}>{e.emoji} {e.text}</p>
                 ))}
                 <p className="text-xs mt-2 italic" style={{ color: COLORS.inkSoft }}>These are possible interpretations, not facts.</p>
-              </div>
+              </div>}
 
-              <p className="text-sm font-semibold mb-2" style={{ color: COLORS.ink }}>Information mentioned</p>
+              {scenario.extractedInfo.length > 0 && <p className="text-sm font-semibold mb-2" style={{ color: COLORS.ink }}>Information mentioned</p>}
               {scenario.extractedInfo.map((it, i) => {
                 const status = infoStatus[i];
                 const cat = categoryMeta(it.category);

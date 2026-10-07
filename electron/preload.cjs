@@ -46,6 +46,12 @@ contextBridge.exposeInMainWorld('layersSystem', {
   // A one-page summary of someone (src/lib/summary.js) as a PDF, saved where
   // you pick: { saved }, { canceled } or { error }.
   exportSummary: (html, fileName) => ipcRenderer.invoke('export-summary', html, fileName),
+  // Chat analysis with Claude (analysis.cjs): whether there's a key (never the
+  // key itself), adding or forgetting it, and analysing one chat.
+  getAnalysisKeyStatus: () => ipcRenderer.invoke('analysis-key-status'),
+  setAnalysisKey: (key) => ipcRenderer.invoke('analysis-key-set', key),
+  clearAnalysisKey: () => ipcRenderer.invoke('analysis-key-clear'),
+  runAnalysis: (request) => ipcRenderer.invoke('analysis-run', request),
   // Where the faces are in chosen pictures (File objects), from Windows' own
   // face detector (faces.cjs): one { width, height, faces } or null each.
   findFaces: (files) => ipcRenderer.invoke('find-faces', [...files].map(file => { try { return webUtils.getPathForFile(file) || null; } catch { return null; } })),

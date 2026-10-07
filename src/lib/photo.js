@@ -38,6 +38,23 @@ export async function findFaces(files) {
   }
 }
 
+// A screenshot for chat analysis, at most 1568 px on its long side (the
+// most Claude looks at) as JPEG: { mediaType, data } in base64, or null
+// where there's no canvas.
+export function shrinkForAnalysis(img, longest = 1568) {
+  const scale = Math.min(1, longest / Math.max(img.naturalWidth, img.naturalHeight));
+  const canvas = document.createElement('canvas');
+  canvas.width = Math.max(1, Math.round(img.naturalWidth * scale));
+  canvas.height = Math.max(1, Math.round(img.naturalHeight * scale));
+  let ctx = null;
+  try { ctx = canvas.getContext('2d'); } catch { ctx = null; }
+  if (!ctx) return null;
+  ctx.fillStyle = '#FFFFFF';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+  return { mediaType: 'image/jpeg', data: canvas.toDataURL('image/jpeg', 0.85).split(',')[1] };
+}
+
 // The crop as a small JPEG data URL, or null where there's no canvas.
 export function renderPhoto(img, crop) {
   const canvas = document.createElement('canvas');

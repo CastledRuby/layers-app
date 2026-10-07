@@ -616,6 +616,34 @@ Windows ([electron.md](../electron.md)); the page gets the files.
   warning. They're never in `events`, so they're never saved, synced, backed up or
   reminded about, and never offered in Plan again or treated as copies.
 
+### Analysing your own chat
+
+Coach → Analyse a chat → **Analyse your own chat**: a pasted chat, screenshots (up to
+six), or both, read by **Claude Haiku 4.5**. It needs your own Anthropic API key, added
+in Me (**Chat analysis**) and kept by the main process ([electron.md](../electron.md)).
+Nothing is sent until you press **Analyse with Claude**, and the card says each time what
+will be sent.
+
+- **What's sent** (`analysisRequest`, [lib/analysis.js](../../src/lib/analysis.js)): the
+  screenshots, shrunk to at most 1568 px (`shrinkForAnalysis`), and the pasted text with
+  their name and yours replaced by `[them]` and `[you]` (`hideNames`: the full name
+  and each part of it, whole words only, any case). Of the person, only their layer is
+  sent, so the advice fits how close you are. Screenshots go as they are, so a name in
+  one is seen; Claude is told to call them only `[them]`.
+- **The answer** is JSON kept to `ANALYSIS_SCHEMA` by structured outputs, then checked
+  by `analysisResult`: their first name is put back for `[them]` and "you" for `[you]`,
+  scores clamped (0–100, goal impact 0–15), an unknown state becomes `unclear`, info in
+  an unknown category is dropped. It has the same shape as a sample in
+  `data/scenarios.js`, so Coach shows both the same way, and saving info and logging
+  work as for a sample. Each analysis is its own session (`own:<n>`), and an answer that
+  arrives after you've moved to someone else is dropped.
+- **Nothing about it is saved** except what you choose: info you Save, and the log.
+  The chat itself, the screenshots and Claude's answer are gone once you leave.
+- **Cost**: about US$0.01–0.03 a chat, from your Anthropic credit; the result says what
+  this one cost (`analysisCost`, from the tokens used at US$1 and US$5 per million).
+- Only in the desktop app: the browser preview has nowhere safe for a key, so it shows
+  the samples only.
+
 ### Syncing through OneDrive
 
 Turned on in Me (**Turn on sync**, `SyncSheet`): Layers keeps one encrypted copy of the

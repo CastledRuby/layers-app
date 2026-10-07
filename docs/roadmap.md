@@ -34,7 +34,7 @@ how the app behaves for you is listed with the default chosen, so it can be chan
 | People & Layers | ✅ Done | Every layer change gets a dated timeline step. Logging keeps the dimensions inside the layer (P3 option C), so Adjust agrees with the layer shown, and its preview shows any change of percentage. |
 | Goals | ✅ Mostly | Skill goals move with their skills (1.0.28). Goals linked to a reminder move when it's logged. Every part of a goal works by keys (2026-10-06), and logs record the goals they moved. |
 | Coach, Prepare | ✅ Done (1.0.28) | Hooks come from all saved interests, plans, preferences, things to ask about, recent topics and reflections. Personal experiences are kept for Layer 3 and closer. |
-| Coach, Analyse | ✅ Works (sample conversations) | It's still a prototype on four sample chats. Real screenshot analysis is a later idea. |
+| Coach, Analyse | ✅ Done | Your own chat, pasted or as screenshots, read by Claude Haiku 4.5 only when you press Analyse, with your own API key; the four sample chats stay to try it out. |
 | Social skills | ✅ Done | The chart records points, and achievements are stored with dates. Strength and focus come from your real levels. |
 | Journal | ✅ Done (1.0.28) | Edit or delete an entry. Filters by person, type and period, plus search, which includes reflections. Every filter row fits on screen (1.0.29). |
 | Logging flow | ✅ Done | The quick log asks only for the date, how meaningful it was and a note. Each extra (ratings, active listening, something new, goals, reflection) opens in its own small sheet from a chip. Every step works from the keyboard. |
@@ -194,9 +194,11 @@ comes back to you first.
    you).
 5. ✅ **Activity and a one-page summary** (built 2026-10-07): a six-month activity calendar on each profile
    and on the Journal, and Export summary, a one-page PDF of someone.
-6. **Real conversation analysis**: a **cloud AI, only when you ask**, sending only the
-   chat you chose, with a warning each time. Which AI is decided when we get there, in
-   its own proposal.
+6. ✅ **Real conversation analysis** (built 2026-10-07): a **cloud AI, only when you ask**, sending only the
+   chat you chose, with a warning each time. You picked **Claude Haiku 4.5** (about
+   US$0.01–0.03 a chat, with your own Anthropic API key and credit), **pasted text and
+   screenshots**, and **names hidden** in pasted text. Gemini Flash was cheaper, but its
+   price rises in 2027; it can be revisited once the process is refined.
 
 **Waiting for the Apple account** (when you're ready): checking the phone can reach the
 OneDrive file, the iPhone app on your phone through TestFlight, the phone syncing, and
@@ -526,6 +528,22 @@ its own. Changes made while building are marked.
   box in the packaged app, with a temporary data folder as always.
 
 ## History
+
+### Analyse your own chat (after 1.0.35, not released yet)
+
+- **Coach → Analyse a chat → Analyse your own chat**: paste a chat, or add up to six
+  screenshots, and **Analyse with Claude**. You get the same review as the samples: the
+  conversation as Claude read it, how it went, what went well, what to say next in three
+  tones, and things worth remembering to save to their profile. Log it as an interaction
+  as before.
+- It needs your own **Anthropic API key**: make one at console.anthropic.com, add a few
+  dollars of credit, and paste it in **Me → Chat analysis**. Layers checks it, then keeps
+  it on this laptop, protected by Windows.
+- **Private by default**: nothing is sent until you press Analyse, and only that chat. In
+  pasted text, their name and yours are swapped for [them] and [you] before it goes, and
+  put back in the answer. Screenshots go as they are. Nothing of the chat is kept
+  afterwards, only what you choose to save. Each result says what it cost (usually
+  about US$0.01–0.03).
 
 ### Activity and a one-page summary (after 1.0.34, not released yet)
 
