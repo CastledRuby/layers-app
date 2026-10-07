@@ -40,7 +40,48 @@ function syncedAgo(iso) {
   return formatCalendarDate(new Date(iso));
 }
 
-export function MeView({ people, journal, skills, profile, generalGoals = [], onUpdateProfile, onEditProfile, achievements, onAddSample, onRemoveSample, hasSamplePeople, canAddSample, onStartOver, onExport, onImportClick, backupInfo, onOpenBackups, hasUpdater, updateStatus, onCheckForUpdates, onInstallUpdate, onOpenDownloadPage, shortcutStatus, themeMode, onSetTheme, hasSystemBridge, autoLaunch, onToggleAutoLaunch, onOpenShortcuts, appVersion, sync = null, onSyncTurnOn, onSyncNow, onSyncOff, onOpenSyncFolder }) {
+// Other calendars, read-only: the ones shown, and adding one by pasting its
+// secret iCal address (Google Calendar: Settings, your calendar, Integrate
+// calendar). onAdd resolves to what went wrong, or null.
+function CalendarsCard({ calendars, onAdd, onRemove, onRefresh }) {
+  const [address, setAddress] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState(null);
+  async function add() {
+    if (!address.trim() || busy) return;
+    setBusy(true); setError(null);
+    const problem = await onAdd(address.trim());
+    setBusy(false);
+    if (problem) setError(problem); else setAddress('');
+  }
+  const { feeds } = calendars;
+  return (
+    <div className="mt-4 rounded-2xl p-4" style={{ background: COLORS.paperRaised, border: `1px solid ${COLORS.line}` }} aria-label="Other calendars">
+      <p className="text-sm font-semibold" style={{ color: COLORS.ink }}>Your Google Calendar</p>
+      <p className="text-xs mt-1.5" style={{ color: COLORS.inkSoft }}>Your timetable and other events on Today and the month, read-only, so planning can warn about clashes. Google keeps reminding you about them; Layers doesn't.</p>
+      {feeds.map(feed => (
+        <div key={feed.id} className="flex items-center justify-between gap-3 mt-3 pt-3" style={{ borderTop: `1px solid ${COLORS.line}` }}>
+          <div className="min-w-0">
+            <p className="text-xs font-semibold truncate" style={{ color: COLORS.ink }}>📅 {feed.name}</p>
+            <p className="text-xs mt-0.5" style={{ color: calendars.errors[feed.id] ? COLORS.alert : COLORS.inkSoft }}>{calendars.errors[feed.id] || `${calendars.count(feed.id)} events${calendars.fetchedAt ? `, updated ${syncedAgo(calendars.fetchedAt)}` : ''}`}</p>
+          </div>
+          <button type="button" onClick={() => onRemove(feed)} aria-label={`Stop showing ${feed.name}`} className="text-xs font-semibold rounded-full px-3 py-2 shrink-0" style={{ background: COLORS.paperRaised, color: COLORS.inkSoft, border: `1px solid ${COLORS.line}` }}>Remove</button>
+        </div>
+      ))}
+      <p className="text-xs mt-3" style={{ color: COLORS.inkSoft }}>{feeds.length ? 'Another one: ' : 'To add it: '}in Google Calendar on the web, open <b>Settings</b>, pick the calendar, then <b>Integrate calendar</b>, and copy the <b>Secret address in iCal format</b>. It works like a password for that calendar, so Layers keeps it on this laptop, protected by Windows, and never syncs it.</p>
+      <div className="flex items-center gap-2 mt-2">
+        <input type="url" value={address} onChange={e => { setAddress(e.target.value); setError(null); }} onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); add(); } }}
+          aria-label="Secret address in iCal format" placeholder="https://calendar.google.com/calendar/ical/…/basic.ics" autoComplete="off" spellCheck={false}
+          className="flex-1 min-w-0 text-xs rounded-xl px-3 py-2.5" style={{ border: `1px solid ${COLORS.line}` }} />
+        <button type="button" onClick={add} disabled={!address.trim() || busy} className="text-xs font-semibold rounded-full px-3 py-2 shrink-0" style={{ background: COLORS.accent, color: COLORS.onAccent, opacity: !address.trim() || busy ? 0.5 : 1 }}>{busy ? 'Checking…' : 'Add'}</button>
+      </div>
+      {error && <p className="text-xs mt-2" role="alert" style={{ color: COLORS.alert }}>{error}</p>}
+      {feeds.length > 0 && <button type="button" onClick={onRefresh} className="text-xs font-semibold mt-3" style={{ color: COLORS.accent }}>Refresh now</button>}
+    </div>
+  );
+}
+
+export function MeView({ people, journal, skills, profile, generalGoals = [], onUpdateProfile, onEditProfile, achievements, onAddSample, onRemoveSample, hasSamplePeople, canAddSample, onStartOver, onExport, onImportClick, backupInfo, onOpenBackups, hasUpdater, updateStatus, onCheckForUpdates, onInstallUpdate, onOpenDownloadPage, shortcutStatus, themeMode, onSetTheme, hasSystemBridge, autoLaunch, onToggleAutoLaunch, onOpenShortcuts, appVersion, sync = null, onSyncTurnOn, onSyncNow, onSyncOff, onOpenSyncFolder, calendars = null, onAddCalendar, onRemoveCalendar, onRefreshCalendars }) {
   const [chartSkill, setChartSkill] = useState(FOCUS_SKILL_KEY);
 
   // Strength is your highest skill and focus your lowest. Until something has
@@ -248,6 +289,8 @@ export function MeView({ people, journal, skills, profile, generalGoals = [], on
           </div>
         )}
       </div>
+
+      {calendars && <CalendarsCard calendars={calendars} onAdd={onAddCalendar} onRemove={onRemoveCalendar} onRefresh={onRefreshCalendars} />}
 
       {sync && (
         <div className="mt-4 rounded-2xl p-4" style={{ background: COLORS.paperRaised, border: `1px solid ${COLORS.line}` }} aria-label="Sync">

@@ -304,3 +304,16 @@ test('sync: two copies of Layers sharing a folder end up the same, with the pass
   await expect(page.getByLabel('Sync').getByRole('status')).toContainText('Last synced just now', { timeout: 20000 });
   await quit(app);
 });
+
+test('your Google Calendar: the packaged app refuses an address that is not a calendar, keeping nothing', async () => {
+  const dataDir = tempDataDir();
+  const { app, page } = await launch(dataDir);
+  await onboard(page, 'Sam');
+  await page.locator('.nav-bar').getByRole('button', { name: 'Me', exact: true }).click();
+  const card = page.getByLabel('Other calendars');
+  await card.getByLabel('Secret address in iCal format').fill('http://example.com/not-secure.ics');
+  await card.getByRole('button', { name: 'Add' }).click();
+  await expect(card.getByRole('alert')).toContainText("isn't a calendar address");
+  expect(fs.existsSync(path.join(dataDir, 'calendars.bin'))).toBe(false);
+  await quit(app);
+});

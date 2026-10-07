@@ -35,6 +35,10 @@ These keys are saved as one JSON blob under `localStorage['layers-app-state-v1']
 | `achievements` | `{ [key]: 'YYYY-MM-DD' }`, or `null` until worked out | `null` (saved as `{}`). See [Achievements](#achievements). |
 | `deleted` | `{ id, kind: 'person'\|'entry'\|'event'\|'goal', at }[]`: what was deleted in the last 90 days | `[]`. Saved only; see [Ready for syncing](#ready-for-syncing). |
 
+`layers-calendars` holds your other calendars' events as last fetched (`{ fetchedAt, items,
+errors }`), so Today shows them offline; like `layers-sync`, it's this computer's only:
+not synced, not in backups ([Other calendars](#other-calendars-read-only)).
+
 `layers-sync` holds this computer's sync settings (`{ on, lastSynced, error }`), which
 aren't synced themselves ([Syncing through OneDrive](#syncing-through-onedrive)).
 
@@ -589,6 +593,28 @@ so a phone's copy can be merged with this one later. Nothing syncs yet.
   deletion wins over changes before it and loses to changes after it; skills keep the
   copy that's further on, and achievements the day first earned. It isn't used yet: the
   phone and the OneDrive sync file come in later steps. `src/sync.test.js` covers it.
+
+### Other calendars, read-only
+
+Your Google Calendar (or any calendar with an iCal address), added in Me by pasting its
+**Secret address in iCal format**. The address stays in the main process, encrypted by
+Windows ([electron.md](../electron.md)); the page gets the files.
+
+- **Reading** ([`lib/ics.js`](../../src/lib/ics.js)): `parseCalendar` reads the file;
+  `calendarItems` lists events between two days in this computer's time, handling a
+  time zone (`TZID`, through `Intl`), UTC and all-day events, repeats (`RRULE`: daily,
+  weekly on chosen days, monthly, yearly; `INTERVAL`, `COUNT`, `UNTIL`), days taken out
+  (`EXDATE`), occurrences moved or changed (`RECURRENCE-ID`), and cancelled events (left
+  out). An all-day event over several days shows on each (up to two weeks).
+- **When**: on start and every 30 minutes (and a new day), for 30 days back and 120
+  ahead; kept in `layers-calendars`. A calendar that can't be fetched keeps what it had,
+  and Me says why.
+- **Shown, not saved**: `LayersApp` makes them plans that can't be changed (`source:
+  'google'`, id `g:<calendar>:<event>`, no reminder) and adds them to what Today,
+  DaySheet, the month and `PlanSheet` see (`shownEvents`): 📅 and the calendar's name on
+  Today, a read-only `EventSheet` ("Change it in Google Calendar"), and planning's clash
+  warning. They're never in `events`, so they're never saved, synced, backed up or
+  reminded about, and never offered in Plan again or treated as copies.
 
 ### Syncing through OneDrive
 

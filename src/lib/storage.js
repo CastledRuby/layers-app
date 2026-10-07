@@ -112,6 +112,23 @@ export function addNotifiedReminder(key) {
 // than in the saved state (and backups); ones a day past are dropped.
 const SNOOZES_KEY = 'layers-snoozes';
 
+// Other calendars' events as last fetched (lib/ics.js), for this computer
+// only, so Today shows them offline: { fetchedAt, items, errors }. Not
+// synced and not in backups; the addresses themselves stay in the main
+// process.
+const FEEDS_KEY = 'layers-calendars';
+export function getFeedCache() {
+  try {
+    const c = JSON.parse(window.localStorage.getItem(FEEDS_KEY) || 'null');
+    return c && Array.isArray(c.items) ? { fetchedAt: typeof c.fetchedAt === 'string' ? c.fetchedAt : null, items: c.items, errors: c.errors && typeof c.errors === 'object' ? c.errors : {} } : { fetchedAt: null, items: [], errors: {} };
+  } catch {
+    return { fetchedAt: null, items: [], errors: {} };
+  }
+}
+export function setFeedCache(c) {
+  try { window.localStorage.setItem(FEEDS_KEY, JSON.stringify(c)); } catch { /* storage full: fetched again next time */ }
+}
+
 // Sync through OneDrive, for this computer only: { on, lastSynced, error }.
 // The passphrase isn't here: the main process keeps it, encrypted by Windows.
 const SYNC_KEY = 'layers-sync';

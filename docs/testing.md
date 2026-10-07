@@ -118,6 +118,15 @@ interact.
 - `keys2.test.jsx` covers the second live test's keys: N into a note box and Esc out
   (the quick log, Add detail, editing a journal entry), Redo with Ctrl+Y and
   Ctrl+Shift+Z (and not once something else changed), and Ctrl+K's O, L, P and R.
+- `calendars.test.jsx` covers your Google Calendar (the main process stood in for):
+  adding it in Me (a bad address refused), its event on Today marked as Google's and
+  opened read-only, nothing of it handed to Windows as a reminder, planning's clash
+  warning, and no Plan again for it. `src/ics.test.js` covers reading calendar files
+  (zones, UTC, all day, weekly days with UNTIL and EXDATE, daily COUNT, every other week,
+  a moved or cancelled occurrence, several days), pinned to New Zealand time;
+  `src/feeds.test.js` covers `electron/feeds.cjs` (https and webcal only, the addresses
+  kept encrypted and never shown to the page, fetching and its errors). The end-to-end
+  tests check a bad address is refused by the packaged app's main process.
 - `syncing.test.jsx` covers sync through OneDrive in the app (the folder and Windows'
   passphrase keeping stood in for, the encryption real): turning it on with the
   passphrase typed twice, a wrong passphrase refused and the right one bringing another

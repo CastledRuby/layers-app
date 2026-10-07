@@ -82,6 +82,7 @@
       "electron/backups.cjs",
       "electron/faces.cjs",
       "electron/sync.cjs",
+      "electron/feeds.cjs",
       "electron/icon.png",
       "electron/icon.ico",
       "electron/tray-icon-dark.png",

@@ -132,14 +132,15 @@ function EventRow({ item, now, onOpen }) {
           </>
         )}
       </div>
-      <div className="flex-1 min-w-0 rounded-2xl px-3.5 py-2.5 mb-2" style={{ background: done ? 'transparent' : COLORS.paperRaised, border: `1px solid ${COLORS.line}`, boxShadow: done ? 'none' : `inset 3px 0 0 ${people.length ? getLayer(Math.max(...people.map(p => p.layer))).color : COLORS.accent}`, opacity: done ? 0.6 : 1 }}>
+      <div className="flex-1 min-w-0 rounded-2xl px-3.5 py-2.5 mb-2" style={{ background: done ? 'transparent' : COLORS.paperRaised, border: `1px solid ${COLORS.line}`, boxShadow: done ? 'none' : `inset 3px 0 0 ${ev.source === 'google' ? COLORS.line : people.length ? getLayer(Math.max(...people.map(p => p.layer))).color : COLORS.accent}`, opacity: done ? 0.6 : 1 }}>
         <div className="flex items-center gap-2">
-          {done ? <Check size={15} color={COLORS.good} strokeWidth={3} /> : template && <span aria-hidden="true">{template.emoji}</span>}
+          {done ? <Check size={15} color={COLORS.good} strokeWidth={3} /> : ev.source === 'google' ? <span aria-hidden="true">📅</span> : template && <span aria-hidden="true">{template.emoji}</span>}
           <p className="text-sm font-semibold flex-1 min-w-0 truncate" style={{ color: COLORS.ink, textDecoration: done ? 'line-through' : 'none' }}>{ev.title}</p>
           {people.length > 0 && <AvatarStack people={people} size={22} />}
         </div>
         <p className="text-xs mt-0.5 flex items-center gap-1.5" style={{ color: COLORS.inkSoft }}>
           {people.length > 0 && <span className="truncate">{people.map(p => p.name).join(', ')}</span>}
+          {ev.source === 'google' && <span className="truncate">{ev.feedName || 'Google Calendar'}{ev.location ? ` · ${ev.location}` : ''}</span>}
           {ev.kind === 'recurring' && <span className="flex items-center gap-0.5 shrink-0"><Repeat size={11} />{isDaily(ev) ? 'Daily' : 'Weekly'}</span>}
           {alert !== null && !done && <span className="flex items-center gap-0.5 shrink-0"><Bell size={11} />{alert === 0 ? 'At time' : alert >= 1440 ? '1 day' : alert >= 60 ? `${alert / 60} h` : `${alert} min`}</span>}
         </p>
@@ -268,7 +269,7 @@ export function TodayView({ today, selectedDay, onSelectDay, mode, onSetMode, pe
       {agenda.allDay.length > 0 && (
         <div className="flex flex-wrap gap-1.5 mb-3">
           {agenda.allDay.map(x => x.kind === 'event' ? (
-            <button key={x.id} type="button" onClick={() => onOpenEvent(x.ev.id, day)} className={`chip${x.done ? '' : ' chip--on'}`}>{x.done ? <Check size={12} /> : '📌'} {x.ev.title}</button>
+            <button key={x.id} type="button" onClick={() => onOpenEvent(x.ev.id, day)} className={`chip${x.done || x.ev.source === 'google' ? '' : ' chip--on'}`}>{x.done ? <Check size={12} /> : x.ev.source === 'google' ? '📅' : '📌'} {x.ev.title}</button>
           ) : (
             <button key={x.id} type="button" onClick={() => x.person ? onOpenPerson(x.person.id) : onOpenGoals()} className="chip">{x.emoji} {x.label}</button>
           ))}

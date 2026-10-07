@@ -144,13 +144,13 @@ export function PlanSheet({ people, events = [], today, prefill = {}, defaultAle
   const canSave = shownTitle.trim().length > 0 && (repeat !== 'weekly' || weekdays.length > 0) && (repeat !== 'several' || days.length > 0);
   const repeats = editing ? REPEATS.filter(([k]) => k !== 'several') : REPEATS;
   const nextDays = Array.from({ length: 7 }, (_, i) => addDays(today, i));
-  const recent = useMemo(() => recentPlans(events), [events]);
+  const recent = useMemo(() => recentPlans(events.filter(ev => !ev.source)), [events]);
   const repeatDays = repeatDaysOf(repeat, weekdays);
   // Editing one of several copies into a repeat: the copies on the days it
   // now covers (from its first day) go when it's saved, so it isn't on any
   // day twice. Copies already ticked off stay.
   const replaced = useMemo(() => (editing && repeatDays
-    ? events.filter(ev => isCopyOf(ev, editing) && !ev.doneAt && ev.date >= day && repeatDays.includes(parseISODay(ev.date).getDay()))
+    ? events.filter(ev => !ev.source && isCopyOf(ev, editing) && !ev.doneAt && ev.date >= day && repeatDays.includes(parseISODay(ev.date).getDay()))
     : []), [events, editing, repeatDays, day]);
   // Plans already on the day (or days) that this one would overlap. A copy
   // of the plan being edited is the same plan twice, so it's said that way.

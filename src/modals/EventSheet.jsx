@@ -6,7 +6,7 @@
 // people); once started, L log it and Enter done.
 
 import { useState } from 'react';
-import { Bell, Clock, Copy, Lightbulb, Repeat, Target } from 'lucide-react';
+import { Bell, Clock, Copy, Lightbulb, MapPin, Repeat, Target } from 'lucide-react';
 import { Sheet } from '../components/Sheet.jsx';
 import { isTabbedToButton, isTyping } from '../components/sheetLayer.js';
 import { Kbd } from '../components/atoms.jsx';
@@ -42,6 +42,16 @@ export function EventSheet({ ev, day, today, people, goals, journal = [], genera
   const when = ev.allDay || typeof ev.time !== 'number'
     ? `${formatCalendarDate(parseISODay(day))}, all day`
     : `${formatCalendarDate(parseISODay(day))} · ${formatTime12(ev.time)} to ${formatTime12(ev.time + durationOf(ev))}`;
+
+  if (ev.source === 'google') {
+    return (
+      <Sheet title={`📅 ${ev.title}`} onClose={onClose}>
+        <Row Icon={Clock}>{when}</Row>
+        {ev.location && <Row Icon={MapPin}>{ev.location}</Row>}
+        <p className="text-xs mt-3" style={{ color: COLORS.inkSoft }}>From {ev.feedName || 'your Google Calendar'}. Change it in Google Calendar; Layers shows it, and doesn't remind you about it.</p>
+      </Sheet>
+    );
+  }
 
   function onKey(e) {
     if (e.ctrlKey || e.metaKey || e.altKey || isTyping() || isTabbedToButton()) return;

@@ -3,7 +3,7 @@
 // Screens live in views/, sheets in modals/, logic in lib/; the file map is
 // in docs/renderer/app-structure.md.
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Plus } from 'lucide-react';
 import { BottomNav } from './components/BottomNav.jsx';
 import { ErrorBoundary } from './components/ErrorBoundary.jsx';
@@ -18,7 +18,7 @@ import { MAX_BACKUP_BYTES, createBackup, validateBackup } from './lib/backup.js'
 import { NOTIFY_DEFAULTS, isDoneOn, notifySettings, parseActionUrl, snoozeUntil, templateFor } from './lib/calendar.js';
 import { useCalendarNotifications, useDailyBackup, useDailyCheckIn, useSlideAcross, useSystemDark, useToday, useWide } from './lib/hooks.js';
 import { followUpEvent, markDone } from './lib/reminders.js';
-import { getSyncSettings, setSyncSettings, getSnoozes, loadSavedState, persistState, setSnoozes } from './lib/storage.js';
+import { getFeedCache, setFeedCache, getSyncSettings, setSyncSettings, getSnoozes, loadSavedState, persistState, setSnoozes } from './lib/storage.js';
 import { clamp, uid } from './lib/util.js';
 import { AddInfoModal } from './modals/AddInfoModal.jsx';
 import { AddPersonModal } from './modals/AddPersonModal.jsx';
@@ -35,6 +35,7 @@ import { PhotoFolderSheet } from './modals/PhotoFolderSheet.jsx';
 import { createStamper } from './lib/sync.js';
 import { SyncError, syncErrorText, syncOnce } from './lib/syncFile.js';
 import { SyncSheet } from './modals/SyncSheet.jsx';
+import { calendarItems, parseCalendar } from './lib/ics.js';
 import { QuickAddInterestModal } from './modals/QuickAddInterestModal.jsx';
 import { ShortcutsModal } from './modals/ShortcutsModal.jsx';
 import { StartOverSheet } from './modals/StartOverSheet.jsx';
@@ -329,6 +330,67 @@ function LayersApp() {
     if (syncBridge && syncBridge.getSyncInfo) Promise.resolve(syncBridge.getSyncInfo()).then(setSyncInfo).catch(() => {});
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // --- Other calendars, read-only (lib/ics.js, electron/feeds.cjs) ---------
+  // Fetched on start and every 30 minutes; their events show on Today, the
+  // month and in planning's clash warning, marked as from Google, never
+  // reminded (Google does that), never saved with your plans or synced.
+  const feedBridge = hasSystemBridge && window.layersSystem.fetchFeeds ? window.layersSystem : null;
+  const [feeds, setFeeds] = useState([]); // [{ id, name, host }]
+  const [feedCache, setFeedCacheState] = useState(() => getFeedCache());
+  const feedCacheRef = useRef(feedCache);
+  useEffect(() => { feedCacheRef.current = feedCache; });
+  function saveFeedCache(c) { setFeedCache(c); setFeedCacheState(c); }
+  async function refreshFeeds() {
+    if (!feedBridge) return;
+    try {
+      const list = (await feedBridge.listFeeds()) || [];
+      setFeeds(list);
+      if (!list.length) { saveFeedCache({ fetchedAt: new Date().toISOString(), items: [], errors: {} }); return; }
+      const fetched = (await feedBridge.fetchFeeds()) || [];
+      const start = parseISODay(today);
+      const day = (n) => toISODate(new Date(start.getFullYear(), start.getMonth(), start.getDate() + n));
+      const items = [];
+      const errors = {};
+      fetched.forEach(feed => {
+        if (feed.error) { errors[feed.id] = feed.error; return; }
+        try {
+          calendarItems(parseCalendar(feed.text), day(-30), day(120)).forEach(it => items.push({ ...it, feedId: feed.id, feedName: feed.name }));
+        } catch { errors[feed.id] = "Layers couldn't read that calendar."; }
+      });
+      // A calendar that couldn't be fetched (offline) keeps what it had.
+      const kept = feedCacheRef.current.items.filter(it => errors[it.feedId]);
+      saveFeedCache({ fetchedAt: new Date().toISOString(), items: [...items, ...kept], errors });
+    } catch { /* tried again in 30 minutes */ }
+  }
+  useEffect(() => {
+    if (!feedBridge || !onboarded) return undefined;
+    refreshFeeds();
+    const every = setInterval(refreshFeeds, 30 * 60 * 1000);
+    return () => clearInterval(every);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [onboarded, today]);
+  // As plans that can't be changed here (source 'google').
+  const feedEvents = useMemo(() => feedCache.items.filter(it => feeds.some(f => f.id === it.feedId)).map(it => ({
+    id: `g:${it.feedId}:${it.key}`, title: it.title, kind: 'oneoff', date: it.date, time: it.time, allDay: it.allDay, duration: it.duration,
+    alert: null, personIds: [], source: 'google', feedName: it.feedName, location: it.location,
+  })), [feedCache, feeds]);
+  const shownEvents = useMemo(() => (feedEvents.length ? [...events, ...feedEvents] : events), [events, feedEvents]);
+  async function handleAddFeed(address) {
+    const result = await feedBridge.addFeed(address);
+    if (result && result.error) return result.error;
+    pushToast(`Showing ${(result && result.feed && result.feed.name) || 'that calendar'}`);
+    await refreshFeeds();
+    return null;
+  }
+  function handleRemoveFeed(feed) {
+    askConfirm({
+      title: `Stop showing ${feed.name}?`,
+      message: 'Its events go from Layers, and this laptop forgets its address. Nothing changes in Google Calendar.',
+      confirmLabel: 'Stop showing it',
+      onConfirm: () => { Promise.resolve(feedBridge.removeFeed(feed.id)).then(() => refreshFeeds()).catch(() => {}); },
+    });
+  }
 
   function handleOpenBackups() {
     Promise.resolve(window.layersSystem.openBackupsFolder()).then(r => { if (r && r.error) pushToast(`Couldn't open the backups folder: ${r.error}`); }).catch(() => {});
@@ -1332,12 +1394,14 @@ function LayersApp() {
                     )}
                     {screen.name === 'tabs' && (
                       <>
-                        {activeTab === 'today' && <TodayView wide={wide} today={today} selectedDay={selectedDay || today} onSelectDay={(d) => setSelectedDay(d === today ? null : d)} mode={calendarMode} onSetMode={setCalendarMode} people={people} journal={journal} events={events} generalGoals={generalGoals} skills={skills} profile={profile} onPlan={openPlan} onOpenEvent={(eventId, day) => setEventView({ eventId, day })} onLogEvent={openLogFromEvent} onTickEvent={(ev, day) => handleMarkEventDone(ev.id, day)} onOpenPerson={openPerson} onAddPerson={() => setAddPersonOpen(true)} onOpenLog={() => openLog(null)} onSwitchTab={switchTab} onOpenGoals={openGoalsOverview} onOpenReview={setWeekReview} onOpenDay={setDayView} onOpenJump={() => { setJumpOpen(true); markTried('jump'); }} onHideFirstSteps={() => setProfile(p => ({ ...p, gettingStartedHidden: true }))} />}
+                        {activeTab === 'today' && <TodayView wide={wide} today={today} selectedDay={selectedDay || today} onSelectDay={(d) => setSelectedDay(d === today ? null : d)} mode={calendarMode} onSetMode={setCalendarMode} people={people} journal={journal} events={shownEvents} generalGoals={generalGoals} skills={skills} profile={profile} onPlan={openPlan} onOpenEvent={(eventId, day) => setEventView({ eventId, day })} onLogEvent={openLogFromEvent} onTickEvent={(ev, day) => handleMarkEventDone(ev.id, day)} onOpenPerson={openPerson} onAddPerson={() => setAddPersonOpen(true)} onOpenLog={() => openLog(null)} onSwitchTab={switchTab} onOpenGoals={openGoalsOverview} onOpenReview={setWeekReview} onOpenDay={setDayView} onOpenJump={() => { setJumpOpen(true); markTried('jump'); }} onHideFirstSteps={() => setProfile(p => ({ ...p, gettingStartedHidden: true }))} />}
                         {activeTab === 'people' && <PeopleView people={people} journal={journal} onOpenPerson={openPerson} onAddPerson={() => setAddPersonOpen(true)} onAddPhotos={() => setPhotoFolderOpen(true)} />}
                         {activeTab === 'coach' && <div className="page-col"><CoachView people={people} journal={journal} initialPersonId={coachInit.personId} initialTab={coachInit.tab} onOpenLog={openLog} onApproveInfo={handleApproveInfo} onLogFromAnalysis={handleLogFromAnalysis} onOpenPerson={openPerson} /></div>}
                         {activeTab === 'journal' && <div className="page-col"><JournalView today={today} people={people} generalGoals={generalGoals} journal={journal} goalFilter={journalGoal} onGoalFilter={setJournalGoal} onOpenPerson={openPerson} onEditEntry={setEditingEntryId} /></div>}
                         {activeTab === 'me' && <div className="page-col"><MeView people={people} journal={journal} skills={skills} generalGoals={generalGoals} profile={profile} onAddSample={handleAddSample} onRemoveSample={handleRemoveSample} hasSamplePeople={people.some(p => SAMPLE_PERSON_IDS.has(p.id))} canAddSample={INITIAL_PEOPLE.some(sp => !people.some(p => p.id === sp.id))} onStartOver={() => setStartOverOpen(true)} onExport={handleExportData} onImportClick={handleImportClick} backupInfo={backupInfo} onOpenBackups={handleOpenBackups} hasUpdater={hasUpdater} updateStatus={updateStatus} onCheckForUpdates={handleCheckForUpdates} onInstallUpdate={handleInstallUpdate} onOpenDownloadPage={handleOpenDownloadPage} shortcutStatus={shortcutStatus} themeMode={themeMode} onSetTheme={setThemeMode} onUpdateProfile={(changes) => setProfile(p => ({ ...p, ...changes }))} onEditProfile={() => setEditProfileOpen(true)} achievements={achievements || {}} hasSystemBridge={hasSystemBridge} autoLaunch={autoLaunch} onToggleAutoLaunch={handleToggleAutoLaunch} onOpenShortcuts={() => setShortcutsOpen(true)} appVersion={appVersion}
-                          sync={syncBridge ? { ...syncSettings, dir: syncInfo && syncInfo.dir } : null} onSyncTurnOn={openSyncSheet} onSyncNow={() => runSync()} onSyncOff={handleSyncOff} onOpenSyncFolder={handleOpenSyncFolder} /></div>}
+                          sync={syncBridge ? { ...syncSettings, dir: syncInfo && syncInfo.dir } : null}
+                          calendars={feedBridge ? { feeds, fetchedAt: feedCache.fetchedAt, errors: feedCache.errors, count: (id) => feedCache.items.filter(it => it.feedId === id).length } : null}
+                          onAddCalendar={handleAddFeed} onRemoveCalendar={handleRemoveFeed} onRefreshCalendars={refreshFeeds} onSyncTurnOn={openSyncSheet} onSyncNow={() => runSync()} onSyncOff={handleSyncOff} onOpenSyncFolder={handleOpenSyncFolder} /></div>}
                       </>
                     )}
                   </>
@@ -1366,13 +1430,13 @@ function LayersApp() {
             <input ref={importInputRef} type="file" accept="application/json" onChange={handleImportFile} style={{ display: 'none' }} />
 
             {logOpen && <LogInteractionModal people={people} defaultPersonId={logDefaultPerson} prefill={logPrefill} onCreateGoal={handleQuickGoal} onClose={closeLog} onPlan={() => openPlan({ day: selectedDay || today })} onSubmit={(payload) => { handleLogSubmit(payload); if (logPrefill && logPrefill.eventId) handleMarkEventDone(logPrefill.eventId, logPrefill.day, { quiet: true }); setLogPrefill(null); }} />}
-            {planState && <PlanSheet people={people} events={events} today={today} prefill={planState} defaultAlert={notifySettings(profile).defaultAlert} onClose={() => setPlanState(null)} onSave={handleSavePlan} onDelete={handleDeleteEvent} onCreateGoal={handleQuickGoal} />}
-            {eventView && events.some(e => e.id === eventView.eventId) && (() => {
-              const ev = events.find(e => e.id === eventView.eventId);
+            {planState && <PlanSheet people={people} events={shownEvents} today={today} prefill={planState} defaultAlert={notifySettings(profile).defaultAlert} onClose={() => setPlanState(null)} onSave={handleSavePlan} onDelete={handleDeleteEvent} onCreateGoal={handleQuickGoal} />}
+            {eventView && shownEvents.some(e => e.id === eventView.eventId) && (() => {
+              const ev = shownEvents.find(e => e.id === eventView.eventId);
               return <EventSheet ev={ev} day={eventView.day} today={today} people={people} goals={[...people.flatMap(p => p.goals), ...generalGoals]} journal={journal} generalGoals={generalGoals} onPrepare={openPrepare} onClose={() => setEventView(null)} onLog={() => openLogFromEvent(ev, eventView.day)} onDone={() => { handleMarkEventDone(ev.id, eventView.day); setEventView(null); }} onEdit={() => openPlan({ event: ev, day: eventView.day })} onCopy={() => openPlan({ copyOf: ev, day: eventView.day })} onDelete={() => handleDeleteEvent(ev.id, eventView.day)} />;
             })()}
             {dayView && (
-              <DaySheet day={dayView} today={today} people={people} journal={journal} events={events} generalGoals={generalGoals}
+              <DaySheet day={dayView} today={today} people={people} journal={journal} events={shownEvents} generalGoals={generalGoals}
                 onDay={(d) => { setDayView(d); setSelectedDay(d === today ? null : d); }}
                 onOpenEvent={(eventId, d) => setEventView({ eventId, day: d })} onPlan={openPlan} onPrepare={openPrepare} onClose={() => setDayView(null)} />
             )}

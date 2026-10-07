@@ -6,6 +6,7 @@ const windowStateKeeper = require('electron-window-state');
 const { createScheduler } = require('./toasts.cjs');
 const { backupDir, backupsInfo, saveDailyBackup } = require('./backups.cjs');
 const { findFaces } = require('./faces.cjs');
+const { calendarName, cleanFeedUrl, feedStore, fetchFeed } = require('./feeds.cjs');
 const { FILE: SYNC_FILE, passphraseStore, readSyncFiles, removeSyncCopies, setAsideSyncFile, syncDir, writeSyncFile } = require('./sync.cjs');
 
 // Windows groups taskbar entries, toast notifications, and jump lists by
@@ -93,6 +94,7 @@ if (!gotSingleInstanceLock || quitRequested) {
     setupBackups();
     setupFaces();
     setupSync();
+    setupFeeds();
     setupQuickAdd();
     registerGlobalShortcut();
 
@@ -566,6 +568,26 @@ function setupSync() {
     try { fs.mkdirSync(dir(), { recursive: true }); } catch { /* openPath says why */ }
     return { error: (await shell.openPath(dir())) || null };
   });
+}
+
+// --- Other calendars, read-only (feeds.cjs) ---------------------------------
+// The secret iCal addresses stay here, encrypted by Windows; the page only
+// gets names, and the files to read.
+function setupFeeds() {
+  const store = feedStore(path.join(app.getPath('userData'), 'calendars.bin'), safeStorage);
+  ipcMain.handle('feeds-list', () => store.list());
+  ipcMain.handle('feeds-add', async (_event, text) => {
+    const url = cleanFeedUrl(text);
+    if (!url) return { error: "That isn't a calendar address. Copy the secret address in iCal format from Google Calendar's settings." };
+    const got = await fetchFeed(url);
+    if (got.error) return got;
+    try { return store.add(url, calendarName(got.text)); } catch (e) { return { error: e.message }; }
+  });
+  ipcMain.handle('feeds-remove', (_event, id) => { try { return store.remove(id); } catch (e) { return { error: e.message }; } });
+  ipcMain.handle('feeds-fetch', () => Promise.all(store.urls().map(async ({ id, name, url }) => {
+    const got = await fetchFeed(url);
+    return got.error ? { id, name, error: got.error } : { id, name, text: got.text };
+  })));
 }
 
 function setupCalendar() {

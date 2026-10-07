@@ -37,6 +37,12 @@ contextBridge.exposeInMainWorld('layersSystem', {
   setSyncPassphrase: (passphrase) => ipcRenderer.invoke('sync-passphrase-set', passphrase),
   clearSyncPassphrase: () => ipcRenderer.invoke('sync-passphrase-clear'),
   openSyncFolder: () => ipcRenderer.invoke('sync-open-folder'),
+  // Other calendars, read-only (feeds.cjs): names only come back, never the
+  // secret addresses; fetchFeeds gives each calendar's file to read.
+  listFeeds: () => ipcRenderer.invoke('feeds-list'),
+  addFeed: (address) => ipcRenderer.invoke('feeds-add', address),
+  removeFeed: (id) => ipcRenderer.invoke('feeds-remove', id),
+  fetchFeeds: () => ipcRenderer.invoke('feeds-fetch'),
   // Where the faces are in chosen pictures (File objects), from Windows' own
   // face detector (faces.cjs): one { width, height, faces } or null each.
   findFaces: (files) => ipcRenderer.invoke('find-faces', [...files].map(file => { try { return webUtils.getPathForFile(file) || null; } catch { return null; } })),

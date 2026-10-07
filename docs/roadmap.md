@@ -187,7 +187,7 @@ comes back to you first.
      iPhone simulator, pushed to GitHub after the release (the repository is public,
      so GitHub's Macs are free; your data never goes there).
 3. ✅ **Housekeeping**: the stale-build guard, and more suggestion tones in Analyse.
-4. **Your Google Calendar, read-only**: from its secret iCal address (Google Calendar
+4. ✅ **Your Google Calendar, read-only** (built 2026-10-07): from its secret iCal address (Google Calendar
    → Settings → your calendar → Integrate calendar), fetched on start and every 30
    minutes; nothing is sent. Its events show on Today, in the month and in planning's
    clash warning, marked as from Google, **with no reminders** (Google already reminds
@@ -526,6 +526,18 @@ its own. Changes made while building are marked.
   box in the packaged app, with a temporary data folder as always.
 
 ## History
+
+### Your Google Calendar, read-only (after 1.0.34, not released yet)
+
+- **Me → Your Google Calendar**: paste the calendar's **Secret address in iCal format**
+  (Google Calendar on the web → Settings → your calendar → Integrate calendar). Add more
+  than one if you like (school, work).
+- Its events show on **Today** and the month with 📅 and the calendar's name, open
+  read-only, and count in planning's **clash warning**. Layers doesn't remind you about
+  them (Google does), and they're never saved, synced or backed up with your plans.
+- It's fetched on start and every 30 minutes, and kept for when you're offline. The
+  address works like a password for that calendar, so it stays on this laptop, protected
+  by Windows; **Remove** forgets it.
 
 ### The iPhone project (after 1.0.33, not released yet)
 
