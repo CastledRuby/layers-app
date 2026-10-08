@@ -355,6 +355,60 @@ describe('chat analysis with Claude', () => {
     expect(screen.getByRole('button', { name: 'Analyse a chat' }).getAttribute('aria-pressed')).toBe('true');
   });
 
+  it('saves every detail at once (S), reminds you the day after one with a day, and logs with L', async () => {
+    const day = (n) => toISODate(new Date(Date.now() + n * 24 * 3600 * 1000));
+    const label = (n) => { const d = new Date(Date.now() + n * 24 * 3600 * 1000); return `${['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][d.getDay()]}, ${d.getDate()} ${['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][d.getMonth()]}`; };
+    const bridge = fakeBridge({ hasKey: true, answer: { result: { ...ANSWER, extractedInfo: [
+      { category: 'important', text: '[them] has a job interview', temporary: true, when: day(5) },
+      { category: 'interests', text: 'Climbing', temporary: false, when: null },
+      { category: 'preferences', text: 'Hates olives', temporary: false, when: null },
+      { category: 'plans', text: 'Going to Wellington', temporary: false, when: day(9) },
+    ] }, usage: { input: 9000, output: 4000 } } });
+    seedState({ profile: { name: 'Sam', focus: 'mix' }, people: [person('Priya Shah')] });
+    const { user } = renderApp();
+    await openAnalyse(user, 'Priya');
+    const box = within(screen.getByLabelText('Your own chat')).getByLabelText('The chat');
+    await user.type(box, 'Priya: interview on monday!');
+    await user.keyboard('{Control>}{Enter}{/Control}'); // Ctrl+Enter analyses
+    await screen.findByText('Reconstructed conversation');
+    expect(bridge.runAnalysis).toHaveBeenCalledTimes(1);
+
+    // Each with a day shows it, and can be saved with a reminder for the day after.
+    expect(screen.getByText(new RegExp(`Category: Important / temporary \\(temporary\\) · 🗓️ ${label(5)}`))).toBeTruthy();
+    await user.click(screen.getAllByRole('button', { name: 'Save and remind me after' })[0]);
+    expect(toasts().at(-1)).toBe(`Saved to Important / temporary, with a reminder for ${label(6)}, 9:00 AM`);
+    expect(savedPerson('Priya Shah').important[0]).toMatchObject({ text: 'Priya has a job interview', when: day(5), temporary: true });
+    expect(savedState().events[0]).toMatchObject({ title: 'Ask Priya Shah how "Priya has a job interview" went', date: day(6), time: 540, personIds: [savedPerson('Priya Shah').id] });
+    expect(screen.getByText(/with a reminder the day after/)).toBeTruthy();
+
+    // S saves the other three at once; one with a day can still get its reminder.
+    expect(screen.getByRole('button', { name: 'Save all 3' })).toBeTruthy();
+    await user.keyboard('s');
+    expect(toasts().at(-1)).toBe('Saved 3 details');
+    const p = savedPerson('Priya Shah');
+    expect([p.interests[0].text, p.preferences[0].text, p.plans[0].text]).toEqual(['Climbing', 'Hates olives', 'Going to Wellington']);
+    expect(p.plans[0].when).toBe(day(9));
+    expect(p.interests[0]).not.toHaveProperty('when');
+    expect(screen.queryByRole('button', { name: /Save all/ })).toBeNull();
+    expect(savedState().events).toHaveLength(1);
+    await user.click(screen.getByRole('button', { name: 'Remind me after' }));
+    expect(toasts().at(-1)).toBe(`Reminder set for ${label(10)}, 9:00 AM`);
+    expect(savedState().events).toHaveLength(2);
+
+    // L logs it.
+    await user.keyboard('l');
+    expect(savedState().journal[0]).toMatchObject({ type: 'messaged', personId: p.id });
+    expect(screen.getByText('✓ Logged')).toBeTruthy();
+    await user.keyboard('l');
+    expect(savedState().journal).toHaveLength(1);
+
+    // The profile shows the day, and its bell asks the day after too.
+    await user.click(nav('People'));
+    await user.click(screen.getAllByRole('button', { name: /Priya Shah/ })[0]);
+    expect(screen.getByText(new RegExp(`🗓️ ${label(9)}`))).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Remind me to ask about "Going to Wellington"' })).toBeTruthy();
+  });
+
   it("isn't offered in the browser, where there's nowhere safe for a key", async () => {
     seedState({ people: [person('Priya Shah')] });
     const { user } = renderApp();

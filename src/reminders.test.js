@@ -30,4 +30,11 @@ describe('followUpEvent', () => {
     const ev = followUpEvent({ id: 'p1', name: 'Ana' }, { text: 'Job interview' }, NOW);
     expect(ev).toMatchObject({ title: 'Ask Ana how "Job interview" went', personIds: ['p1'], kind: 'oneoff', date: '2026-10-07', time: 540, alert: 0 });
   });
+  it('is the day after, for a detail with the day it happens, but never before tomorrow', () => {
+    const on = (when) => followUpEvent({ id: 'p1', name: 'Ana' }, { text: 'Job interview on Thu 15 Oct', when }, NOW).date;
+    expect(on('2026-10-15')).toBe('2026-10-16');
+    expect(on('2026-10-04')).toBe('2026-10-05'); // today: tomorrow
+    expect(on('2026-09-30')).toBe('2026-10-05'); // already been
+    expect(on('not a day')).toBe('2026-10-07');
+  });
 });

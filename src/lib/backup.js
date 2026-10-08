@@ -87,7 +87,9 @@ function cleanPerson(p, skipped) {
   CATEGORIES.forEach(({ key }) => {
     person[key] = (Array.isArray(p[key]) ? p[key] : []).flatMap(item => {
       if (!isObject(item) || !isText(item.text)) { skipped.items++; return []; }
-      return [{ ...item, id: isText(item.id) ? item.id : uid(), emoji: isText(item.emoji) ? item.emoji : categoryMeta(key).emoji, temporary: !!item.temporary, archived: !!item.archived }];
+      const clean = { ...item, id: isText(item.id) ? item.id : uid(), emoji: isText(item.emoji) ? item.emoji : categoryMeta(key).emoji, temporary: !!item.temporary, archived: !!item.archived };
+      if ('when' in clean && !isISODay(clean.when)) delete clean.when; // the day it happens, from an analysed chat
+      return [clean];
     });
   });
   return person;

@@ -134,6 +134,12 @@ describe('validateBackup repairs or skips damaged records', () => {
     expect(p.interests[0]).toMatchObject({ text: 'Chess', emoji: '⭐', temporary: false, archived: false });
     expect(result.warnings).toEqual(['1 goal without a title', '1 saved detail without text']);
   });
+  it("keeps a saved detail's day (from an analysed chat) only when it's a real day", () => {
+    const result = validateBackup({ version: 1, people: [person({ important: [{ text: 'Interview', when: '2026-10-15' }, { text: 'Exam', when: 'Friday' }, { text: 'Move' }] })] });
+    const [p] = result.data.people;
+    expect(p.important.map(it => it.when)).toEqual(['2026-10-15', undefined, undefined]);
+    expect(p.important[1]).not.toHaveProperty('when');
+  });
   it('accepts an old backup without a version, events or goals lists', () => {
     const result = validateBackup({ people: [person()], journal: [] });
     expect(result.ok).toBe(true);

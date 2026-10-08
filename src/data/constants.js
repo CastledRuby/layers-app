@@ -71,6 +71,7 @@ export const SHORTCUTS = [
   { keys: ['1–7', 'S', 'C', 'V'], or: true, desc: 'A goal (Add goal, Edit): a relationship goal, the next skill goal, your own, or a more specific version; E the description, D a due date, ← → who it’s for' },
   { keys: ['←', '→', 'T'], or: true, desc: 'Add info on a profile: the icon, or mark it temporary (the details box is ready to type in)' },
   { keys: ['←', '→', 'L', 'A', 'O'], or: true, desc: 'Coach, Prepare: who you’re about to talk to, Log the conversation, Analyse a chat, Open their profile (1 and 2 switch Prepare and Analyse)' },
+  { keys: ['S', 'L'], or: true, desc: 'Coach, an analysed chat: Save every detail found, Log it (Ctrl+↵ in the chat box analyses it)' },
   { keys: ['/'], desc: 'Jump to search (People or Journal)' },
   { keys: ['Backspace'], desc: 'Go back from a person or goals screen' },
   { keys: ['Ctrl', 'Z'], desc: 'Undo what you just did, while its message shows (a delete, tick, log or saved plan)' },

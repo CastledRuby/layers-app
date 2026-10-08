@@ -86,7 +86,7 @@ describe('the request', () => {
     const system = analysisSystem({ layers: [3], today: TODAY, dayFirst: true });
     ['follow-up questions', 'shift responses', 'missed bids', 'who asks, who shares', 'match their energy', 'getting longer or shorter', '50 is an ordinary, fine chat',
       'meaningfulness 1-5', 'sharedExperiences', 'followup', 'paraphrase', 'remembered', 'Wednesday 2026-10-07', 'day first', 'chatDate', "in the user's own style",
-      'be thorough', 'message by message', 'people in their life', "don't stop at a few", 'One detail per item']
+      'be thorough', 'message by message', 'people in their life', "don't stop at a few", 'One detail per item', 'when: the day it happens as YYYY-MM-DD']
       .forEach(phrase => expect(system).toContain(phrase));
     expect(analysisSystem({ today: TODAY, dayFirst: false })).not.toContain('day first');
   });
@@ -165,6 +165,16 @@ describe('the answer', () => {
     expect(day('2024-01-01')).toBeNull();
     expect(day('7/10/26')).toBeNull();
     expect(day(null)).toBeNull();
+  });
+
+  it("keeps a detail's day when it's a real day within a year either way", () => {
+    const when = (w) => analysisResult({ extractedInfo: [{ category: 'important', text: 'Interview', temporary: true, when: w }] }, amelie, { today: TODAY }).extractedInfo[0].when;
+    expect(when('2026-10-15')).toBe('2026-10-15');
+    expect(when('2026-10-01')).toBe('2026-10-01'); // it's happened: still worth asking about
+    expect(when('2028-01-01')).toBeUndefined();
+    expect(when('15/10/26')).toBeUndefined();
+    expect(when(null)).toBeUndefined();
+    expect(ANALYSIS_SCHEMA.properties.extractedInfo.items.properties.when).toEqual({ anyOf: [{ type: 'string' }, { type: 'null' }] });
   });
 
   it('is made safe whatever comes back', () => {

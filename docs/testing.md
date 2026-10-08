@@ -34,7 +34,8 @@ They run in Node and take milliseconds. Add one whenever you change a function i
 - `src/prepare.test.js` covers Prepare's hooks (`buildPotentialHooks`): what they
   draw on, their order, the six-hook limit, and experiences only from Layer 3 on.
 - `src/reminders.test.js` covers `lib/reminders.js`: the next occurrence, marking
-  done, passed one-offs, the 15-minute notification window and follow-up reminders.
+  done, passed one-offs, the 15-minute notification window and follow-up reminders (the
+  day after a detail's day, or three days later).
 
 ## 2. App tests: `tests/app/*.test.jsx`
 
@@ -142,11 +143,12 @@ interact.
   removable), an error keeping the chat, an answer dropped after moving to someone else,
   what it has cost in Me (each answer once, by model), "What are you logging?" opening Analyse with 3, the model buttons (the cheapest by default and again after a restart, another picked,
   the same chat with another model in a click, shown again without asking twice, logged
-  once, an error keeping the first answer), and nothing offered in the browser. `src/analysis.test.js` covers reading who a chat is with,
+  once, an error keeping the first answer), the details (Save all with S, a detail's day shown, saved and on the profile, Save and remind me after
+  and Remind me after planning the day after, L logging, Ctrl+Enter analysing), and nothing offered in the browser. `src/analysis.test.js` covers reading who a chat is with,
   hiding and restoring names (groups too), the request, what Claude is told to look for,
   the schema (every object closed, every field required, the reading before the scores)
   and making any answer and its log safe (the chat's day only when it's real and within
-  the year); `src/analysisMain.test.js` covers `electron/analysis.cjs` (keys,
+  the year, and a detail's day only when it's real and within a year either way); `src/analysisMain.test.js` covers `electron/analysis.cjs` (keys,
   the key kept encrypted, only text and screenshots let through, what's asked of Claude,
   and every failure in words, and only the offered models asked for). No test calls
   Claude. The end-to-end tests check a key

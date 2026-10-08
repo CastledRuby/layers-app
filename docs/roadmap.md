@@ -554,6 +554,21 @@ its own. Changes made while building are marked.
 
 ## History
 
+### Saving what Claude finds, with follow-ups (after 1.0.36, not released yet)
+
+Small additions to Analyse, built on 2026-10-08 without asking first, since Claude now
+finds ten or more details in a long chat:
+
+- **Save all** (S) saves every detail Claude found at once; each can still be saved,
+  edited or ignored on its own first.
+- **Dates on details**: for anything coming up, Claude gives the day it happens. It
+  shows on the detail (🗓️ Thu, 15 Oct), in Coach and on the profile. **Save and remind
+  me after** (or **Remind me after**, once saved) plans "Ask Amelie how the job interview
+  went" for 9 AM the day after. The profile's bell does the same for a detail with a day
+  (it was always three days later).
+- **Keys**: L logs an analysed chat, and Ctrl+Enter in the chat box analyses it.
+- Prepare's second button reads **Analyse your chat**, not "Analyse a screenshot".
+
 ### Analyse from the + button, and Me's title (1.0.36)
 
 - **What are you logging?** (+, or N) has a third choice, **Analyse a chat** (3), which

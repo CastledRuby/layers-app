@@ -99,7 +99,7 @@ const tones = obj({ text: str, natural: str, playful: str, deeper: str });
 // comes before the scores, so the scores follow from it. `tokens`: who's in
 // the chat besides you (tokensFor).
 export function analysisSchema(tokens = ['them']) {
-  const info = { category: { type: 'string', enum: CATEGORIES.map(c => c.key) }, text: str, temporary: { type: 'boolean' } };
+  const info = { category: { type: 'string', enum: CATEGORIES.map(c => c.key) }, text: str, temporary: { type: 'boolean' }, when: orNull(str) };
   if (tokens.length > 1) info.about = { type: 'string', enum: tokens };
   return obj({
     transcript: list(obj({ who: { type: 'string', enum: ['you', ...tokens] }, text: str })),
@@ -168,7 +168,7 @@ wentWell: two to four specific things the user did well, each pointing at a mome
 encourager: short replies that invite more ("no way!", "wait what happened?", "then what?") versus ones that close a topic ("nice", "lol", "ok"). Quote the user's most telling one: good if it invited more, improve if it closed things down; null if there were none.
 emotionalCues: up to three things ${group ? 'the others' : 'they'} may be feeling, each with one emoji and the evidence ("lots of exclamation marks about the job"). Possibilities, not facts; never diagnose.
 recommendation: one sentence when the best move is to let it rest (it ended naturally, they're winding down, or the user sent the last messages without a reply); otherwise null.
-extractedInfo: be thorough. Go through the chat message by message and list every detail about ${group ? 'the others (about: whose it is)' : 'them'} that a good friend would remember, said or confirmed by them rather than the user. Look for: people in their life (family, friends, a partner, pets, workmates, with names and how they're related), places (where they live, work, study, go out, have been or are going), work and study (their job, course, subjects, shifts, exams), anything coming up (with when, worked out from today: "Job interview on Thu 15 Oct"), things that have happened to them, what they like and dislike (food, drinks, music, shows, games, sports, hobbies), how they like to do things, worries, wins, and anything they asked the user to remember. One detail per item; don't merge separate details, and don't stop at a few: a long chat often has ten or more. Leave out only what has nothing to remember (greetings, "lol", plans already done with). Categories: interests (things they enjoy), preferences (likes, dislikes, how they like to do things), plans (things coming up), experiences (things that have happened to them, and the people and places in their life), important (time-sensitive things to follow up, like an exam, an interview, being unwell or a worry; temporary true). Short and specific ("Starts a new job at the library on Mon 12 Oct"), only what was actually said. Very sensitive things (health, sexuality, religion, family trouble) only if clearly shared and worth remembering, worded kindly.
+extractedInfo: be thorough. Go through the chat message by message and list every detail about ${group ? 'the others (about: whose it is)' : 'them'} that a good friend would remember, said or confirmed by them rather than the user. Look for: people in their life (family, friends, a partner, pets, workmates, with names and how they're related), places (where they live, work, study, go out, have been or are going), work and study (their job, course, subjects, shifts, exams), anything coming up (with when: "Job interview on Thu 15 Oct"), things that have happened to them, what they like and dislike (food, drinks, music, shows, games, sports, hobbies), how they like to do things, worries, wins, and anything they asked the user to remember. One detail per item; don't merge separate details, and don't stop at a few: a long chat often has ten or more. Leave out only what has nothing to remember (greetings, "lol", plans already done with). Categories: interests (things they enjoy), preferences (likes, dislikes, how they like to do things), plans (things coming up), experiences (things that have happened to them, and the people and places in their life), important (time-sensitive things to follow up, like an exam, an interview, being unwell or a worry; temporary true). Short and specific ("Starts a new job at the library on Mon 12 Oct"), only what was actually said. Very sensitive things (health, sexuality, religion, family trouble) only if clearly shared and worth remembering, worded kindly. when: the day it happens as YYYY-MM-DD, for something coming up or time-sensitive whose day is said or clear, worked out from when it was said (the message's date if the chat shows one, otherwise today); null if there's no day.
 next: ideas for the user's next message, in the slots that fit (null for the rest): continueTopic, shareYourself, changeTopic, dontMessage. Each has text (a one-line idea) and three ready-to-send messages written exactly in the user's own style from this chat (their length, capitals, punctuation, emoji and slang): natural, playful, deeper. Mention something specific from the chat; never generic. Use dontMessage when the chat has wound down or a moment should be left to sit; its three messages are then light, closing ones, in case they still want to say something.`,
   ].join('\n\n');
 }
@@ -253,6 +253,9 @@ export function analysisResult(raw, people, { today = new Date() } = {}) {
   const ratingsIn = lg.ratings || {};
   const day = typeof lg.chatDate === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(lg.chatDate) ? parseISODay(lg.chatDate) : null;
   const yearAgo = new Date(today.getFullYear() - 1, today.getMonth(), today.getDate());
+  // A detail's day (an interview on Thursday), within a year either way.
+  const yearAhead = new Date(today.getFullYear() + 1, today.getMonth(), today.getDate());
+  const whenOf = (s) => { const d = parseISODay(s); return d && d >= yearAgo && d <= yearAhead ? toISODate(d) : null; };
   return {
     key: 'own', title: 'Your chat', own: true,
     personIds: group.map(p => p.id),
@@ -268,7 +271,7 @@ export function analysisResult(raw, people, { today = new Date() } = {}) {
     emotionalCues: listOf(r.emotionalCues).filter(x => x && typeof x.text === 'string').slice(0, 3),
     extractedInfo: listOf(r.extractedInfo)
       .filter(x => x && typeof x.text === 'string' && x.text.trim() && CATEGORIES.some(c => c.key === x.category))
-      .map(x => { const p = personFor(x.about); return { category: x.category, text: x.text.trim(), temporary: !!x.temporary, personId: p.id, ...(group.length > 1 ? { name: first(p) } : {}) }; })
+      .map(x => { const p = personFor(x.about); const when = whenOf(x.when); return { category: x.category, text: x.text.trim(), temporary: !!x.temporary, ...(when ? { when } : {}), personId: p.id, ...(group.length > 1 ? { name: first(p) } : {}) }; })
       .filter(x => !known(group.find(p => p.id === x.personId), x.category, x.text)),
     next: { continueTopic: tone(r.next && r.next.continueTopic), shareYourself: tone(r.next && r.next.shareYourself), changeTopic: tone(r.next && r.next.changeTopic), dontMessage: tone(r.next && r.next.dontMessage) },
     log: {

@@ -485,8 +485,10 @@ phone later. It's unit-tested in `src/calendar.test.js`.
   adds the day. `occursOn` leaves out skipped days, so the day plan, the month, Ctrl+K and
   notifications all follow.
 - **`followUpEvent(person, item)`** makes a one-off like `Ask Sam how "Job interview"
-  went` for three days later at 9:00 AM. It's the bell on a temporary detail in the
-  profile.
+  went` at 9:00 AM: the day after the detail happens when it has a day (`when`, from an
+  analysed chat; tomorrow if that's gone by), otherwise three days later. It's the bell
+  on a temporary detail (or one with a day) in the profile, and Coach's **Remind me
+  after**.
 
 ### Notifications
 
@@ -659,12 +661,14 @@ will be sent.
   isn't punished), and what to write, each part pointing at specific messages. For the
   details found it's told to be thorough: message by message, every detail a good friend
   would remember (the people and places in their life, work and study, what's coming up
-  with when, likes and dislikes, worries, wins), one per item, not stopping at a few. The
-  schema (`analysisSchema`) puts the reading before the scores.
+  with when, likes and dislikes, worries, wins), one per item, not stopping at a few, and
+  for anything coming up, the day it happens (`when`), worked out from when it was said.
+  The schema (`analysisSchema`) puts the reading before the scores.
 - **The answer** is JSON kept to the schema by structured outputs, then checked by
   `analysisResult`: first names put back for the tags and "you" for `[you]`, scores
   clamped, an unknown state becomes `unclear`, info in an unknown category or already on
-  their profile is dropped, and each detail and group-chat message is given its person.
+  their profile is dropped, each detail and group-chat message is given its person, and
+  a detail keeps its day only if it's a real day within a year either way.
   It has the same shape as a sample in `data/scenarios.js`, so Coach shows both the same
   way. Each analysis is its own session (`own:<n>:<model>`), and an answer that arrives
   after you've moved to someone else is dropped.
@@ -676,7 +680,12 @@ will be sent.
   message's day; not in the future or more than a year back), otherwise today, and the
   date can be changed. The entry keeps `analysis` (grading, state, model). The sample
   chats still log the old way (`handleLogFromAnalysis`, type `analysed`).
-- **What's saved** is what you choose: info you Save, and the log. **Log this chat**
+- **What's saved** is what you choose: info you Save, one at a time or all at once
+  (**Save all**, S), and the log (**Log this chat**, L). A detail with a day shows it
+  (🗓️ Thu, 15 Oct) and keeps it on their profile (`when`, checked like a backup); **Save
+  and remind me after**, or **Remind me after** once it's saved, also plans "how did it
+  go?" for the day after (`followUpEvent`). Ctrl+Enter in the chat box analyses it.
+  **Log this chat**
   keeps, on the Journal entry (`analysisToKeep`), the scores and state, which model read
   it, Claude's review (what went well, the opportunity, try next time, encourager use,
   emotional cues, the recommendation and what to say next) and the chat itself: as you

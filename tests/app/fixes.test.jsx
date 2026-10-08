@@ -58,7 +58,7 @@ describe('#1 Coach opened for someone who was then removed', () => {
     await user.click(screen.getByRole('button', { name: /Remove this person/ }));
     await user.click(within(confirmDialog('Remove Morgan?')).getByRole('button', { name: 'Remove person' }));
     await user.click(nav('Coach'));
-    await user.click(screen.getByRole('button', { name: 'Analyse a screenshot' }));
+    await user.click(screen.getByRole('button', { name: 'Analyse your chat' }));
     errors.stop();
     expect(errors.errors).toEqual([]);
     expect(screen.getByText(/Analysing a conversation with/).textContent).toContain('Riley');

@@ -928,13 +928,18 @@ function LayersApp() {
     return off;
   }, [hasSystemBridge]);
 
-  // Profile > a temporary detail > bell: "Ask <name> how <it> went" in 3 days.
-  function handleRemindFollowUp(personId, item) {
+  // Profile > a temporary detail > bell (or Coach's Remind me): "Ask <name>
+  // how <it> went", the day after it happens if it has a day, else in 3 days.
+  function addFollowUp(personId, item) {
     const person = people.find(p => p.id === personId);
-    if (!person) return;
+    if (!person) return null;
     const ev = followUpEvent(person, item);
     setEvents(prev => [{ id: uid(), ...ev, createdAt: toISODate(new Date()) }, ...prev]);
-    pushToast(`Reminder set for ${formatCalendarDate(new Date(`${ev.date}T00:00:00`))}, 9:00 AM`);
+    return `${formatCalendarDate(new Date(`${ev.date}T00:00:00`))}, 9:00 AM`;
+  }
+  function handleRemindFollowUp(personId, item) {
+    const when = addFollowUp(personId, item);
+    if (when) pushToast(`Reminder set for ${when}`);
   }
   // A repeating plan opened on one of its days (`day`) can lose just that day.
   function handleDeleteEvent(eventId, day) {
@@ -1065,11 +1070,29 @@ function LayersApp() {
   function handleToggleArchive(personId, category, itemId) {
     setPeople(prev => prev.map(p => p.id !== personId ? p : { ...p, [category]: p[category].map(it => it.id === itemId ? { ...it, archived: !it.archived } : it) }));
   }
-  function handleApproveInfo(personId, category, text, temporary) {
+  // A detail from Coach's Analyse, with the day it happens (when) if it has
+  // one; remind: a follow-up the day after, too.
+  const newDetail = ({ category, text, temporary, when }) => ({ id: uid(), emoji: categoryMeta(category).emoji, text, at: toISODate(new Date()), temporary: !!temporary, archived: false, ...(when ? { when } : {}) });
+  function handleApproveInfo(personId, category, text, temporary, { when, remind } = {}) {
     const clean = String(text || '').trim();
     if (!clean) return; // an edit cleared to nothing isn't saved as an empty item
-    setPeople(prev => prev.map(p => p.id !== personId ? p : { ...p, [category]: [{ id: uid(), emoji: categoryMeta(category).emoji, text: clean, at: toISODate(new Date()), temporary: !!temporary, archived: false }, ...p[category]] }));
-    pushToast(`Saved to ${categoryMeta(category).label}`);
+    const item = newDetail({ category, text: clean, temporary, when });
+    setPeople(prev => prev.map(p => p.id !== personId ? p : { ...p, [category]: [item, ...p[category]] }));
+    const reminder = remind ? addFollowUp(personId, item) : null;
+    pushToast(reminder ? `Saved to ${categoryMeta(category).label}, with a reminder for ${reminder}` : `Saved to ${categoryMeta(category).label}`);
+  }
+  // Save all: every detail found, at once ([{ personId, category, text, temporary, when }]).
+  function handleApproveInfoAll(items) {
+    const list = items.map(it => ({ ...it, text: String(it.text || '').trim() })).filter(it => it.text);
+    if (!list.length) return;
+    setPeople(prev => prev.map(p => {
+      const mine = list.filter(it => it.personId === p.id);
+      if (!mine.length) return p;
+      const next = { ...p };
+      mine.slice().reverse().forEach(it => { next[it.category] = [newDetail(it), ...next[it.category]]; });
+      return next;
+    }));
+    pushToast(list.length === 1 ? `Saved to ${categoryMeta(list[0].category).label}` : `Saved ${list.length} details`);
   }
 
   // Adjust maps the dimensions onto the layers absolutely (placeOnLayers).
@@ -1452,7 +1475,7 @@ function LayersApp() {
                       <>
                         {activeTab === 'today' && <TodayView wide={wide} today={today} selectedDay={selectedDay || today} onSelectDay={(d) => setSelectedDay(d === today ? null : d)} mode={calendarMode} onSetMode={setCalendarMode} people={people} journal={journal} events={shownEvents} generalGoals={generalGoals} skills={skills} profile={profile} onPlan={openPlan} onOpenEvent={(eventId, day) => setEventView({ eventId, day })} onLogEvent={openLogFromEvent} onTickEvent={(ev, day) => handleMarkEventDone(ev.id, day)} onMissEvent={(ev, day) => handleMarkEventMissed(ev.id, day)} onOpenPerson={openPerson} onAddPerson={() => setAddPersonOpen(true)} onOpenLog={() => openLog(null)} onSwitchTab={switchTab} onOpenGoals={openGoalsOverview} onOpenReview={setWeekReview} onOpenDay={setDayView} onOpenJump={() => { setJumpOpen(true); markTried('jump'); }} onHideFirstSteps={() => setProfile(p => ({ ...p, gettingStartedHidden: true }))} />}
                         {activeTab === 'people' && <PeopleView people={people} journal={journal} onOpenPerson={openPerson} onAddPerson={() => setAddPersonOpen(true)} onAddPhotos={() => setPhotoFolderOpen(true)} />}
-                        {activeTab === 'coach' && <div className="page-col"><CoachView people={people} journal={journal} initialPersonId={coachInit.personId} initialTab={coachInit.tab} onOpenLog={openLog} onApproveInfo={handleApproveInfo} onLogFromAnalysis={handleLogFromAnalysis} onOpenPerson={openPerson}
+                        {activeTab === 'coach' && <div className="page-col"><CoachView people={people} journal={journal} initialPersonId={coachInit.personId} initialTab={coachInit.tab} onOpenLog={openLog} onApproveInfo={handleApproveInfo} onApproveInfoAll={handleApproveInfoAll} onRemindAbout={handleRemindFollowUp} onLogFromAnalysis={handleLogFromAnalysis} onOpenPerson={openPerson}
                           onLogChat={(l) => handleLogSubmit({ personIds: l.personIds.filter(id => people.some(p => p.id === id)), type: 'messaged', meaningfulness: l.meaningfulness, notes: [], activeListening: l.activeListening, summary: l.summary || undefined, pickedDate: l.date, ratings: l.ratings, analysis: l.analysis })}
                           analysisReady={!analysisBridge ? 'none' : hasAnalysisKey ? 'ready' : 'no-key'} onAnalyse={(request) => analysisBridge.runAnalysis(request)} onOpenMe={() => switchTab('me')} yourName={profile.name}
                           model={analysisModelId} onModel={setAnalysisModelId} chatExports={chatsBridge} initialChatKey={coachInit.chatKey || null} /></div>}

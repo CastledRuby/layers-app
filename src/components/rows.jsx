@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { Archive, BellPlus, BookOpen, Check, Clock, Pencil, Trash2, TrendingUp } from 'lucide-react';
 import { ProgressBar } from './atoms.jsx';
 import { presetMeta } from '../data/constants.js';
-import { infoItemDateLabel, parseISODay, startOfDay } from '../lib/dates.js';
+import { formatCalendarDate, infoItemDateLabel, parseISODay, startOfDay } from '../lib/dates.js';
 import { COLORS } from '../theme.js';
 
 // `today` ('YYYY-MM-DD', from useToday) keeps "Due in 2 days" correct after
@@ -57,7 +57,8 @@ export function GoalRow({ goal, color, today, onBump, onEdit, onDelete, logs = 0
   );
 }
 
-// `onRemind` (temporary items only) sets a "how did it go?" reminder.
+// `onRemind` (temporary items, and ones with a day) sets a "how did it go?"
+// reminder. A detail from an analysed chat can have the day it happens (`when`).
 export function InfoItemRow({ item, onSave, onDelete, onToggleTemporary, onToggleArchive, onRemind }) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(item.text);
@@ -73,7 +74,7 @@ export function InfoItemRow({ item, onSave, onDelete, onToggleTemporary, onToggl
           ) : (
             <p className="text-sm" style={{ color: COLORS.ink }}>{item.text}{item.temporary && <span className="text-xs ml-1.5" style={{ color: COLORS.warn }}>(temporary)</span>}</p>
           )}
-          <p className="text-xs mt-0.5" style={{ color: COLORS.inkSoft }}>Last mentioned: {infoItemDateLabel(item)}</p>
+          <p className="text-xs mt-0.5" style={{ color: COLORS.inkSoft }}>Last mentioned: {infoItemDateLabel(item)}{parseISODay(item.when) && ` · 🗓️ ${formatCalendarDate(parseISODay(item.when))}`}</p>
         </div>
       </div>
       <div className="flex items-center gap-1 shrink-0 pt-0.5">
@@ -83,7 +84,7 @@ export function InfoItemRow({ item, onSave, onDelete, onToggleTemporary, onToggl
           <button onClick={() => setEditing(true)} aria-label={`Edit "${item.text}"`} className="p-1"><Pencil size={14} color={COLORS.inkSoft} /></button>
         )}
         <button onClick={onToggleTemporary} aria-pressed={item.temporary} aria-label={item.temporary ? 'Marked temporary, click to unmark' : 'Mark as temporary'} className="p-1"><Clock size={14} color={item.temporary ? COLORS.warn : COLORS.inkSoft} /></button>
-        {item.temporary && onRemind && (<button onClick={onRemind} aria-label={`Remind me to ask about "${item.text}"`} title="Remind me to follow up" className="p-1"><BellPlus size={14} color={COLORS.accent} /></button>)}
+        {(item.temporary || parseISODay(item.when)) && onRemind && (<button onClick={onRemind} aria-label={`Remind me to ask about "${item.text}"`} title="Remind me to follow up" className="p-1"><BellPlus size={14} color={COLORS.accent} /></button>)}
         <button onClick={onToggleArchive} aria-label="Archive" className="p-1"><Archive size={14} color={COLORS.inkSoft} /></button>
         <button onClick={onDelete} aria-label={`Delete "${item.text}"`} className="p-1"><Trash2 size={14} color={COLORS.inkSoft} /></button>
       </div>

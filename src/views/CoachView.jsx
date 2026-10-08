@@ -1,7 +1,8 @@
 // Conversation Coach tab: Prepare and Analyse.
 // Keys (no sheet open, not typing): 1 Prepare, 2 Analyse; on Prepare, ← →
 // who you're about to talk to, L logs the conversation with them, A
-// analyses a chat with them, O opens their profile.
+// analyses a chat with them, O opens their profile. On an analysed chat, S
+// saves every detail found and L logs it; Ctrl+Enter in the chat box analyses.
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Check, ImagePlus, Plus, X } from 'lucide-react';
@@ -11,7 +12,7 @@ import { ANALYSIS_MODELS, analysisCost, analysisModel, analysisRequest, analysis
 import { DateDropdown } from '../components/pickers.jsx';
 import { ChatExports } from '../components/ChatExports.jsx';
 import { chatPeople, conversationLabel, conversationText, isoDayOf, loadChatExports, readChatProgress, saveChatProgress } from '../lib/chatImport.js';
-import { parseISODay } from '../lib/dates.js';
+import { formatCalendarDate, parseISODay } from '../lib/dates.js';
 import { isPictureFile } from '../data/avatars.js';
 import { loadPhoto, shrinkForAnalysis } from '../lib/photo.js';
 import { AL_ITEMS, categoryMeta, DIM_COLORS, DIM_LABELS, DIM_ORDER, getLayer, ML_LABELS } from '../data/constants.js';
@@ -53,8 +54,11 @@ function ModelButtons({ label, value, onPick, done = {} }) {
 // onLogChat: saves your own chat's log ({ personIds, meaningfulness, ratings,
 // activeListening, summary, date, analysis }) as a normal log. chatExports:
 // the main process's Layers chats folder (listChatExports, readChatExport,
-// openChatsFolder, onChatExportsChanged), or null.
-export function CoachView({ people, journal, initialPersonId, initialTab, onOpenLog, onApproveInfo, onLogFromAnalysis, onLogChat, onOpenPerson, analysisReady = 'none', onAnalyse, onOpenMe, yourName = '', model = DEFAULT_ANALYSIS_MODEL, onModel = () => {}, chatExports = null, initialChatKey = null }) {
+// openChatsFolder, onChatExportsChanged), or null. onApproveInfo saves a
+// detail found (with its day, `when`, and `remind` for a follow-up the day
+// after), onApproveInfoAll several at once, onRemindAbout sets that follow-up
+// for one already saved.
+export function CoachView({ people, journal, initialPersonId, initialTab, onOpenLog, onApproveInfo, onApproveInfoAll, onRemindAbout, onLogFromAnalysis, onLogChat, onOpenPerson, analysisReady = 'none', onAnalyse, onOpenMe, yourName = '', model = DEFAULT_ANALYSIS_MODEL, onModel = () => {}, chatExports = null, initialChatKey = null }) {
   const [tab, setTab] = useState(initialTab || 'prepare');
   const [preparePersonId, setPreparePersonId] = useState(initialPersonId || (people[0] && people[0].id) || null);
   const [analysisPersonId, setAnalysisPersonId] = useState(initialTab === 'analyse' ? initialPersonId || null : null);
@@ -218,15 +222,45 @@ export function CoachView({ people, journal, initialPersonId, initialTab, onOpen
     else ask(ownChat, ownResults, withModel, 'results');
   }
   function changeAnalysisPerson() { setAnalysisPersonId(null); resetAnalyse(); }
-  function saveInfoItem(i) {
+  // Each detail is saved (with a reminder the day after, for one with a
+  // day), ignored, or saved with the rest; `infoStatus`: 'saved', 'reminded'
+  // or 'ignored'.
+  const infoPersonId = (it) => it.personId || scenarioPerson.id;
+  function saveInfoItem(i, { remind = false } = {}) {
     const it = scenario.extractedInfo[i];
     const text = String(infoDrafts[i] || '').trim();
     if (!text) return;
-    onApproveInfo(it.personId || scenarioPerson.id, it.category, text, it.temporary);
-    updateSession(s => ({ infoStatus: { ...s.infoStatus, [i]: 'saved' } }));
+    onApproveInfo(infoPersonId(it), it.category, text, it.temporary, { when: it.when, remind });
+    updateSession(s => ({ infoStatus: { ...s.infoStatus, [i]: remind ? 'reminded' : 'saved' } }));
+    setEditingIndex(null);
+  }
+  function remindInfoItem(i) {
+    const it = scenario.extractedInfo[i];
+    if (!onRemindAbout) return;
+    onRemindAbout(infoPersonId(it), { text: String(infoDrafts[i] || it.text).trim(), when: it.when });
+    updateSession(s => ({ infoStatus: { ...s.infoStatus, [i]: 'reminded' } }));
+  }
+  const unsavedInfo = scenario && scenario.extractedInfo ? scenario.extractedInfo.map((_, i) => i).filter(i => !infoStatus[i] && String(infoDrafts[i] || '').trim()) : [];
+  function saveAllInfo() {
+    if (!unsavedInfo.length || !onApproveInfoAll) return;
+    onApproveInfoAll(unsavedInfo.map(i => { const it = scenario.extractedInfo[i]; return { personId: infoPersonId(it), category: it.category, text: infoDrafts[i], temporary: it.temporary, when: it.when }; }));
+    updateSession(s => ({ infoStatus: { ...s.infoStatus, ...Object.fromEntries(unsavedInfo.map(i => [i, 'saved'])) } }));
     setEditingIndex(null);
   }
   function ignoreInfoItem(i) { updateSession(s => ({ infoStatus: { ...s.infoStatus, [i]: 'ignored' } })); setEditingIndex(null); }
+  // Your own chat: a normal log, filled in by Claude, on the chat's day, with
+  // Claude's review and the chat kept on it (the Journal's Review).
+  function logOwn() {
+    if (logged || !onLogChat) return;
+    onLogChat({ ...scenario.log, date: ownLogDate, analysis: analysisToKeep(scenario, { model: ownModel, chat: ownChat && ownChat.text }) });
+    updateSession(() => ({ logged: true }));
+  }
+  function handleLogAnalysis() {
+    if (logged) return;
+    onLogFromAnalysis(scenarioPerson.id, scenario);
+    updateSession(() => ({ logged: true }));
+  }
+
   useEffect(() => {
     function onKey(e) {
       if (e.ctrlKey || e.metaKey || e.altKey || e.defaultPrevented || hasOpenSheet() || isTyping()) return;
@@ -236,6 +270,11 @@ export function CoachView({ people, journal, initialPersonId, initialTab, onOpen
       const act = (fn) => { e.preventDefault(); fn(); };
       if (e.key === '1') { act(() => setTab('prepare')); return; }
       if (e.key === '2') { act(() => setTab('analyse')); return; }
+      if (tab === 'analyse' && step === 'results' && scenario && scenarioPerson) {
+        if (key === 's' && unsavedInfo.length && onApproveInfoAll) act(saveAllInfo);
+        else if (key === 'l' && !logged) act(() => (scenario.own ? logOwn() : handleLogAnalysis()));
+        return;
+      }
       if (tab !== 'prepare' || !preparePerson) return;
       if ((e.key === 'ArrowLeft' || e.key === 'ArrowRight') && people.length > 1) {
         act(() => {
@@ -249,19 +288,6 @@ export function CoachView({ people, journal, initialPersonId, initialTab, onOpen
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   });
-
-  // Your own chat: a normal log, filled in by Claude, on the chat's day, with
-  // Claude's review and the chat kept on it (the Journal's Review).
-  function logOwn() {
-    if (logged || !onLogChat) return;
-    onLogChat({ ...scenario.log, date: ownLogDate, analysis: analysisToKeep(scenario, { model: ownModel, chat: ownChat && ownChat.text }) });
-    updateSession(() => ({ logged: true }));
-  }
-  function handleLogAnalysis() {
-    if (logged) return;
-    onLogFromAnalysis(scenarioPerson.id, scenario);
-    updateSession(() => ({ logged: true }));
-  }
 
   return (
     <div className="px-5 pt-6 pb-4">
@@ -383,7 +409,7 @@ export function CoachView({ people, journal, initialPersonId, initialTab, onOpen
 
           <div className="flex items-center gap-2 mt-5">
             <button onClick={() => onOpenLog(preparePerson ? preparePerson.id : null)} className="flex-1 flex items-center justify-center gap-1.5 text-sm font-semibold rounded-full py-3 text-center" style={{ background: COLORS.accent, color: COLORS.onAccent }}>Log this conversation <Kbd onAccent>L</Kbd></button>
-            <button onClick={() => { const id = preparePerson ? preparePerson.id : null; if (id !== analysisPersonId) resetAnalyse(); setAnalysisPersonId(id); setTab('analyse'); }} className="flex-1 flex items-center justify-center gap-1.5 text-sm font-semibold rounded-full py-3 text-center" style={{ background: COLORS.paperRaised, color: COLORS.accent, border: `1px solid ${COLORS.accent}` }}>Analyse a screenshot <Kbd>A</Kbd></button>
+            <button onClick={() => { const id = preparePerson ? preparePerson.id : null; if (id !== analysisPersonId) resetAnalyse(); setAnalysisPersonId(id); setTab('analyse'); }} className="flex-1 flex items-center justify-center gap-1.5 text-sm font-semibold rounded-full py-3 text-center" style={{ background: COLORS.paperRaised, color: COLORS.accent, border: `1px solid ${COLORS.accent}` }}>Analyse your chat <Kbd>A</Kbd></button>
           </div>
 
           <p className="text-xs text-center mt-5" style={{ color: COLORS.inkSoft }}>Good social skills are about noticing, responding and adapting, not forcing a particular outcome.</p>
@@ -455,7 +481,7 @@ export function CoachView({ people, journal, initialPersonId, initialTab, onOpen
                           <button type="button" onClick={() => { setOwnSource(null); changeOwnText(''); }} className="font-semibold shrink-0" style={{ color: COLORS.accent }}>Clear</button>
                         </p>
                       )}
-                      <textarea value={ownText} onChange={e => changeOwnText(e.target.value)} aria-label="The chat" rows={ownSource ? 8 : 5}
+                      <textarea value={ownText} onChange={e => changeOwnText(e.target.value)} onKeyDown={e => { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); analyseOwn(); } }} aria-label="The chat" rows={ownSource ? 8 : 5}
                         placeholder={`Paste the chat${touch ? ', or add screenshots below' : ''}. Names on the messages ("Amelie: hey") tell Layers who it's with.`} className="w-full text-sm rounded-xl px-3 py-2.5 mt-2" style={{ border: `1px solid ${COLORS.line}`, resize: 'vertical' }} />
                       {touch && <input ref={shotsInput} type="file" accept="image/*" multiple hidden aria-label="Add screenshots" onChange={e => { const files = e.target.files ? [...e.target.files] : []; e.target.value = ''; addShots(files); }} />}
                       {touch && <div className="flex items-center gap-2 flex-wrap mt-2">
@@ -471,7 +497,7 @@ export function CoachView({ people, journal, initialPersonId, initialTab, onOpen
                       <ModelButtons label="Model" value={model} onPick={onModel} />
                       <p className="text-xs mt-2.5" style={{ color: COLORS.inkSoft }}>Pressing Analyse sends this chat, and only this chat, to Anthropic for {analysisModel(model).name} to read ({typicalCost(model)}{analysisModel(model).thinks ? '; it thinks first, so it takes longer and costs more' : ''}). {ownPeople.map(p => p.name.split(' ')[0]).join(', ')}'s name and yours are swapped for tags first{touch ? '; screenshots go as they are' : ''}.</p>
                       {ownError && <p className="text-xs mt-2 font-semibold" role="alert" style={{ color: COLORS.alert }}>{ownError}</p>}
-                      <button type="button" onClick={analyseOwn} disabled={!ownPeople.length || (!ownText.trim() && !ownShots.length)} className="w-full text-sm font-semibold rounded-full py-2.5 mt-3" style={{ background: COLORS.accent, color: COLORS.onAccent, opacity: !ownPeople.length || (!ownText.trim() && !ownShots.length) ? 0.5 : 1 }}>Analyse with Claude</button>
+                      <button type="button" onClick={analyseOwn} disabled={!ownPeople.length || (!ownText.trim() && !ownShots.length)} className="w-full flex items-center justify-center gap-1.5 text-sm font-semibold rounded-full py-2.5 mt-3" style={{ background: COLORS.accent, color: COLORS.onAccent, opacity: !ownPeople.length || (!ownText.trim() && !ownShots.length) ? 0.5 : 1 }}>Analyse with Claude <Kbd onAccent>Ctrl+↵</Kbd></button>
                     </div>
                   )}
                   <p className="text-sm font-semibold mb-2" style={{ color: COLORS.ink }}>{analysisReady === 'ready' ? 'Or try a sample conversation' : 'Try a sample conversation'}</p>
@@ -567,7 +593,12 @@ export function CoachView({ people, journal, initialPersonId, initialTab, onOpen
                 <p className="text-xs mt-2 italic" style={{ color: COLORS.inkSoft }}>These are possible interpretations, not facts.</p>
               </div>}
 
-              {scenario.extractedInfo.length > 0 && <p className="text-sm font-semibold mb-2" style={{ color: COLORS.ink }}>Information mentioned</p>}
+              {scenario.extractedInfo.length > 0 && (
+                <div className="flex items-center justify-between gap-2 mb-2">
+                  <p className="text-sm font-semibold" style={{ color: COLORS.ink }}>Information mentioned</p>
+                  {unsavedInfo.length > 1 && onApproveInfoAll && <button type="button" onClick={saveAllInfo} className="flex items-center gap-1.5 text-xs font-semibold rounded-full pl-3 pr-1.5 py-1" style={{ background: COLORS.accentSoft, color: COLORS.accent }}>Save all {unsavedInfo.length} <Kbd>S</Kbd></button>}
+                </div>
+              )}
               {scenario.extractedInfo.map((it, i) => {
                 const status = infoStatus[i];
                 const cat = categoryMeta(it.category);
@@ -581,14 +612,17 @@ export function CoachView({ people, journal, initialPersonId, initialTab, onOpen
                         <p className="text-sm flex-1" style={{ color: COLORS.ink }}>{infoDrafts[i]}</p>
                       )}
                     </div>
-                    <p className="text-xs mt-1" style={{ color: COLORS.inkSoft }}>{it.name ? `About ${it.name} · ` : ''}Category: {cat.label}{it.temporary ? ' (temporary)' : ''}</p>
-                    {status === 'saved' ? (
-                      <p className="text-xs mt-1.5 font-medium" style={{ color: COLORS.good }}><Check size={11} /> Saved to {it.personId ? nameOf(it.personId) : scenarioPerson ? scenarioPerson.name : 'profile'}</p>
+                    <p className="text-xs mt-1" style={{ color: COLORS.inkSoft }}>{it.name ? `About ${it.name} · ` : ''}Category: {cat.label}{it.temporary ? ' (temporary)' : ''}{it.when ? ` · 🗓️ ${formatCalendarDate(parseISODay(it.when))}` : ''}</p>
+                    {status === 'saved' || status === 'reminded' ? (
+                      <p className="text-xs mt-1.5 font-medium flex items-center gap-1 flex-wrap" style={{ color: COLORS.good }}><Check size={11} /> Saved to {it.personId ? nameOf(it.personId) : scenarioPerson ? scenarioPerson.name : 'profile'}
+                        {status === 'reminded' ? ', with a reminder the day after' : it.when && onRemindAbout && <button type="button" onClick={() => remindInfoItem(i)} className="font-semibold ml-2" style={{ color: COLORS.accent }}>Remind me after</button>}
+                      </p>
                     ) : status === 'ignored' ? (
                       <p className="text-xs mt-1.5" style={{ color: COLORS.inkSoft }}>Ignored</p>
                     ) : (
                       <div className="flex items-center gap-3 mt-1.5">
                         <button onClick={() => saveInfoItem(i)} disabled={!String(infoDrafts[i] || '').trim()} className="text-xs font-semibold" style={{ color: String(infoDrafts[i] || '').trim() ? COLORS.accent : COLORS.inkSoft }}>Save</button>
+                        {it.when && <button onClick={() => saveInfoItem(i, { remind: true })} disabled={!String(infoDrafts[i] || '').trim()} className="text-xs font-semibold" style={{ color: String(infoDrafts[i] || '').trim() ? COLORS.accent : COLORS.inkSoft }}>Save and remind me after</button>}
                         <button onClick={() => setEditingIndex(i)} className="text-xs font-semibold" style={{ color: COLORS.inkSoft }}>Edit</button>
                         <button onClick={() => ignoreInfoItem(i)} className="text-xs font-semibold" style={{ color: COLORS.inkSoft }}>Ignore</button>
                       </div>
@@ -641,13 +675,13 @@ export function CoachView({ people, journal, initialPersonId, initialTab, onOpen
                   <p className="text-xs mt-2" style={{ color: COLORS.inkSoft }}>The log keeps this review and the chat, to read again from the Journal.</p>
                   {logged
                     ? <p className="text-sm text-center font-medium mt-3" style={{ color: COLORS.good }}>✓ Logged</p>
-                    : <button type="button" onClick={logOwn} className="w-full text-sm font-semibold rounded-full py-3 mt-3" style={{ background: COLORS.accent, color: COLORS.onAccent }}>Log this chat</button>}
+                    : <button type="button" onClick={logOwn} className="w-full flex items-center justify-center gap-1.5 text-sm font-semibold rounded-full py-3 mt-3" style={{ background: COLORS.accent, color: COLORS.onAccent }}>Log this chat <Kbd onAccent>L</Kbd></button>}
                 </div>
               ) : <div className="mt-5">
                 {logged ? (
                   <p className="text-sm text-center font-medium" style={{ color: COLORS.good }}>✓ Logged and updated {scenarioPerson ? scenarioPerson.name : 'their'} progress</p>
                 ) : (
-                  <button onClick={handleLogAnalysis} className="w-full text-sm font-semibold rounded-full py-3" style={{ background: COLORS.accent, color: COLORS.onAccent }}>Log this as an interaction</button>
+                  <button onClick={handleLogAnalysis} className="w-full flex items-center justify-center gap-1.5 text-sm font-semibold rounded-full py-3" style={{ background: COLORS.accent, color: COLORS.onAccent }}>Log this as an interaction <Kbd onAccent>L</Kbd></button>
                 )}
               </div>}
             </div>

@@ -1,6 +1,6 @@
 // Done state and follow-ups for plans (calendar events). Which days a plan
 // comes up on, the day plan and its notifications are in lib/calendar.js.
-import { toISODate } from './dates.js';
+import { parseISODay, toISODate } from './dates.js';
 
 // What "done" means: a one-off is finished for good; a repeating plan is
 // done (or skipped) for that day only. Each day is kept, so skipping next
@@ -23,9 +23,14 @@ export function markMissed(ev, day) {
 }
 
 // A "remind me to follow up" for something time-sensitive you noted about
-// someone: a one-off reminder three days later at 9:00 AM, at the time.
+// someone: a one-off reminder at 9:00 AM, at the time. It's the day after the
+// detail happens when it has a day (`when`, from an analysed chat), but not
+// before tomorrow; otherwise three days later.
 export function followUpEvent(person, item, now = new Date()) {
-  const day = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 3);
+  const on = parseISODay(item.when);
+  const tomorrow = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+  const after = on ? new Date(on.getFullYear(), on.getMonth(), on.getDate() + 1) : null;
+  const day = after ? (after < tomorrow ? tomorrow : after) : new Date(now.getFullYear(), now.getMonth(), now.getDate() + 3);
   return {
     title: `Ask ${person.name} how "${item.text}" went`,
     personIds: [person.id],
