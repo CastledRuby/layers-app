@@ -1,7 +1,7 @@
 # Roadmap
 
 Where Layers stands against [vision.md](vision.md), what was decided along the way, and
-what comes next. Last updated 2026-10-07, after 1.0.35 (anything since is at the top of
+what comes next. Last updated 2026-10-08, after 1.0.36 (anything since is at the top of
 [History](#history), marked not released yet). **What's next is
 [The plan from here](#the-plan-from-here-2026-10-07).**
 
@@ -210,10 +210,10 @@ iMessage and Instagram, and WhatsApp's Export chat shared straight to Layers.
 **Dropped:** the other avatar styles, and the 20-question survey. **Later:** code
 signing (P8), only needed for other people's laptops.
 
-### Next batch (decided 2026-10-07), then 1.0.36
+### Next batch (decided 2026-10-07), released in 1.0.36
 
-You asked where an analysed chat goes, and picked these. They're released together as
-1.0.36 once you've tried the chat exports.
+You asked where an analysed chat goes, and picked these. Released together as 1.0.36
+on 2026-10-08, with everything else since 1.0.35.
 
 1. ✅ **Keep the review and the chat with the log** (built 2026-10-07): Log this chat
    keeps Claude's review and the chat itself on the Journal entry; **Review** on the
@@ -554,7 +554,7 @@ its own. Changes made while building are marked.
 
 ## History
 
-### Analyse from the + button, and Me's title (after 1.0.35, not released yet)
+### Analyse from the + button, and Me's title (1.0.36)
 
 - **What are you logging?** (+, or N) has a third choice, **Analyse a chat** (3), which
   opens Coach's Analyse.
@@ -563,37 +563,37 @@ its own. Changes made while building are marked.
   for everything worth remembering (the people and places in their life, work and study,
   what's coming up and when, likes, worries), one per detail.
 
-### Chats in your week (after 1.0.35, not released yet)
+### Chats in your week (1.0.36)
 
 - **Your week** (Sunday evening, or W on Today) lists your chats with new conversations
   to analyse, from the Layers chats folder. Tapping one opens it in Coach.
 
-### Skills over time (after 1.0.35, not released yet)
+### Skills over time (1.0.36)
 
 - **Your chats with …** on a profile, and **Your chats over time** in Me: listening,
   depth, balance and naturalness as Claude scored the chats you analysed and logged,
   charted by day, with how each has moved since the first.
 
-### What Claude has cost (after 1.0.35, not released yet)
+### What Claude has cost (1.0.36)
 
 - **Me → Chat analysis** shows what chat analysis has cost this month and last, and with
   which models. Every answer counts, including ones that couldn't be used, since those
   are charged too. It's worked out on this laptop; console.anthropic.com has the exact
   bill.
 
-### Nicknames (after 1.0.35, not released yet)
+### Nicknames (1.0.36)
 
 - **Also known as** when editing someone: their nicknames (Mel, Ames), shown on their
   profile. A chat signed with one goes to them, and it's hidden before the chat is sent.
   Ctrl+K, picking people by typing, and the quick-add box find them by a nickname too.
 
-### Analysed chats kept with their logs (after 1.0.35, not released yet)
+### Analysed chats kept with their logs (1.0.36)
 
 - **Log this chat** now keeps Claude's review (what went well, what to try, what to say
   next) and the chat itself with the log. The Journal entry's **Review** button reads it
   again, and the Journal's search finds words in kept chats.
 
-### Chats from your exports (after 1.0.35, not released yet)
+### Chats from your exports (1.0.36)
 
 - **No more unzipping and scrolling**: on your phone, WhatsApp → the chat → Export chat
   → Without media → Save to Files → OneDrive → Documents → **Layers chats**. A few
@@ -608,7 +608,7 @@ its own. Changes made while building are marked.
 - Snapchat and iMessage don't export chats, so they'll be screenshots in the phone app.
 - Exports stay in the folder; Layers only reads them.
 
-### Chat analysis that knows who it's with, and logs it properly (after 1.0.35, not released yet)
+### Chat analysis that knows who it's with, and logs it properly (1.0.36)
 
 - **Who it's with**: Coach reads the names on the pasted messages ("Amelie: …", or
   WhatsApp's with times) and puts those people in the card's **With** row, so a chat
@@ -626,7 +626,7 @@ its own. Changes made while building are marked.
 - **Add detail** in a log is now what you did together (got coffee, studied together,
   video call…), kept in the log's note. Interests are still added with "Something new".
 
-### Didn't happen, a window that fills the screen, and trying other models (after 1.0.35, not released yet)
+### Didn't happen, a window that fills the screen, and trying other models (1.0.36)
 
 - **Didn't happen** on "How did it go?" (or **X**), and **It didn't happen** on a plan
   that has started: nothing is logged, it isn't counted as done, and it stops asking.
@@ -639,7 +639,7 @@ its own. Changes made while building are marked.
   another in a click, to compare; each answer is kept for that chat. It's back to Haiku
   each time Layers starts.
 
-### Analyse your own chat (after 1.0.35, not released yet)
+### Analyse your own chat (1.0.36)
 
 - **Coach → Analyse a chat → Analyse your own chat**: paste a chat, or add up to six
   screenshots, and **Analyse with Claude**. You get the same review as the samples: the
