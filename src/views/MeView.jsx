@@ -158,12 +158,12 @@ export function MeView({ people, journal, skills, profile, generalGoals = [], on
 
   return (
     <div className="fade-anim px-5 pt-6 pb-6">
-      <div className="flex items-center justify-between rounded-2xl p-3.5 mb-6" style={{ background: COLORS.paperRaised, border: `1px solid ${COLORS.line}` }}>
+      <div className="flex items-start justify-between gap-3 mb-6">
         <div style={{ minWidth: 0 }}>
-          <p className="text-sm font-semibold truncate" style={{ color: COLORS.ink }}>{(profile && profile.name) || 'You'}</p>
-          <p className="text-xs mt-0.5" style={{ color: COLORS.inkSoft }}>{profile && FOCUS_LABELS[profile.focus] ? `Focusing on ${FOCUS_LABELS[profile.focus]}` : 'No focus chosen yet'}</p>
+          <h1 className="font-display truncate" style={{ fontSize: 24, color: COLORS.ink }}>{(profile && profile.name) || 'You'}</h1>
+          <p className="text-sm mt-1" style={{ color: COLORS.inkSoft }}>{profile && FOCUS_LABELS[profile.focus] ? `Focusing on ${FOCUS_LABELS[profile.focus]}` : 'No focus chosen yet'}</p>
         </div>
-        <button onClick={onEditProfile} className="text-xs font-semibold rounded-full px-3 py-1.5 shrink-0" style={{ background: COLORS.accentSoft, color: COLORS.accent }}>Edit</button>
+        <button onClick={onEditProfile} className="text-xs font-semibold rounded-full px-3 py-1.5 shrink-0 mt-1" style={{ background: COLORS.accentSoft, color: COLORS.accent }}>Edit</button>
       </div>
 
       <div className="grid grid-cols-2 gap-y-4 mb-7">

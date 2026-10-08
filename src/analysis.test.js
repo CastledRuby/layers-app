@@ -85,7 +85,8 @@ describe('the request', () => {
   it("tells Claude what to look for and how to score, today's date for the chat's times, and the log's own scales", () => {
     const system = analysisSystem({ layers: [3], today: TODAY, dayFirst: true });
     ['follow-up questions', 'shift responses', 'missed bids', 'who asks, who shares', 'match their energy', 'getting longer or shorter', '50 is an ordinary, fine chat',
-      'meaningfulness 1-5', 'sharedExperiences', 'followup', 'paraphrase', 'remembered', 'Wednesday 2026-10-07', 'day first', 'chatDate', "in the user's own style"]
+      'meaningfulness 1-5', 'sharedExperiences', 'followup', 'paraphrase', 'remembered', 'Wednesday 2026-10-07', 'day first', 'chatDate', "in the user's own style",
+      'be thorough', 'message by message', 'people in their life', "don't stop at a few", 'One detail per item']
       .forEach(phrase => expect(system).toContain(phrase));
     expect(analysisSystem({ today: TODAY, dayFirst: false })).not.toContain('day first');
   });

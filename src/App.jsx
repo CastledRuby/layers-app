@@ -1490,7 +1490,7 @@ function LayersApp() {
 
             <input ref={importInputRef} type="file" accept="application/json" onChange={handleImportFile} style={{ display: 'none' }} />
 
-            {logOpen && <LogInteractionModal people={people} defaultPersonId={logDefaultPerson} prefill={logPrefill} onCreateGoal={handleQuickGoal} onClose={closeLog} onPlan={() => openPlan({ day: selectedDay || today })} onSubmit={(payload) => { handleLogSubmit(payload); if (logPrefill && logPrefill.eventId) handleMarkEventDone(logPrefill.eventId, logPrefill.day, { quiet: true }); setLogPrefill(null); }} />}
+            {logOpen && <LogInteractionModal people={people} defaultPersonId={logDefaultPerson} prefill={logPrefill} onCreateGoal={handleQuickGoal} onClose={closeLog} onPlan={() => openPlan({ day: selectedDay || today })} onAnalyse={() => { closeLog(); openCoach(null, 'analyse'); }} onSubmit={(payload) => { handleLogSubmit(payload); if (logPrefill && logPrefill.eventId) handleMarkEventDone(logPrefill.eventId, logPrefill.day, { quiet: true }); setLogPrefill(null); }} />}
             {planState && <PlanSheet people={people} events={shownEvents} today={today} prefill={planState} defaultAlert={notifySettings(profile).defaultAlert} onClose={() => setPlanState(null)} onSave={handleSavePlan} onDelete={handleDeleteEvent} onCreateGoal={handleQuickGoal} />}
             {eventView && shownEvents.some(e => e.id === eventView.eventId) && (() => {
               const ev = shownEvents.find(e => e.id === eventView.eventId);

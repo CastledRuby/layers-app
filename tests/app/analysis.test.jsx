@@ -7,7 +7,7 @@
 import { screen, waitFor, within } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { toISODate } from '../../src/lib/dates.js';
-import { confirmDialog, dialog, nav, person, relaunch, renderApp, savedPerson, savedState, seedState, toasts } from './harness.jsx';
+import { confirmDialog, dialog, nav, person, queryDialog, relaunch, renderApp, savedPerson, savedState, seedState, toasts } from './harness.jsx';
 
 vi.mock('../../src/lib/photo.js', () => ({
   MAX_PHOTO_BYTES: 25 * 1024 * 1024,
@@ -336,6 +336,23 @@ describe('chat analysis with Claude', () => {
     expect(within(screen.getByLabelText('Log it')).getByText(/Messaged Amelie, Chloe/)).toBeTruthy();
     await user.click(screen.getByRole('button', { name: 'Log this chat' }));
     expect(savedState().journal.map(j => j.personId).sort()).toEqual([savedPerson('Amelie').id, savedPerson('Chloe').id].sort());
+  });
+
+  it('"What are you logging?" has Analyse a chat, 3, which opens Coach\'s Analyse', async () => {
+    fakeBridge({ hasKey: true });
+    seedState({ people: [person('Priya Shah')] });
+    const { user } = renderApp();
+    await user.keyboard('n');
+    const kind = dialog('What are you logging?');
+    expect(within(kind).getByRole('button', { name: /Analyse a chat/ }).textContent).toMatch(/^3/);
+    await user.keyboard('3');
+    expect(queryDialog('What are you logging?')).toBeNull();
+    expect(nav('Coach').getAttribute('aria-current')).toBe('page');
+    expect(screen.getByText('Who is this conversation with?')).toBeTruthy();
+    // And by tapping it.
+    await user.keyboard('n');
+    await user.click(within(dialog('What are you logging?')).getByRole('button', { name: /Analyse a chat/ }));
+    expect(screen.getByRole('button', { name: 'Analyse a chat' }).getAttribute('aria-pressed')).toBe('true');
   });
 
   it("isn't offered in the browser, where there's nowhere safe for a key", async () => {

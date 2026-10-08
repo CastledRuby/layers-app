@@ -7,7 +7,7 @@
 // from the keyboard; the keys are shown next to what they do.
 
 import { useRef, useState } from 'react';
-import { Calendar, Check, Ear, Gauge, MessageCircle, PenLine, Plus, Sparkles, Target, X } from 'lucide-react';
+import { Calendar, Check, Ear, Gauge, MessageCircle, MessageSquareText, PenLine, Plus, Sparkles, Target, X } from 'lucide-react';
 import { Sheet } from '../components/Sheet.jsx';
 import { isTabbedToButton, isTyping } from '../components/sheetLayer.js';
 import { Avatar, KeyedField, Kbd } from '../components/atoms.jsx';
@@ -55,7 +55,8 @@ function Scale({ value, onChange, label, size = 'md' }) {
 // prefill (logging a plan from the calendar, or a log typed in Ctrl+K):
 // { personIds, type, note, day, goalIds, meaningfulness } opens straight on
 // the details, filled in; goalIds, when given, are the only goals ticked.
-export function LogInteractionModal({ people, defaultPersonId, prefill, onClose, onSubmit, onPlan, onCreateGoal }) {
+// onAnalyse: "Analyse a chat" on the first step, to Coach's Analyse.
+export function LogInteractionModal({ people, defaultPersonId, prefill, onClose, onSubmit, onPlan, onAnalyse, onCreateGoal }) {
   // Only preselect someone who still exists (Coach can pass a removed person).
   const startPerson = defaultPersonId && people.some(p => p.id === defaultPersonId) ? defaultPersonId : null;
   // With someone already picked (their profile, Ctrl+K), it's an interaction,
@@ -139,7 +140,7 @@ export function LogInteractionModal({ people, defaultPersonId, prefill, onClose,
 
   // Keys, while this sheet is on top (not while one of its pickers is):
   //   every step  Backspace goes back
-  //   kind        1 Interaction, 2 Plan something    type  1-6 the types
+  //   kind        1 Interaction, 2 Plan something, 3 Analyse a chat    type  1-6 the types
   //   who         1-9 or typing a name picks people (peopleKeys.js), Enter confirms
   //   details     1-5 how meaningful, N the note, D Add detail, R/L/I/G/F
   //               the extras, Enter (or Ctrl+Enter, even in the note) saves
@@ -161,6 +162,7 @@ export function LogInteractionModal({ people, defaultPersonId, prefill, onClose,
     if (step === 'kind') {
       if (num === 1 && people.length > 0) act(() => go('type'));
       else if (num === 2 && onPlan) act(onPlan);
+      else if (num === 3 && onAnalyse) act(onAnalyse);
     } else if (step === 'type') {
       if (num && num <= TYPE_ORDER.length) act(() => pickType(TYPE_ORDER[num - 1]));
     } else if (step === 'who') {
@@ -196,7 +198,7 @@ export function LogInteractionModal({ people, defaultPersonId, prefill, onClose,
     <Sheet title={titles[step]} onClose={onClose} onBack={BACK[step] ? goBack : undefined} onKey={handleKey} footer={footer} tall>
       <div key={step} className={dir === 'in' ? 'step-in' : dir === 'back' ? 'step-back' : ''}>
         {step === 'kind' && (
-          <div className="grid grid-cols-2 gap-3">
+          <div className={`grid ${onAnalyse ? 'grid-cols-3 gap-2.5' : 'grid-cols-2 gap-3'}`}>
             {/* With nobody in your circle yet, only plans can be made. */}
             <button type="button" onClick={() => go('type')} disabled={people.length === 0} className="tile px-3 py-6 flex flex-col items-center gap-2.5 text-center">
               <Kbd>1</Kbd>
@@ -210,6 +212,14 @@ export function LogInteractionModal({ people, defaultPersonId, prefill, onClose,
               <span className="text-sm font-bold">Plan something</span>
               <span className="text-xs" style={{ color: COLORS.inkSoft }}>Something coming up, on your calendar</span>
             </button>
+            {onAnalyse && (
+              <button type="button" onClick={onAnalyse} className="tile px-3 py-6 flex flex-col items-center gap-2.5 text-center">
+                <Kbd>3</Kbd>
+                <span className="tile-icon"><MessageSquareText size={22} color={COLORS.accent} /></span>
+                <span className="text-sm font-bold">Analyse a chat</span>
+                <span className="text-xs" style={{ color: COLORS.inkSoft }}>A chat you had, read by Claude, then logged</span>
+              </button>
+            )}
           </div>
         )}
 

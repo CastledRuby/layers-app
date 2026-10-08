@@ -656,7 +656,10 @@ will be sent.
   topics, and message lengths; naturalness: matching their energy and style; and their
   engagement: replies getting longer or shorter, asking back, reply times), what the
   scores mean (50 an ordinary chat, 70 good, 85 excellent; brevity that suits the moment
-  isn't punished), and what to write, each part pointing at specific messages. The
+  isn't punished), and what to write, each part pointing at specific messages. For the
+  details found it's told to be thorough: message by message, every detail a good friend
+  would remember (the people and places in their life, work and study, what's coming up
+  with when, likes and dislikes, worries, wins), one per item, not stopping at a few. The
   schema (`analysisSchema`) puts the reading before the scores.
 - **The answer** is JSON kept to the schema by structured outputs, then checked by
   `analysisResult`: first names put back for the tags and "you" for `[you]`, scores

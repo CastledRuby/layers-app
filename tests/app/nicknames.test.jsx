@@ -13,6 +13,18 @@ const ANSWER = {
 };
 afterEach(() => { delete window.layersSystem; });
 
+describe('Me', () => {
+  it('starts with your name as its title, and your focus under it', async () => {
+    seedState({ profile: { name: 'Liam', focus: 'mix' } });
+    const { user } = renderApp();
+    await user.click(nav('Me'));
+    expect(screen.getByRole('heading', { level: 1, name: 'Liam' })).toBeTruthy();
+    expect(screen.getByText(/^Focusing on /)).toBeTruthy();
+    await user.click(screen.getByRole('button', { name: 'Edit' }));
+    expect(dialog('Your profile')).toBeTruthy();
+  });
+});
+
 describe('nicknames', () => {
   it('are added when editing someone, shown on their profile, and find them in a chat', async () => {
     const bridge = {

@@ -554,6 +554,15 @@ its own. Changes made while building are marked.
 
 ## History
 
+### Analyse from the + button, and Me's title (after 1.0.35, not released yet)
+
+- **What are you logging?** (+, or N) has a third choice, **Analyse a chat** (3), which
+  opens Coach's Analyse.
+- **Me** starts with your name as a title, like the other pages, with your focus under it.
+- **Claude is more thorough with details**: it goes through the chat message by message
+  for everything worth remembering (the people and places in their life, work and study,
+  what's coming up and when, likes, worries), one per detail.
+
 ### Chats in your week (after 1.0.35, not released yet)
 
 - **Your week** (Sunday evening, or W on Today) lists your chats with new conversations

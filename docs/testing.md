@@ -122,7 +122,7 @@ interact.
 - `chatTrend.test.jsx` covers skills over time: on a profile with analysed chats (not
   one without) and in Me, the latest scores and how they've moved. `src/chatTrend.test.js`
   covers the points (a day's averaged, a group chat once with everyone) and the change.
-- `nicknames.test.jsx` covers nicknames: added when editing someone, shown on the
+- `nicknames.test.jsx` covers Me's title (your name, with your focus under it) and nicknames: added when editing someone, shown on the
   profile, and a chat signed with one going to them with the nickname hidden.
   `src/nicknames.test.js` covers keeping them tidy and finding someone by one in chat
   names, Ctrl+K and typed plans.
@@ -140,7 +140,7 @@ interact.
   removed, the pasted chat sent with names hidden only when Analyse is pressed, the answer
   shown with their name back (info saved, logged once), screenshots (six at most, each
   removable), an error keeping the chat, an answer dropped after moving to someone else,
-  what it has cost in Me (each answer once, by model), the model buttons (the cheapest by default and again after a restart, another picked,
+  what it has cost in Me (each answer once, by model), "What are you logging?" opening Analyse with 3, the model buttons (the cheapest by default and again after a restart, another picked,
   the same chat with another model in a click, shown again without asking twice, logged
   once, an error keeping the first answer), and nothing offered in the browser. `src/analysis.test.js` covers reading who a chat is with,
   hiding and restoring names (groups too), the request, what Claude is told to look for,
