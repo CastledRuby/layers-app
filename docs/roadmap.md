@@ -568,6 +568,8 @@ finds ten or more details in a long chat:
   (it was always three days later).
 - **Keys**: L logs an analysed chat, and Ctrl+Enter in the chat box analyses it.
 - Prepare's second button reads **Analyse your chat**, not "Analyse a screenshot".
+- **Prepare remembers Claude's tip**: Prepare (and a profile's Prepare to talk) shows
+  "Claude's tip from your last chat" with them: the habit it suggested trying next time.
 
 ### Analyse from the + button, and Me's title (1.0.36)
 

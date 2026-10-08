@@ -109,6 +109,9 @@ export function buildPotentialHooks(person, journal, now = new Date()) {
     hooks.push({ key: 'recent', label: 'Last time you spoke', text: `${summaryFor(last)} (${journalDateLabel(last, now)})${topics.length ? `. You talked about ${listOf(topics)}` : ''}. A natural thing to circle back to.` });
     const reflected = recent.find(j => j.reflection);
     if (reflected) hooks.push({ key: 'reflection', label: 'What you noted afterwards', text: `"${reflected.reflection}"` });
+    // The habit Claude suggested after your last analysed chat with them.
+    const coached = recent.find(j => j.analysis && j.analysis.review && typeof j.analysis.review.tryNextTime === 'string' && j.analysis.review.tryNextTime.trim());
+    if (coached) hooks.push({ key: 'coached', label: "Claude's tip from your last chat", text: `${coached.analysis.review.tryNextTime.trim()} (${journalDateLabel(coached, now)})` });
   }
 
   const interests = active('interests');

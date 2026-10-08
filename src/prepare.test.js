@@ -31,6 +31,17 @@ describe('buildPotentialHooks', () => {
     expect(hooks.find(h => h.key === 'reflection').text).toBe('"They seemed stressed about the move"');
   });
 
+  it("brings back Claude's tip from your last analysed chat with them", () => {
+    const p = personWith({});
+    const chat = (id, at, tryNextTime) => ({ id, personId: p.id, at, type: 'messaged', meaningfulness: 3, added: [], activeListening: [], analysis: { grading: { overall: 70 }, conversationState: 'engaged', review: { tryNextTime } } });
+    const journal = [chat('j1', '2026-09-20', 'Ask one more question.'), chat('j2', '2026-10-02', 'Name the feeling back: "nervous-excited?"'),
+      { id: 'j3', personId: 'someone-else', at: '2026-10-03', type: 'messaged', meaningfulness: 3, added: [], activeListening: [], analysis: { grading: { overall: 60 }, review: { tryNextTime: 'Not theirs' } } }];
+    const hook = buildPotentialHooks(p, journal, NOW).find(h => h.key === 'coached');
+    expect(hook).toMatchObject({ label: "Claude's tip from your last chat", text: 'Name the feeling back: "nervous-excited?" (2 days ago)' });
+    // A sample chat's log (no review) has no tip.
+    expect(buildPotentialHooks(p, [{ ...chat('j4', '2026-10-03', ''), analysis: { grading: { overall: 70 } } }], NOW).map(h => h.key)).not.toContain('coached');
+  });
+
   it('keeps personal experiences for Layer 3 and closer', () => {
     const experiences = [item('Changed schools last year', '2026-09-01')];
     expect(buildPotentialHooks(personWith({ layer: 2, experiences }), [], NOW).map(h => h.key)).not.toContain('experience');

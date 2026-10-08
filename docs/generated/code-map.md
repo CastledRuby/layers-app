@@ -4,7 +4,7 @@
 > Run `npm run docs:map` after changing anything under `src/`, `electron/*.cjs` or `package.json` scripts.
 > Hand-written explanations live in the other files under [`docs/`](../README.md).
 
-Package: `layers-web` v1.0.36 · `src/`: 82 files, 13956 lines, 106 components, 362 top-level functions, 186 constants.
+Package: `layers-web` v1.0.36 · `src/`: 82 files, 13959 lines, 106 components, 362 top-level functions, 186 constants.
 
 ## Source files
 
@@ -37,7 +37,7 @@ Package: `layers-web` v1.0.36 · `src/`: 82 files, 13956 lines, 106 components, 
 | [lib/summary.js](../../src/lib/summary.js) | 96 | LAYER_NAMES, esc, longDay, layerColor, layerDeep, layerTint, avatar, section, summaryHtml, summaryFileName | `data/constants`, `data/avatars`, `lib/activity`, `lib/calendar`, `lib/dates`, `lib/text`, `theme` |
 | [lib/sync.js](../../src/lib/sync.js) | 180 | KINDS, KEEP_DELETED_DAYS, COLLECTIONS, DAY_MS, prune, createStamper, cleanDeleted, stampOf, mergeList, mergeSkills, … (+3) | — |
 | [lib/syncFile.js](../../src/lib/syncFile.js) | 168 | SYNC_FORMAT, ITERATIONS, MAIN_FILE, subtle, enc, dec, toB64, fromB64, keys, KEYS, … (+5) | `lib/backup`, `lib/sync` |
-| [lib/text.js](../../src/lib/text.js) | 168 | summaryFor, updateStatusText, homeGoalTitle, generateSuggestions, getCheckInSuggestions, checkInReminder, HOOKS, buildPotentialHooks, focusSuggestion | `data/constants`, `lib/dates` |
+| [lib/text.js](../../src/lib/text.js) | 171 | summaryFor, updateStatusText, homeGoalTitle, generateSuggestions, getCheckInSuggestions, checkInReminder, HOOKS, buildPotentialHooks, focusSuggestion | `data/constants`, `lib/dates` |
 | [lib/tips.js](../../src/lib/tips.js) | 47 | SOON_DAYS, addDays, datesAround, planTips | `data/constants`, `lib/calendar`, `lib/dates`, `lib/text` |
 | [lib/util.js](../../src/lib/util.js) | 9 | clamp, uidCounter, uid | — |
 | [components/ActivityCalendar.jsx](../../src/components/ActivityCalendar.jsx) | 51 | CELL, GAP, shade, ActivityCalendar | `lib/activity`, `lib/dates`, `theme` |
@@ -503,7 +503,7 @@ Package: `layers-web` v1.0.36 · `src/`: 82 files, 13956 lines, 106 components, 
 | `getCheckInSuggestions` | [text.js:54](../../src/lib/text.js#L54) | ✓ | ✓ |
 | `checkInReminder` | [text.js:67](../../src/lib/text.js#L67) | ✓ | ✓ |
 | `buildPotentialHooks` | [text.js:93](../../src/lib/text.js#L93) | ✓ | ✓ |
-| `focusSuggestion` | [text.js:143](../../src/lib/text.js#L143) | ✓ |  |
+| `focusSuggestion` | [text.js:146](../../src/lib/text.js#L146) | ✓ |  |
 | `addDays` | [tips.js:14](../../src/lib/tips.js#L14) |  |  |
 | `datesAround` | [tips.js:18](../../src/lib/tips.js#L18) | ✓ |  |
 | `planTips` | [tips.js:30](../../src/lib/tips.js#L30) | ✓ |  |

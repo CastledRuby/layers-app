@@ -131,6 +131,8 @@ They're prompts to notice an opening, never scripts. In order, it offers:
 - **Last time you spoke**: the latest entry, plus up to three topics saved in the last
   three logs.
 - **What you noted afterwards**: the latest reflection.
+- **Claude's tip from your last chat**: "Try next time" from the latest analysed chat
+  with them that kept its review, with its day.
 - **Their interests**: up to three, most recently mentioned first, with a count of the rest.
 - **Something they mentioned** (a plan) and **Worth remembering** (a preference).
 - **A deeper topic**: an experience, only from Layer 3 on. Social Penetration Theory has

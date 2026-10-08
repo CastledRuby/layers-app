@@ -355,7 +355,7 @@ describe('chat analysis with Claude', () => {
     expect(screen.getByRole('button', { name: 'Analyse a chat' }).getAttribute('aria-pressed')).toBe('true');
   });
 
-  it('saves every detail at once (S), reminds you the day after one with a day, and logs with L', async () => {
+  it("saves every detail at once (S), reminds you the day after one with a day, logs with L, and Prepare brings back Claude's tip", async () => {
     const day = (n) => toISODate(new Date(Date.now() + n * 24 * 3600 * 1000));
     const label = (n) => { const d = new Date(Date.now() + n * 24 * 3600 * 1000); return `${['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][d.getDay()]}, ${d.getDate()} ${['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][d.getMonth()]}`; };
     const bridge = fakeBridge({ hasKey: true, answer: { result: { ...ANSWER, extractedInfo: [
@@ -401,6 +401,11 @@ describe('chat analysis with Claude', () => {
     expect(screen.getByText('✓ Logged')).toBeTruthy();
     await user.keyboard('l');
     expect(savedState().journal).toHaveLength(1);
+
+    // Prepare brings back Claude's tip for next time.
+    await user.keyboard('1');
+    expect(screen.getByText("Claude's tip from your last chat:")).toBeTruthy();
+    expect(screen.getByText('Share a first-day story of your own. (Yesterday)')).toBeTruthy();
 
     // The profile shows the day, and its bell asks the day after too.
     await user.click(nav('People'));

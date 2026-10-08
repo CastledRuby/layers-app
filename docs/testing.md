@@ -32,7 +32,8 @@ They run in Node and take milliseconds. Add one whenever you change a function i
   sorting and backfill. It also checks that the sample people sit exactly where
   Adjust would place them.
 - `src/prepare.test.js` covers Prepare's hooks (`buildPotentialHooks`): what they
-  draw on, their order, the six-hook limit, and experiences only from Layer 3 on.
+  draw on (Claude's tip from the last analysed chat too), their order, the six-hook limit,
+  and experiences only from Layer 3 on.
 - `src/reminders.test.js` covers `lib/reminders.js`: the next occurrence, marking
   done, passed one-offs, the 15-minute notification window and follow-up reminders (the
   day after a detail's day, or three days later).
