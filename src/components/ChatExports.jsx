@@ -8,17 +8,18 @@ import { useState } from 'react';
 import { ChevronRight, FolderOpen } from 'lucide-react';
 import { Avatar } from './atoms.jsx';
 import { getLayer } from '../data/constants.js';
-import { chatRows, conversationLabel } from '../lib/chatImport.js';
+import { chatRows, conversationLabel, sourceLabel } from '../lib/chatImport.js';
+import { formatCalendarDate } from '../lib/dates.js';
 import { COLORS } from '../theme.js';
 
-const SOURCE = { whatsapp: { emoji: '💬', label: 'WhatsApp' }, instagram: { emoji: '📷', label: 'Instagram' } };
+const EMOJI = { whatsapp: '💬', instagram: '📷', imessage: '🗨️' };
 
 function Help({ folder }) {
   return (
     <div className="text-xs mt-2 space-y-1.5" style={{ color: COLORS.inkSoft }}>
       <p><span className="font-semibold" style={{ color: COLORS.ink }}>WhatsApp:</span> on your phone, open the chat → Export chat → Without media → Save to Files → OneDrive → {folder}. It shows here a few seconds after OneDrive brings it down.</p>
       <p><span className="font-semibold" style={{ color: COLORS.ink }}>Instagram:</span> Accounts Centre → Your information and permissions → Download your information → just Messages, as JSON, for the last week or so. Save the zip in the same folder.</p>
-      <p>Snapchat and iMessage don't export chats: those will be screenshots, in the phone app.</p>
+      <p><span className="font-semibold" style={{ color: COLORS.ink }}>iMessage:</span> plug your iPhone into this laptop, open Apple Devices → Back up all of the data on your iPhone to this computer (Encrypt local backup unticked) → Back Up Now. Layers reads the newest backup, so back up again for newer messages.</p>
     </div>
   );
 }
@@ -45,10 +46,10 @@ export function ChatExports({ state, people, yourName, progress, folder = 'Docum
     return (
       <div key={chat.key} className="rounded-xl mt-1.5" style={{ border: `1px solid ${isOpen ? COLORS.accent : COLORS.line}` }}>
         <button type="button" onClick={() => { setOpen(isOpen ? null : chat.key); setShowEarlier(false); }} aria-expanded={isOpen} className="w-full flex items-center gap-2.5 px-3 py-2.5 text-left">
-          <span aria-hidden="true">{SOURCE[chat.source].emoji}</span>
+          <span aria-hidden="true">{EMOJI[chat.source] || '💬'}</span>
           <span className="flex-1 min-w-0">
             <span className="text-sm font-semibold block truncate" style={{ color: COLORS.ink }}>{chat.title}</span>
-            <span className="text-xs" style={{ color: COLORS.inkSoft }}>{SOURCE[chat.source].label}{who.length ? ` · ${who.map(p => p.name).join(', ')}` : ''}</span>
+            <span className="text-xs" style={{ color: COLORS.inkSoft }}>{sourceLabel(chat.source)}{who.length ? ` · ${who.map(p => p.name).join(', ')}` : ''}</span>
           </span>
           {who.slice(0, 3).map(p => <Avatar key={p.id} person={p} size={22} ringColor={getLayer(p.layer).color} />)}
           <span className="text-xs font-semibold shrink-0" style={{ color: fresh.length ? COLORS.accent : COLORS.inkSoft }}>{fresh.length ? `${fresh.length} new` : 'Nothing new'}</span>
@@ -92,7 +93,8 @@ export function ChatExports({ state, people, yourName, progress, folder = 'Docum
         {onOpenFolder && <button type="button" onClick={onOpenFolder} className="flex items-center gap-1 text-xs font-semibold" style={{ color: COLORS.accent }}><FolderOpen size={13} />Folder</button>}
       </div>
       {!state && <p className="text-xs mt-1.5" style={{ color: COLORS.inkSoft }}>Reading your chats…</p>}
-      {state && !rows.length && <p className="text-xs mt-1.5" style={{ color: COLORS.inkSoft }}>Export a chat into the Layers chats folder and its conversations show here, ready to analyse.</p>}
+      {state && !rows.length && <p className="text-xs mt-1.5" style={{ color: COLORS.inkSoft }}>Export a chat into the Layers chats folder, or back up your iPhone to this laptop, and its conversations show here, ready to analyse.</p>}
+      {state && state.iphone && <p className="text-xs mt-1.5" style={{ color: COLORS.inkSoft }}>iMessage from {state.iphone.name || 'your iPhone'}, backed up {formatCalendarDate(new Date(state.iphone.at))}, {new Date(state.iphone.at).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}. Back up again for newer messages.</p>}
       {(help || (state && !rows.length)) && <Help folder={folder} />}
       {state && state.problems.map(p => <p key={p.name} className="text-xs mt-1.5" role="alert" style={{ color: COLORS.alert }}>{p.name}: {p.error}</p>)}
       {yours.map(renderRow)}

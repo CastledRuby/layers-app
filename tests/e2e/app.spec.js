@@ -7,6 +7,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import zlib from 'node:zlib';
 import { EXE, launch, mainWindowState, onboard, quit, runExe, tempDataDir } from './helpers.js';
+import { writeBackup } from '../fakeIPhoneBackup.cjs';
 
 test('a fresh install onboards once, and everything survives a restart', async () => {
   const dataDir = tempDataDir();
@@ -380,6 +381,35 @@ test('chats from your exports: a WhatsApp export in the folder is opened by the 
   fs.writeFileSync(path.join(chats, 'WhatsApp Chat - Noah.zip'), chatZip('_chat.txt', `${waStamp(new Date())} Noah: game tonight?`));
   await expect(card.getByRole('button', { name: /Noah.*WhatsApp/ })).toBeVisible({ timeout: 15000 });
   await quit(app);
+});
+
+test('iMessage: the packaged app reads chats from an iPhone backup on this laptop, and changes nothing in it', async () => {
+  const dataDir = tempDataDir();
+  const now = Date.now();
+  // A made-up backup where tests keep theirs (the data folder's iPhone backups).
+  const dir = writeBackup(path.join(dataDir, 'iPhone backups'), {
+    contacts: [{ first: 'Priya', last: 'Shah', phones: ['+64 21 555 0101'] }],
+    chats: [{ guid: 'iMessage;-;+64215550101', handles: ['+64215550101'], messages: [
+      { at: now - 3600 * 1000, from: '+64215550101', text: 'I got the job!!' },
+      { at: now - 3600 * 1000 + 60000, from: null, body: 'No way, congrats!' },
+    ] }],
+  });
+  const before = fs.readdirSync(dir, { recursive: true }).sort();
+  const { app, page } = await launch(dataDir);
+  await onboard(page, 'Sam'); // the example people, Priya among them
+  await app.evaluate(({ app: a, safeStorage }) => {
+    process.getBuiltinModule('fs').writeFileSync(process.getBuiltinModule('path').join(a.getPath('userData'), 'anthropic-key.bin'), safeStorage.encryptString('sk-ant-api03-standinstandinstandinstandin'));
+  });
+  await page.reload();
+  await page.locator('.nav-bar').getByRole('button', { name: 'Coach', exact: true }).click();
+  await page.getByRole('button', { name: 'Analyse a chat' }).click();
+  const card = page.getByLabel('From your chats');
+  await expect(card).toContainText(/iMessage from Liam's iPhone, backed up Today/);
+  await card.getByRole('button', { name: /Priya Shah.*iMessage.*1 new/ }).click();
+  await card.getByRole('button', { name: /2 messages/ }).click();
+  await expect(page.getByLabel('The chat')).toHaveValue(/\] Priya: I got the job!!\n\[.*\] Sam: No way, congrats!$/);
+  await quit(app);
+  expect(fs.readdirSync(dir, { recursive: true }).sort()).toEqual(before);
 });
 
 test('chat analysis: the packaged app refuses a key that is not an Anthropic key, keeping nothing and asking nobody', async () => {

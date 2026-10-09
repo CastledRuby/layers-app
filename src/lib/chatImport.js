@@ -206,10 +206,11 @@ export function mergeChats(chats) {
   return [...byKey.values()];
 }
 
-// Which name in a chat is you: one you picked before, else your name (or its
+// Which name in a chat is you: the one an iPhone backup marks, else one you picked before, else your name (or its
 // first part), else on Instagram the name in every one of your chats, else in
 // a two-person chat the one who isn't the chat's name. Null if it can't tell.
 export function ownerOf(chat, { yourName = '', picked, everywhere = [] } = {}) {
+  if (chat.me) return chat.me; // iMessage knows which messages are yours
   const names = [...new Set([...chat.participants, ...chat.messages.map(m => m.sender)])];
   if (picked && names.includes(picked)) return picked;
   const byName = names.filter(n => isYou(n, yourName));
@@ -310,11 +311,21 @@ export function saveChatProgress(key, change) {
   return next;
 }
 
+// Where a chat came from, in words.
+const SOURCES = { whatsapp: 'WhatsApp', instagram: 'Instagram', imessage: 'iMessage' };
+export const sourceLabel = (source) => SOURCES[source] || 'Chat';
+
 // --- Reading the folder --------------------------------------------------------------
-// Each export read once, until its file changes.
+// Each export read once, until its file changes; the iPhone backup's chats
+// until there's a newer backup.
 const cache = new Map();
+let phone = null; // { at, chats }
+const isMessage = (m) => m && typeof m.at === 'number' && Number.isFinite(m.at) && typeof m.sender === 'string' && typeof m.text === 'string';
+const isChat = (c) => c && typeof c.key === 'string' && c.key.startsWith('imessage:') && typeof c.title === 'string' && Array.isArray(c.participants) && Array.isArray(c.messages);
 // Every chat in the Layers chats folder (bridge: the main process's
-// listChatExports and readChatExport): { chats, problems: [{ name, error }] }.
+// listChatExports and readChatExport), and iMessage from the newest iPhone
+// backup when the bridge can read one (readIMessages): { chats, problems:
+// [{ name, error }], iphone: { name, at } of the backup read, or null }.
 export async function loadChatExports(bridge, { dayFirst } = {}) {
   const files = await bridge.listChatExports();
   const all = [];
@@ -329,5 +340,18 @@ export async function loadChatExports(bridge, { dayFirst } = {}) {
     cache.set(f.name, { modified: f.modified, chats });
     all.push(...chats);
   }
-  return { chats: mergeChats(all), problems };
+  let iphone = null;
+  if (bridge.readIMessages) {
+    const read = await Promise.resolve(bridge.readIMessages(phone ? phone.at : null)).catch(() => null);
+    if (read && read.backup) {
+      iphone = read.backup;
+      if (read.error) problems.push({ name: 'iPhone backup', error: read.error });
+      else if (read.same && phone) all.push(...phone.chats);
+      else if (Array.isArray(read.chats)) {
+        phone = { at: read.backup.at, chats: read.chats.filter(isChat).map(c => ({ ...c, source: 'imessage', messages: c.messages.filter(isMessage) })).filter(c => c.messages.length) };
+        all.push(...phone.chats);
+      }
+    }
+  }
+  return { chats: mergeChats(all), problems, iphone };
 }

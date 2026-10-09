@@ -751,8 +751,16 @@ Coach → Analyse a chat → **From your chats**: chats saved in the **Layers ch
   `parseInstagram` reads every chat thread, undoing Instagram's spelling of non-English
   characters as UTF-8 bytes (`fixMetaText`), leaving out likes and reactions, and
   turning photos, shares and calls into "(photo)" and the like. A download in HTML is
-  named, with "choose JSON". Snapchat and iMessage have no export, so they'll be
-  screenshots in the phone app.
+  named, with "choose JSON".
+- **iMessage** (decided 2026-10-10): back up the iPhone to this laptop with Apple Devices
+  (not encrypted), and its Messages chats, texts too, from the last three months show
+  here as iMessage (read by the main process, [electron.md](../electron.md)), named from
+  Contacts. Each message says whether it's yours, so it never asks "Which of these is
+  you?" (`ownerOf` takes `chat.me`). The card says which iPhone and when it was backed
+  up ("Back up again for newer messages"). `loadChatExports` keeps them until there's a
+  newer backup, and an encrypted backup is explained under the list. They work like an
+  export's chats, Analyse all new included. `sourceLabel` names where a chat came from.
+  Snapchat is still to come.
 - **The same chat** from several files (exported again, or another week's download) is
   one chat (`mergeChats`, keyed by the WhatsApp chat's name or Instagram's thread),
   every message once. A WhatsApp chat saved as `chat.txt` (or the zip's own

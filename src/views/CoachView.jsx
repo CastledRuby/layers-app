@@ -16,7 +16,7 @@ import { ChatExports } from '../components/ChatExports.jsx';
 import { ChatBatchCard } from '../components/ChatBatch.jsx';
 import { ChatQueueSheet } from '../modals/ChatQueueSheet.jsx';
 import { batchPlan } from '../lib/chatBatch.js';
-import { chatPeople, conversationLabel, conversationText, isoDayOf, loadChatExports, readChatProgress, saveChatProgress } from '../lib/chatImport.js';
+import { chatPeople, conversationLabel, conversationText, isoDayOf, loadChatExports, readChatProgress, saveChatProgress, sourceLabel } from '../lib/chatImport.js';
 import { formatCalendarDate, parseISODay } from '../lib/dates.js';
 import { isPictureFile } from '../data/avatars.js';
 import { loadPhoto, shrinkForAnalysis } from '../lib/photo.js';
@@ -185,7 +185,7 @@ export function CoachView({ people, journal, initialPersonId, initialTab, onOpen
     setOwnShots([]);
     if (ids.length) { setOwnWith(ids); setOwnWithFrom('chat'); setAnalysisPersonId(ids[0]); }
     else { setOwnWith(null); setOwnWithFrom(null); }
-    setOwnSource({ key: chat.key, end: conv.end, day: isoDayOf(conv.end), label: `${chat.source === 'instagram' ? 'Instagram' : 'WhatsApp'} · ${chat.title} · ${conversationLabel(conv)}` });
+    setOwnSource({ key: chat.key, end: conv.end, day: isoDayOf(conv.end), label: `${sourceLabel(chat.source)} · ${chat.title} · ${conversationLabel(conv)}` });
   }
   function changeWith(ids) { setOwnWith(ids); setOwnWithFrom('you'); if (ids.length) setAnalysisPersonId(ids[0]); }
   async function addShots(files) {

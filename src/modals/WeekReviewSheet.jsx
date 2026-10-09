@@ -14,7 +14,7 @@ import { isTabbedToButton, isTyping } from '../components/sheetLayer.js';
 import { Kbd } from '../components/atoms.jsx';
 import { AvatarStack } from '../components/PersonPick.jsx';
 import { planIdeas, templateFor, weekSummary } from '../lib/calendar.js';
-import { chatRows, loadChatExports, readChatProgress } from '../lib/chatImport.js';
+import { chatRows, loadChatExports, readChatProgress, sourceLabel } from '../lib/chatImport.js';
 import { MONTH_NAMES, parseISODay, toISODate, WEEKDAY_SHORT } from '../lib/dates.js';
 import { COLORS } from '../theme.js';
 
@@ -85,7 +85,7 @@ export function WeekReviewSheet({ day: startDay, people, journal, events, genera
             {toAnalyse.map(({ chat, ids, fresh }) => (
               <button key={chat.key} type="button" onClick={() => onOpenChat(chat.key)} className="flex items-center gap-3 rounded-2xl p-2.5 text-left" style={{ background: COLORS.paperRaised, border: `1px solid ${COLORS.line}` }}>
                 <AvatarStack people={ids.map(id => people.find(p => p.id === id)).filter(Boolean)} size={30} />
-                <span className="text-sm flex-1 min-w-0" style={{ color: COLORS.ink }}>{chat.title} <span style={{ color: COLORS.inkSoft }}>· {chat.source === 'instagram' ? 'Instagram' : 'WhatsApp'}</span></span>
+                <span className="text-sm flex-1 min-w-0" style={{ color: COLORS.ink }}>{chat.title} <span style={{ color: COLORS.inkSoft }}>· {sourceLabel(chat.source)}</span></span>
                 <span className="text-xs font-semibold shrink-0" style={{ color: COLORS.accent }}>{fresh.length} new {fresh.length === 1 ? 'conversation' : 'conversations'}</span>
               </button>
             ))}

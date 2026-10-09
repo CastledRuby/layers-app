@@ -4,7 +4,7 @@
 > Run `npm run docs:map` after changing anything under `src/`, `electron/*.cjs` or `package.json` scripts.
 > Hand-written explanations live in the other files under [`docs/`](../README.md).
 
-Package: `layers-web` v1.0.37 · `src/`: 85 files, 14479 lines, 108 components, 379 top-level functions, 193 constants.
+Package: `layers-web` v1.0.37 · `src/`: 85 files, 14505 lines, 108 components, 383 top-level functions, 193 constants.
 
 ## Source files
 
@@ -23,7 +23,7 @@ Package: `layers-web` v1.0.37 · `src/`: 85 files, 14479 lines, 108 components, 
 | [lib/backup.js](../../src/lib/backup.js) | 248 | BACKUP_VERSION, MAX_BACKUP_BYTES, createBackup, isObject, isText, isISODay, num, count, cleanHistory, cleanGoal, … (+9) | `lib/calendar`, `data/constants`, `data/seed`, `data/avatars`, `lib/util`, `lib/sync`, `lib/analysis` |
 | [lib/calendar.js](../../src/lib/calendar.js) | 425 | WEEKDAY_NAMES, DEFAULT_DURATION, EVENT_TEMPLATES, templateFor, DATE_KINDS, dateKind, NOTIFY_DEFAULTS, notifySettings, dayDate, addDays, … (+28) | `lib/dates` |
 | [lib/chatBatch.js](../../src/lib/chatBatch.js) | 104 | TINY, batchPlan, batchDollars, QUEUE_KEY, isText, cleanItem, readQueue, saveQueue, waiting, pruneQueue, … (+5) | `lib/analysis`, `lib/chatImport` |
-| [lib/chatImport.js](../../src/lib/chatImport.js) | 334 | CONVERSATION_GAP_HOURS, MAX_TEXT, PROGRESS_KEY, STAMP, IOS_LINE, ANDROID_LINE, ch, MARKS, MARKED, ODD_SPACES, … (+29) | `lib/analysis` |
+| [lib/chatImport.js](../../src/lib/chatImport.js) | 358 | CONVERSATION_GAP_HOURS, MAX_TEXT, PROGRESS_KEY, STAMP, IOS_LINE, ANDROID_LINE, ch, MARKS, MARKED, ODD_SPACES, … (+34) | `lib/analysis` |
 | [lib/chatTrend.js](../../src/lib/chatTrend.js) | 50 | TREND_LINES, chatTrend, trendChange | `lib/dates` |
 | [lib/closeness.js](../../src/lib/closeness.js) | 64 | QUIZ, ANSWERS, REACHED, inLayer, share, nextQuestion, quizPlacement | — |
 | [lib/dates.js](../../src/lib/dates.js) | 314 | parseDaysAgo, startOfDay, WEEKDAY_SHORT, WEEKDAY_FULL, formatWeekdays, MONTH_NAMES, MONTH_WORDS, readDayMonth, dayMonthToDate, dateToRelativeLabel, … (+26) | `data/constants` |
@@ -47,7 +47,7 @@ Package: `layers-web` v1.0.37 · `src/`: 85 files, 14479 lines, 108 components, 
 | [components/AvatarPicker.jsx](../../src/components/AvatarPicker.jsx) | 142 | VIEW, PhotoCrop, PhotoPanel, AvatarPicker, AvatarSheet | `components/Sheet`, `components/sheetLayer`, `components/avatarKeys`, `components/atoms`, `data/avatars`, `theme` |
 | [components/BottomNav.jsx](../../src/components/BottomNav.jsx) | 40 | ITEMS, BottomNav | `data/constants` |
 | [components/ChatBatch.jsx](../../src/components/ChatBatch.jsx) | 52 | money, listOf, ChatBatchCard | `components/atoms`, `lib/analysis`, `lib/chatBatch`, `theme` |
-| [components/ChatExports.jsx](../../src/components/ChatExports.jsx) | 108 | SOURCE, Help, ChatExports | `components/atoms`, `data/constants`, `lib/chatImport`, `theme` |
+| [components/ChatExports.jsx](../../src/components/ChatExports.jsx) | 110 | EMOJI, Help, ChatExports | `components/atoms`, `data/constants`, `lib/chatImport`, `lib/dates`, `theme` |
 | [components/ChatTrendChart.jsx](../../src/components/ChatTrendChart.jsx) | 47 | COLOR, signed, ChatTrendChart | `data/constants`, `lib/chatTrend`, `theme` |
 | [components/closenessKeys.js](../../src/components/closenessKeys.js) | 40 | useCloseness, quizKey | `lib/closeness` |
 | [components/ClosenessQuiz.jsx](../../src/components/ClosenessQuiz.jsx) | 129 | ANSWER_EMOJI, QuizDots, QuizQuestion, QuizResult, QuizSheet | `components/Sheet`, `components/sheetLayer`, `components/atoms`, `data/constants`, `components/closenessKeys`, `lib/closeness`, `theme` |
@@ -62,7 +62,7 @@ Package: `layers-web` v1.0.37 · `src/`: 85 files, 14479 lines, 108 components, 
 | [components/sheetLayer.js](../../src/components/sheetLayer.js) | 86 | SheetLayerContext, openSheets, registerSheet, topSheet, hasOpenSheet, useOpenSheet, returnFocus, tabbing, isTabbedToButton, isTyping, … (+1) | — |
 | [modals/AddInfoModal.jsx](../../src/modals/AddInfoModal.jsx) | 60 | AddInfoModal | `components/Sheet`, `components/sheetLayer`, `components/atoms`, `data/constants`, `theme` |
 | [modals/AddPersonModal.jsx](../../src/modals/AddPersonModal.jsx) | 101 | STEP_ORDER, AddPersonModal | `components/Sheet`, `components/sheetLayer`, `components/atoms`, `components/AvatarPicker`, `components/avatarKeys`, `components/ClosenessQuiz`, `components/closenessKeys`, `data/constants`, `theme` |
-| [modals/ChatQueueSheet.jsx](../../src/modals/ChatQueueSheet.jsx) | 137 | SOURCE, ChatQueueSheet | `components/Sheet`, `components/atoms`, `components/PersonPick`, `components/sheetLayer`, `data/constants`, `lib/analysis`, `lib/dates`, `modals/ChatReviewSheet`, `theme` |
+| [modals/ChatQueueSheet.jsx](../../src/modals/ChatQueueSheet.jsx) | 137 | ChatQueueSheet | `components/Sheet`, `components/atoms`, `components/PersonPick`, `components/sheetLayer`, `data/constants`, `lib/analysis`, `lib/chatImport`, `lib/dates`, `modals/ChatReviewSheet`, `theme` |
 | [modals/ChatReviewSheet.jsx](../../src/modals/ChatReviewSheet.jsx) | 84 | SLOTS, Section, ChatReviewSheet | `components/Sheet`, `components/atoms`, `data/constants`, `lib/analysis`, `lib/dates`, `theme` |
 | [modals/ConfirmDialog.jsx](../../src/modals/ConfirmDialog.jsx) | 46 | ConfirmDialog | `components/Sheet`, `components/sheetLayer`, `theme` |
 | [modals/DaySheet.jsx](../../src/modals/DaySheet.jsx) | 115 | WEEKDAY_LONG, addDays, dayTitle, DaySheet | `components/Sheet`, `components/sheetLayer`, `components/atoms`, `components/PersonPick`, `data/constants`, `lib/calendar`, `lib/dates`, `lib/text`, `modals/PlanTipsSheet`, `theme` |
@@ -118,8 +118,8 @@ Package: `layers-web` v1.0.37 · `src/`: 85 files, 14479 lines, 108 components, 
 | `AvatarSheet` | [AvatarPicker.jsx:127](../../src/components/AvatarPicker.jsx#L127) | `person`, `onChange`, `onClose` | `OnboardingView` |
 | `BottomNav` | [BottomNav.jsx:21](../../src/components/BottomNav.jsx#L21) | `active`, `onChange` | `LayersApp` |
 | `ChatBatchCard` | [ChatBatch.jsx:15](../../src/components/ChatBatch.jsx#L15) | `plan`, `batch`, `model`, `people`, `onStart`, `onReview` | `CoachView` |
-| `Help` | [ChatExports.jsx:16](../../src/components/ChatExports.jsx#L16) | `folder` | `ChatExports` |
-| `ChatExports` | [ChatExports.jsx:27](../../src/components/ChatExports.jsx#L27) | `state`, `people`, `yourName`, `progress`, `folder`, `onPick`, `onPickMe`, `onOpenFolder`, `initialOpen` | `CoachView` |
+| `Help` | [ChatExports.jsx:17](../../src/components/ChatExports.jsx#L17) | `folder` | `ChatExports` |
+| `ChatExports` | [ChatExports.jsx:28](../../src/components/ChatExports.jsx#L28) | `state`, `people`, `yourName`, `progress`, `folder`, `onPick`, `onPickMe`, `onOpenFolder`, `initialOpen` | `CoachView` |
 | `ChatTrendChart` | [ChatTrendChart.jsx:13](../../src/components/ChatTrendChart.jsx#L13) | `points`, `label` | `MeView`, `PersonProfile` |
 | `QuizDots` | [ClosenessQuiz.jsx:21](../../src/components/ClosenessQuiz.jsx#L21) | `answers`, `at` | `QuizQuestion` |
 | `QuizQuestion` | [ClosenessQuiz.jsx:33](../../src/components/ClosenessQuiz.jsx#L33) | `quiz`, `name`, `onDone` | `QuizSheet`, `AddPersonModal` |
@@ -353,19 +353,23 @@ Package: `layers-web` v1.0.37 · `src/`: 85 files, 14479 lines, 108 components, 
 | `chatsFromExport` | [chatImport.js:173](../../src/lib/chatImport.js#L173) | ✓ | ✓ |
 | `mergeChats` | [chatImport.js:196](../../src/lib/chatImport.js#L196) | ✓ | ✓ |
 | `ownerOf` | [chatImport.js:212](../../src/lib/chatImport.js#L212) | ✓ | ✓ |
-| `everywhereName` | [chatImport.js:224](../../src/lib/chatImport.js#L224) | ✓ | ✓ |
-| `chatPeople` | [chatImport.js:232](../../src/lib/chatImport.js#L232) | ✓ | ✓ |
-| `splitConversations` | [chatImport.js:243](../../src/lib/chatImport.js#L243) | ✓ | ✓ |
-| `pad` | [chatImport.js:253](../../src/lib/chatImport.js#L253) |  |  |
-| `isoMinute` | [chatImport.js:254](../../src/lib/chatImport.js#L254) |  |  |
-| `isoDayOf` | [chatImport.js:255](../../src/lib/chatImport.js#L255) | ✓ |  |
-| `conversationText` | [chatImport.js:260](../../src/lib/chatImport.js#L260) | ✓ | ✓ |
-| `clock` | [chatImport.js:270](../../src/lib/chatImport.js#L270) |  |  |
-| `conversationLabel` | [chatImport.js:272](../../src/lib/chatImport.js#L272) | ✓ | ✓ |
-| `chatRows` | [chatImport.js:289](../../src/lib/chatImport.js#L289) | ✓ |  |
-| `readChatProgress` | [chatImport.js:303](../../src/lib/chatImport.js#L303) | ✓ |  |
-| `saveChatProgress` | [chatImport.js:306](../../src/lib/chatImport.js#L306) | ✓ |  |
-| `cache` | [chatImport.js:315](../../src/lib/chatImport.js#L315) |  |  |
+| `everywhereName` | [chatImport.js:225](../../src/lib/chatImport.js#L225) | ✓ | ✓ |
+| `chatPeople` | [chatImport.js:233](../../src/lib/chatImport.js#L233) | ✓ | ✓ |
+| `splitConversations` | [chatImport.js:244](../../src/lib/chatImport.js#L244) | ✓ | ✓ |
+| `pad` | [chatImport.js:254](../../src/lib/chatImport.js#L254) |  |  |
+| `isoMinute` | [chatImport.js:255](../../src/lib/chatImport.js#L255) |  |  |
+| `isoDayOf` | [chatImport.js:256](../../src/lib/chatImport.js#L256) | ✓ |  |
+| `conversationText` | [chatImport.js:261](../../src/lib/chatImport.js#L261) | ✓ | ✓ |
+| `clock` | [chatImport.js:271](../../src/lib/chatImport.js#L271) |  |  |
+| `conversationLabel` | [chatImport.js:273](../../src/lib/chatImport.js#L273) | ✓ | ✓ |
+| `chatRows` | [chatImport.js:290](../../src/lib/chatImport.js#L290) | ✓ |  |
+| `readChatProgress` | [chatImport.js:304](../../src/lib/chatImport.js#L304) | ✓ |  |
+| `saveChatProgress` | [chatImport.js:307](../../src/lib/chatImport.js#L307) | ✓ |  |
+| `sourceLabel` | [chatImport.js:316](../../src/lib/chatImport.js#L316) | ✓ |  |
+| `cache` | [chatImport.js:321](../../src/lib/chatImport.js#L321) |  |  |
+| `phone` | [chatImport.js:322](../../src/lib/chatImport.js#L322) |  |  |
+| `isMessage` | [chatImport.js:323](../../src/lib/chatImport.js#L323) |  |  |
+| `isChat` | [chatImport.js:324](../../src/lib/chatImport.js#L324) |  |  |
 | `chatTrend` | [chatTrend.js:19](../../src/lib/chatTrend.js#L19) | ✓ | ✓ |
 | `trendChange` | [chatTrend.js:44](../../src/lib/chatTrend.js#L44) | ✓ | ✓ |
 | `inLayer` | [closeness.js:36](../../src/lib/closeness.js#L36) |  |  |
@@ -691,9 +695,10 @@ Package: `layers-web` v1.0.37 · `src/`: 85 files, 14479 lines, 108 components, 
 | `ODD_SPACES` | [chatImport.js:30](../../src/lib/chatImport.js#L30) |
 | `SYSTEM` | [chatImport.js:31](../../src/lib/chatImport.js#L31) |
 | `GENERIC_NAME` | [chatImport.js:172](../../src/lib/chatImport.js#L172) |
-| `DAYS` | [chatImport.js:268](../../src/lib/chatImport.js#L268) |
-| `MONTHS` | [chatImport.js:269](../../src/lib/chatImport.js#L269) |
-| `NEW_DAYS` | [chatImport.js:288](../../src/lib/chatImport.js#L288) |
+| `DAYS` | [chatImport.js:269](../../src/lib/chatImport.js#L269) |
+| `MONTHS` | [chatImport.js:270](../../src/lib/chatImport.js#L270) |
+| `NEW_DAYS` | [chatImport.js:289](../../src/lib/chatImport.js#L289) |
+| `SOURCES` | [chatImport.js:315](../../src/lib/chatImport.js#L315) |
 | `TREND_LINES` | [chatTrend.js:9](../../src/lib/chatTrend.js#L9) |
 | `QUIZ` | [closeness.js:11](../../src/lib/closeness.js#L11) |
 | `ANSWERS` | [closeness.js:26](../../src/lib/closeness.js#L26) |
@@ -748,14 +753,13 @@ Package: `layers-web` v1.0.37 · `src/`: 85 files, 14479 lines, 108 components, 
 | `EMOJI_FROM` | [avatarKeys.js:24](../../src/components/avatarKeys.js#L24) |
 | `VIEW` | [AvatarPicker.jsx:17](../../src/components/AvatarPicker.jsx#L17) |
 | `ITEMS` | [BottomNav.jsx:13](../../src/components/BottomNav.jsx#L13) |
-| `SOURCE` | [ChatExports.jsx:14](../../src/components/ChatExports.jsx#L14) |
+| `EMOJI` | [ChatExports.jsx:15](../../src/components/ChatExports.jsx#L15) |
 | `COLOR` | [ChatTrendChart.jsx:10](../../src/components/ChatTrendChart.jsx#L10) |
 | `ANSWER_EMOJI` | [ClosenessQuiz.jsx:18](../../src/components/ClosenessQuiz.jsx#L18) |
 | `LAYER` | [illustrations.jsx:7](../../src/components/illustrations.jsx#L7) |
 | `TINT` | [illustrations.jsx:9](../../src/components/illustrations.jsx#L9) |
 | `CLOSE_MS` | [Sheet.jsx:20](../../src/components/Sheet.jsx#L20) |
 | `STEP_ORDER` | [AddPersonModal.jsx:22](../../src/modals/AddPersonModal.jsx#L22) |
-| `SOURCE` | [ChatQueueSheet.jsx:20](../../src/modals/ChatQueueSheet.jsx#L20) |
 | `SLOTS` | [ChatReviewSheet.jsx:14](../../src/modals/ChatReviewSheet.jsx#L14) |
 | `WEEKDAY_LONG` | [DaySheet.jsx:20](../../src/modals/DaySheet.jsx#L20) |
 | `DUE_STEPS` | [GoalModal.jsx:20](../../src/modals/GoalModal.jsx#L20) |
@@ -797,51 +801,52 @@ Package: `layers-web` v1.0.37 · `src/`: 85 files, 14479 lines, 108 components, 
 
 | Channel | Direction | Defined |
 |---|---|---|
-| `update-status` | main → renderer push | [main.cjs:141](../../electron/main.cjs#L141) |
-| `open-download-page` | invoke → handle | [main.cjs:167](../../electron/main.cjs#L167) |
-| `check-for-updates` | invoke → handle | [main.cjs:179](../../electron/main.cjs#L179) |
-| `quit-and-install` | send → on | [main.cjs:180](../../electron/main.cjs#L180) |
-| `check-for-updates` | invoke → handle | [main.cjs:204](../../electron/main.cjs#L204) |
-| `quit-and-install` | send → on | [main.cjs:215](../../electron/main.cjs#L215) |
-| `set-theme` | send → on | [main.cjs:250](../../electron/main.cjs#L250) |
-| `get-app-version` | invoke → handle | [main.cjs:389](../../electron/main.cjs#L389) |
-| `show-window` | send → on | [main.cjs:395](../../electron/main.cjs#L395) |
-| `get-auto-launch` | invoke → handle | [main.cjs:408](../../electron/main.cjs#L408) |
-| `set-auto-launch` | invoke → handle | [main.cjs:418](../../electron/main.cjs#L418) |
-| `get-shortcut-status` | invoke → handle | [main.cjs:435](../../electron/main.cjs#L435) |
-| `quick-add-show` | main → renderer push | [main.cjs:492](../../electron/main.cjs#L492) |
-| `quick-add` | send → on | [main.cjs:510](../../electron/main.cjs#L510) |
-| `quick-add` | main → renderer push | [main.cjs:529](../../electron/main.cjs#L529) |
-| `calendar-action` | main → renderer push | [main.cjs:551](../../electron/main.cjs#L551) |
-| `save-daily-backup` | invoke → handle | [main.cjs:559](../../electron/main.cjs#L559) |
-| `backups-info` | invoke → handle | [main.cjs:562](../../electron/main.cjs#L562) |
-| `open-backups-folder` | invoke → handle | [main.cjs:563](../../electron/main.cjs#L563) |
-| `find-faces` | invoke → handle | [main.cjs:574](../../electron/main.cjs#L574) |
-| `sync-info` | invoke → handle | [main.cjs:584](../../electron/main.cjs#L584) |
-| `sync-read` | invoke → handle | [main.cjs:585](../../electron/main.cjs#L585) |
-| `sync-write` | invoke → handle | [main.cjs:586](../../electron/main.cjs#L586) |
-| `sync-remove-copies` | invoke → handle | [main.cjs:587](../../electron/main.cjs#L587) |
-| `sync-set-aside` | invoke → handle | [main.cjs:588](../../electron/main.cjs#L588) |
-| `sync-passphrase-get` | invoke → handle | [main.cjs:589](../../electron/main.cjs#L589) |
-| `sync-passphrase-set` | invoke → handle | [main.cjs:590](../../electron/main.cjs#L590) |
-| `sync-passphrase-clear` | invoke → handle | [main.cjs:591](../../electron/main.cjs#L591) |
-| `sync-open-folder` | invoke → handle | [main.cjs:592](../../electron/main.cjs#L592) |
-| `feeds-list` | invoke → handle | [main.cjs:603](../../electron/main.cjs#L603) |
-| `feeds-add` | invoke → handle | [main.cjs:604](../../electron/main.cjs#L604) |
-| `feeds-remove` | invoke → handle | [main.cjs:611](../../electron/main.cjs#L611) |
-| `feeds-fetch` | invoke → handle | [main.cjs:612](../../electron/main.cjs#L612) |
-| `export-summary` | invoke → handle | [main.cjs:623](../../electron/main.cjs#L623) |
-| `analysis-key-status` | invoke → handle | [main.cjs:653](../../electron/main.cjs#L653) |
-| `analysis-key-set` | invoke → handle | [main.cjs:654](../../electron/main.cjs#L654) |
-| `analysis-key-clear` | invoke → handle | [main.cjs:660](../../electron/main.cjs#L660) |
-| `analysis-run` | invoke → handle | [main.cjs:661](../../electron/main.cjs#L661) |
-| `chats-info` | invoke → handle | [main.cjs:670](../../electron/main.cjs#L670) |
-| `chats-list` | invoke → handle | [main.cjs:671](../../electron/main.cjs#L671) |
-| `chats-read` | invoke → handle | [main.cjs:672](../../electron/main.cjs#L672) |
-| `chats-open-folder` | invoke → handle | [main.cjs:673](../../electron/main.cjs#L673) |
-| `chats-changed` | main → renderer push | [main.cjs:677](../../electron/main.cjs#L677) |
-| `schedule-notifications` | invoke → handle | [main.cjs:683](../../electron/main.cjs#L683) |
-| `calendar-ready` | invoke → handle | [main.cjs:684](../../electron/main.cjs#L684) |
+| `update-status` | main → renderer push | [main.cjs:143](../../electron/main.cjs#L143) |
+| `open-download-page` | invoke → handle | [main.cjs:169](../../electron/main.cjs#L169) |
+| `check-for-updates` | invoke → handle | [main.cjs:181](../../electron/main.cjs#L181) |
+| `quit-and-install` | send → on | [main.cjs:182](../../electron/main.cjs#L182) |
+| `check-for-updates` | invoke → handle | [main.cjs:206](../../electron/main.cjs#L206) |
+| `quit-and-install` | send → on | [main.cjs:217](../../electron/main.cjs#L217) |
+| `set-theme` | send → on | [main.cjs:252](../../electron/main.cjs#L252) |
+| `get-app-version` | invoke → handle | [main.cjs:391](../../electron/main.cjs#L391) |
+| `show-window` | send → on | [main.cjs:397](../../electron/main.cjs#L397) |
+| `get-auto-launch` | invoke → handle | [main.cjs:410](../../electron/main.cjs#L410) |
+| `set-auto-launch` | invoke → handle | [main.cjs:420](../../electron/main.cjs#L420) |
+| `get-shortcut-status` | invoke → handle | [main.cjs:437](../../electron/main.cjs#L437) |
+| `quick-add-show` | main → renderer push | [main.cjs:494](../../electron/main.cjs#L494) |
+| `quick-add` | send → on | [main.cjs:512](../../electron/main.cjs#L512) |
+| `quick-add` | main → renderer push | [main.cjs:531](../../electron/main.cjs#L531) |
+| `calendar-action` | main → renderer push | [main.cjs:553](../../electron/main.cjs#L553) |
+| `save-daily-backup` | invoke → handle | [main.cjs:561](../../electron/main.cjs#L561) |
+| `backups-info` | invoke → handle | [main.cjs:564](../../electron/main.cjs#L564) |
+| `open-backups-folder` | invoke → handle | [main.cjs:565](../../electron/main.cjs#L565) |
+| `find-faces` | invoke → handle | [main.cjs:576](../../electron/main.cjs#L576) |
+| `sync-info` | invoke → handle | [main.cjs:586](../../electron/main.cjs#L586) |
+| `sync-read` | invoke → handle | [main.cjs:587](../../electron/main.cjs#L587) |
+| `sync-write` | invoke → handle | [main.cjs:588](../../electron/main.cjs#L588) |
+| `sync-remove-copies` | invoke → handle | [main.cjs:589](../../electron/main.cjs#L589) |
+| `sync-set-aside` | invoke → handle | [main.cjs:590](../../electron/main.cjs#L590) |
+| `sync-passphrase-get` | invoke → handle | [main.cjs:591](../../electron/main.cjs#L591) |
+| `sync-passphrase-set` | invoke → handle | [main.cjs:592](../../electron/main.cjs#L592) |
+| `sync-passphrase-clear` | invoke → handle | [main.cjs:593](../../electron/main.cjs#L593) |
+| `sync-open-folder` | invoke → handle | [main.cjs:594](../../electron/main.cjs#L594) |
+| `feeds-list` | invoke → handle | [main.cjs:605](../../electron/main.cjs#L605) |
+| `feeds-add` | invoke → handle | [main.cjs:606](../../electron/main.cjs#L606) |
+| `feeds-remove` | invoke → handle | [main.cjs:613](../../electron/main.cjs#L613) |
+| `feeds-fetch` | invoke → handle | [main.cjs:614](../../electron/main.cjs#L614) |
+| `export-summary` | invoke → handle | [main.cjs:625](../../electron/main.cjs#L625) |
+| `analysis-key-status` | invoke → handle | [main.cjs:655](../../electron/main.cjs#L655) |
+| `analysis-key-set` | invoke → handle | [main.cjs:656](../../electron/main.cjs#L656) |
+| `analysis-key-clear` | invoke → handle | [main.cjs:662](../../electron/main.cjs#L662) |
+| `analysis-run` | invoke → handle | [main.cjs:663](../../electron/main.cjs#L663) |
+| `chats-info` | invoke → handle | [main.cjs:672](../../electron/main.cjs#L672) |
+| `chats-list` | invoke → handle | [main.cjs:673](../../electron/main.cjs#L673) |
+| `chats-read` | invoke → handle | [main.cjs:674](../../electron/main.cjs#L674) |
+| `chats-open-folder` | invoke → handle | [main.cjs:675](../../electron/main.cjs#L675) |
+| `chats-changed` | main → renderer push | [main.cjs:679](../../electron/main.cjs#L679) |
+| `imessage-read` | invoke → handle | [main.cjs:688](../../electron/main.cjs#L688) |
+| `schedule-notifications` | invoke → handle | [main.cjs:693](../../electron/main.cjs#L693) |
+| `calendar-ready` | invoke → handle | [main.cjs:694](../../electron/main.cjs#L694) |
 
 ### Preload bridges (what the renderer can call)
 
@@ -884,17 +889,18 @@ Package: `layers-web` v1.0.37 · `src/`: 85 files, 14479 lines, 108 components, 
 | `window.layersSystem.listChatExports()` | `chats-list` | [preload.cjs:58](../../electron/preload.cjs#L58) |
 | `window.layersSystem.readChatExport()` | `chats-read` | [preload.cjs:59](../../electron/preload.cjs#L59) |
 | `window.layersSystem.openChatsFolder()` | `chats-open-folder` | [preload.cjs:60](../../electron/preload.cjs#L60) |
-| `window.layersSystem.onChatExportsChanged()` | `chats-changed` | [preload.cjs:61](../../electron/preload.cjs#L61) |
-| `window.layersSystem.findFaces()` | `find-faces` | [preload.cjs:68](../../electron/preload.cjs#L68) |
-| `window.layersSystem.onCalendarAction()` | `calendar-action` | [preload.cjs:69](../../electron/preload.cjs#L69) |
-| `window.layersSystem.onQuickAdd()` | `quick-add` | [preload.cjs:75](../../electron/preload.cjs#L75) |
-| `window.layersQuick.submit()` | `quick-add` | [preload.cjs:85](../../electron/preload.cjs#L85) |
-| `window.layersQuick.open()` | `quick-add` | [preload.cjs:86](../../electron/preload.cjs#L86) |
-| `window.layersQuick.undo()` | `quick-add` | [preload.cjs:87](../../electron/preload.cjs#L87) |
-| `window.layersQuick.redo()` | `quick-add` | [preload.cjs:88](../../electron/preload.cjs#L88) |
-| `window.layersQuick.hide()` | `quick-add` | [preload.cjs:89](../../electron/preload.cjs#L89) |
-| `window.layersQuick.resize()` | `quick-add` | [preload.cjs:90](../../electron/preload.cjs#L90) |
-| `window.layersQuick.onShow()` | `quick-add-show` | [preload.cjs:91](../../electron/preload.cjs#L91) |
+| `window.layersSystem.readIMessages()` | `imessage-read` | [preload.cjs:63](../../electron/preload.cjs#L63) |
+| `window.layersSystem.onChatExportsChanged()` | `chats-changed` | [preload.cjs:64](../../electron/preload.cjs#L64) |
+| `window.layersSystem.findFaces()` | `find-faces` | [preload.cjs:71](../../electron/preload.cjs#L71) |
+| `window.layersSystem.onCalendarAction()` | `calendar-action` | [preload.cjs:72](../../electron/preload.cjs#L72) |
+| `window.layersSystem.onQuickAdd()` | `quick-add` | [preload.cjs:78](../../electron/preload.cjs#L78) |
+| `window.layersQuick.submit()` | `quick-add` | [preload.cjs:88](../../electron/preload.cjs#L88) |
+| `window.layersQuick.open()` | `quick-add` | [preload.cjs:89](../../electron/preload.cjs#L89) |
+| `window.layersQuick.undo()` | `quick-add` | [preload.cjs:90](../../electron/preload.cjs#L90) |
+| `window.layersQuick.redo()` | `quick-add` | [preload.cjs:91](../../electron/preload.cjs#L91) |
+| `window.layersQuick.hide()` | `quick-add` | [preload.cjs:92](../../electron/preload.cjs#L92) |
+| `window.layersQuick.resize()` | `quick-add` | [preload.cjs:93](../../electron/preload.cjs#L93) |
+| `window.layersQuick.onShow()` | `quick-add-show` | [preload.cjs:94](../../electron/preload.cjs#L94) |
 
 ### Channel mismatches
 

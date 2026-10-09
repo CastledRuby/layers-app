@@ -168,6 +168,14 @@ interact.
   are exports, zips packed or stored, errors, nothing outside the folder, noticing a
   new file). The end-to-end tests open a real zip in the packaged app and see a second
   one arrive.
+- `imessage.test.jsx` covers iMessage from an iPhone backup (the main process stood in
+  for): its chats listed with the backup's day, your messages known as yours, the card
+  filled like an export's, the same backup not read twice, an encrypted one explained,
+  and how to back up. `src/imessage.test.js` covers `electron/imessage.cjs` on a made-up
+  backup (`tests/fakeIPhoneBackup.cjs`, laid out like a real one): the newest found,
+  names from Contacts, text only in `attributedBody` (short and long), reactions left
+  out, three months back, not read again, no backup or an encrypted one, and nothing
+  written in it. The end-to-end tests read a made-up backup in the packaged app.
 - `chatBatch.test.jsx` covers Analyse all new (the folder, key and Claude stood in for):
   each day with someone sent once with names hidden, a tiny one only marked as seen, the
   chats moving on, the answers reviewed (a detail left out, a reminder, logged on its day
