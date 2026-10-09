@@ -147,7 +147,7 @@ interact.
   once, an error keeping the first answer), the details (Save all with S, a detail's day shown, saved and on the profile, Save and remind me after
   and Remind me after planning the day after, L logging, Ctrl+Enter analysing), and nothing offered in the browser. `src/analysis.test.js` covers reading who a chat is with,
   hiding and restoring names (groups too), the request, what Claude is told to look for,
-  the schema (every object closed, every field required, the reading before the scores)
+  the schema (every object closed, every field required, six either-or fields at most, the reading before the scores)
   and making any answer and its log safe (the chat's day only when it's real and within
   the year, and a detail's day only when it's real and within a year either way); `src/analysisMain.test.js` covers `electron/analysis.cjs` (keys,
   the key kept encrypted, only text and screenshots let through, what's asked of Claude,

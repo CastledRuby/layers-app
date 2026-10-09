@@ -113,6 +113,11 @@ describe('the request', () => {
     };
     walk(ANALYSIS_SCHEMA);
     walk(analysisSchema(['them 1', 'them 2', 'them 3']));
+    // Few either-or fields: each makes the format Claude compiles much bigger,
+    // and one more than this was "too complex for compilation" (a 400).
+    const unions = (s) => (s.anyOf ? 1 : 0) + Object.values(s.properties || {}).reduce((n, p) => n + unions(p), 0) + (s.items ? unions(s.items) : 0) + (s.anyOf || []).reduce((n, p) => n + unions(p), 0);
+    expect(unions(ANALYSIS_SCHEMA)).toBe(6);
+    expect(unions(analysisSchema(['them 1', 'them 2', 'them 3']))).toBe(6);
     // The reading comes before the scores.
     const order = Object.keys(ANALYSIS_SCHEMA.properties);
     expect(order.indexOf('wentWell')).toBeLessThan(order.indexOf('grading'));
@@ -165,6 +170,7 @@ describe('the answer', () => {
     expect(day('2024-01-01')).toBeNull();
     expect(day('7/10/26')).toBeNull();
     expect(day(null)).toBeNull();
+    expect(day('')).toBeNull();
   });
 
   it("keeps a detail's day when it's a real day within a year either way", () => {
@@ -174,7 +180,8 @@ describe('the answer', () => {
     expect(when('2028-01-01')).toBeUndefined();
     expect(when('15/10/26')).toBeUndefined();
     expect(when(null)).toBeUndefined();
-    expect(ANALYSIS_SCHEMA.properties.extractedInfo.items.properties.when).toEqual({ anyOf: [{ type: 'string' }, { type: 'null' }] });
+    expect(when('')).toBeUndefined();
+    expect(ANALYSIS_SCHEMA.properties.extractedInfo.items.properties.when).toEqual({ type: 'string' });
   });
 
   it('is made safe whatever comes back', () => {

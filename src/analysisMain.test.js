@@ -108,6 +108,7 @@ describe('asking Claude', () => {
       [new Anthropic.RateLimitError(429, {}, 'slow down', h), /Too many requests/],
       [new Anthropic.BadRequestError(400, { error: { message: 'Your credit balance is too low' } }, undefined, h), /credit has run out/],
       [new Anthropic.BadRequestError(400, { error: { message: 'image too large' } }, undefined, h), /fewer or smaller screenshots/],
+      [new Anthropic.BadRequestError(400, { error: { message: 'Schema is too complex for compilation.' } }, undefined, h), /^Claude couldn't take that chat\. \(Anthropic said: Schema is too complex for compilation\.\)$/],
       [new Anthropic.APIConnectionError({ message: 'offline' }), /Are you online/],
       [new Anthropic.InternalServerError(529, {}, 'overloaded', h), /problem \(529\)/],
       [new Error('boom'), /Couldn't analyse/],

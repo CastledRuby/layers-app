@@ -665,7 +665,11 @@ will be sent.
   would remember (the people and places in their life, work and study, what's coming up
   with when, likes and dislikes, worries, wins), one per item, not stopping at a few, and
   for anything coming up, the day it happens (`when`), worked out from when it was said.
-  The schema (`analysisSchema`) puts the reading before the scores.
+  The schema (`analysisSchema`) puts the reading before the scores. Days in it are plain
+  text, empty when there's none: each either-or field makes the format Claude compiles
+  much bigger, and one more (the detail's day, as text or nothing) made it "too complex
+  for compilation", so every request was turned down (fixed 2026-10-09; a test keeps
+  them at six).
 - **The answer** is JSON kept to the schema by structured outputs, then checked by
   `analysisResult`: first names put back for the tags and "you" for `[you]`, scores
   clamped, an unknown state becomes `unclear`, info in an unknown category or already on
@@ -751,7 +755,9 @@ Coach → Analyse a chat → **From your chats**: chats saved in the **Layers ch
   screenshots in the phone app.
 - **The same chat** from several files (exported again, or another week's download) is
   one chat (`mergeChats`, keyed by the WhatsApp chat's name or Instagram's thread),
-  every message once. The files are only read; they stay where you saved them.
+  every message once. A WhatsApp chat saved as `chat.txt` (or the zip's own
+  `_chat.txt`) is named and keyed by who's in it ("Liam and Mia"), so two chats saved
+  under that name never join up. The files are only read; they stay where you saved them.
 - **Which name is you** (`ownerOf`): one you picked before, else your name or its first
   part, else on Instagram the name in every chat (`everywhereName`), else in a
   two-person chat the one who isn't the chat's name. Otherwise Coach asks "Which of

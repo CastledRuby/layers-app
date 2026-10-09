@@ -97,9 +97,12 @@ const tones = obj({ text: str, natural: str, playful: str, deeper: str });
 
 // The answer, as JSON (structured outputs keep Claude to it). The reading
 // comes before the scores, so the scores follow from it. `tokens`: who's in
-// the chat besides you (tokensFor).
+// the chat besides you (tokensFor). Days are plain text, empty when there's
+// none: each either-or (orNull) field makes the format Claude compiles much
+// bigger, and one more made it "too complex for compilation" (2026-10-09), so
+// keep them to the few there are.
 export function analysisSchema(tokens = ['them']) {
-  const info = { category: { type: 'string', enum: CATEGORIES.map(c => c.key) }, text: str, temporary: { type: 'boolean' }, when: orNull(str) };
+  const info = { category: { type: 'string', enum: CATEGORIES.map(c => c.key) }, text: str, temporary: { type: 'boolean' }, when: str };
   if (tokens.length > 1) info.about = { type: 'string', enum: tokens };
   return obj({
     transcript: list(obj({ who: { type: 'string', enum: ['you', ...tokens] }, text: str })),
@@ -118,7 +121,7 @@ export function analysisSchema(tokens = ['them']) {
       ratings: obj(Object.fromEntries(DIM_ORDER.map(k => [k, int]))),
       activeListening: list({ type: 'string', enum: AL_ITEMS.map(a => a.key) }),
       summary: str,
-      chatDate: orNull(str),
+      chatDate: str,
     }),
   });
 }
@@ -159,7 +162,7 @@ log, for the user's journal, on Layers' own scales:
 - ratings, each 1-5 (1 barely, 3 some, 5 a lot): depth (how deep it went), trust (openness and trust shown, such as sharing something personal or asking for help), reciprocity (how evenly you both gave and asked), interaction (how engaged you both were), sharedExperiences (how much was done or lived together: plans made, a moment or activity shared, inside jokes; a plain chat is usually 1 or 2), listening (how well you listened to each other).
 - activeListening: only what the user clearly did: followup (asked follow-up questions about what they said), paraphrase (paraphrased, clarified or reflected back), listened (let them finish a story without cutting in or redirecting), remembered (brought up something they'd mentioned before this chat).
 - summary: what the chat was about, under 12 words, as a journal note (e.g. "Her new job and nerves about Monday").
-- chatDate: the day of the last message as YYYY-MM-DD, if the chat shows dates or times (count "Yesterday", weekday names and times, worked out from today); null if it doesn't.`,
+- chatDate: the day of the last message as YYYY-MM-DD, if the chat shows dates or times (count "Yesterday", weekday names and times, worked out from today); empty if it doesn't.`,
 
     `WHAT TO WRITE.
 transcript: the chat as you read it, in order, with who sent each message. Leave out what you can't read rather than guess.
@@ -168,7 +171,7 @@ wentWell: two to four specific things the user did well, each pointing at a mome
 encourager: short replies that invite more ("no way!", "wait what happened?", "then what?") versus ones that close a topic ("nice", "lol", "ok"). Quote the user's most telling one: good if it invited more, improve if it closed things down; null if there were none.
 emotionalCues: up to three things ${group ? 'the others' : 'they'} may be feeling, each with one emoji and the evidence ("lots of exclamation marks about the job"). Possibilities, not facts; never diagnose.
 recommendation: one sentence when the best move is to let it rest (it ended naturally, they're winding down, or the user sent the last messages without a reply); otherwise null.
-extractedInfo: be thorough. Go through the chat message by message and list every detail about ${group ? 'the others (about: whose it is)' : 'them'} that a good friend would remember, said or confirmed by them rather than the user. Look for: people in their life (family, friends, a partner, pets, workmates, with names and how they're related), places (where they live, work, study, go out, have been or are going), work and study (their job, course, subjects, shifts, exams), anything coming up (with when: "Job interview on Thu 15 Oct"), things that have happened to them, what they like and dislike (food, drinks, music, shows, games, sports, hobbies), how they like to do things, worries, wins, and anything they asked the user to remember. One detail per item; don't merge separate details, and don't stop at a few: a long chat often has ten or more. Leave out only what has nothing to remember (greetings, "lol", plans already done with). Categories: interests (things they enjoy), preferences (likes, dislikes, how they like to do things), plans (things coming up), experiences (things that have happened to them, and the people and places in their life), important (time-sensitive things to follow up, like an exam, an interview, being unwell or a worry; temporary true). Short and specific ("Starts a new job at the library on Mon 12 Oct"), only what was actually said. Very sensitive things (health, sexuality, religion, family trouble) only if clearly shared and worth remembering, worded kindly. when: the day it happens as YYYY-MM-DD, for something coming up or time-sensitive whose day is said or clear, worked out from when it was said (the message's date if the chat shows one, otherwise today); null if there's no day.
+extractedInfo: be thorough. Go through the chat message by message and list every detail about ${group ? 'the others (about: whose it is)' : 'them'} that a good friend would remember, said or confirmed by them rather than the user. Look for: people in their life (family, friends, a partner, pets, workmates, with names and how they're related), places (where they live, work, study, go out, have been or are going), work and study (their job, course, subjects, shifts, exams), anything coming up (with when: "Job interview on Thu 15 Oct"), things that have happened to them, what they like and dislike (food, drinks, music, shows, games, sports, hobbies), how they like to do things, worries, wins, and anything they asked the user to remember. One detail per item; don't merge separate details, and don't stop at a few: a long chat often has ten or more. Leave out only what has nothing to remember (greetings, "lol", plans already done with). Categories: interests (things they enjoy), preferences (likes, dislikes, how they like to do things), plans (things coming up), experiences (things that have happened to them, and the people and places in their life), important (time-sensitive things to follow up, like an exam, an interview, being unwell or a worry; temporary true). Short and specific ("Starts a new job at the library on Mon 12 Oct"), only what was actually said. Very sensitive things (health, sexuality, religion, family trouble) only if clearly shared and worth remembering, worded kindly. when: the day it happens as YYYY-MM-DD, for something coming up or time-sensitive whose day is said or clear, worked out from when it was said (the message's date if the chat shows one, otherwise today); empty if there's no day.
 next: ideas for the user's next message, in the slots that fit (null for the rest): continueTopic, shareYourself, changeTopic, dontMessage. Each has text (a one-line idea) and three ready-to-send messages written exactly in the user's own style from this chat (their length, capitals, punctuation, emoji and slang): natural, playful, deeper. Mention something specific from the chat; never generic. Use dontMessage when the chat has wound down or a moment should be left to sit; its three messages are then light, closing ones, in case they still want to say something.`,
   ].join('\n\n');
 }

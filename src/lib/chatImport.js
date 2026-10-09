@@ -166,14 +166,24 @@ export function parseInstagram(files = []) {
 // --- Chats ---------------------------------------------------------------------
 // The chats in one export file ({ name, modified }) from what the main
 // process read ({ kind, title, files }): [{ key, source, title, participants,
-// messages }]. A WhatsApp chat's key is its name, an Instagram chat's its id,
-// so later exports of the same chat join up.
+// messages }]. A WhatsApp chat's key is its name (or, saved as chat.txt,
+// who's in it), an Instagram chat's its id, so later exports of the same chat
+// join up.
+const GENERIC_NAME = /^_?chat(\s*\(\d+\)|\s+\d+)?$/i;
 export function chatsFromExport(file, read, { dayFirst } = {}) {
   if (!read || read.error) return [];
   if (read.kind === 'whatsapp') {
     const messages = parseWhatsApp((read.files[0] || {}).text, { dayFirst, near: file.modified });
-    const title = read.title || String(file.name).replace(/\.(zip|txt)$/i, '');
-    return messages.length ? [{ key: `whatsapp:${title.toLowerCase()}`, source: 'whatsapp', title, participants: [...new Set(messages.map(m => m.sender))], messages }] : [];
+    if (!messages.length) return [];
+    const participants = [...new Set(messages.map(m => m.sender))];
+    const named = read.title || String(file.name).replace(/\.(zip|txt)$/i, '');
+    // Saved as "chat.txt" (or the zip's own "_chat.txt"), it's known by who's
+    // in it instead, so two chats saved under that name never join up.
+    if (GENERIC_NAME.test(named)) {
+      const names = participants.slice().sort((a, b) => a.localeCompare(b));
+      return [{ key: `whatsapp:${names.join('|').toLowerCase()}`, source: 'whatsapp', title: names.length === 2 ? names.join(' and ') : names.join(', '), participants, messages }];
+    }
+    return [{ key: `whatsapp:${named.toLowerCase()}`, source: 'whatsapp', title: named, participants, messages }];
   }
   if (read.kind === 'instagram') {
     return parseInstagram(read.files).map(t => ({ key: `instagram:${t.id}`, source: 'instagram', title: t.title || t.participants.join(', '), participants: t.participants, messages: t.messages }));

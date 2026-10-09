@@ -4,7 +4,7 @@
 > Run `npm run docs:map` after changing anything under `src/`, `electron/*.cjs` or `package.json` scripts.
 > Hand-written explanations live in the other files under [`docs/`](../README.md).
 
-Package: `layers-web` v1.0.36 · `src/`: 85 files, 14466 lines, 108 components, 379 top-level functions, 192 constants.
+Package: `layers-web` v1.0.36 · `src/`: 85 files, 14479 lines, 108 components, 379 top-level functions, 193 constants.
 
 ## Source files
 
@@ -19,11 +19,11 @@ Package: `layers-web` v1.0.36 · `src/`: 85 files, 14466 lines, 108 components, 
 | [data/seed.js](../../src/data/seed.js) | 176 | INITIAL_PEOPLE, INITIAL_GENERAL_GOALS, INITIAL_JOURNAL, INITIAL_SKILLS, EMPTY_SKILLS | — |
 | [lib/achievements.js](../../src/lib/achievements.js) | 37 | achievementProgress, newlyUnlocked, progressText | `data/constants` |
 | [lib/activity.js](../../src/lib/activity.js) | 48 | ACTIVITY_WEEKS, activityLevel, activityGrid | `lib/dates` |
-| [lib/analysis.js](../../src/lib/analysis.js) | 355 | ANALYSIS_MODELS, DEFAULT_ANALYSIS_MODEL, analysisModel, MAX_SCREENSHOTS, THEM, YOU, tokensFor, STAMP, chatSpeakers, detectPeople, … (+33) | `data/constants`, `lib/dates` |
+| [lib/analysis.js](../../src/lib/analysis.js) | 358 | ANALYSIS_MODELS, DEFAULT_ANALYSIS_MODEL, analysisModel, MAX_SCREENSHOTS, THEM, YOU, tokensFor, STAMP, chatSpeakers, detectPeople, … (+33) | `data/constants`, `lib/dates` |
 | [lib/backup.js](../../src/lib/backup.js) | 248 | BACKUP_VERSION, MAX_BACKUP_BYTES, createBackup, isObject, isText, isISODay, num, count, cleanHistory, cleanGoal, … (+9) | `lib/calendar`, `data/constants`, `data/seed`, `data/avatars`, `lib/util`, `lib/sync`, `lib/analysis` |
 | [lib/calendar.js](../../src/lib/calendar.js) | 425 | WEEKDAY_NAMES, DEFAULT_DURATION, EVENT_TEMPLATES, templateFor, DATE_KINDS, dateKind, NOTIFY_DEFAULTS, notifySettings, dayDate, addDays, … (+28) | `lib/dates` |
 | [lib/chatBatch.js](../../src/lib/chatBatch.js) | 104 | TINY, batchPlan, batchDollars, QUEUE_KEY, isText, cleanItem, readQueue, saveQueue, waiting, pruneQueue, … (+5) | `lib/analysis`, `lib/chatImport` |
-| [lib/chatImport.js](../../src/lib/chatImport.js) | 324 | CONVERSATION_GAP_HOURS, MAX_TEXT, PROGRESS_KEY, STAMP, IOS_LINE, ANDROID_LINE, ch, MARKS, MARKED, ODD_SPACES, … (+28) | `lib/analysis` |
+| [lib/chatImport.js](../../src/lib/chatImport.js) | 334 | CONVERSATION_GAP_HOURS, MAX_TEXT, PROGRESS_KEY, STAMP, IOS_LINE, ANDROID_LINE, ch, MARKS, MARKED, ODD_SPACES, … (+29) | `lib/analysis` |
 | [lib/chatTrend.js](../../src/lib/chatTrend.js) | 50 | TREND_LINES, chatTrend, trendChange | `lib/dates` |
 | [lib/closeness.js](../../src/lib/closeness.js) | 64 | QUIZ, ANSWERS, REACHED, inLayer, share, nextQuestion, quizPlacement | — |
 | [lib/dates.js](../../src/lib/dates.js) | 314 | parseDaysAgo, startOfDay, WEEKDAY_SHORT, WEEKDAY_FULL, formatWeekdays, MONTH_NAMES, MONTH_WORDS, readDayMonth, dayMonthToDate, dateToRelativeLabel, … (+26) | `data/constants` |
@@ -264,25 +264,25 @@ Package: `layers-web` v1.0.36 · `src/`: 85 files, 14466 lines, 108 components, 
 | `orNull` | [analysis.js:94](../../src/lib/analysis.js#L94) |  |  |
 | `list` | [analysis.js:95](../../src/lib/analysis.js#L95) |  |  |
 | `tones` | [analysis.js:96](../../src/lib/analysis.js#L96) |  |  |
-| `analysisSchema` | [analysis.js:101](../../src/lib/analysis.js#L101) | ✓ | ✓ |
-| `writesDayFirst` | [analysis.js:128](../../src/lib/analysis.js#L128) |  |  |
-| `analysisSystem` | [analysis.js:136](../../src/lib/analysis.js#L136) | ✓ | ✓ |
-| `escapeRe` | [analysis.js:176](../../src/lib/analysis.js#L176) |  |  |
-| `nameParts` | [analysis.js:178](../../src/lib/analysis.js#L178) |  |  |
-| `hideNames` | [analysis.js:188](../../src/lib/analysis.js#L188) | ✓ | ✓ |
-| `restoreNames` | [analysis.js:205](../../src/lib/analysis.js#L205) | ✓ | ✓ |
-| `analysisRequest` | [analysis.js:220](../../src/lib/analysis.js#L220) | ✓ | ✓ |
-| `analysisResult` | [analysis.js:240](../../src/lib/analysis.js#L240) | ✓ | ✓ |
-| `analysisToKeep` | [analysis.js:294](../../src/lib/analysis.js#L294) | ✓ | ✓ |
-| `analysisDollars` | [analysis.js:310](../../src/lib/analysis.js#L310) | ✓ |  |
-| `dollarsText` | [analysis.js:314](../../src/lib/analysis.js#L314) | ✓ | ✓ |
-| `analysisCost` | [analysis.js:316](../../src/lib/analysis.js#L316) | ✓ | ✓ |
-| `monthOf` | [analysis.js:327](../../src/lib/analysis.js#L327) |  |  |
-| `readSpend` | [analysis.js:328](../../src/lib/analysis.js#L328) | ✓ |  |
-| `addSpend` | [analysis.js:332](../../src/lib/analysis.js#L332) | ✓ | ✓ |
-| `recordSpend` | [analysis.js:338](../../src/lib/analysis.js#L338) | ✓ |  |
-| `spendSummary` | [analysis.js:344](../../src/lib/analysis.js#L344) | ✓ | ✓ |
-| `typicalCost` | [analysis.js:352](../../src/lib/analysis.js#L352) | ✓ | ✓ |
+| `analysisSchema` | [analysis.js:104](../../src/lib/analysis.js#L104) | ✓ | ✓ |
+| `writesDayFirst` | [analysis.js:131](../../src/lib/analysis.js#L131) |  |  |
+| `analysisSystem` | [analysis.js:139](../../src/lib/analysis.js#L139) | ✓ | ✓ |
+| `escapeRe` | [analysis.js:179](../../src/lib/analysis.js#L179) |  |  |
+| `nameParts` | [analysis.js:181](../../src/lib/analysis.js#L181) |  |  |
+| `hideNames` | [analysis.js:191](../../src/lib/analysis.js#L191) | ✓ | ✓ |
+| `restoreNames` | [analysis.js:208](../../src/lib/analysis.js#L208) | ✓ | ✓ |
+| `analysisRequest` | [analysis.js:223](../../src/lib/analysis.js#L223) | ✓ | ✓ |
+| `analysisResult` | [analysis.js:243](../../src/lib/analysis.js#L243) | ✓ | ✓ |
+| `analysisToKeep` | [analysis.js:297](../../src/lib/analysis.js#L297) | ✓ | ✓ |
+| `analysisDollars` | [analysis.js:313](../../src/lib/analysis.js#L313) | ✓ |  |
+| `dollarsText` | [analysis.js:317](../../src/lib/analysis.js#L317) | ✓ | ✓ |
+| `analysisCost` | [analysis.js:319](../../src/lib/analysis.js#L319) | ✓ | ✓ |
+| `monthOf` | [analysis.js:330](../../src/lib/analysis.js#L330) |  |  |
+| `readSpend` | [analysis.js:331](../../src/lib/analysis.js#L331) | ✓ |  |
+| `addSpend` | [analysis.js:335](../../src/lib/analysis.js#L335) | ✓ | ✓ |
+| `recordSpend` | [analysis.js:341](../../src/lib/analysis.js#L341) | ✓ |  |
+| `spendSummary` | [analysis.js:347](../../src/lib/analysis.js#L347) | ✓ | ✓ |
+| `typicalCost` | [analysis.js:355](../../src/lib/analysis.js#L355) | ✓ | ✓ |
 | `createBackup` | [backup.js:20](../../src/lib/backup.js#L20) | ✓ | ✓ |
 | `isObject` | [backup.js:24](../../src/lib/backup.js#L24) |  |  |
 | `isText` | [backup.js:25](../../src/lib/backup.js#L25) |  |  |
@@ -350,22 +350,22 @@ Package: `layers-web` v1.0.36 · `src/`: 85 files, 14466 lines, 108 components, 
 | `fixMetaText` | [chatImport.js:126](../../src/lib/chatImport.js#L126) | ✓ | ✓ |
 | `instagramText` | [chatImport.js:133](../../src/lib/chatImport.js#L133) |  |  |
 | `parseInstagram` | [chatImport.js:147](../../src/lib/chatImport.js#L147) | ✓ | ✓ |
-| `chatsFromExport` | [chatImport.js:171](../../src/lib/chatImport.js#L171) | ✓ | ✓ |
-| `mergeChats` | [chatImport.js:186](../../src/lib/chatImport.js#L186) | ✓ | ✓ |
-| `ownerOf` | [chatImport.js:202](../../src/lib/chatImport.js#L202) | ✓ | ✓ |
-| `everywhereName` | [chatImport.js:214](../../src/lib/chatImport.js#L214) | ✓ | ✓ |
-| `chatPeople` | [chatImport.js:222](../../src/lib/chatImport.js#L222) | ✓ | ✓ |
-| `splitConversations` | [chatImport.js:233](../../src/lib/chatImport.js#L233) | ✓ | ✓ |
-| `pad` | [chatImport.js:243](../../src/lib/chatImport.js#L243) |  |  |
-| `isoMinute` | [chatImport.js:244](../../src/lib/chatImport.js#L244) |  |  |
-| `isoDayOf` | [chatImport.js:245](../../src/lib/chatImport.js#L245) | ✓ |  |
-| `conversationText` | [chatImport.js:250](../../src/lib/chatImport.js#L250) | ✓ | ✓ |
-| `clock` | [chatImport.js:260](../../src/lib/chatImport.js#L260) |  |  |
-| `conversationLabel` | [chatImport.js:262](../../src/lib/chatImport.js#L262) | ✓ | ✓ |
-| `chatRows` | [chatImport.js:279](../../src/lib/chatImport.js#L279) | ✓ |  |
-| `readChatProgress` | [chatImport.js:293](../../src/lib/chatImport.js#L293) | ✓ |  |
-| `saveChatProgress` | [chatImport.js:296](../../src/lib/chatImport.js#L296) | ✓ |  |
-| `cache` | [chatImport.js:305](../../src/lib/chatImport.js#L305) |  |  |
+| `chatsFromExport` | [chatImport.js:173](../../src/lib/chatImport.js#L173) | ✓ | ✓ |
+| `mergeChats` | [chatImport.js:196](../../src/lib/chatImport.js#L196) | ✓ | ✓ |
+| `ownerOf` | [chatImport.js:212](../../src/lib/chatImport.js#L212) | ✓ | ✓ |
+| `everywhereName` | [chatImport.js:224](../../src/lib/chatImport.js#L224) | ✓ | ✓ |
+| `chatPeople` | [chatImport.js:232](../../src/lib/chatImport.js#L232) | ✓ | ✓ |
+| `splitConversations` | [chatImport.js:243](../../src/lib/chatImport.js#L243) | ✓ | ✓ |
+| `pad` | [chatImport.js:253](../../src/lib/chatImport.js#L253) |  |  |
+| `isoMinute` | [chatImport.js:254](../../src/lib/chatImport.js#L254) |  |  |
+| `isoDayOf` | [chatImport.js:255](../../src/lib/chatImport.js#L255) | ✓ |  |
+| `conversationText` | [chatImport.js:260](../../src/lib/chatImport.js#L260) | ✓ | ✓ |
+| `clock` | [chatImport.js:270](../../src/lib/chatImport.js#L270) |  |  |
+| `conversationLabel` | [chatImport.js:272](../../src/lib/chatImport.js#L272) | ✓ | ✓ |
+| `chatRows` | [chatImport.js:289](../../src/lib/chatImport.js#L289) | ✓ |  |
+| `readChatProgress` | [chatImport.js:303](../../src/lib/chatImport.js#L303) | ✓ |  |
+| `saveChatProgress` | [chatImport.js:306](../../src/lib/chatImport.js#L306) | ✓ |  |
+| `cache` | [chatImport.js:315](../../src/lib/chatImport.js#L315) |  |  |
 | `chatTrend` | [chatTrend.js:19](../../src/lib/chatTrend.js#L19) | ✓ | ✓ |
 | `trendChange` | [chatTrend.js:44](../../src/lib/chatTrend.js#L44) | ✓ | ✓ |
 | `inLayer` | [closeness.js:36](../../src/lib/closeness.js#L36) |  |  |
@@ -662,10 +662,10 @@ Package: `layers-web` v1.0.36 · `src/`: 85 files, 14466 lines, 108 components, 
 | `THEM` | [analysis.js:25](../../src/lib/analysis.js#L25) |
 | `YOU` | [analysis.js:26](../../src/lib/analysis.js#L26) |
 | `STAMP` | [analysis.js:37](../../src/lib/analysis.js#L37) |
-| `ANALYSIS_SCHEMA` | [analysis.js:125](../../src/lib/analysis.js#L125) |
-| `WEEKDAYS` | [analysis.js:131](../../src/lib/analysis.js#L131) |
-| `KEPT_CHAT` | [analysis.js:293](../../src/lib/analysis.js#L293) |
-| `SPEND_KEY` | [analysis.js:326](../../src/lib/analysis.js#L326) |
+| `ANALYSIS_SCHEMA` | [analysis.js:128](../../src/lib/analysis.js#L128) |
+| `WEEKDAYS` | [analysis.js:134](../../src/lib/analysis.js#L134) |
+| `KEPT_CHAT` | [analysis.js:296](../../src/lib/analysis.js#L296) |
+| `SPEND_KEY` | [analysis.js:329](../../src/lib/analysis.js#L329) |
 | `BACKUP_VERSION` | [backup.js:15](../../src/lib/backup.js#L15) |
 | `MAX_BACKUP_BYTES` | [backup.js:17](../../src/lib/backup.js#L17) |
 | `GRADES` | [backup.js:101](../../src/lib/backup.js#L101) |
@@ -690,9 +690,10 @@ Package: `layers-web` v1.0.36 · `src/`: 85 files, 14466 lines, 108 components, 
 | `MARKED` | [chatImport.js:29](../../src/lib/chatImport.js#L29) |
 | `ODD_SPACES` | [chatImport.js:30](../../src/lib/chatImport.js#L30) |
 | `SYSTEM` | [chatImport.js:31](../../src/lib/chatImport.js#L31) |
-| `DAYS` | [chatImport.js:258](../../src/lib/chatImport.js#L258) |
-| `MONTHS` | [chatImport.js:259](../../src/lib/chatImport.js#L259) |
-| `NEW_DAYS` | [chatImport.js:278](../../src/lib/chatImport.js#L278) |
+| `GENERIC_NAME` | [chatImport.js:172](../../src/lib/chatImport.js#L172) |
+| `DAYS` | [chatImport.js:268](../../src/lib/chatImport.js#L268) |
+| `MONTHS` | [chatImport.js:269](../../src/lib/chatImport.js#L269) |
+| `NEW_DAYS` | [chatImport.js:288](../../src/lib/chatImport.js#L288) |
 | `TREND_LINES` | [chatTrend.js:9](../../src/lib/chatTrend.js#L9) |
 | `QUIZ` | [closeness.js:11](../../src/lib/closeness.js#L11) |
 | `ANSWERS` | [closeness.js:26](../../src/lib/closeness.js#L26) |

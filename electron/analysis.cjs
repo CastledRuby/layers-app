@@ -61,13 +61,24 @@ function cleanContent(content) {
   return out;
 }
 
-// What went wrong, in words, from the SDK's typed errors.
-function errorText(e) {
+// Anthropic's own words for a request it turned down ("Schema is too complex
+// for compilation."), kept short.
+function apiMessage(e) {
+  const said = e && e.error && e.error.error && e.error.error.message;
+  return typeof said === 'string' ? said.trim().slice(0, 200) : '';
+}
+
+// What went wrong, in words, from the SDK's typed errors. `images`: the
+// request had screenshots.
+function errorText(e, { images = false } = {}) {
   if (e instanceof Client.AuthenticationError) return "That API key isn't working. Check it in Me (Chat analysis).";
   if (e instanceof Client.PermissionDeniedError) return "That API key isn't allowed to use Claude. Check it at console.anthropic.com.";
   if (e instanceof Client.RateLimitError) return 'Too many requests just now. Try again in a minute.';
   if (e instanceof Client.BadRequestError) {
-    return /credit balance/i.test(e.message || '') ? 'Your Anthropic credit has run out. Add some at console.anthropic.com.' : "Claude couldn't take that chat. Try fewer or smaller screenshots.";
+    const said = apiMessage(e);
+    if (/credit balance/i.test(`${said} ${e.message || ''}`)) return 'Your Anthropic credit has run out. Add some at console.anthropic.com.';
+    const tip = images || /image/i.test(said) ? ' Try fewer or smaller screenshots.' : '';
+    return `Claude couldn't take that chat.${tip}${said ? ` (Anthropic said: ${said})` : ''}`;
   }
   if (e instanceof Client.APIConnectionError) return "Couldn't reach Claude. Are you online?";
   if (e instanceof Client.APIError) return `Claude had a problem (${e.status || 'unknown'}). Try again shortly.`;
@@ -103,7 +114,7 @@ async function runAnalysis(request, { apiKey, client = null } = {}) {
     try { result = JSON.parse(text); } catch { return { error: "Claude's answer couldn't be read. Try again.", model, usage }; }
     return { result, model, usage };
   } catch (e) {
-    return { error: errorText(e) };
+    return { error: errorText(e, { images: content.some(block => block.type === 'image') }) };
   }
 }
 

@@ -637,6 +637,11 @@ its own. Changes made while building are marked.
 - **A monthly limit** in Me → Chat analysis: US$5 to start (2, 10, 20 or none). Analyse
   all new stops before going past it.
 - Sunday's **Your week** has **Analyse them all in Coach**.
+- **Fixed** (2026-10-09): every analysis was turned down ("Claude couldn't take that
+  chat. Try fewer or smaller screenshots.") because the day added to details made the
+  answer format too complex for Claude to compile. Days are plain text now, a problem
+  like this shows Anthropic's own reason, and the screenshots tip only shows with
+  screenshots. A WhatsApp chat saved as `chat.txt` is named after who's in it.
 
 ### Saving what Claude finds, with follow-ups (after 1.0.36, not released yet)
 

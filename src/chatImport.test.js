@@ -56,6 +56,16 @@ describe('WhatsApp exports', () => {
     const [chat] = chatsFromExport({ name: 'WhatsApp Chat - Amelie.zip' }, { kind: 'whatsapp', title: 'Amelie', files: [{ path: '_chat.txt', text: IOS }] });
     expect(chat).toMatchObject({ key: 'whatsapp:amelie', source: 'whatsapp', title: 'Amelie', participants: ['Amelie', 'Liam'] });
     expect(chatsFromExport({ name: 'x.zip' }, { error: 'nope' })).toEqual([]);
+    // Renamed, it keeps the name it was given.
+    expect(chatsFromExport({ name: 'Mia.txt' }, { kind: 'whatsapp', title: null, files: [{ path: 'Mia.txt', text: IOS }] })[0]).toMatchObject({ key: 'whatsapp:mia', title: 'Mia' });
+  });
+  it("is known by who's in it when saved as chat.txt, so two such chats never join up", () => {
+    const read = (text) => ({ kind: 'whatsapp', title: null, files: [{ path: 'chat.txt', text }] });
+    const [mine] = chatsFromExport({ name: 'chat.txt' }, read(IOS));
+    expect(mine).toMatchObject({ key: 'whatsapp:amelie|liam', title: 'Amelie and Liam' });
+    const [other] = chatsFromExport({ name: '_chat.txt' }, read(IOS.replace(/Amelie/g, 'Mia (Oli’s Sister)')));
+    expect(other).toMatchObject({ key: 'whatsapp:liam|mia (oli’s sister)', title: 'Liam and Mia (Oli’s Sister)' });
+    expect(mergeChats([mine, other])).toHaveLength(2);
   });
 });
 
