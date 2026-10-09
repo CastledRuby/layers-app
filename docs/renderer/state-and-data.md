@@ -932,7 +932,9 @@ it carries on while you use the rest of Layers.
   stopping, a problem or closing Layers leaves the rest new. It stops before going past
   the limit, and when nothing comes back (the key, credit or connection), saying why and
   how many are still new. An answer Claude couldn't finish is queued as a problem to skip.
-  A toast says how many are ready when it ends.
+  A toast says how many are ready when it ends. After **Stop**, the conversation still
+  being read is queued when its answer comes; starting again straight away leaves it out
+  rather than sending (and paying for) it twice.
 - **The queue** is `layers-analysis-queue` in localStorage, on this laptop only: kept if
   Layers closes, and not synced or backed up until logged (`readQueue` drops anything
   malformed). `waiting` is what's left to review: not dealt with, or logged and then
@@ -983,7 +985,9 @@ devices ([electron.md](../electron.md) has the file side).
 - **Bringing in another device's changes**: the stamper adopts them with their own times
   (`createStamper().adopt`), so they aren't stamped as changed here and sent back; Undo
   and Redo are cleared (they'd undo them too), and a message says "Synced: changes from
-  your other device".
+  your other device". If something changed here while the sync was running, its merge
+  isn't taken (it would undo that change); the sync runs again straight after, merging
+  both.
 - **Data replaced wholesale** (finishing setting up, **Start over**, restoring a backup)
   isn't counted as deleted (`createStamper().forget`), so it never wipes other devices.
   Start over also turns sync off on this computer; turning it on again brings the other

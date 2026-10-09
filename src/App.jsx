@@ -343,7 +343,13 @@ function LayersApp() {
   const [syncInfo, setSyncInfo] = useState(null); // { dir, hasFile }
   const [syncSheetOpen, setSyncSheetOpen] = useState(false);
   const syncLocal = useRef(null);
-  useEffect(() => { syncLocal.current = () => ({ ...stamped(), skills, achievements: achievements || {} }); });
+  // The data as it is now, so a sync can tell whether it changed while the
+  // sync was reading and writing the file.
+  const syncData = useRef(null);
+  useEffect(() => {
+    syncLocal.current = () => ({ ...stamped(), skills, achievements: achievements || {} });
+    syncData.current = [people, journal, events, generalGoals, profile, skills, achievements];
+  });
   const syncRun = useRef({ running: null, again: false, fromSync: false });
   function saveSync(change) {
     setSyncState(s => { const next = { ...s, ...change }; setSyncSettings(next); return next; });
@@ -366,8 +372,13 @@ function LayersApp() {
       try {
         const pass = passphrase || await syncBridge.getSyncPassphrase();
         if (!pass) throw new SyncError('no-passphrase');
+        const before = syncData.current;
         const result = await syncOnce({ bridge: syncBridge, passphrase: pass, local: syncLocal.current() });
-        if (result.changed) applySynced(result.merged);
+        // Something changed here while it ran: taking the merge would undo
+        // that change, so it's left for the next sync, which merges it too.
+        const edited = before && syncData.current && before.some((v, i) => v !== syncData.current[i]);
+        if (result.changed && edited) r.again = true;
+        else if (result.changed) applySynced(result.merged);
         if (!passphrase) saveSync({ lastSynced: new Date().toISOString(), error: null });
         return null;
       } catch (e) {
