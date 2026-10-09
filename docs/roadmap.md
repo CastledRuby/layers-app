@@ -1,7 +1,7 @@
 # Roadmap
 
 Where Layers stands against [vision.md](vision.md), what was decided along the way, and
-what comes next. Last updated 2026-10-08, after 1.0.36 (anything since is at the top of
+what comes next. Last updated 2026-10-09, after 1.0.37 (anything since is at the top of
 [History](#history), marked not released yet). **What's next is
 [The next big changes](#the-next-big-changes-your-answers-2026-10-08)**, after
 [The plan from here](#the-plan-from-here-2026-10-07).
@@ -271,7 +271,7 @@ Each of the others comes back to you as a proposal before it's built.
 
 ### Proposal: analyse all new chats at once (2026-10-09)
 
-**Built 2026-10-09, not released yet**, with the recommended choices ("proceed"): one
+**Built 2026-10-09, released in 1.0.37**, with the recommended choices ("proceed"): one
 log per chat per day, tiny ones skipped, a button, and a US$5 limit. See
 [History](#history).
 
@@ -624,7 +624,7 @@ its own. Changes made while building are marked.
 
 ## History
 
-### Analyse all new (after 1.0.36, not released yet)
+### Analyse all new (1.0.37)
 
 - **Analyse all new** (A) in Coach → Analyse sends every new conversation in your chats
   folder to Claude in one go, after showing how many and roughly what it costs. A day
@@ -643,7 +643,7 @@ its own. Changes made while building are marked.
   like this shows Anthropic's own reason, and the screenshots tip only shows with
   screenshots. A WhatsApp chat saved as `chat.txt` is named after who's in it.
 
-### Saving what Claude finds, with follow-ups (after 1.0.36, not released yet)
+### Saving what Claude finds, with follow-ups (1.0.37)
 
 Small additions to Analyse, built on 2026-10-08 without asking first, since Claude now
 finds ten or more details in a long chat:
