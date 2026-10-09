@@ -256,11 +256,47 @@ You asked for questions to decide the next big changes. Your answers:
   this laptop; there isn't one yet (Apple's backup folder is empty, checked 2026-10-09).
   Snapchat from its Download My Data, which has only saved messages.
 
-**Still to decide:** which of the four comes first; who Claude plays when you practise
-(made-up people, your real people, or both); how the phone web app gets your data (pick
-the sync file each time, sign in to OneDrive, or the phone on its own at first); and for
-iMessage, whether to make an iPhone backup on this laptop (encrypted or not). Each comes
-back to you as a proposal before it's built.
+**And on 2026-10-09:**
+
+- **Less effort comes first**; its proposal is [below](#proposal-analyse-all-new-chats-at-once-2026-10-09).
+- **Practice: both.** Made-up people by default, and your real people only when you
+  choose (that sends Anthropic their saved details and how they write, names hidden).
+- **The phone web app signs in to OneDrive** and syncs on its own. It needs a free
+  one-time setup on Microsoft's developer site, which you do with a walkthrough.
+- **iMessage from an unencrypted iPhone backup** on this laptop, made by you with Apple's
+  Devices app (207 GB free on the drive, so it fits). Anyone using this laptop could read
+  that backup.
+
+Each of the others comes back to you as a proposal before it's built.
+
+### Proposal: analyse all new chats at once (2026-10-09)
+
+Today each conversation is picked, analysed, checked and logged on its own. This makes
+it one press, then a quick review.
+
+1. **One button**: Coach → Analyse → From your chats gets **Analyse all new**, with the
+   count and cost before anything is sent ("9 conversations with 4 people, about
+   US$0.15"). Sunday's **Your week** offers it too.
+2. **What's sent** is what Analyse sends now, one conversation at a time: names hidden,
+   Haiku unless you pick another. It carries on while you use the rest of Layers
+   ("Analysing 3 of 9"). Chats with nobody in Layers, or where you haven't said which name
+   is you, are left out and listed.
+3. **One per chat per day**: a day's conversations with someone are analysed and logged
+   together (a morning and an evening chat with Amelie make one Messaged log), instead of
+   one per 3-hour gap. **Tiny ones are skipped**: under 4 messages, or only one side
+   talking, aren't sent or logged, just marked as seen.
+4. **A review queue**, "Ready to review (9)": each shows who, the day, Claude's score and
+   one-line summary, the details found and the log. **Enter** logs it and saves its
+   details, **X** skips it (nothing logged), **E** opens the full review, **R** adds the
+   follow-up for a detail with a day. **Log all the rest** when you trust it.
+5. **Kept until reviewed**: the answers wait on this laptop, even if Layers closes,
+   since they've been paid for. They aren't synced or backed up until they're logged.
+6. **A monthly limit**: Me → Chat analysis gets one, **US$5** to start. Analyse all new
+   stops before going past it and says so; one chat at a time still works.
+
+**Your choices** (recommended first): one log per chat per day, or one per conversation;
+skip tiny ones, or analyse everything; a button, or automatically whenever a new export
+arrives (within the limit); and the limit of US$5, or none.
 
 ## Drafted next (2026-10-06)
 
