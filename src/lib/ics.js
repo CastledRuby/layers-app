@@ -122,11 +122,31 @@ function starts(ev, last) {
   const past = (t) => (until && (until.allDay ? wallDay(t) > wallDay(until) : toInstant(t).getTime() > untilAt)) || wallDay(t) > last;
   const out = [];
   const byDay = freq === 'WEEKLY' && r.BYDAY ? r.BYDAY.split(',').map(x => DAYS[x.slice(-2).toUpperCase()]).filter(x => x !== undefined) : null;
+  // Monthly by weekday: "1FR" is the first Friday, "-1FR" the last, "FR" every Friday.
+  const byWeekdayInMonth = freq === 'MONTHLY' && r.BYDAY ? r.BYDAY.split(',').map(x => {
+    const m = /^([+-]?\d{1,2})?(SU|MO|TU|WE|TH|FR|SA)$/i.exec(x.trim());
+    return m ? { n: m[1] ? parseInt(m[1], 10) : 0, wd: DAYS[m[2].toUpperCase()] } : null;
+  }).filter(Boolean) : null;
   for (let i = 0, steps = 0; out.length < count && steps < MAX_STEPS; i++, steps++) {
-    if (freq === 'WEEKLY' && byDay) {
-      // Week i (from the start's week, Monday first unless WKST says), each day picked.
-      const weekStart = shift(first, { days: i * 7 * interval - ((weekday(first) + 6) % 7) });
-      const days = byDay.map(wd => shift(weekStart, { days: (wd + 6) % 7 })).sort((a, b) => (wallDay(a) < wallDay(b) ? -1 : 1));
+    if ((freq === 'WEEKLY' && byDay) || (byWeekdayInMonth && byWeekdayInMonth.length)) {
+      let days;
+      if (freq === 'WEEKLY') {
+        // Week i (from the start's week, Monday first unless WKST says), each day picked.
+        const weekStart = shift(first, { days: i * 7 * interval - ((weekday(first) + 6) % 7) });
+        days = byDay.map(wd => shift(weekStart, { days: (wd + 6) % 7 }));
+      } else {
+        // Month i, each picked weekday found in it.
+        const monthStart = shift({ ...first, d: 1 }, { months: i * interval });
+        days = [];
+        for (const { n, wd } of byWeekdayInMonth) {
+          const all = [];
+          for (let t = shift(monthStart, { days: (wd - weekday(monthStart) + 7) % 7 }); t.m === monthStart.m; t = shift(t, { days: 7 })) all.push(t);
+          if (!n) days.push(...all);
+          else if (all[n > 0 ? n - 1 : all.length + n]) days.push(all[n > 0 ? n - 1 : all.length + n]);
+        }
+        days = days.filter((t, k) => days.findIndex(o => wallDay(o) === wallDay(t)) === k);
+      }
+      days.sort((a, b) => (wallDay(a) < wallDay(b) ? -1 : 1));
       let done = false;
       for (const t of days) {
         if (wallDay(t) < wallDay(first)) continue;
@@ -140,7 +160,8 @@ function starts(ev, last) {
       : freq === 'WEEKLY' ? shift(first, { days: i * 7 * interval })
         : freq === 'MONTHLY' ? shift(first, { months: i * interval })
           : freq === 'YEARLY' ? shift(first, { years: i * interval }) : null;
-    if (!t) break;
+    // A repeat this doesn't know (hourly, say) still shows its first time.
+    if (!t) { if (!out.length && !past(first)) out.push(first); break; }
     if (past(t)) break;
     // A 31st in a shorter month doesn't happen (as in RFC 5545).
     if ((freq === 'MONTHLY' || freq === 'YEARLY') && t.d !== first.d) continue;

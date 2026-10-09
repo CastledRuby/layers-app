@@ -226,12 +226,32 @@ interact.
   week review's way in. `src/chatBatch.test.js` covers what's sent (days merged, tiny ones,
   only written messages counted, chats left out), the estimate, the queue (kept, cleaned, what's waiting, pruned) and the
   limit.
+- `coverage-batch.test.jsx` covers more of Analyse all new: a chat with nobody in
+  Layers never sent (and still new), one where it can't tell which name is you left out
+  by name until you pick, a group chat logged with everyone, a run of only tiny
+  conversations, the queue's ← →, a detail put back, an answer Claude couldn't finish
+  (only skipped), answers kept after a restart logged from there, stopping partway at
+  the monthly limit (counted in Me), No limit, and what it has cost in Me by month and
+  model (nothing shown before anything's analysed).
+- `coverage-journal.test.jsx` covers kept chat reviews on the Journal: read again after
+  a restart (the review, its suggestions, the chat shown and hidden), an older analysis
+  with only scores (no review to open), one without scores dropped at startup while its
+  log stays, and the Journal's search over kept chats and Claude's review in any case.
+- `coverage-people.test.jsx` covers the edges of your circle: nobody at all (Coach's
+  Analyse asking for someone first with a key and chats there, Ctrl+K, the week review,
+  the quick log, and a sync writing an empty file), an export named with a nickname going
+  to them in Analyse all new with every nickname hidden (a word that starts like one
+  kept), and a queued answer for someone since removed (nothing logged, skipped).
 - `calendars.test.jsx` covers your Google Calendar (the main process stood in for):
   adding it in Me (a bad address refused), its event on Today marked as Google's and
   opened read-only, nothing of it handed to Windows as a reminder, planning's clash
   warning, and no Plan again for it. `src/ics.test.js` covers reading calendar files
   (zones, UTC, all day, weekly days with UNTIL and EXDATE, daily COUNT, every other week,
-  a moved or cancelled occurrence, several days), pinned to New Zealand time;
+  a moved or cancelled occurrence, several days), pinned to New Zealand time, and
+  `src/coverage-ics.test.js` the edge cases (another zone across midnight and across
+  its own or New Zealand's daylight change, floating times and unknown zones, a UTC
+  EXDATE, all-day events without an end, started earlier, yearly from long ago or
+  moved, the 31st and 29 February, UNTIL as a day, no title, loosely written files);
   `src/feeds.test.js` covers `electron/feeds.cjs` (https and webcal only, the addresses
   kept encrypted and never shown to the page, fetching and its errors). The end-to-end
   tests check a bad address is refused by the packaged app's main process.
@@ -245,6 +265,11 @@ interact.
   copies merged and removed, an unreadable file put aside); `src/syncFolder.test.js`
   covers `electron/sync.cjs` on a temporary folder. The end-to-end tests run two copies of
   Layers sharing one folder, with Windows really keeping the passphrase.
+  `coverage-sync.test.jsx` covers Sync now once it's on: the copy changed last winning
+  record by record (a person's goals one by one), another device's deletions taken on
+  unless changed here after, a plan deleted here staying deleted, a passphrase that no
+  longer opens the file changing nothing, and OneDrive's conflicting copy merged and
+  removed.
 - `sync.test.jsx` covers being ready for syncing: a deleted plan remembered and Undo
   forgetting it (with Redo still working), only changed records getting a new time, and
   a backup carrying them. `src/sync.test.js` covers `createStamper` and `mergeData`

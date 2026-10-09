@@ -626,9 +626,10 @@ Windows ([electron.md](../electron.md)); the page gets the files.
 - **Reading** ([`lib/ics.js`](../../src/lib/ics.js)): `parseCalendar` reads the file;
   `calendarItems` lists events between two days in this computer's time, handling a
   time zone (`TZID`, through `Intl`), UTC and all-day events, repeats (`RRULE`: daily,
-  weekly on chosen days, monthly, yearly; `INTERVAL`, `COUNT`, `UNTIL`), days taken out
-  (`EXDATE`), occurrences moved or changed (`RECURRENCE-ID`), and cancelled events (left
-  out). An all-day event over several days shows on each (up to two weeks).
+  weekly on chosen days, monthly by date or by weekday such as the first or last Friday,
+  yearly; `INTERVAL`, `COUNT`, `UNTIL`), days taken out (`EXDATE`), occurrences moved or
+  changed (`RECURRENCE-ID`), and cancelled events (left out). A repeat it doesn't know
+  (hourly, say) shows its first time only. An all-day event over several days shows on each (up to two weeks).
 - **When**: on start and every 30 minutes (and a new day), for 30 days back and 120
   ahead; kept in `layers-calendars`. A calendar that can't be fetched keeps what it had,
   and Me says why.
