@@ -16,9 +16,10 @@ import { achievementProgress, newlyUnlocked } from './lib/achievements.js';
 import { advanceLayer, advanceSkillGoals, bumpSkills, chartDay, computeOverall, dimBumps, dimsEqual, goalBumpFor, keepDimsInLayer, makePerson, migrateDimsToLayers, movePerson, placeOnLayers, raisedSkills } from './lib/progress.js';
 import { MAX_BACKUP_BYTES, createBackup, validateBackup } from './lib/backup.js';
 import { NOTIFY_DEFAULTS, isDoneOn, notifySettings, parseActionUrl, snoozeUntil, templateFor } from './lib/calendar.js';
-import { useCalendarNotifications, useDailyBackup, useDailyCheckIn, useSlideAcross, useSystemDark, useToday, useWide } from './lib/hooks.js';
+import { useCalendarNotifications, useChatBatch, useDailyBackup, useDailyCheckIn, useSlideAcross, useSystemDark, useToday, useWide } from './lib/hooks.js';
+import { waiting } from './lib/chatBatch.js';
 import { followUpEvent, markDone, markMissed } from './lib/reminders.js';
-import { DEFAULT_ANALYSIS_MODEL } from './lib/analysis.js';
+import { analysisToKeep, DEFAULT_ANALYSIS_MODEL } from './lib/analysis.js';
 import { getFeedCache, setFeedCache, getSyncSettings, setSyncSettings, getSnoozes, loadSavedState, persistState, setSnoozes } from './lib/storage.js';
 import { clamp, uid } from './lib/util.js';
 import { AddInfoModal } from './modals/AddInfoModal.jsx';
@@ -97,6 +98,95 @@ function addNotes(person, notes, at) {
       : [{ id: uid(), emoji: n.emoji || categoryMeta(n.category).emoji, text: n.text, at, temporary: n.category === 'important', archived: false }, ...list];
   });
   return cats;
+}
+
+// One log worked out from the people and skills as they are, setting nothing:
+// the next people and skills, the skills it raised, its Journal entries, who
+// moved up a layer and the names logged. handleLogSubmit applies one; the
+// chat queue's Log all (Analyse all new) applies several in turn.
+function applyLog({ people, skills }, { personIds, type, meaningfulness, notes, activeListening, summary, pickedDate, ratings = {}, goalIds, reflection, analysis }) {
+  const rated = DIM_ORDER.filter(k => ratings[k]);
+  const pd = pickedDate || new Date();
+  const chartAt = toISODate(pd); // the journal entry's day, and "last mentioned" for any notes
+  const loggedNames = personIds.map(id => (people.find(p => p.id === id) || {}).name).filter(Boolean);
+  const levelUps = [];
+  const nextSkills = bumpSkills(skills, {
+    activeListening: activeListening.length,
+    followUp: activeListening.includes('followup') ? 2 : 0,
+    reciprocity: activeListening.includes('paraphrase') || activeListening.length >= 2 ? 1 : 0,
+    selfDisclosure: notes.length > 0 ? 1 : 0,
+  });
+  const raised = raisedSkills(skills, nextSkills);
+  // Worked out from the current people in one pass, so every level-up is
+  // known before the toasts. (They used to be collected inside
+  // setPeople updaters, which React may run later, so only the first
+  // person's level-up was announced.)
+  const nextPeople = people.map(p => {
+    if (!personIds.includes(p.id)) return p;
+    const bumps = dimBumps({ meaningfulness, ratings, activeListening, type });
+    const grown = Object.fromEntries(DIM_ORDER.map(k => [k, clamp(p.dims[k] + bumps[k], 0, 100)]));
+    // Layer progress moves more slowly than before, and only for
+    // interactions you rated 4 or 5 — a brief/low-meaningfulness chat
+    // still updates the six quality dimensions above (so specific
+    // things you did well are still reflected there), but doesn't
+    // nudge the big layer-progress meter on its own.
+    const dimBumpAvg = DIM_ORDER.reduce((s, k) => s + bumps[k], 0) / 6;
+    const progressBump = meaningfulness >= 4 ? Math.round(dimBumpAvg * 0.55) : 0;
+    const { layer: newLayer, progress: newOverall, leveledUp } = advanceLayer(p.layer, p.overall, progressBump);
+    // The dimensions stay inside the (new) layer's band (P3, option C).
+    const newDims = keepDimsInLayer(p.dims, grown, newLayer);
+    const newGoals = p.goals.map(g => {
+      if (g.progress >= 100 || (goalIds && !goalIds.includes(g.id))) return g;
+      const value = clamp(g.progress + goalBumpFor(g, meaningfulness, ratings), 0, 100);
+      const day = chartDay(g.history, chartAt);
+      return { ...g, progress: value, history: pushHistoryPoint(g.history || [], { date: formatAbsoluteDate(new Date(`${day}T00:00:00`)), at: day, value }) };
+    });
+    const newInterest = notes.some(n => n.category === 'interests' && !(p.interests || []).some(it => it.text.trim().toLowerCase() === n.text.trim().toLowerCase()));
+    const why = [];
+    if (leveledUp) why.push(`Reached Layer ${newLayer}: ${getLayer(newLayer).name}`);
+    if (type === 'activity' || type === 'hangout') why.push('Shared an experience together');
+    if (newInterest) why.push('Discovered a shared interest');
+    if (activeListening.length >= 2) why.push('Good reciprocal conversation');
+    if (meaningfulness >= 4) why.push('Personal experience discussed');
+    if (rated.length) why.push(`You rated it: ${rated.map(k => `${DIM_LABELS[k]} ${ratings[k]}`).join(', ')}`);
+    if (why.length === 0) why.push('Logged a new interaction');
+    if (leveledUp) levelUps.push({ name: p.name, layer: newLayer });
+    return movePerson(p, { layer: newLayer, overall: newOverall, at: chartAt, why, extra: { dims: newDims, goals: advanceSkillGoals(newGoals, raised, undefined, goalIds), ...addNotes(p, notes, chartAt) } });
+  });
+  // Which of each person's goals this log moved, kept on their entry (the
+  // Journal's goal filter, and a goal's "N logs").
+  const moved = Object.fromEntries(nextPeople.filter(p => personIds.includes(p.id)).map(p => {
+    const before = people.find(x => x.id === p.id);
+    return [p.id, p.goals.filter(g => { const was = before.goals.find(x => x.id === g.id); return was && g.progress > was.progress; }).map(g => g.id)];
+  }));
+  const entries = personIds.map(personId => ({ id: uid(), personId, at: chartAt, type, meaningfulness, added: notes.map(n => n.text), activeListening, ...(summary ? { summary } : {}), ...(moved[personId] && moved[personId].length ? { goalIds: moved[personId] } : {}), ...(rated.length ? { ratings: Object.fromEntries(rated.map(k => [k, ratings[k]])) } : {}), ...(reflection ? { reflection } : {}), ...(analysis ? { analysis } : {}) }));
+  return { people: nextPeople, skills: nextSkills, raised, entries, levelUps, names: loggedNames };
+}
+
+// "Sam", "Sam and Ana", "Sam, Ana and 2 others".
+function namesText(names) {
+  return names.length <= 2 ? names.join(' and ') : `${names.slice(0, 2).join(', ')} and ${names.length - 2} other${names.length - 2 > 1 ? 's' : ''}`;
+}
+
+// A saved detail (Coach's Analyse, or the chat queue), with the day it
+// happens (when) if it has one.
+function newDetail({ category, text, temporary, when }, at = toISODate(new Date())) {
+  return { id: uid(), emoji: categoryMeta(category).emoji, text, at, temporary: !!temporary, archived: false, ...(when ? { when } : {}) };
+}
+// Details added to their people ([{ personId, category, text, temporary,
+// when }]), the first on top, leaving out any already saved in that category.
+function addDetails(people, items, at) {
+  return people.map(p => {
+    const mine = items.filter(it => it.personId === p.id);
+    if (!mine.length) return p;
+    const next = { ...p };
+    mine.slice().reverse().forEach(it => {
+      const list = next[it.category] || [];
+      if (list.some(x => x.text.trim().toLowerCase() === it.text.trim().toLowerCase())) return;
+      next[it.category] = [newDetail(it, at), ...list];
+    });
+    return next;
+  });
 }
 
 function LayersApp() {
@@ -595,6 +685,70 @@ function LayersApp() {
     setSkills(snap.skills); setAchievements(snap.achievements); setProfile(snap.profile);
   }
   function dropToast(id) { setToasts(t => t.filter(x => x.id !== id)); }
+
+  // --- Analyse all new (lib/chatBatch.js): run here so it carries on while
+  // you use the rest of Layers; its answers wait in Coach to be reviewed. ---
+  const chatBatch = useChatBatch({
+    analyse: analysisBridge ? (request) => analysisBridge.runAnalysis(request) : null,
+    people, yourName: profile.name,
+    onDone: ({ answered, failed, note }) => {
+      const ready = answered ? `${answered} ${answered === 1 ? 'chat' : 'chats'} ready to review in Coach` : '';
+      if (note) pushToast(ready ? `${note} ${ready}.` : note);
+      else if (answered || failed) pushToast(ready || "Claude couldn't finish those: they're in Coach to skip");
+      else pushToast('Nothing worth sending: the tiny conversations are marked as seen');
+    },
+  });
+  // The queue's Log it (one) and Log all (several, in turn): each a Messaged
+  // log on its day with Claude's ratings, keeping the review and the chat,
+  // and its details saved (leaveOut: { [item id]: [detail indexes] } aren't).
+  // One Undo takes them all back, which puts them back in the queue.
+  function handleLogQueued(items, leaveOut = {}) {
+    const snap = snapshot();
+    let state = { people, skills };
+    const entries = [];
+    const raised = [];
+    const levelUps = [];
+    const names = [];
+    const loggedIds = {};
+    let details = 0;
+    items.filter(item => item.result).forEach(item => {
+      const r = item.result;
+      const personIds = r.log.personIds.filter(id => state.people.some(p => p.id === id));
+      if (!personIds.length) return;
+      const done = applyLog(state, { personIds, type: 'messaged', meaningfulness: r.log.meaningfulness, notes: [], activeListening: r.log.activeListening, summary: r.log.summary || undefined, pickedDate: parseISODay(item.day), ratings: r.log.ratings, analysis: analysisToKeep(r, { model: item.model, chat: item.chat }) });
+      const keep = r.extractedInfo.filter((_, i) => !(leaveOut[item.id] || []).includes(i)).map(it => ({ ...it, personId: it.personId || personIds[0] }));
+      details += keep.length;
+      state = { people: addDetails(done.people, keep, item.day), skills: done.skills };
+      entries.unshift(...done.entries);
+      raised.push(done.raised);
+      levelUps.push(...done.levelUps);
+      done.names.forEach(n => { if (!names.includes(n)) names.push(n); });
+      loggedIds[item.id] = done.entries.map(e => e.id);
+    });
+    const count = Object.keys(loggedIds).length;
+    if (!count) return;
+    setPeople(state.people);
+    setGeneralGoals(prev => raised.reduce((goals, r) => advanceSkillGoals(goals, r), prev));
+    setJournal(prev => [...entries, ...prev]);
+    setSkills(state.skills);
+    const at = Date.now();
+    chatBatch.setQueue(q => q.map(it => (loggedIds[it.id] ? { ...it, doneAt: at, loggedIds: loggedIds[it.id] } : it)));
+    const saved = details ? `, and saved ${details} ${details === 1 ? 'detail' : 'details'}` : '';
+    pushToast(count === 1 ? `Logged your chat with ${namesText(names)}${saved}` : `Logged ${count} chats${saved}`, { undo: snap });
+    levelUps.forEach(lu => pushToast(`🎉 ${lu.name} moved up to Layer ${lu.layer}: ${getLayer(lu.layer).name}!`));
+  }
+  // Skip: nothing logged, and it's gone from the queue (the chat has moved on).
+  function handleSkipQueued(item) {
+    const at = Date.now();
+    chatBatch.setQueue(q => q.map(it => (it.id === item.id ? { ...it, doneAt: at, loggedIds: [] } : it)));
+  }
+  // "How did it go?" the day after each of its details that has a day.
+  function handleRemindQueued(item) {
+    const set = (item.result ? item.result.extractedInfo : []).filter(it => it.when).map(it => addFollowUp(it.personId || item.personIds[0], it)).filter(Boolean);
+    if (!set.length) return;
+    chatBatch.setQueue(q => q.map(it => (it.id === item.id ? { ...it, reminded: true } : it)));
+    pushToast(set.length === 1 ? `Reminder set for ${set[0]}` : `${set.length} reminders set`);
+  }
   function undoToast(id, snap) {
     const before = liveData.current || snapshot();
     restoreData(snap);
@@ -740,73 +894,17 @@ function LayersApp() {
   // rating per dimension, each driving that dimension's growth), `goalIds`
   // (only these goals move; undefined means all of each person's active
   // goals) and a `reflection`.
-  function handleLogSubmit({ personIds, type, meaningfulness, notes, activeListening, summary, pickedDate, ratings = {}, goalIds, reflection, analysis }) {
+  function handleLogSubmit(input) {
     const snap = snapshot();
-    const rated = DIM_ORDER.filter(k => ratings[k]);
-    const pd = pickedDate || new Date();
-    const chartAt = toISODate(pd); // the journal entry's day, and "last mentioned" for any notes
-    const loggedNames = personIds.map(id => (people.find(p => p.id === id) || {}).name).filter(Boolean);
-    const levelUps = [];
-    const nextSkills = bumpSkills(skills, {
-      activeListening: activeListening.length,
-      followUp: activeListening.includes('followup') ? 2 : 0,
-      reciprocity: activeListening.includes('paraphrase') || activeListening.length >= 2 ? 1 : 0,
-      selfDisclosure: notes.length > 0 ? 1 : 0,
-    });
-    const raised = raisedSkills(skills, nextSkills);
-    // Worked out from the current people in one pass, so every level-up is
-    // known before the toasts below. (They used to be collected inside
-    // setPeople updaters, which React may run later, so only the first
-    // person's level-up was announced.)
-    const nextPeople = people.map(p => {
-      if (!personIds.includes(p.id)) return p;
-      const bumps = dimBumps({ meaningfulness, ratings, activeListening, type });
-      const grown = Object.fromEntries(DIM_ORDER.map(k => [k, clamp(p.dims[k] + bumps[k], 0, 100)]));
-      // Layer progress moves more slowly than before, and only for
-      // interactions you rated 4 or 5 — a brief/low-meaningfulness chat
-      // still updates the six quality dimensions above (so specific
-      // things you did well are still reflected there), but doesn't
-      // nudge the big layer-progress meter on its own.
-      const dimBumpAvg = DIM_ORDER.reduce((s, k) => s + bumps[k], 0) / 6;
-      const progressBump = meaningfulness >= 4 ? Math.round(dimBumpAvg * 0.55) : 0;
-      const { layer: newLayer, progress: newOverall, leveledUp } = advanceLayer(p.layer, p.overall, progressBump);
-      // The dimensions stay inside the (new) layer's band (P3, option C).
-      const newDims = keepDimsInLayer(p.dims, grown, newLayer);
-      const newGoals = p.goals.map(g => {
-        if (g.progress >= 100 || (goalIds && !goalIds.includes(g.id))) return g;
-        const value = clamp(g.progress + goalBumpFor(g, meaningfulness, ratings), 0, 100);
-        const day = chartDay(g.history, chartAt);
-        return { ...g, progress: value, history: pushHistoryPoint(g.history || [], { date: formatAbsoluteDate(new Date(`${day}T00:00:00`)), at: day, value }) };
-      });
-      const newInterest = notes.some(n => n.category === 'interests' && !(p.interests || []).some(it => it.text.trim().toLowerCase() === n.text.trim().toLowerCase()));
-      const why = [];
-      if (leveledUp) why.push(`Reached Layer ${newLayer}: ${getLayer(newLayer).name}`);
-      if (type === 'activity' || type === 'hangout') why.push('Shared an experience together');
-      if (newInterest) why.push('Discovered a shared interest');
-      if (activeListening.length >= 2) why.push('Good reciprocal conversation');
-      if (meaningfulness >= 4) why.push('Personal experience discussed');
-      if (rated.length) why.push(`You rated it: ${rated.map(k => `${DIM_LABELS[k]} ${ratings[k]}`).join(', ')}`);
-      if (why.length === 0) why.push('Logged a new interaction');
-      if (leveledUp) levelUps.push({ name: p.name, layer: newLayer });
-      return movePerson(p, { layer: newLayer, overall: newOverall, at: chartAt, why, extra: { dims: newDims, goals: advanceSkillGoals(newGoals, raised, undefined, goalIds), ...addNotes(p, notes, chartAt) } });
-    });
-    // Which of each person's goals this log moved, kept on their entry (the
-    // Journal's goal filter, and a goal's "N logs").
-    const moved = Object.fromEntries(nextPeople.filter(p => personIds.includes(p.id)).map(p => {
-      const before = people.find(x => x.id === p.id);
-      return [p.id, p.goals.filter(g => { const was = before.goals.find(x => x.id === g.id); return was && g.progress > was.progress; }).map(g => g.id)];
-    }));
-    setPeople(nextPeople);
-    setGeneralGoals(prev => advanceSkillGoals(prev, raised));
-    setJournal(prev => [
-      ...personIds.map(personId => ({ id: uid(), personId, at: chartAt, type, meaningfulness, added: notes.map(n => n.text), activeListening, ...(summary ? { summary } : {}), ...(moved[personId] && moved[personId].length ? { goalIds: moved[personId] } : {}), ...(rated.length ? { ratings: Object.fromEntries(rated.map(k => [k, ratings[k]])) } : {}), ...(reflection ? { reflection } : {}), ...(analysis ? { analysis } : {}) })),
-      ...prev,
-    ]);
-    setSkills(nextSkills);
+    const done = applyLog({ people, skills }, input);
+    setPeople(done.people);
+    setGeneralGoals(prev => advanceSkillGoals(prev, done.raised));
+    setJournal(prev => [...done.entries, ...prev]);
+    setSkills(done.skills);
     setLogOpen(false);
-    const who = loggedNames.length <= 2 ? loggedNames.join(' and ') : `${loggedNames.slice(0, 2).join(', ')} and ${loggedNames.length - 2} other${loggedNames.length - 2 > 1 ? 's' : ''}`;
+    const who = namesText(done.names);
     pushToast(who ? `Logged time with ${who}` : 'Interaction logged', { undo: snap });
-    levelUps.forEach(lu => pushToast(`🎉 ${lu.name} moved up to Layer ${lu.layer}: ${getLayer(lu.layer).name}!`));
+    done.levelUps.forEach(lu => pushToast(`🎉 ${lu.name} moved up to Layer ${lu.layer}: ${getLayer(lu.layer).name}!`));
   }
 
   // From PlanSheet: a new plan, a list of them ("Several days"), or changes to
@@ -1072,7 +1170,6 @@ function LayersApp() {
   }
   // A detail from Coach's Analyse, with the day it happens (when) if it has
   // one; remind: a follow-up the day after, too.
-  const newDetail = ({ category, text, temporary, when }) => ({ id: uid(), emoji: categoryMeta(category).emoji, text, at: toISODate(new Date()), temporary: !!temporary, archived: false, ...(when ? { when } : {}) });
   function handleApproveInfo(personId, category, text, temporary, { when, remind } = {}) {
     const clean = String(text || '').trim();
     if (!clean) return; // an edit cleared to nothing isn't saved as an empty item
@@ -1085,13 +1182,7 @@ function LayersApp() {
   function handleApproveInfoAll(items) {
     const list = items.map(it => ({ ...it, text: String(it.text || '').trim() })).filter(it => it.text);
     if (!list.length) return;
-    setPeople(prev => prev.map(p => {
-      const mine = list.filter(it => it.personId === p.id);
-      if (!mine.length) return p;
-      const next = { ...p };
-      mine.slice().reverse().forEach(it => { next[it.category] = [newDetail(it), ...next[it.category]]; });
-      return next;
-    }));
+    setPeople(prev => addDetails(prev, list));
     pushToast(list.length === 1 ? `Saved to ${categoryMeta(list[0].category).label}` : `Saved ${list.length} details`);
   }
 
@@ -1478,7 +1569,8 @@ function LayersApp() {
                         {activeTab === 'coach' && <div className="page-col"><CoachView people={people} journal={journal} initialPersonId={coachInit.personId} initialTab={coachInit.tab} onOpenLog={openLog} onApproveInfo={handleApproveInfo} onApproveInfoAll={handleApproveInfoAll} onRemindAbout={handleRemindFollowUp} onLogFromAnalysis={handleLogFromAnalysis} onOpenPerson={openPerson}
                           onLogChat={(l) => handleLogSubmit({ personIds: l.personIds.filter(id => people.some(p => p.id === id)), type: 'messaged', meaningfulness: l.meaningfulness, notes: [], activeListening: l.activeListening, summary: l.summary || undefined, pickedDate: l.date, ratings: l.ratings, analysis: l.analysis })}
                           analysisReady={!analysisBridge ? 'none' : hasAnalysisKey ? 'ready' : 'no-key'} onAnalyse={(request) => analysisBridge.runAnalysis(request)} onOpenMe={() => switchTab('me')} yourName={profile.name}
-                          model={analysisModelId} onModel={setAnalysisModelId} chatExports={chatsBridge} initialChatKey={coachInit.chatKey || null} /></div>}
+                          model={analysisModelId} onModel={setAnalysisModelId} chatExports={chatsBridge} initialChatKey={coachInit.chatKey || null}
+                          chatBatch={analysisBridge && chatsBridge ? { ...chatBatch, waiting: waiting(chatBatch.queue, journal), onLog: handleLogQueued, onSkip: handleSkipQueued, onRemind: handleRemindQueued } : null} /></div>}
                         {activeTab === 'journal' && <div className="page-col"><JournalView today={today} people={people} generalGoals={generalGoals} journal={journal} goalFilter={journalGoal} onGoalFilter={setJournalGoal}
                           personFilter={journalPerson} onPersonFilter={setJournalPerson} dayFilter={journalDay} onDayFilter={setJournalDay} onOpenPerson={openPerson} onEditEntry={setEditingEntryId} onOpenReview={setReviewEntryId} /></div>}
                         {activeTab === 'me' && <div className="page-col"><MeView people={people} journal={journal} skills={skills} generalGoals={generalGoals} profile={profile} onAddSample={handleAddSample} onRemoveSample={handleRemoveSample} hasSamplePeople={people.some(p => SAMPLE_PERSON_IDS.has(p.id))} canAddSample={INITIAL_PEOPLE.some(sp => !people.some(p => p.id === sp.id))} onStartOver={() => setStartOverOpen(true)} onExport={handleExportData} onImportClick={handleImportClick} backupInfo={backupInfo} onOpenBackups={handleOpenBackups} hasUpdater={hasUpdater} updateStatus={updateStatus} onCheckForUpdates={handleCheckForUpdates} onInstallUpdate={handleInstallUpdate} onOpenDownloadPage={handleOpenDownloadPage} shortcutStatus={shortcutStatus} themeMode={themeMode} onSetTheme={setThemeMode} onUpdateProfile={(changes) => setProfile(p => ({ ...p, ...changes }))} onEditProfile={() => setEditProfileOpen(true)} achievements={achievements || {}} hasSystemBridge={hasSystemBridge} autoLaunch={autoLaunch} onToggleAutoLaunch={handleToggleAutoLaunch} onOpenShortcuts={() => setShortcutsOpen(true)} appVersion={appVersion}
@@ -1525,7 +1617,7 @@ function LayersApp() {
                 onOpenEvent={(eventId, d) => setEventView({ eventId, day: d })} onPlan={openPlan} onPrepare={openPrepare} onClose={() => setDayView(null)} />
             )}
             {weekReview && <WeekReviewSheet day={weekReview} people={people} journal={journal} events={events} generalGoals={generalGoals} onClose={() => setWeekReview(null)} onPlan={openPlan}
-              chatExports={hasAnalysisKey ? chatsBridge : null} yourName={profile.name} onOpenChat={(key) => { setWeekReview(null); openCoach(null, 'analyse', key); }} />}
+              chatExports={hasAnalysisKey ? chatsBridge : null} yourName={profile.name} onOpenChat={(key) => { setWeekReview(null); openCoach(null, 'analyse', key); }} onAnalyseAll={() => { setWeekReview(null); openCoach(null, 'analyse'); }} />}
             {recheckFor && people.some(p => p.id === recheckFor) && (() => {
               const p = people.find(x => x.id === recheckFor);
               return <QuizSheet name={p.name} person={p} now={{ layer: p.layer, overall: p.overall }} onClose={() => setRecheckFor(null)} onDone={(placement) => handleRecheck(p.id, placement)} />;

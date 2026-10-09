@@ -3,6 +3,8 @@
 // who you're about to talk to, L logs the conversation with them, A
 // analyses a chat with them, O opens their profile. On an analysed chat, S
 // saves every detail found and L logs it; Ctrl+Enter in the chat box analyses.
+// On Analyse, A analyses all new chats from your exports and R reviews the
+// answers waiting (ChatQueueSheet has its own keys).
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Check, ImagePlus, Plus, X } from 'lucide-react';
@@ -11,6 +13,9 @@ import { hasOpenSheet, isTyping } from '../components/sheetLayer.js';
 import { ANALYSIS_MODELS, analysisCost, analysisModel, analysisRequest, analysisResult, analysisToKeep, DEFAULT_ANALYSIS_MODEL, detectPeople, MAX_SCREENSHOTS, recordSpend, typicalCost } from '../lib/analysis.js';
 import { DateDropdown } from '../components/pickers.jsx';
 import { ChatExports } from '../components/ChatExports.jsx';
+import { ChatBatchCard } from '../components/ChatBatch.jsx';
+import { ChatQueueSheet } from '../modals/ChatQueueSheet.jsx';
+import { batchPlan } from '../lib/chatBatch.js';
 import { chatPeople, conversationLabel, conversationText, isoDayOf, loadChatExports, readChatProgress, saveChatProgress } from '../lib/chatImport.js';
 import { formatCalendarDate, parseISODay } from '../lib/dates.js';
 import { isPictureFile } from '../data/avatars.js';
@@ -57,8 +62,10 @@ function ModelButtons({ label, value, onPick, done = {} }) {
 // openChatsFolder, onChatExportsChanged), or null. onApproveInfo saves a
 // detail found (with its day, `when`, and `remind` for a follow-up the day
 // after), onApproveInfoAll several at once, onRemindAbout sets that follow-up
-// for one already saved.
-export function CoachView({ people, journal, initialPersonId, initialTab, onOpenLog, onApproveInfo, onApproveInfoAll, onRemindAbout, onLogFromAnalysis, onLogChat, onOpenPerson, analysisReady = 'none', onAnalyse, onOpenMe, yourName = '', model = DEFAULT_ANALYSIS_MODEL, onModel = () => {}, chatExports = null, initialChatKey = null }) {
+// for one already saved. chatBatch: Analyse all new from LayersApp (running,
+// note, waiting, progress, saveProgress, start, stop, onLog, onSkip,
+// onRemind), or null.
+export function CoachView({ people, journal, initialPersonId, initialTab, onOpenLog, onApproveInfo, onApproveInfoAll, onRemindAbout, onLogFromAnalysis, onLogChat, onOpenPerson, analysisReady = 'none', onAnalyse, onOpenMe, yourName = '', model = DEFAULT_ANALYSIS_MODEL, onModel = () => {}, chatExports = null, initialChatKey = null, chatBatch = null }) {
   const [tab, setTab] = useState(initialTab || 'prepare');
   const [preparePersonId, setPreparePersonId] = useState(initialPersonId || (people[0] && people[0].id) || null);
   const [analysisPersonId, setAnalysisPersonId] = useState(initialTab === 'analyse' ? initialPersonId || null : null);
@@ -89,7 +96,12 @@ export function CoachView({ people, journal, initialPersonId, initialTab, onOpen
   // it's read), where you got up to in each, and the conversation in the box
   // ({ key, end, day, label }), which dates the log and moves you on.
   const [exportsState, setExportsState] = useState(null);
-  const [chatProgress, setChatProgress] = useState(() => readChatProgress());
+  // Where you got up to in each chat: LayersApp's, since Analyse all new moves it on too.
+  const [ownProgress, setOwnProgress] = useState(() => readChatProgress());
+  const chatProgress = chatBatch ? chatBatch.progress : ownProgress;
+  const saveProgress = (key, change) => (chatBatch ? chatBatch.saveProgress(key, change) : setOwnProgress(saveChatProgress(key, change)));
+  const [reviewing, setReviewing] = useState(false);
+  const [planNow] = useState(() => Date.now()); // "new" is reckoned from when Coach opened, as in ChatExports
   const [ownSource, setOwnSource] = useState(null);
   const [chatsFolder, setChatsFolder] = useState(null);
   const shotsInput = useRef(null);
@@ -103,6 +115,10 @@ export function CoachView({ people, journal, initialPersonId, initialTab, onOpen
 
   // The folder is read when Analyse opens, and again when a file arrives.
   const exportsOn = tab === 'analyse' && analysisReady === 'ready' && !!chatExports;
+  // Analyse all new: what there is to send, from the chats read.
+  const batchOn = !!chatBatch;
+  const plan = useMemo(() => (exportsOn && batchOn && exportsState ? batchPlan(exportsState.chats, { people, yourName, progress: chatProgress, now: planNow }) : null), [exportsOn, batchOn, exportsState, people, yourName, chatProgress, planNow]);
+  const startBatch = () => { if (plan && plan.items.length && !chatBatch.running) chatBatch.start(plan.items, model); };
   useEffect(() => {
     if (!exportsOn) return undefined;
     let live = true;
@@ -185,7 +201,7 @@ export function CoachView({ people, journal, initialPersonId, initialTab, onOpen
     if (await ask(chat, {}, model, 'pick')) {
       setOwnText(''); setOwnShots([]); setOwnWith(null); setOwnWithFrom(null); setOwnWithPicking(false); setOwnSource(null);
       // That chat's analysed up to here: its next export shows only what's after.
-      if (chat.source) setChatProgress(saveChatProgress(chat.source.key, { at: Math.max((readChatProgress()[chat.source.key] || {}).at || 0, chat.source.end) }));
+      if (chat.source) saveProgress(chat.source.key, { at: Math.max((readChatProgress()[chat.source.key] || {}).at || 0, chat.source.end) });
     }
   }
   // One model's answer to a chat; on a problem, back to `backTo` saying so.
@@ -270,6 +286,10 @@ export function CoachView({ people, journal, initialPersonId, initialTab, onOpen
       const act = (fn) => { e.preventDefault(); fn(); };
       if (e.key === '1') { act(() => setTab('prepare')); return; }
       if (e.key === '2') { act(() => setTab('analyse')); return; }
+      if (tab === 'analyse' && chatBatch && exportsOn && (!scenarioPerson || step === 'pick')) {
+        if (key === 'a' && plan && plan.items.length && !chatBatch.running) { act(startBatch); return; }
+        if (key === 'r' && chatBatch.waiting.length) { act(() => setReviewing(true)); return; }
+      }
       if (tab === 'analyse' && step === 'results' && scenario && scenarioPerson) {
         if (key === 's' && unsavedInfo.length && onApproveInfoAll) act(saveAllInfo);
         else if (key === 'l' && !logged) act(() => (scenario.own ? logOwn() : handleLogAnalysis()));
@@ -291,6 +311,7 @@ export function CoachView({ people, journal, initialPersonId, initialTab, onOpen
 
   return (
     <div className="px-5 pt-6 pb-4">
+      {reviewing && chatBatch && chatBatch.waiting.length > 0 && <ChatQueueSheet items={chatBatch.waiting} people={people} onLog={chatBatch.onLog} onSkip={chatBatch.onSkip} onRemind={chatBatch.onRemind} onClose={() => setReviewing(false)} />}
       <p className="font-display" style={{ fontSize: 24, color: COLORS.ink }}>Conversation Coach</p>
       <p className="text-sm mt-1" style={{ color: COLORS.inkSoft }}>Noticing, responding and adapting, not scripts.</p>
 
@@ -422,7 +443,8 @@ export function CoachView({ people, journal, initialPersonId, initialTab, onOpen
             <p className="text-sm" style={{ color: COLORS.inkSoft }}>Add someone in the People tab first, then come back to analyse a conversation with them.</p>
           ) : !scenarioPerson ? (
             <>
-              {exportsOn && <ChatExports state={exportsState} people={people} yourName={yourName} progress={chatProgress} folder={chatsFolder || undefined} onPick={pickConversation} onPickMe={(key, name) => setChatProgress(saveChatProgress(key, { me: name }))} onOpenFolder={chatExports.openChatsFolder ? () => chatExports.openChatsFolder() : null} initialOpen={initialChatKey} />}
+              {exportsOn && chatBatch && <ChatBatchCard plan={plan} batch={chatBatch} model={model} people={people} onStart={startBatch} onReview={() => setReviewing(true)} />}
+              {exportsOn && <ChatExports state={exportsState} people={people} yourName={yourName} progress={chatProgress} folder={chatsFolder || undefined} onPick={pickConversation} onPickMe={(key, name) => saveProgress(key, { me: name })} onOpenFolder={chatExports.openChatsFolder ? () => chatExports.openChatsFolder() : null} initialOpen={initialChatKey} />}
               {ownSource && <p className="text-xs mb-2 font-semibold" style={{ color: COLORS.accent }}>Nobody in that chat is in Layers yet. Who is it with?</p>}
               <p className="text-sm font-semibold mb-2" style={{ color: COLORS.ink }}>Who is this conversation with?</p>
               <div style={{ display: 'flex', flexWrap: 'wrap', columnGap: 8, rowGap: 12, paddingBottom: 4, maxHeight: 168, overflowY: 'auto' }}>
@@ -453,7 +475,8 @@ export function CoachView({ people, journal, initialPersonId, initialTab, onOpen
                       {onOpenMe && <button type="button" onClick={onOpenMe} className="text-xs font-semibold rounded-full px-3 py-1.5 mt-2.5" style={{ background: COLORS.accentSoft, color: COLORS.accent }}>Add a key in Me</button>}
                     </div>
                   )}
-                  {exportsOn && <ChatExports state={exportsState} people={people} yourName={yourName} progress={chatProgress} folder={chatsFolder || undefined} onPick={pickConversation} onPickMe={(key, name) => setChatProgress(saveChatProgress(key, { me: name }))} onOpenFolder={chatExports.openChatsFolder ? () => chatExports.openChatsFolder() : null} />}
+                  {exportsOn && chatBatch && <ChatBatchCard plan={plan} batch={chatBatch} model={model} people={people} onStart={startBatch} onReview={() => setReviewing(true)} />}
+                  {exportsOn && <ChatExports state={exportsState} people={people} yourName={yourName} progress={chatProgress} folder={chatsFolder || undefined} onPick={pickConversation} onPickMe={(key, name) => saveProgress(key, { me: name })} onOpenFolder={chatExports.openChatsFolder ? () => chatExports.openChatsFolder() : null} />}
                   {analysisReady === 'ready' && (
                     <div className="rounded-2xl p-3.5 mb-4" style={{ background: COLORS.paperRaised, border: `1px solid ${COLORS.line}` }} aria-label="Your own chat">
                       <p className="text-sm font-semibold" style={{ color: COLORS.ink }}>Analyse your own chat</p>

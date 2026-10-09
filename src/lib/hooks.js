@@ -1,11 +1,15 @@
-// React hooks for time-based behaviour. Layers usually stays running in the
-// tray for days, so anything tied to "today" has to notice the date change
-// rather than assume the app was launched this morning.
+// React hooks for time-based behaviour (and, at the end, the Analyse all new
+// runner). Layers usually stays running in the tray for days, so anything tied
+// to "today" has to notice the date change rather than assume the app was
+// launched this morning.
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { toISODate } from './dates.js';
 import { plannedNotifications } from './calendar.js';
 import { addNotifiedReminder, getLastNotifiedDate, getNotifiedReminders, setLastNotifiedDate } from './storage.js';
 import { checkInReminder } from './text.js';
+import { analysisDollars, analysisModel, analysisRequest, analysisResult, recordSpend, spendSummary } from './analysis.js';
+import { batchDollars, pruneQueue, readLimit, readQueue, saveQueue } from './chatBatch.js';
+import { readChatProgress, saveChatProgress } from './chatImport.js';
 
 // The local date as 'YYYY-MM-DD', updated within a minute of midnight (and
 // as soon as the window becomes visible again, e.g. after the laptop wakes).
@@ -192,4 +196,83 @@ export function useCalendarNotifications({ enabled, state, settings, snoozes }) 
     const timer = setInterval(check, 30 * 1000);
     return () => clearInterval(timer);
   }, [canSchedule, enabled]);
+}
+
+// Analyse all new (lib/chatBatch.js), run from LayersApp so it carries on
+// while you use the rest of Layers. `analyse(request)` sends one chat (the
+// bridge's runAnalysis); people and yourName are read as they are when each
+// is sent. Each answer goes into the queue as it arrives, and each chat moves
+// on past what's been sent (or marked seen, for tiny ones), so stopping, a
+// problem or closing Layers leaves the rest new. It stops before going past
+// the monthly limit, and when nothing comes back (the key, credit or
+// connection); an answer Claude couldn't finish is queued as a problem.
+// onDone({ answered, failed, note }) when a run ends.
+// Returns { running: { done, total, model } | null, note, queue, setQueue,
+// progress, saveProgress(key, change), start(items, model), stop() }.
+export function useChatBatch({ analyse, people, yourName, onDone }) {
+  const latest = useRef({ analyse, people, yourName, onDone });
+  useLayoutEffect(() => { latest.current = { analyse, people, yourName, onDone }; });
+  // What was dealt with in an earlier session is gone; Undo can't reach it.
+  const [queue, setQueue] = useState(() => pruneQueue(readQueue(), Number.POSITIVE_INFINITY));
+  const [progress, setProgress] = useState(() => readChatProgress());
+  const [running, setRunning] = useState(null);
+  const [note, setNote] = useState(null);
+  const runs = useRef(0);
+  const busy = useRef(false);
+  useEffect(() => { saveQueue(queue); }, [queue]);
+  const saveProgress = (key, change) => setProgress(saveChatProgress(key, change));
+  const moveOn = (item) => setProgress(saveChatProgress(item.chatKey, { at: Math.max((readChatProgress()[item.chatKey] || {}).at || 0, item.end) }));
+  const add = (entry) => setQueue(q => [...q.filter(x => x.id !== entry.id), entry]);
+
+  async function start(items, model) {
+    if (busy.current || !latest.current.analyse) return;
+    busy.current = true;
+    const ticket = ++runs.current;
+    const total = items.filter(i => !i.tiny).length;
+    let done = 0;
+    let answered = 0;
+    let failed = 0;
+    let stopped = null;
+    setNote(null);
+    setQueue(q => pruneQueue(q, Date.now() - 10 * 60 * 1000));
+    setRunning({ done: 0, total, model });
+    for (const item of items) {
+      if (ticket !== runs.current) break;
+      if (!item.tiny) {
+        const limit = readLimit();
+        if (limit && spendSummary().thisMonth.dollars + batchDollars([item], model) > limit) { stopped = `Stopped at your US$${limit} monthly limit (Me → Chat analysis).`; break; }
+        const { analyse: send, people: everyone, yourName: you } = latest.current;
+        const group = item.ids.map(id => everyone.find(p => p.id === id)).filter(Boolean);
+        if (group.length) {
+          const answer = await Promise.resolve(send(analysisRequest({ people: group, yourName: you, text: item.text, model }))).catch(() => null);
+          if (answer && answer.usage) recordSpend(answer.usage, answer.model || model);
+          const used = analysisModel((answer && answer.model) || model).id;
+          const base = { id: item.id, chatKey: item.chatKey, title: item.title, source: item.source, day: item.day, personIds: group.map(p => p.id), model: used, chat: item.text, messages: item.messages };
+          if (!answer || (answer.error && !answer.usage)) { stopped = `Stopped: ${(answer && answer.error) || "Couldn't reach Claude."}`; break; }
+          if (answer.error) { add({ ...base, error: answer.error }); failed += 1; }
+          else {
+            const result = analysisResult(answer.result, group);
+            result.log.date = item.day; // the export's own times
+            add({ ...base, result, cost: analysisDollars(answer.usage, used) });
+            answered += 1;
+          }
+        }
+        done += 1;
+        if (ticket === runs.current) setRunning({ done, total, model });
+      }
+      moveOn(item);
+    }
+    busy.current = false;
+    if (ticket === runs.current) { runs.current += 1; setRunning(null); }
+    const left = total - done;
+    const why = stopped ? `${stopped} ${left === 1 ? 'One conversation is' : `${left} conversations are`} still new.` : null;
+    setNote(why);
+    if (latest.current.onDone) latest.current.onDone({ answered, failed, note: why });
+  }
+  function stop() {
+    runs.current += 1;
+    busy.current = false;
+    setRunning(null);
+  }
+  return { running, note, queue, setQueue, progress, saveProgress, start, stop };
 }

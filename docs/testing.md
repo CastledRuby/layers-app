@@ -168,6 +168,15 @@ interact.
   are exports, zips packed or stored, errors, nothing outside the folder, noticing a
   new file). The end-to-end tests open a real zip in the packaged app and see a second
   one arrive.
+- `chatBatch.test.jsx` covers Analyse all new (the folder, key and Claude stood in for):
+  each day with someone sent once with names hidden, a tiny one only marked as seen, the
+  chats moving on, the answers reviewed (a detail left out, a reminder, logged on its day
+  with its details, Undo bringing it back, the full review, skipped, all the rest logged
+  at once), the answers kept after a restart without asking again, stopping at the
+  monthly limit (and the limit raised in Me) and when Claude can't be reached, and the
+  week review's way in. `src/chatBatch.test.js` covers what's sent (days merged, tiny ones,
+  chats left out), the estimate, the queue (kept, cleaned, what's waiting, pruned) and the
+  limit.
 - `calendars.test.jsx` covers your Google Calendar (the main process stood in for):
   adding it in Me (a bad address refused), its event on Today marked as Google's and
   opened read-only, nothing of it handed to Windows as a reminder, planning's clash

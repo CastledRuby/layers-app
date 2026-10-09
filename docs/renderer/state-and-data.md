@@ -267,7 +267,9 @@ walking back from the newest point so the months stay in order across a year bou
 The helpers are in [`lib/progress.js`](../../src/lib/progress.js) and unit-tested in
 `src/progress.test.js`.
 
-**Logging an interaction** (`handleLogSubmit`). The log sheet always sends the people,
+**Logging an interaction** (`handleLogSubmit`, which applies `applyLog`: the next people,
+skills and Journal entries worked out without setting anything, so the chat queue's
+Log all can apply several in turn). The log sheet always sends the people,
 type, meaningfulness, profile notes, active-listening ticks, the note (`summary`) and the
 picked date. Its optional **More details** section can add three more inputs:
 
@@ -772,6 +774,53 @@ Coach → Analyse a chat → **From your chats**: chats saved in the **Layers ch
   (`openCoach(null, 'analyse', chatKey)`). Only once there's a key.
 - **Where you got up to** is `layers-chat-progress` in localStorage (`{ [chat]: { at, me
   } }`), on this computer only; parsed files are kept in memory until they change.
+
+### Analyse all new
+
+Every new conversation in the chats folder, sent in one go and reviewed after (decided
+2026-10-09, [roadmap](../roadmap.md#proposal-analyse-all-new-chats-at-once-2026-10-09)).
+[`lib/chatBatch.js`](../../src/lib/chatBatch.js) has the parts without React;
+`useChatBatch` in [`lib/hooks.js`](../../src/lib/hooks.js) runs it from `LayersApp`, so
+it carries on while you use the rest of Layers.
+
+- **What's sent** (`batchPlan`): each chat's new conversations (the same reckoning as the
+  list, `chatRows`), a day with someone at a time. A day's conversations are merged and
+  written out as one (`conversationText`), so a morning and an evening chat make one log.
+  Tiny ones (under `TINY`, 4 messages, or only one side talking) aren't sent, only marked
+  as seen. Chats with nobody in Layers are left out, and so are ones where it can't tell
+  which name is you, until you say. Each goes the way Analyse sends one (`analysisRequest`,
+  names hidden), one at a time, with the model picked on the card.
+- **The card** (`ChatBatchCard`, above "From your chats"): **Analyse all new** (A) with how
+  many conversations, with whom, and roughly what it costs (`batchDollars`: the
+  instructions and the chat in, the answer out), warning when that's more than is left of
+  the monthly limit; then "Haiku 4.5 is reading 3 of 9…" with **Stop**; then **Ready to
+  review** (R).
+- **As it runs**: each answer goes into the queue as it arrives (`analysisResult`, dated
+  on its day), and each chat's progress moves past what's been sent or marked seen, so
+  stopping, a problem or closing Layers leaves the rest new. It stops before going past
+  the limit, and when nothing comes back (the key, credit or connection), saying why and
+  how many are still new. An answer Claude couldn't finish is queued as a problem to skip.
+  A toast says how many are ready when it ends.
+- **The queue** is `layers-analysis-queue` in localStorage, on this laptop only: kept if
+  Layers closes, and not synced or backed up until logged (`readQueue` drops anything
+  malformed). `waiting` is what's left to review: not dealt with, or logged and then
+  undone. An item keeps the ids of the Journal entries it made, so Undo, which removes
+  them, brings it back. Items dealt with are dropped at the next start, or 10 minutes on
+  when another run starts (`pruneQueue`).
+- **Reviewing** (`ChatQueueSheet`, R): one at a time, oldest first, with who, the day, the
+  score and state, the log (how meaningful, the ratings, the note), Try next time and the
+  details found. **Enter** logs it and saves its details (`handleLogQueued`: a Messaged log
+  on its day with Claude's ratings, keeping the review and the chat like Log this chat;
+  the details dated on the chat's day, leaving out any already saved). **1–9** leaves a
+  detail out, **X** skips it (nothing logged), **E** opens the full review
+  (`ChatReviewSheet`), **B** plans "how did it go?" the day after its details that have a
+  day, **← →** move, and **Shift+Enter** logs them all. Each log is worked out from the one
+  before (`applyLog`), so one Undo takes them all back.
+- **The monthly limit** (`layers-analysis-limit`, Me → Chat analysis): US$2, 5 (the
+  default), 10, 20 or none. Before each conversation, this month's spend
+  (`spendSummary`) plus its estimate is checked against it. One chat at a time isn't held
+  to it.
+- **The week review** has **Analyse them all in Coach** beside "Chats to analyse".
 
 ### Syncing through OneDrive
 

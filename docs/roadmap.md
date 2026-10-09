@@ -271,6 +271,10 @@ Each of the others comes back to you as a proposal before it's built.
 
 ### Proposal: analyse all new chats at once (2026-10-09)
 
+**Built 2026-10-09, not released yet**, with the recommended choices ("proceed"): one
+log per chat per day, tiny ones skipped, a button, and a US$5 limit. See
+[History](#history).
+
 Today each conversation is picked, analysed, checked and logged on its own. This makes
 it one press, then a quick review.
 
@@ -619,6 +623,20 @@ its own. Changes made while building are marked.
   box in the packaged app, with a temporary data folder as always.
 
 ## History
+
+### Analyse all new (after 1.0.36, not released yet)
+
+- **Analyse all new** (A) in Coach → Analyse sends every new conversation in your chats
+  folder to Claude in one go, after showing how many and roughly what it costs. A day
+  with someone is one conversation; tiny ones (under 4 messages, or one-sided) are only
+  marked as seen. It carries on while you use the rest of Layers.
+- **Ready to review** (R): each answer, one at a time. Enter logs it and saves its
+  details, 1–9 leaves a detail out, X skips, E shows the full review, B sets reminders
+  for dated details, Shift+Enter logs them all. One Undo takes back what was just logged,
+  and puts it back in the queue. Answers wait there even if Layers closes.
+- **A monthly limit** in Me → Chat analysis: US$5 to start (2, 10, 20 or none). Analyse
+  all new stops before going past it.
+- Sunday's **Your week** has **Analyse them all in Coach**.
 
 ### Saving what Claude finds, with follow-ups (after 1.0.36, not released yet)
 

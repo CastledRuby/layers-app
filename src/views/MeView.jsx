@@ -8,6 +8,7 @@ import { ACHIEVEMENTS, FOCUS_LABELS, FOCUS_SKILL_KEY, SKILL_ORDER, SKILL_TIPS } 
 import { achievementProgress, progressText } from '../lib/achievements.js';
 import { notifySettings } from '../lib/calendar.js';
 import { analysisModel, dollarsText, spendSummary } from '../lib/analysis.js';
+import { LIMITS, readLimit, saveLimit } from '../lib/chatBatch.js';
 import { ChatTrendChart } from '../components/ChatTrendChart.jsx';
 import { chatTrend } from '../lib/chatTrend.js';
 import { formatAbsoluteDate, formatCalendarDate, formatTime12, isJournalThisWeek, parseISODay, sortHistory } from '../lib/dates.js';
@@ -51,6 +52,7 @@ function AnalysisKeyCard({ analysisKey, onSave, onRemove }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
   const [spend] = useState(() => spendSummary()); // read when Me opens
+  const [limit, setLimit] = useState(() => readLimit()); // Analyse all new's monthly limit (lib/chatBatch.js)
   // "Haiku 4.5" for one model; "2 with Haiku 4.5, 1 with Opus 5.5" for more.
   const byModel = (models) => { const list = Object.entries(models); return list.length === 1 ? analysisModel(list[0][0]).short : list.map(([id, n]) => `${n} with ${analysisModel(id).short}`).join(', '); };
   async function save() {
@@ -73,6 +75,15 @@ function AnalysisKeyCard({ analysisKey, onSave, onRemove }) {
           <p><span className="font-semibold">This month:</span> about {dollarsText(spend.thisMonth.dollars)} for {spend.thisMonth.chats} {spend.thisMonth.chats === 1 ? 'chat' : 'chats'}{spend.thisMonth.chats ? ` (${byModel(spend.thisMonth.models)})` : ''}</p>
           {spend.lastMonth.chats > 0 && <p className="mt-0.5"><span className="font-semibold">Last month:</span> about {dollarsText(spend.lastMonth.dollars)} for {spend.lastMonth.chats} {spend.lastMonth.chats === 1 ? 'chat' : 'chats'}</p>}
           <p className="mt-0.5" style={{ color: COLORS.inkSoft }}>Worked out on this laptop from what each answer used; console.anthropic.com has the exact bill.</p>
+        </div>
+      )}
+      {analysisKey.hasKey && (
+        <div className="mt-3" role="group" aria-label="Monthly limit">
+          <p className="text-xs font-semibold" style={{ color: COLORS.ink }}>Monthly limit for Analyse all new</p>
+          <div className="flex flex-wrap gap-1.5 mt-1.5">
+            {LIMITS.map(n => <button key={n} type="button" onClick={() => { saveLimit(n); setLimit(n); }} aria-pressed={limit === n} className={`chip${limit === n ? ' chip--on' : ''}`} style={{ padding: '4px 10px' }}>{n ? `US$${n}` : 'No limit'}</button>)}
+          </div>
+          <p className="text-xs mt-1.5" style={{ color: COLORS.inkSoft }}>{limit ? `It stops before this month's spend would go past US$${limit}.` : 'It sends everything new, whatever it costs.'} One chat at a time isn't held to it.</p>
         </div>
       )}
       {analysisKey.hasKey ? (

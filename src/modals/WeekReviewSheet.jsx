@@ -1,7 +1,8 @@
 // "Your week": the weekly review, from Sunday evening's notification, the
 // catch-up list's notification, Today's Sunday card or W on Today. Who you
 // saw, what got done and which goals moved, chats from your exports with new
-// conversations to analyse (chatExports, once there's a key), then who to
+// conversations to analyse (chatExports, once there's a key; onAnalyseAll
+// opens Coach's Analyse all new), then who to
 // catch up with and next week planned in one go.
 // Keys: 1-5 plan with someone to catch up with, Enter plans next week, and
 // the arrows move a week back or on.
@@ -32,7 +33,7 @@ function Stat({ value, label, children }) {
   );
 }
 
-export function WeekReviewSheet({ day: startDay, people, journal, events, generalGoals, onClose, onPlan, chatExports = null, yourName = '', onOpenChat }) {
+export function WeekReviewSheet({ day: startDay, people, journal, events, generalGoals, onClose, onPlan, chatExports = null, yourName = '', onOpenChat, onAnalyseAll }) {
   const [day, setDay] = useState(startDay);
   // Chats with new conversations, from the Layers chats folder.
   const [chats, setChats] = useState([]);
@@ -76,7 +77,10 @@ export function WeekReviewSheet({ day: startDay, people, journal, events, genera
 
       {toAnalyse.length > 0 && onOpenChat && (
         <>
-          <p className="text-xs font-bold mt-6 mb-2" style={{ color: COLORS.inkSoft, letterSpacing: '0.06em', textTransform: 'uppercase' }}>Chats to analyse</p>
+          <div className="flex items-center justify-between gap-2 mt-6 mb-2">
+            <p className="text-xs font-bold" style={{ color: COLORS.inkSoft, letterSpacing: '0.06em', textTransform: 'uppercase' }}>Chats to analyse</p>
+            {onAnalyseAll && <button type="button" onClick={onAnalyseAll} className="text-xs font-semibold" style={{ color: COLORS.accent }}>Analyse them all in Coach</button>}
+          </div>
           <div className="flex flex-col gap-1.5">
             {toAnalyse.map(({ chat, ids, fresh }) => (
               <button key={chat.key} type="button" onClick={() => onOpenChat(chat.key)} className="flex items-center gap-3 rounded-2xl p-2.5 text-left" style={{ background: COLORS.paperRaised, border: `1px solid ${COLORS.line}` }}>
