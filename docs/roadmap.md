@@ -3,7 +3,8 @@
 Where Layers stands against [vision.md](vision.md), what was decided along the way, and
 what comes next. Last updated 2026-10-08, after 1.0.36 (anything since is at the top of
 [History](#history), marked not released yet). **What's next is
-[The plan from here](#the-plan-from-here-2026-10-07).**
+[The next big changes](#the-next-big-changes-your-answers-2026-10-08)**, after
+[The plan from here](#the-plan-from-here-2026-10-07).
 
 **How it got here:**
 
@@ -231,6 +232,35 @@ on 2026-10-08, with everything else since 1.0.35.
 5. ✅ **Chats in your week** (built 2026-10-07): the week review (Sunday evening, or W
    on Today) lists chats with your people that have new conversations; tapping one opens
    it in Coach's Analyse.
+
+### The next big changes (your answers, 2026-10-08)
+
+You asked for questions to decide the next big changes. Your answers:
+
+- **What Layers should help with next: all four.**
+  - **Less effort**: analyse every new conversation in the chats folder in one go, and
+    log them.
+  - **Know what to say**: reply ideas for their latest message, written in your style,
+    and a daily nudge saying who to message, with a ready-made opener from what you know.
+  - **Practise conversations**: role-play with Claude before a real chat, then feedback
+    the way Analyse gives it.
+  - **See the big picture**: a weekly or monthly read by Claude across your analysed
+    chats: patterns in how you talk, who you're drifting from, which skills are
+    improving, and one thing to work on.
+- **The phone: a free web app first.** Layers opens in Safari and goes on the Home
+  Screen, with no App Store and no Apple account. The real iPhone app can replace it
+  later.
+- **Claude's cost: under US$5 a month to start**, more if it works well. Haiku stays the
+  default.
+- **More chats: iMessage and Snapchat.** iMessage would come from an iPhone backup on
+  this laptop; there isn't one yet (Apple's backup folder is empty, checked 2026-10-09).
+  Snapchat from its Download My Data, which has only saved messages.
+
+**Still to decide:** which of the four comes first; who Claude plays when you practise
+(made-up people, your real people, or both); how the phone web app gets your data (pick
+the sync file each time, sign in to OneDrive, or the phone on its own at first); and for
+iMessage, whether to make an iPhone backup on this laptop (encrypted or not). Each comes
+back to you as a proposal before it's built.
 
 ## Drafted next (2026-10-06)
 
