@@ -149,6 +149,14 @@ App Control is ever turned on again, it fails at the install
 `%APPDATA%\layers-web\Local Storage` with the backup's `Local Storage` folder, then
 start Layers.
 
+**Guards** (added 2026-10-10, after another copy of the project installed a Layers
+that crashed on start): the install stops before building if this copy's
+`node_modules` is missing any of `package.json`'s `dependencies` ("Run npm install
+here"). A running Layers whose page never opened (it hit an error on start, showing
+Electron's "Error" box) can't answer `--quit`, so it's stopped instead. And it only
+says "is installed and running" once the new Layers' page is running, not just its
+process.
+
 ## The iPhone app (built on GitHub, no Apple account yet)
 
 Step 2 of [Layers on your phone](roadmap.md#proposal-layers-on-your-phone-2026-10-06):
