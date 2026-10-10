@@ -1,7 +1,7 @@
 # Roadmap
 
 Where Layers stands against [vision.md](vision.md), what was decided along the way, and
-what comes next. Last updated 2026-10-10, after 1.0.38 (anything since is at the top of
+what comes next. Last updated 2026-10-10, after 1.0.39 (anything since is at the top of
 [History](#history), marked not released yet). **What's next is
 [Where Layers goes next](#where-layers-goes-next-your-answers-2026-10-10)**, from your
 answers to 20 planning questions.
@@ -225,7 +225,7 @@ answers were read back (see [History](#history)):
 - **Practise**: a text chat with Claude playing someone, then feedback.
 - **The big picture**: Claude's read of your week, in Your week.
 - **iMessage** from an iPhone backup, and **Snapchat** from its My Data download.
-- **The phone web app**, published by GitHub Pages with each release. Its OneDrive
+- **The phone web app**, published by GitHub Pages with each release (from 1.0.39). Its OneDrive
   sign-in waits for your Microsoft app registration
   ([its proposal](#proposal-the-phone-web-app-2026-10-10)).
 
@@ -774,7 +774,24 @@ its own. Changes made while building are marked.
 
 ## History
 
-### Instagram downloads, unzipped or in folders, read properly (after 1.0.38, not released yet)
+### The phone web app (1.0.39)
+
+- **Layers on the phone, from Safari**: each release publishes the web version to
+  `castledruby.github.io/layers-app` (GitHub Pages), to add to the Home Screen. It works
+  offline (only there: never in Layers for Windows) and has its own Home Screen icon.
+  Until the OneDrive sign-in is built, after your Microsoft app registration, the
+  phone's data is its own.
+
+### Housekeeping (1.0.39)
+
+- **On a touch screen**, a tapped choice tile no longer stays lifted and tinted.
+- **The docs** were checked against the code and brought up to date.
+- **Only main installs**: a Claude session's commits in its own worktree no longer
+  install on this laptop (they kept replacing newer builds); merging into main does. A
+  change only to the iPhone project doesn't reinstall Layers, and an install waits for
+  other sessions' test copies of Layers to close.
+
+### Instagram downloads, unzipped or in folders, read properly (1.0.39)
 
 - **Fixed** (2026-10-10): an Instagram download unzipped into the Layers chats folder
   was ignored, since only zips and .txt files straight in it were looked at. Now the
