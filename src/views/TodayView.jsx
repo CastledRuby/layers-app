@@ -10,10 +10,11 @@
 // In a wide window (`wide`) the month grid sits beside the day all the time,
 // in place of the week strip and the Day/Month switch.
 // W opens the week's review (shown as a card on Sundays; on a Monday, last
-// week's). P
+// week's). On today, "Message … today" (`nudge`): O copies Claude's opener,
+// G (messaged) opens the quick log for them, Z puts them off till tomorrow. P
 // (anywhere) plans something on the day shown; that one lives in App.jsx.
 
-import { useEffect, useMemo } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { Bell, Check, ChevronLeft, ChevronRight, Plus, Repeat, Search, X } from 'lucide-react';
 import { Kbd, ProgressBar } from '../components/atoms.jsx';
 import { AvatarStack } from '../components/PersonPick.jsx';
@@ -151,7 +152,14 @@ function EventRow({ item, now, onOpen }) {
   );
 }
 
-export function TodayView({ today, selectedDay, onSelectDay, mode, onSetMode, people, journal, events, generalGoals, skills, profile, onPlan, onOpenEvent, onLogEvent, onTickEvent, onMissEvent, onOpenPerson, onAddPerson, onOpenLog, onSwitchTab, onOpenGoals, onOpenReview, onOpenDay, onOpenJump, onHideFirstSteps, wide = false }) {
+export function TodayView({ today, selectedDay, onSelectDay, mode, onSetMode, people, journal, events, generalGoals, skills, profile, onPlan, onOpenEvent, onLogEvent, onTickEvent, onMissEvent, onOpenPerson, onAddPerson, onOpenLog, onSwitchTab, onOpenGoals, onOpenReview, onOpenDay, onOpenJump, onHideFirstSteps, wide = false, nudge = null, onNudgeMessaged, onNudgeSkip }) {
+  // The opener copied (its text), so the button can say so.
+  const [copiedOpener, setCopiedOpener] = useState(null);
+  function copyOpener() {
+    if (!nudge || !nudge.opener || !navigator.clipboard || !navigator.clipboard.writeText) return;
+    const text = nudge.opener;
+    navigator.clipboard.writeText(text).then(() => setCopiedOpener(text)).catch(() => {});
+  }
   const state = useMemo(() => ({ people, journal, events, generalGoals }), [people, journal, events, generalGoals]);
   const day = selectedDay || today;
   const sel = parseISODay(day);
@@ -175,6 +183,9 @@ export function TodayView({ today, selectedDay, onSelectDay, mode, onSetMode, pe
     return [...fromPeople, ...fromGeneral].sort((a, b) => b.progress - a.progress).slice(0, 3);
   }, [people, generalGoals]);
 
+  // The nudge as it is now, for the keys below (they're set up less often).
+  const nudgeKeys = useRef(null);
+  useLayoutEffect(() => { nudgeKeys.current = { nudge, copyOpener, onNudgeMessaged, onNudgeSkip }; });
   // Day-level keys; P for planning is global (App.jsx).
   useEffect(() => {
     function onKey(e) {
@@ -192,6 +203,13 @@ export function TodayView({ today, selectedDay, onSelectDay, mode, onSetMode, pe
       else if ((e.key === 'i' || e.key === 'I') && ideas[0]) { e.preventDefault(); onPlan({ day, personIds: [ideas[0].person.id], template: ideas[0].template }); }
       // On a Monday the week has barely begun, so W shows the one just gone.
       else if ((e.key === 'w' || e.key === 'W') && onOpenReview) { e.preventDefault(); onOpenReview(sel.getDay() === 1 ? addDays(day, -1) : day); }
+      else if (day === today && nudgeKeys.current && nudgeKeys.current.nudge && /^[ogz]$/i.test(e.key)) {
+        const n = nudgeKeys.current;
+        const k = e.key.toLowerCase();
+        if (k === 'o' && n.nudge.opener) { e.preventDefault(); n.copyOpener(); }
+        else if (k === 'g' && n.onNudgeMessaged) { e.preventDefault(); n.onNudgeMessaged(n.nudge.person); }
+        else if (k === 'z' && n.onNudgeSkip) { e.preventDefault(); n.onNudgeSkip(n.nudge.person); }
+      }
     }
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
@@ -263,6 +281,26 @@ export function TodayView({ today, selectedDay, onSelectDay, mode, onSetMode, pe
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {day === today && nudge && (
+        <div className="mt-5 rounded-2xl p-3.5 fade-anim" style={{ background: COLORS.paperRaised, border: `1px solid ${COLORS.line}` }} aria-label="Message today">
+          <div className="flex items-center gap-2.5">
+            <AvatarStack people={[nudge.person]} size={30} />
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-semibold" style={{ color: COLORS.ink }}>Message {nudge.person.name} today</p>
+              <p className="text-xs" style={{ color: COLORS.inkSoft }}>{nudge.text}</p>
+            </div>
+          </div>
+          {nudge.opener
+            ? <p className="text-sm mt-2.5 rounded-xl px-3 py-2" style={{ background: COLORS.accentSoft, color: COLORS.ink }} aria-label="Opener">{nudge.opener}</p>
+            : nudge.writing && <p className="text-xs mt-2 italic" style={{ color: COLORS.inkSoft }}>Claude is writing an opener…</p>}
+          <div className="flex flex-wrap items-center gap-2 mt-2.5">
+            {nudge.opener && <button type="button" onClick={copyOpener} className="chip">{copiedOpener === nudge.opener ? <><Check size={12} color={COLORS.good} />Copied</> : 'Copy opener'}<Kbd>O</Kbd></button>}
+            {onNudgeMessaged && <button type="button" onClick={() => onNudgeMessaged(nudge.person)} className="text-xs font-semibold rounded-full px-3.5 py-2 flex items-center gap-1.5" style={{ background: COLORS.accent, color: COLORS.onAccent }}>Messaged<Kbd onAccent>G</Kbd></button>}
+            {onNudgeSkip && <button type="button" onClick={() => onNudgeSkip(nudge.person)} className="chip">Not today<Kbd>Z</Kbd></button>}
+          </div>
         </div>
       )}
 

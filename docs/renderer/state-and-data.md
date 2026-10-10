@@ -502,7 +502,7 @@ in a time window, oldest first. Each has a `tag` (unique per plan and day), a ti
 |---|---|---|
 | `alert` | A plan's `alert` minutes before it (all-day: 9:00 AM) | The title; "In 15 minutes · 10:00 AM · with Priya" |
 | `after` | When a plan with people ends, unless it's done (`askAfter`) | "How did it go with Priya?" |
-| `morning` | `morningTime`, on days with something on | "Today: 3 things", and each in a line |
+| `morning` | `morningTime`, on days with something on (or someone to message) | "Today: 3 things", and each in a line, with who to message (`messageNudge`) as "💬 It's been 5 weeks since you and Sam talked" |
 | `evening` | `eveningTime`, the night before a day with something on | "Tomorrow: …" |
 | `snooze` | A snoozed reminder's time | The title, "Snoozed reminder" |
 | `catchup` | `catchUpDay` (Saturday) at `morningTime`, when anyone's due a catch-up (`planIdeas`) | "Catch up this week: 3 people", "Priya (3 weeks) · …", with up to three people for Plan buttons |
@@ -788,6 +788,28 @@ Coach → Analyse a chat → **From your chats**: chats saved in the **Layers ch
   (`openCoach(null, 'analyse', chatKey)`). Only once there's a key.
 - **Where you got up to** is `layers-chat-progress` in localStorage (`{ [chat]: { at, me
   } }`), on this computer only; parsed files are kept in memory until they change.
+
+### Know what to say: who to message today
+
+Today's **Message … today** card (decided 2026-10-10), also a line in the morning
+summary. `messageNudge(state, day, skipped)` in [lib/calendar.js](../../src/lib/calendar.js)
+picks one person, for free: their key date today or tomorrow, else asking how something
+went (a saved detail with a day, `when`, in the last three days), else whoever has gone
+quietest past their usual gap (`quietDay`). Not anyone with a plan that day, already
+logged that day, or put off today.
+
+- **Claude's opener**: when Layers first opens that day (with a key, and within the
+  monthly limit, since nobody pressed anything), `LayersApp` asks Haiku for one opener
+  (`openerRequest` in [lib/replies.js](../../src/lib/replies.js)): why message them, up to
+  12 of their saved details, your latest three notes with them, and your style, every
+  name hidden (theirs `[them]`, yours `[you]`, anyone else's `[someone]`). About half a
+  cent; it counts in Me. Without a key, the card shows who and why only.
+- **The card**: **Copy opener** (O), **Messaged** (G: the quick log opens for them as
+  Messaged, and the card's done for the day), **Not today** (Z: the next person, if
+  there is one).
+- **Where it's kept**: `layers-nudge` in localStorage (`getNudge` / `setNudge` in
+  `lib/storage.js`): today's `{ day, skipped, done, opener }`, on this laptop only. A new
+  day starts fresh, and an opener isn't asked for twice.
 
 ### Know what to say: reply ideas
 

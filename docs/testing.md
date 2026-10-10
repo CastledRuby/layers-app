@@ -176,6 +176,12 @@ interact.
   names from Contacts, text only in `attributedBody` (short and long), reactions left
   out, three months back, not read again, no backup or an encrypted one, and nothing
   written in it. The end-to-end tests read a made-up backup in the packaged app.
+- `nudge.test.jsx` covers Today's who to message (Claude stood in for): who and why,
+  the opener written once that day with names hidden and your style, O copying it, Z
+  putting them off (kept after a restart, not asked again), G opening the quick log as
+  Messaged, and no opener without a key or past the monthly limit. `src/calendar.test.js`
+  covers `messageNudge` (a birthday first, then a follow-up, then the quietest; plans,
+  logs and put-offs left out) and its line in the morning summary.
 - `replies.test.jsx` covers What to say (Claude stood in for): pasted messages with who
   it's with, the request with names hidden and your style (your own logged messages and
   How you text), the replies with names back, Q W E copying, what it cost counted, Reply

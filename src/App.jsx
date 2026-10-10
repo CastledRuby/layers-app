@@ -3,7 +3,7 @@
 // Screens live in views/, sheets in modals/, logic in lib/; the file map is
 // in docs/renderer/app-structure.md.
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { Plus } from 'lucide-react';
 import { BottomNav } from './components/BottomNav.jsx';
 import { ErrorBoundary } from './components/ErrorBoundary.jsx';
@@ -15,12 +15,14 @@ import { backfillJournalDates, backfillPeopleDates, backfillSkillDates, formatAb
 import { achievementProgress, newlyUnlocked } from './lib/achievements.js';
 import { advanceLayer, advanceSkillGoals, bumpSkills, chartDay, computeOverall, dimBumps, dimsEqual, goalBumpFor, keepDimsInLayer, makePerson, migrateDimsToLayers, movePerson, placeOnLayers, raisedSkills } from './lib/progress.js';
 import { MAX_BACKUP_BYTES, createBackup, validateBackup } from './lib/backup.js';
-import { NOTIFY_DEFAULTS, isDoneOn, notifySettings, parseActionUrl, snoozeUntil, templateFor } from './lib/calendar.js';
+import { NOTIFY_DEFAULTS, isDoneOn, messageNudge, notifySettings, parseActionUrl, snoozeUntil, templateFor } from './lib/calendar.js';
 import { useCalendarNotifications, useChatBatch, useDailyBackup, useDailyCheckIn, useSlideAcross, useSystemDark, useToday, useWide } from './lib/hooks.js';
 import { waiting } from './lib/chatBatch.js';
 import { followUpEvent, markDone, markMissed } from './lib/reminders.js';
-import { analysisToKeep, DEFAULT_ANALYSIS_MODEL } from './lib/analysis.js';
-import { getFeedCache, setFeedCache, getSyncSettings, setSyncSettings, getSnoozes, loadSavedState, persistState, setSnoozes } from './lib/storage.js';
+import { analysisToKeep, DEFAULT_ANALYSIS_MODEL, recordSpend, spendSummary } from './lib/analysis.js';
+import { getFeedCache, setFeedCache, getNudge, getSyncSettings, setNudge, setSyncSettings, getSnoozes, loadSavedState, persistState, setSnoozes } from './lib/storage.js';
+import { openerRequest, openerResult, styleSamples } from './lib/replies.js';
+import { readLimit } from './lib/chatBatch.js';
 import { clamp, uid } from './lib/util.js';
 import { AddInfoModal } from './modals/AddInfoModal.jsx';
 import { AddPersonModal } from './modals/AddPersonModal.jsx';
@@ -698,6 +700,51 @@ function LayersApp() {
       else pushToast('Nothing worth sending: the tiny conversations are marked as seen');
     },
   });
+  // --- Know what to say: today's who to message (messageNudge), and Claude's
+  // opener for them, written when Layers first opens that day (decided
+  // 2026-10-10; Haiku, within the monthly limit). ---
+  const [nudgeSaved, setNudgeSaved] = useState(() => getNudge(today));
+  const nudgeDay = nudgeSaved.day === today ? nudgeSaved : { day: today, skipped: [], done: null, opener: null };
+  const nudge = onboarded && !nudgeDay.done ? messageNudge({ people, journal, events }, today, nudgeDay.skipped) : null;
+  const openerText = nudge && nudgeDay.opener && nudgeDay.opener.personId === nudge.person.id ? nudgeDay.opener.text : null;
+  const [writingOpener, setWritingOpener] = useState(null); // the day:person it's being written for
+  function changeNudge(change) {
+    const next = { ...nudgeDay, ...change };
+    setNudgeSaved(next);
+    setNudge(next);
+  }
+  const nudgeLatest = useRef(null);
+  useLayoutEffect(() => { nudgeLatest.current = { nudge, nudgeDay, people, journal, profile }; });
+  const nudgeKey = nudge ? `${today}:${nudge.person.id}` : null;
+  const openerAsked = useRef(null);
+  useEffect(() => {
+    if (!nudgeKey || openerText || !analysisBridge || !hasAnalysisKey || openerAsked.current === nudgeKey) return;
+    const limit = readLimit();
+    if (limit && spendSummary().thisMonth.dollars >= limit) return; // automatic, so held to the monthly limit
+    openerAsked.current = nudgeKey;
+    const { nudge: n, people: everyone, journal: logs, profile: me } = nudgeLatest.current;
+    const person = n.person;
+    const details = ['important', 'plans', 'interests', 'preferences', 'experiences'].flatMap(k => (person[k] || []).filter(it => !it.archived))
+      .sort((a, b) => String(b.at || '').localeCompare(String(a.at || ''))).map(it => it.text);
+    const recent = logs.filter(j => j.personId === person.id && j.summary).sort((a, b) => String(b.at || '').localeCompare(String(a.at || ''))).slice(0, 3).map(j => `${j.at}: ${j.summary}`);
+    setWritingOpener(nudgeKey);
+    const request = openerRequest({ person, everyone, yourName: me.name, reason: n.text, details, recent, samples: styleSamples(logs, me.name), style: me.style || '', model: DEFAULT_ANALYSIS_MODEL });
+    Promise.resolve(analysisBridge.runAnalysis(request)).then(answer => {
+      if (answer && answer.usage) recordSpend(answer.usage, answer.model || DEFAULT_ANALYSIS_MODEL);
+      const text = answer && answer.result ? openerResult(answer.result, person) : '';
+      const latest = nudgeLatest.current.nudgeDay;
+      if (text && latest.day === nudgeKey.slice(0, 10)) { const next = { ...latest, opener: { personId: person.id, text } }; setNudgeSaved(next); setNudge(next); }
+    }).catch(() => {}).finally(() => setWritingOpener(w => (w === nudgeKey ? null : w)));
+  }, [nudgeKey, openerText, analysisBridge, hasAnalysisKey]);
+  // Messaged: the quick log, filled in; the card's done for the day.
+  function handleNudgeMessaged(person) {
+    changeNudge({ done: person.id });
+    setLogDefaultPerson(null);
+    setLogPrefill({ personIds: [person.id], type: 'messaged', day: today });
+    setLogOpen(true);
+  }
+  function handleNudgeSkip(person) { changeNudge({ skipped: [...new Set([...nudgeDay.skipped, person.id])] }); }
+
   // The queue's Log it (one) and Log all (several, in turn): each a Messaged
   // log on its day with Claude's ratings, keeping the review and the chat,
   // and its details saved (leaveOut: { [item id]: [detail indexes] } aren't).
@@ -1564,7 +1611,8 @@ function LayersApp() {
                     )}
                     {screen.name === 'tabs' && (
                       <>
-                        {activeTab === 'today' && <TodayView wide={wide} today={today} selectedDay={selectedDay || today} onSelectDay={(d) => setSelectedDay(d === today ? null : d)} mode={calendarMode} onSetMode={setCalendarMode} people={people} journal={journal} events={shownEvents} generalGoals={generalGoals} skills={skills} profile={profile} onPlan={openPlan} onOpenEvent={(eventId, day) => setEventView({ eventId, day })} onLogEvent={openLogFromEvent} onTickEvent={(ev, day) => handleMarkEventDone(ev.id, day)} onMissEvent={(ev, day) => handleMarkEventMissed(ev.id, day)} onOpenPerson={openPerson} onAddPerson={() => setAddPersonOpen(true)} onOpenLog={() => openLog(null)} onSwitchTab={switchTab} onOpenGoals={openGoalsOverview} onOpenReview={setWeekReview} onOpenDay={setDayView} onOpenJump={() => { setJumpOpen(true); markTried('jump'); }} onHideFirstSteps={() => setProfile(p => ({ ...p, gettingStartedHidden: true }))} />}
+                        {activeTab === 'today' && <TodayView wide={wide} today={today} selectedDay={selectedDay || today} onSelectDay={(d) => setSelectedDay(d === today ? null : d)} mode={calendarMode} onSetMode={setCalendarMode} people={people} journal={journal} events={shownEvents} generalGoals={generalGoals} skills={skills} profile={profile} onPlan={openPlan} onOpenEvent={(eventId, day) => setEventView({ eventId, day })} onLogEvent={openLogFromEvent} onTickEvent={(ev, day) => handleMarkEventDone(ev.id, day)} onMissEvent={(ev, day) => handleMarkEventMissed(ev.id, day)} onOpenPerson={openPerson} onAddPerson={() => setAddPersonOpen(true)} onOpenLog={() => openLog(null)} onSwitchTab={switchTab} onOpenGoals={openGoalsOverview} onOpenReview={setWeekReview} onOpenDay={setDayView} onOpenJump={() => { setJumpOpen(true); markTried('jump'); }} onHideFirstSteps={() => setProfile(p => ({ ...p, gettingStartedHidden: true }))}
+                          nudge={nudge ? { ...nudge, opener: openerText, writing: writingOpener === nudgeKey } : null} onNudgeMessaged={handleNudgeMessaged} onNudgeSkip={handleNudgeSkip} />}
                         {activeTab === 'people' && <PeopleView people={people} journal={journal} onOpenPerson={openPerson} onAddPerson={() => setAddPersonOpen(true)} onAddPhotos={() => setPhotoFolderOpen(true)} />}
                         {activeTab === 'coach' && <div className="page-col"><CoachView people={people} journal={journal} initialPersonId={coachInit.personId} initialTab={coachInit.tab} onOpenLog={openLog} onApproveInfo={handleApproveInfo} onApproveInfoAll={handleApproveInfoAll} onRemindAbout={handleRemindFollowUp} onLogFromAnalysis={handleLogFromAnalysis} onOpenPerson={openPerson}
                           onLogChat={(l) => handleLogSubmit({ personIds: l.personIds.filter(id => people.some(p => p.id === id)), type: 'messaged', meaningfulness: l.meaningfulness, notes: [], activeListening: l.activeListening, summary: l.summary || undefined, pickedDate: l.date, ratings: l.ratings, analysis: l.analysis })}

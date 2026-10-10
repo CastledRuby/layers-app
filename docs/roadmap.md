@@ -629,6 +629,14 @@ its own. Changes made while building are marked.
 
 ## History
 
+### Know what to say: who to message today (after 1.0.37, not released yet)
+
+- **Today: Message … today**: one person and why (a birthday today or tomorrow, asking
+  how something went, or it's been a while), worked out for free, and a line in the
+  morning summary. Claude writes an opener in your style when you first open Layers that
+  day (about half a cent; held to the monthly limit). O copies it, G logs that you
+  messaged them, Z puts them off till tomorrow.
+
 ### Know what to say: reply ideas (after 1.0.37, not released yet)
 
 - **Coach → What to say** (3): paste their latest messages, or pick a chat, and Claude

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { clashesOn, dayAgenda, keyDateOn, monthMarks, needsAnswer, occursOn, parseActionUrl, planIdeas, plannedNotifications, quietDay, recentPlans, snoozeUntil, usualGap, weekSummary } from './lib/calendar.js';
+import { clashesOn, dayAgenda, keyDateOn, messageNudge, monthMarks, needsAnswer, occursOn, parseActionUrl, planIdeas, plannedNotifications, quietDay, recentPlans, snoozeUntil, usualGap, weekSummary } from './lib/calendar.js';
 
 // Sunday 4 October 2026.
 const DAY = '2026-10-04';
@@ -191,5 +191,31 @@ describe('keeping in touch', () => {
     expect(weekSummary(state, DAY)).toMatchObject({ from: '2026-09-28', to: '2026-10-04', logs: 2, planned: 1, done: 1, nextMonday: '2026-10-05', nextPlanned: 1 });
     expect(weekSummary(state, DAY).seen.map(p => p.name)).toEqual(['Priya']);
     expect(weekSummary(state, DAY).goalsMoved.map(g => g.id)).toEqual(['g1']);
+  });
+});
+
+describe('messageNudge: who to message today', () => {
+  const log = (personId, at) => ({ id: `${personId}-${at}`, personId, at, type: 'talked', meaningfulness: 3 });
+  const ana = { id: 'a', name: 'Ana', layer: 3, goals: [], important: [{ id: 'i1', text: 'Job interview', when: '2026-10-02', temporary: true, archived: false }, { id: 'i2', text: 'Old exam', when: '2026-09-20', temporary: true, archived: false }] };
+  const sam = { id: 's', name: 'Sam', layer: 3, goals: [] };
+  const journal = [log('s', '2026-09-01'), log('a', '2026-09-30')];
+
+  it('is a birthday today or tomorrow first, then asking how something went, then whoever has gone quietest', () => {
+    expect(messageNudge({ people: [sam, ana, priya], journal }, DAY)).toMatchObject({ person: { id: 'p' }, kind: 'date', text: "Priya's birthday is tomorrow" });
+    expect(messageNudge({ people: [sam, ana], journal }, DAY)).toMatchObject({ person: { id: 'a' }, kind: 'followup', text: 'Ask Ana how "Job interview" went' });
+    expect(messageNudge({ people: [sam], journal }, DAY)).toMatchObject({ person: { id: 's' }, kind: 'quiet', text: "It's been 5 weeks since you and Sam talked" });
+    expect(messageNudge({ people: [{ ...sam }], journal: [log('s', '2026-10-01')] }, DAY)).toBeNull(); // not quiet yet
+  });
+
+  it("leaves out anyone with a plan that day, logged with that day, or put off today", () => {
+    expect(messageNudge({ people: [priya, sam], journal, events: [coffee] }, DAY).person.id).toBe('s'); // coffee with Priya today
+    expect(messageNudge({ people: [ana, sam], journal: [...journal, log('a', DAY)] }, DAY).person.id).toBe('s');
+    expect(messageNudge({ people: [ana, sam], journal }, DAY, ['a']).person.id).toBe('s');
+    expect(messageNudge({ people: [ana, sam], journal }, DAY, ['a', 's'])).toBeNull();
+  });
+
+  it("is a line in the morning summary", () => {
+    const list = plannedNotifications({ people: [sam], journal, events: [] }, { weeklyReview: false, quietNudges: false, catchUpWeekly: false }, local(DAY, 0), local(DAY, 23, 59));
+    expect(list.find(n => n.kind === 'morning')).toMatchObject({ title: 'Today: 1 thing', body: "💬 It's been 5 weeks since you and Sam talked" });
   });
 });
