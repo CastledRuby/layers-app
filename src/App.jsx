@@ -343,7 +343,13 @@ function LayersApp() {
   const [syncInfo, setSyncInfo] = useState(null); // { dir, hasFile }
   const [syncSheetOpen, setSyncSheetOpen] = useState(false);
   const syncLocal = useRef(null);
-  useEffect(() => { syncLocal.current = () => ({ ...stamped(), skills, achievements: achievements || {} }); });
+  // The data as it is now, so a sync can tell whether it changed while the
+  // sync was reading and writing the file.
+  const syncData = useRef(null);
+  useEffect(() => {
+    syncLocal.current = () => ({ ...stamped(), skills, achievements: achievements || {} });
+    syncData.current = [people, journal, events, generalGoals, profile, skills, achievements];
+  });
   const syncRun = useRef({ running: null, again: false, fromSync: false });
   function saveSync(change) {
     setSyncState(s => { const next = { ...s, ...change }; setSyncSettings(next); return next; });
@@ -366,8 +372,13 @@ function LayersApp() {
       try {
         const pass = passphrase || await syncBridge.getSyncPassphrase();
         if (!pass) throw new SyncError('no-passphrase');
+        const before = syncData.current;
         const result = await syncOnce({ bridge: syncBridge, passphrase: pass, local: syncLocal.current() });
-        if (result.changed) applySynced(result.merged);
+        // Something changed here while it ran: taking the merge would undo
+        // that change, so it's left for the next sync, which merges it too.
+        const edited = before && syncData.current && before.some((v, i) => v !== syncData.current[i]);
+        if (result.changed && edited) r.again = true;
+        else if (result.changed) applySynced(result.merged);
         if (!passphrase) saveSync({ lastSynced: new Date().toISOString(), error: null });
         return null;
       } catch (e) {
@@ -773,7 +784,10 @@ function LayersApp() {
       loggedIds[item.id] = done.entries.map(e => e.id);
     });
     const count = Object.keys(loggedIds).length;
-    if (!count) return;
+    if (!count) {
+      if (items.some(item => item.result)) pushToast(items.length === 1 ? "Who that chat was with isn't in Layers any more, so nothing was logged. X skips it." : "Nobody those chats were with is in Layers any more, so nothing was logged.");
+      return;
+    }
     setPeople(state.people);
     setGeneralGoals(prev => raised.reduce((goals, r) => advanceSkillGoals(goals, r), prev));
     setJournal(prev => [...entries, ...prev]);
@@ -1483,13 +1497,17 @@ function LayersApp() {
       if (!result.ok) { pushToast(result.error); return; }
       const { data, summary, warnings } = result;
       const from = data.exportedAt ? ` from ${formatAbsoluteDate(new Date(data.exportedAt))}` : '';
+      // With sync on, the sync file's newer copies would win within seconds,
+      // so sync turns off here, as Start over does.
+      const syncing = syncSettings.on && syncBridge;
       askConfirm({
         title: 'Import this backup?',
-        message: `This replaces everything currently in the app with this backup${from}: ${summary.text}.${warnings.length ? ` Some damaged records will be skipped: ${warnings.join('; ')}.` : ''}`,
+        message: `This replaces everything currently in the app with this backup${from}: ${summary.text}.${warnings.length ? ` Some damaged records will be skipped: ${warnings.join('; ')}.` : ''}${syncing ? " Sync turns off on this laptop, so your other devices don't undo it; turning it on again merges them with this backup." : ''}`,
         confirmLabel: 'Import',
         danger: true,
         onConfirm: () => {
           stamper.forget(); // what's replaced isn't counted as deleted (lib/sync.js)
+          if (syncing) { Promise.resolve(syncBridge.clearSyncPassphrase()).catch(() => {}); saveSync({ on: false, error: null }); }
           // Backups from before `at` existed: read their labels as of the export.
           setPeople(migrateDimsToLayers(backfillPeopleDates(data.people, data.exportedAt)).people);
           setJournal(backfillJournalDates(data.journal, data.exportedAt));
@@ -1502,7 +1520,7 @@ function LayersApp() {
           setCoachInit(c => ({ ...c, personId: null }));
           setOnboarded(true);
           setScreen({ name: 'tabs' }); setActiveTab('today');
-          pushToast('Backup imported');
+          pushToast(syncing ? 'Backup imported. Sync is off' : 'Backup imported');
         },
       });
     };

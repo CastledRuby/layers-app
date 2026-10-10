@@ -626,9 +626,10 @@ Windows ([electron.md](../electron.md)); the page gets the files.
 - **Reading** ([`lib/ics.js`](../../src/lib/ics.js)): `parseCalendar` reads the file;
   `calendarItems` lists events between two days in this computer's time, handling a
   time zone (`TZID`, through `Intl`), UTC and all-day events, repeats (`RRULE`: daily,
-  weekly on chosen days, monthly, yearly; `INTERVAL`, `COUNT`, `UNTIL`), days taken out
-  (`EXDATE`), occurrences moved or changed (`RECURRENCE-ID`), and cancelled events (left
-  out). An all-day event over several days shows on each (up to two weeks).
+  weekly on chosen days, monthly by date or by weekday such as the first or last Friday,
+  yearly; `INTERVAL`, `COUNT`, `UNTIL`), days taken out (`EXDATE`), occurrences moved or
+  changed (`RECURRENCE-ID`), and cancelled events (left out). A repeat it doesn't know
+  (hourly, say) shows its first time only. An all-day event over several days shows on each (up to two weeks).
 - **When**: on start and every 30 minutes (and a new day), for 30 days back and 120
   ahead; kept in `layers-calendars`. A calendar that can't be fetched keeps what it had,
   and Me says why.
@@ -660,7 +661,10 @@ will be sent.
   screenshots, shrunk to at most 1568 px (`shrinkForAnalysis`), and the pasted text with
   their name and yours replaced by tags (`hideNames`: the full name and each part of it,
   whole words only, any case): `[them]` for one person, `[them 1]`, `[them 2]`… in a
-  group, and `[you]`. Of each person, only their layer is sent, so the advice fits how
+  group, and `[you]`. Anyone else who signs messages and isn't in Layers (a group
+  member, `otherSpeakers`) is `[someone 1]`, `[someone 2]`…, said so at the top, and their
+  names come back in the answer (`analysisResult`'s `others`). Of each person, only
+  their layer is sent, so the advice fits how
   close you are, plus today's date (so "Yesterday 9:41 pm" can be dated) and whether
   this computer writes dates day first. Screenshots go as they are, so a name in one is
   seen; Claude is told to use only the tags.
@@ -932,7 +936,9 @@ it carries on while you use the rest of Layers.
   stopping, a problem or closing Layers leaves the rest new. It stops before going past
   the limit, and when nothing comes back (the key, credit or connection), saying why and
   how many are still new. An answer Claude couldn't finish is queued as a problem to skip.
-  A toast says how many are ready when it ends.
+  A toast says how many are ready when it ends. After **Stop**, the conversation still
+  being read is queued when its answer comes; starting again straight away leaves it out
+  rather than sending (and paying for) it twice.
 - **The queue** is `layers-analysis-queue` in localStorage, on this laptop only: kept if
   Layers closes, and not synced or backed up until logged (`readQueue` drops anything
   malformed). `waiting` is what's left to review: not dealt with, or logged and then
@@ -983,11 +989,14 @@ devices ([electron.md](../electron.md) has the file side).
 - **Bringing in another device's changes**: the stamper adopts them with their own times
   (`createStamper().adopt`), so they aren't stamped as changed here and sent back; Undo
   and Redo are cleared (they'd undo them too), and a message says "Synced: changes from
-  your other device".
+  your other device". If something changed here while the sync was running, its merge
+  isn't taken (it would undo that change); the sync runs again straight after, merging
+  both.
 - **Data replaced wholesale** (finishing setting up, **Start over**, restoring a backup)
   isn't counted as deleted (`createStamper().forget`), so it never wipes other devices.
-  Start over also turns sync off on this computer; turning it on again brings the other
-  devices' data back. (Before this, a fresh install's example people, replaced when you
+  Start over and restoring a backup also turn sync off on this computer (the import's
+  confirm says so), since the sync file's newer copies would otherwise win within
+  seconds; turning it on again merges the other devices' data back in. (Before this, a fresh install's example people, replaced when you
   start fresh, would have been "deleted" everywhere.)
 - **Me** shows it's on and when it last synced (or what went wrong), with **Sync now**,
   **Open folder** and **Turn off**.

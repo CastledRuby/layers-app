@@ -774,6 +774,31 @@ its own. Changes made while building are marked.
 
 ## History
 
+### Fixes from the audit of 2026-10-10 (not released yet)
+
+A review of everything built between 1.0.32 and 1.0.37, with a test for each fix:
+
+- **Sync**: anything changed while a sync was running (adding someone, a log) was
+  overwritten when the sync finished, and lost. Now the sync runs again and merges both.
+- **Analyse all new**: Stop, then starting again at once, sent the conversation still
+  being read a second time (paid twice), and could run two at once.
+- **Names in group chats**: anyone in a chat who isn't in Layers is sent to Claude as
+  [someone 1], [someone 2]… and named again in the answer; before, their real name went.
+- **Restoring a backup with sync on** turns sync off on this laptop, as Start over does,
+  and the confirm says so. Before, the sync file's newer copies undid most of it within
+  seconds.
+- **Coach** no longer crashes if the person being analysed is removed by a sync, and
+  **Ready to review** says why an answer for someone since removed can't be logged.
+- **Your Google Calendar**: "monthly on the first (or last) Friday" landed on the start's
+  date each month instead; an event repeating hourly didn't show at all, and now shows
+  its first time.
+- Me no longer reads "about under US$0.01".
+- More tests: Analyse all new, sync merging, kept reviews, zero people, nicknames and
+  calendar edge cases.
+
+Still open from the audit: a surname only in the chat ("Amelie Rose" when Layers has
+"Amelie") goes to Claude as "[them] Rose".
+
 ### The phone web app (1.0.39)
 
 - **Layers on the phone, from Safari**: each release publishes the web version to

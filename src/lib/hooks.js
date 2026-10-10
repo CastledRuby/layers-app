@@ -7,7 +7,7 @@ import { toISODate } from './dates.js';
 import { plannedNotifications } from './calendar.js';
 import { addNotifiedReminder, getLastNotifiedDate, getNotifiedReminders, setLastNotifiedDate } from './storage.js';
 import { checkInReminder } from './text.js';
-import { analysisDollars, analysisModel, analysisRequest, analysisResult, recordSpend, spendSummary } from './analysis.js';
+import { analysisDollars, analysisModel, analysisRequest, analysisResult, otherSpeakers, recordSpend, spendSummary } from './analysis.js';
 import { batchDollars, pruneQueue, readLimit, readQueue, saveQueue } from './chatBatch.js';
 import { readChatProgress, saveChatProgress } from './chatImport.js';
 
@@ -219,6 +219,10 @@ export function useChatBatch({ analyse, people, yourName, onDone }) {
   const [note, setNote] = useState(null);
   const runs = useRef(0);
   const busy = useRef(false);
+  // Items sent and not answered yet. After Stop, a run started again leaves
+  // them out: the stopped run still queues their answer when it comes, so
+  // sending them again would pay for them twice.
+  const sending = useRef(new Set());
   useEffect(() => { saveQueue(queue); }, [queue]);
   const saveProgress = (key, change) => setProgress(saveChatProgress(key, change));
   const moveOn = (item) => setProgress(saveChatProgress(item.chatKey, { at: Math.max((readChatProgress()[item.chatKey] || {}).at || 0, item.end) }));
@@ -228,7 +232,7 @@ export function useChatBatch({ analyse, people, yourName, onDone }) {
     if (busy.current || !latest.current.analyse) return;
     busy.current = true;
     const ticket = ++runs.current;
-    const total = items.filter(i => !i.tiny).length;
+    const total = items.filter(i => !i.tiny && !sending.current.has(i.id)).length;
     let done = 0;
     let answered = 0;
     let failed = 0;
@@ -238,20 +242,23 @@ export function useChatBatch({ analyse, people, yourName, onDone }) {
     setRunning({ done: 0, total, model });
     for (const item of items) {
       if (ticket !== runs.current) break;
+      if (sending.current.has(item.id)) continue;
       if (!item.tiny) {
         const limit = readLimit();
         if (limit && spendSummary().thisMonth.dollars + batchDollars([item], model) > limit) { stopped = `Stopped at your US$${limit} monthly limit (Me → Chat analysis).`; break; }
         const { analyse: send, people: everyone, yourName: you } = latest.current;
         const group = item.ids.map(id => everyone.find(p => p.id === id)).filter(Boolean);
         if (group.length) {
+          sending.current.add(item.id);
           const answer = await Promise.resolve(send(analysisRequest({ people: group, yourName: you, text: item.text, model }))).catch(() => null);
+          sending.current.delete(item.id);
           if (answer && answer.usage) recordSpend(answer.usage, answer.model || model);
           const used = analysisModel((answer && answer.model) || model).id;
           const base = { id: item.id, chatKey: item.chatKey, title: item.title, source: item.source, day: item.day, personIds: group.map(p => p.id), model: used, chat: item.text, messages: item.messages };
           if (!answer || (answer.error && !answer.usage)) { stopped = `Stopped: ${(answer && answer.error) || "Couldn't reach Claude."}`; break; }
           if (answer.error) { add({ ...base, error: answer.error }); failed += 1; }
           else {
-            const result = analysisResult(answer.result, group);
+            const result = analysisResult(answer.result, group, { others: otherSpeakers(item.text, group, you) });
             result.log.date = item.day; // the export's own times
             add({ ...base, result, cost: analysisDollars(answer.usage, used) });
             answered += 1;
@@ -262,8 +269,9 @@ export function useChatBatch({ analyse, people, yourName, onDone }) {
       }
       moveOn(item);
     }
-    busy.current = false;
-    if (ticket === runs.current) { runs.current += 1; setRunning(null); }
+    // A run that was stopped leaves `busy` alone: stop() cleared it, and a
+    // run started since may be going.
+    if (ticket === runs.current) { busy.current = false; runs.current += 1; setRunning(null); }
     const left = total - done;
     const why = stopped ? `${stopped} ${left === 1 ? 'One conversation is' : `${left} conversations are`} still new.` : null;
     setNote(why);

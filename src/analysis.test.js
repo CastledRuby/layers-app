@@ -4,7 +4,7 @@
 import { describe, expect, it } from 'vitest';
 import { CATEGORIES } from './data/constants.js';
 import { MODELS } from '../electron/analysis.cjs';
-import { addSpend, ANALYSIS_MODELS, ANALYSIS_SCHEMA, analysisCost, analysisRequest, analysisResult, analysisSchema, analysisSystem, analysisToKeep, chatSpeakers, DEFAULT_ANALYSIS_MODEL, detectPeople, dollarsText, hideNames, restoreNames, spendSummary, typicalCost } from './lib/analysis.js';
+import { addSpend, ANALYSIS_MODELS, ANALYSIS_SCHEMA, analysisCost, analysisRequest, analysisResult, analysisSchema, analysisSystem, analysisToKeep, chatSpeakers, DEFAULT_ANALYSIS_MODEL, detectPeople, dollarsText, hideNames, otherSpeakers, restoreNames, spendSummary, typicalCost } from './lib/analysis.js';
 
 const priya = { id: 'p1', name: 'Priya Shah', layer: 2 };
 const amelie = { id: 'a', name: 'Amelie', layer: 4, interests: [{ text: 'Reading' }] };
@@ -52,6 +52,16 @@ describe('names', () => {
     expect(hideNames('Amelie: hi Chloe\nChloe: hey Amelie and Liam', { names: ['Amelie', 'Chloe'], yourName: 'Liam' }))
       .toBe('[them 1]: hi [them 2]\n[them 2]: hey [them 1] and [you]');
     expect(restoreNames(['[them 2] asked [them 1]', '[them] and [you]'], ['Amelie R', 'Chloe'])).toEqual(['Chloe asked Amelie', 'them and you']);
+  });
+
+  it('hides others in a group chat who are not in Layers as [someone 1]…, and puts them back', () => {
+    const chat = '[2026-10-06 21:41] Priya Shah: Jess and Tom are coming\n[2026-10-06 21:42] Jess Moore: yep!\n[2026-10-06 21:43] Tom: me too, Priya\n[2026-10-06 21:44] Sam: great';
+    expect(otherSpeakers(chat, [priya], 'Sam')).toEqual(['Jess Moore', 'Tom']);
+    const sent = analysisRequest({ person: priya, yourName: 'Sam', text: chat, today: TODAY }).content[0].text;
+    expect(sent).not.toMatch(/Jess|Moore|Tom|Priya|Sam/);
+    expect(sent).toMatch(/^Also in this chat, and not who it's about: \[someone 1\], \[someone 2\]\./);
+    expect(sent).toMatch(/\[someone 1\]: yep!\n.*\[someone 2\]: me too, \[them\]/);
+    expect(restoreNames({ a: '[someone 1] backed [them] up', b: ['[someone 2]', '[someone 3]'] }, 'Priya Shah', ['Jess Moore', 'Tom'])).toEqual({ a: 'Jess Moore backed Priya up', b: ['Tom', 'someone'] });
   });
 
   it('puts their first name back throughout the answer, and "you" for you', () => {

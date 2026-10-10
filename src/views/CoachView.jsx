@@ -11,7 +11,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Check, ImagePlus, Plus, X } from 'lucide-react';
 import { Avatar, ChatBubble, ConvStateBadge, Kbd, LabeledBar, LayerBadge } from '../components/atoms.jsx';
 import { hasOpenSheet, isTyping } from '../components/sheetLayer.js';
-import { ANALYSIS_MODELS, analysisCost, analysisModel, analysisRequest, analysisResult, analysisToKeep, DEFAULT_ANALYSIS_MODEL, detectPeople, MAX_SCREENSHOTS, recordSpend, typicalCost } from '../lib/analysis.js';
+import { ANALYSIS_MODELS, analysisCost, analysisModel, analysisRequest, analysisResult, analysisToKeep, DEFAULT_ANALYSIS_MODEL, detectPeople, MAX_SCREENSHOTS, otherSpeakers, recordSpend, typicalCost } from '../lib/analysis.js';
 import { DateDropdown } from '../components/pickers.jsx';
 import { ChatExports } from '../components/ChatExports.jsx';
 import { ChatBatchCard } from '../components/ChatBatch.jsx';
@@ -158,7 +158,7 @@ export function CoachView({ people, journal, initialPersonId, initialTab, onOpen
   const session = (sessionKey && sessions[sessionKey]) || { infoStatus: {}, logged: false };
   const infoStatus = session.infoStatus;
   // One chat is logged once, whichever model's answer it's logged from.
-  const logged = session.logged || Boolean(scenario && scenario.own && ownChat && Object.entries(sessions).some(([k, s]) => s.logged && k.startsWith(`${scenarioPerson.id}:own:${ownChat.run}:`)));
+  const logged = session.logged || Boolean(scenario && scenario.own && ownChat && scenarioPerson && Object.entries(sessions).some(([k, s]) => s.logged && k.startsWith(`${scenarioPerson.id}:own:${ownChat.run}:`)));
   function updateSession(change) {
     setSessions(all => {
       const current = all[sessionKey] || { infoStatus: {}, logged: false };
@@ -224,7 +224,7 @@ export function CoachView({ people, journal, initialPersonId, initialTab, onOpen
     if (ticket !== ownTicket.current) return false;
     if (!answer || answer.error) { setOwnError((answer && answer.error) || "Couldn't analyse that chat."); setStep(backTo); return false; }
     const used = analysisModel(answer.model || withModel).id;
-    const result = analysisResult(answer.result, chat.people);
+    const result = analysisResult(answer.result, chat.people, { others: otherSpeakers(chat.text, chat.people, yourName) });
     if (chat.source) result.log.date = chat.source.day; // the export's own times
     setOwnChat(chat);
     setOwnResults({ ...results, [used]: { result, cost: analysisCost(answer.usage, used) } });
