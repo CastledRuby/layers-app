@@ -629,6 +629,15 @@ its own. Changes made while building are marked.
 
 ## History
 
+### Know what to say: reply ideas (after 1.0.37, not released yet)
+
+- **Coach → What to say** (3): paste their latest messages, or pick a chat, and Claude
+  suggests three replies in your style (natural, playful, deeper) with a line on what
+  they seem to want. **Reply ideas for the latest** on a chat in Analyse opens it with
+  that chat in. Q, W, E copy them. Under a cent each with Haiku.
+- **Your style**: from your own messages in chats you've logged, and **How you text** in
+  Me → Chat analysis.
+
 ### iMessage (after 1.0.37, not released yet)
 
 - **iMessage chats in Coach**: back up your iPhone to this laptop (Apple Devices → Back

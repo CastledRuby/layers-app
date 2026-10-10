@@ -24,8 +24,10 @@ function Help({ folder }) {
   );
 }
 
-// initialOpen: a chat to show opened (from the week review).
-export function ChatExports({ state, people, yourName, progress, folder = 'Documents → Layers chats', onPick, onPickMe, onOpenFolder, initialOpen = null }) {
+// initialOpen: a chat to show opened (from the week review). onReply(chat,
+// conv, owner): Reply ideas for a chat's latest conversation (What to say).
+// showAll: every conversation listed, not just new ones (picking one to reply to).
+export function ChatExports({ state, people, yourName, progress, folder = 'Documents → Layers chats', onPick, onPickMe, onOpenFolder, initialOpen = null, onReply = null, showAll = false }) {
   const [open, setOpen] = useState(initialOpen); // the chat shown
   const [showEarlier, setShowEarlier] = useState(false);
   const [showOthers, setShowOthers] = useState(false);
@@ -41,7 +43,7 @@ export function ChatExports({ state, people, yourName, progress, folder = 'Docum
     const { chat, owner, ids, convs, fresh } = row;
     const isOpen = open === chat.key;
     const who = ids.map(id => people.find(p => p.id === id)).filter(Boolean);
-    const shown = showEarlier ? convs : fresh;
+    const shown = showEarlier || showAll ? convs : fresh;
     const names = [...new Set([...chat.participants, ...chat.messages.map(m => m.sender)])];
     return (
       <div key={chat.key} className="rounded-xl mt-1.5" style={{ border: `1px solid ${isOpen ? COLORS.accent : COLORS.line}` }}>
@@ -66,6 +68,7 @@ export function ChatExports({ state, people, yourName, progress, folder = 'Docum
               </>
             ) : (
               <>
+                {onReply && convs.length > 0 && <button type="button" onClick={() => onReply(chat, convs[0], owner)} className="chip mb-1" style={{ padding: '4px 10px' }}>💬 Reply ideas for the latest</button>}
                 {shown.length === 0 && <p className="text-xs" style={{ color: COLORS.inkSoft }}>Nothing new since you last analysed this chat. Export it again after you've talked.</p>}
                 {shown.slice(0, showEarlier ? 30 : 10).map(conv => {
                   const opener = conv.messages.find(m => m.sender !== owner) || conv.messages[0];
@@ -76,7 +79,7 @@ export function ChatExports({ state, people, yourName, progress, folder = 'Docum
                     </button>
                   );
                 })}
-                {convs.length > fresh.length && <button type="button" onClick={() => setShowEarlier(v => !v)} className="text-xs font-semibold mt-2" style={{ color: COLORS.accent }}>{showEarlier ? 'Only new ones' : `Earlier conversations (${convs.length - fresh.length})`}</button>}
+                {!showAll && convs.length > fresh.length && <button type="button" onClick={() => setShowEarlier(v => !v)} className="text-xs font-semibold mt-2" style={{ color: COLORS.accent }}>{showEarlier ? 'Only new ones' : `Earlier conversations (${convs.length - fresh.length})`}</button>}
               </>
             )}
           </div>

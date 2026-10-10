@@ -176,6 +176,13 @@ interact.
   names from Contacts, text only in `attributedBody` (short and long), reactions left
   out, three months back, not read again, no backup or an encrypted one, and nothing
   written in it. The end-to-end tests read a made-up backup in the packaged app.
+- `replies.test.jsx` covers What to say (Claude stood in for): pasted messages with who
+  it's with, the request with names hidden and your style (your own logged messages and
+  How you text), the replies with names back, Q W E copying, what it cost counted, Reply
+  ideas for the latest from a chat in Analyse, and How you text kept in Me.
+  `src/replies.test.js` covers `lib/replies.js`: your samples (newest first, each chat
+  once, no photos), every name in your circle hidden, a group's tags, the schema, names
+  back, and the opener's request.
 - `chatBatch.test.jsx` covers Analyse all new (the folder, key and Claude stood in for):
   each day with someone sent once with names hidden, a tiny one only marked as seen, the
   chats moving on, the answers reviewed (a detail left out, a reminder, logged on its day

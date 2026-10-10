@@ -789,6 +789,29 @@ Coach → Analyse a chat → **From your chats**: chats saved in the **Layers ch
 - **Where you got up to** is `layers-chat-progress` in localStorage (`{ [chat]: { at, me
   } }`), on this computer only; parsed files are kept in memory until they change.
 
+### Know what to say: reply ideas
+
+Coach → **What to say** (3; decided 2026-10-10): three replies to their latest messages,
+written by Claude in your style ([`lib/replies.js`](../../src/lib/replies.js),
+`components/ReplyIdeas.jsx`). Nothing is sent until you press **Suggest replies**
+(Ctrl+Enter), and only through the same main-process call as Analyse.
+
+- **The messages**: pasted (who it's with read from the names, `detectPeople`, or
+  chosen), or a conversation picked from "From your chats" in the tab, or **Reply ideas
+  for the latest** on a chat in Analyse, which opens the tab with that chat's latest
+  conversation in (its last 30 messages, `conversationText`).
+- **Your style**: a few of your own messages from chats you've analysed and logged
+  (`styleSamples`: lines signed with your name, "You" or "Me" in the chats kept on those
+  logs, newest first, each chat once), and **How you text** in Me → Chat analysis
+  (`profile.style`, up to 200 characters, `cleanStyle`; checked like a backup).
+- **What's sent** (`replyRequest`): the messages with names hidden as Analyse does
+  (`[them]`, or `[them 1]`… for a group, and `[you]`), and anyone else in your circle as
+  `[someone]`, in the messages and your samples; each person's layer; your samples and
+  your style line. The answer (`REPLY_SCHEMA`: read, natural, playful, deeper; no
+  either-or fields) gets first names back (`replyResult`). Its cost counts in Me.
+- **Copying**: each reply has **Copy**, and Q, W, E copy the natural, playful and deeper
+  one (focus leaves the box when they arrive). **Three more** asks again.
+
 ### Analyse all new
 
 Every new conversation in the chats folder, sent in one go and reviewed after (decided
