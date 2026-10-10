@@ -274,6 +274,35 @@ from the last three months (built 2026-10-10, see History).
 
 Each of the others comes back to you as a proposal before it's built.
 
+### Proposal: the phone web app (2026-10-10)
+
+The last of the six. **Your answers:** sign in to OneDrive to sync (2026-10-09), no Claude
+on the phone at first, the passphrase remembered on the phone, and everything (not just
+Today), synced.
+
+- **What it is**: the same Layers, built as a web app and served free by GitHub Pages
+  from the public repository (`castledruby.github.io/layers-app`), added to the iPhone's
+  Home Screen from Safari. The page holds no data: it lives on the phone and in the
+  encrypted sync file in OneDrive, as on the laptop. Every screen already works by touch.
+- **Sync**: the phone signs in to your Microsoft account (MSAL) and reads and writes
+  `Documents/Layers sync/layers-sync.json` through Microsoft Graph, with the same
+  encryption and merging as the laptop (`lib/syncFile.js`, plain Web Crypto). The
+  passphrase is kept encrypted by a key the browser holds and can't give back.
+- **Claude** stays on the laptop for now; on the phone those parts say so.
+
+**Needs you first:**
+1. **A free Microsoft app registration**, so the web app may sign in to OneDrive
+   (Azure portal → App registrations → New: personal Microsoft accounts only, a
+   single-page app address of the Pages site, permission Files.ReadWrite). Microsoft's
+   guide lists a "tenant" as needed; signing in to the portal with a personal account may
+   make one for you, or may ask you to sign up for a free Azure account, which needs a
+   card to check who you are. Try it, and say which happened. If it's blocked, the
+   fallback is picking the sync file in the Files app each time (your first choice on
+   2026-10-08 was the sign-in, so it's only a fallback).
+2. **GitHub Pages turned on** for CastledRuby/layers-app (Settings → Pages → Source:
+   GitHub Actions), since that's a change to your repository's settings. A release then
+   updates the phone app too.
+
 ### Proposal: analyse all new chats at once (2026-10-09)
 
 **Built 2026-10-09, released in 1.0.37**, with the recommended choices ("proceed"): one
