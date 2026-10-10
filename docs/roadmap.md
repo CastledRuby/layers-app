@@ -258,7 +258,8 @@ answers were read back (see [History](#history)):
      Practise's longer role-play.
    - **Closeness over time**: a chart of someone's layer and meter by day on their
      profile. Each profile already saves this (`history`). The six dimensions aren't
-     saved by day yet, so they'd start being saved from then on.
+     saved by day yet, so they'd start being saved from then on. *(Built 2026-10-10, in
+     place of the Progress chart.)*
    - **The starting limit**: US$10, now that reply ideas, the opener, Practise and the
      big picture all draw on it. *(Built 2026-10-10: yours rose with it.)*
 2. **The phone**: the web app's OneDrive sign-in, once your Microsoft registration is
@@ -788,6 +789,10 @@ Step 1 of [the order from here](#the-order-from-here), with your choices of 2026
   off in Me → Notifications.
 - **Logging a chat with the day's person counts as messaging them**: Today's card is
   done, instead of moving on to someone else.
+- **Closeness over time**, in place of a profile's Progress chart: one line climbing
+  through the layers they've been in (each band named), so a level-up goes up instead of
+  dropping from 90% to 4%, with where they started and where they are now. **Show the six
+  dimensions** draws those by day, kept with each log and Adjust from now on.
 
 ### Fixes from the audit of 2026-10-10 (not released yet)
 

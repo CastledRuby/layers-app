@@ -55,6 +55,32 @@ export function chartDay(history, at) {
   return last && last > at ? last : at;
 }
 
+// The six dimensions as kept on a chart point (from 2026-10-10, for Closeness
+// over time): { dims } with each rounded, or nothing if they're incomplete.
+function dimsPoint(dims) {
+  if (!dims || !DIM_ORDER.every(k => typeof dims[k] === 'number' && Number.isFinite(dims[k]))) return {};
+  return { dims: Object.fromEntries(DIM_ORDER.map(k => [k, Math.round(dims[k])])) };
+}
+
+// Closeness over time (decided 2026-10-10): each chart point as one climb
+// through the four layers, 0 to 400 (Layer 3 at 45% is 245), so a level-up
+// goes up instead of dropping back (Layer 2 at 90% -> Layer 3 at 4% is
+// 190 -> 204). Points saved before they kept their layer are taken to be on
+// the next one that did, or the person's own. Oldest first:
+// [{ at, date, layer, overall, closeness, dims? }].
+export function closenessTrend(person) {
+  const sorted = sortHistory(person.history || []);
+  let layer = Math.round(clamp(person.layer || 1, 1, 4));
+  const out = [];
+  for (let i = sorted.length - 1; i >= 0; i--) {
+    const h = sorted[i];
+    if (typeof h.layer === 'number' && h.layer >= 1 && h.layer <= 4) layer = Math.round(h.layer);
+    const overall = Math.round(clamp(h.value, 0, 100));
+    out.unshift({ at: h.at || null, date: h.date, layer, overall, closeness: (layer - 1) * 100 + overall, ...(h.dims ? { dims: h.dims } : {}) });
+  }
+  return out;
+}
+
 // Move a person to a new layer / layer percentage. Records what changed and
 // why (the profile's change card), a chart point, and a dated timeline step
 // whenever the layer itself changes. `extra` carries other fields to update
@@ -72,7 +98,7 @@ export function movePerson(p, { layer, overall, at, why, extra = {} }) {
     overall,
     justLeveledUp: layer > p.layer || !!p.justLeveledUp,
     lastChange: { before: p.overall, after: overall, beforeLayer: p.layer, afterLayer: layer, why },
-    history: pushHistoryPoint(p.history || [], { date: formatAbsoluteDate(new Date(`${day}T00:00:00`)), at: day, value: overall, layer }),
+    history: pushHistoryPoint(p.history || [], { date: formatAbsoluteDate(new Date(`${day}T00:00:00`)), at: day, value: overall, layer, ...dimsPoint(extra.dims || p.dims) }),
     timeline: [...(p.timeline || []), ...step],
   };
 }
@@ -87,7 +113,7 @@ export function makePerson({ name, emoji, avatar = null, layer, overall: startAt
   const dims = { depth: baseVal, trust: baseVal, reciprocity: baseVal, interaction: baseVal, sharedExperiences: baseVal, listening: baseVal };
   const { overall } = placeOnLayers(computeOverall(dims));
   const today = new Date();
-  return { id: uid(), name, emoji, ...(avatar ? { avatar } : {}), layer: start, dims, overall, interests: [], preferences: [], plans: [], experiences: [], important: [], goals: [], history: [{ date: formatAbsoluteDate(today), at: toISODate(today), value: overall, layer: start }], timeline: [{ label: 'First met', at: toISODate(today) }] };
+  return { id: uid(), name, emoji, ...(avatar ? { avatar } : {}), layer: start, dims, overall, interests: [], preferences: [], plans: [], experiences: [], important: [], goals: [], history: [{ date: formatAbsoluteDate(today), at: toISODate(today), value: overall, layer: start, ...dimsPoint(dims) }], timeline: [{ label: 'First met', at: toISODate(today) }] };
 }
 
 export function generateGoalDescription(preset, person) {

@@ -144,6 +144,7 @@ type HistoryPoint = {
   at?: string;                                // 'YYYY-MM-DD' sort key
   value: number;
   layer?: number;                             // person history only: the layer `value` is a percentage of (since 1.0.27)
+  dims?: Person['dims'];                      // person history only: the six dimensions that day (from 2026-10-10)
 };
 
 type JournalEntry = {
@@ -372,6 +373,15 @@ the newest one already on the chart: a backdated log changes progress *now*, so 
 recorded on that newest day. It used to be written at the old date, where it replaced
 that day's point and made the line jump up and back down. Person and goal history both
 use it.
+
+**Closeness over time** (decided 2026-10-10) is the profile's chart (`ClosenessChart`).
+`closenessTrend(person)` turns each history point into one climb through the layers, 0
+to 400 (`(layer − 1) × 100 + value`), so a level-up goes up instead of dropping back to a
+few percent; a point saved without its layer takes the next one's that has it, or the
+person's own. The chart's height covers only the layers they've been in, each band
+named. `movePerson` (and `makePerson`) keep the six dimensions on each point too, so
+**Show the six dimensions** draws them by day from 2026-10-10 on. A saved point's
+`layer` and `dims` are dropped if unreadable (`cleanHistory` in `lib/backup.js`).
 
 `bumpSkills(skills, bumps, at)` raises skills and records a chart point, at most one per
 skill per day. Before 1.0.27 nothing added points, so the Me tab's skills chart stayed

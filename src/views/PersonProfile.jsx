@@ -5,12 +5,12 @@ import { ChevronLeft, FileText, Pencil, Plus, X } from 'lucide-react';
 import { ActivityCalendar } from '../components/ActivityCalendar.jsx';
 import { ChatTrendChart } from '../components/ChatTrendChart.jsx';
 import { chatTrend } from '../lib/chatTrend.js';
-import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+import { ClosenessChart } from '../components/ClosenessChart.jsx';
 import { Sheet } from '../components/Sheet.jsx';
 import { Avatar, CircularProgress, LabeledBar, LayerBadge, Timeline } from '../components/atoms.jsx';
 import { GoalRow, InfoItemRow } from '../components/rows.jsx';
 import { CATEGORIES, DIM_COLORS, DIM_LABELS, DIM_ORDER, getLayer } from '../data/constants.js';
-import { parseISODay, sortByDay, sortHistory } from '../lib/dates.js';
+import { parseISODay, sortByDay } from '../lib/dates.js';
 import { computeOverall, dimsEqual, placeOnLayers, progressDelta } from '../lib/progress.js';
 import { dateKind, keyDateOn } from '../lib/calendar.js';
 import { MONTH_NAMES, toISODate } from '../lib/dates.js';
@@ -309,19 +309,7 @@ export function PersonProfile({ today, person, journal, onBack, onOpenLog, onOpe
       })()}
 
       <div className="mt-2">
-        <p className="font-display" style={{ fontSize: 18, color: COLORS.ink }}>Progress</p>
-        <div className="mt-3" style={{ width: '100%', height: 170 }}>
-          <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={sortHistory(person.history)} margin={{ top: 8, right: 14, left: 0, bottom: 0 }}>
-              <CartesianGrid stroke={COLORS.line} strokeDasharray="3 3" vertical={false} />
-              <XAxis dataKey="date" tick={{ fontSize: 10, fill: COLORS.inkSoft }} axisLine={{ stroke: COLORS.line }} tickLine={false} interval={0} padding={{ left: 18, right: 18 }} />
-              <YAxis domain={[0, 100]} tick={{ fontSize: 10, fill: COLORS.inkSoft }} axisLine={false} tickLine={false} width={30} />
-              <Tooltip formatter={(v) => [`${v}%`, 'Progress']} contentStyle={{ borderRadius: 12, border: `1px solid ${COLORS.line}`, fontSize: 12 }} />
-              <Line type="monotone" dataKey="value" stroke={l.color} strokeWidth={2.5} dot={{ r: 3, fill: l.color }} activeDot={{ r: 5 }} />
-            </LineChart>
-          </ResponsiveContainer>
-        </div>
-        <p className="text-xs mt-3 text-center" style={{ color: COLORS.inkSoft }}>Relationships don't have to move in a straight line. It's normal to move between layers.</p>
+        <ClosenessChart person={person} color={l.color} />
       </div>
 
       {prepareOpen && <PrepareTipsModal person={person} journal={journal} onClose={() => setPrepareOpen(false)} onOpenFullCoach={() => { setPrepareOpen(false); onOpenCoach(person.id); }} />}

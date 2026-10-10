@@ -27,10 +27,20 @@ const isISODay = (v) => typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v) &
 const num = (v, min, max, fallback) => (typeof v === 'number' && isFinite(v) ? clamp(v, min, max) : fallback);
 const count = (n, one, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
 
+// A chart point; a person's may keep its layer and the six dimensions that
+// day (from 2026-10-10), dropped if they aren't readable.
 function cleanHistory(history) {
   return (Array.isArray(history) ? history : [])
     .filter(h => isObject(h) && typeof h.value === 'number' && isFinite(h.value))
-    .map(h => ({ ...h, value: clamp(h.value, 0, 100) }));
+    .map(h => {
+      const point = { ...h, value: clamp(h.value, 0, 100) };
+      if ('layer' in h && !(Number.isInteger(h.layer) && h.layer >= 1 && h.layer <= 4)) delete point.layer;
+      if ('dims' in h) {
+        if (isObject(h.dims) && DIM_ORDER.every(k => typeof h.dims[k] === 'number' && isFinite(h.dims[k]))) point.dims = Object.fromEntries(DIM_ORDER.map(k => [k, clamp(h.dims[k], 0, 100)]));
+        else delete point.dims;
+      }
+      return point;
+    });
 }
 
 function cleanGoal(g, personId, skipped) {

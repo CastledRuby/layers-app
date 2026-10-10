@@ -125,6 +125,10 @@ interact.
   (which paths are asked about, reading Windows' answers, one PowerShell run, nothing off
   Windows, the time limit) and `faceCrop`. The end-to-end tests run photos from a
   folder in the packaged app, with the real face detector asked about a picture.
+- `closenessOverTime.test.jsx` covers a profile's Closeness over time (where they
+  started and are now, across a level-up) and Show the six dimensions, kept with a log;
+  `src/progress.test.js` covers `closenessTrend` and the dimensions on each chart point,
+  `src/backup.test.js` reading them back.
 - `closeness.test.jsx` covers adding someone through "How close are you two?" from the
   keyboard: the questions in order, stopping early, Backspace, picking a layer by hand,
   asking again (Q) and the avatar arrows; `setup.test.jsx` covers the quiz while setting

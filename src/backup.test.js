@@ -33,6 +33,19 @@ describe('createBackup / validateBackup round trip', () => {
     delete backup.achievements;
     expect(validateBackup(backup).data.achievements).toBeNull();
   });
+  it("keeps a chart point's layer and six dimensions, dropping them if unreadable", () => {
+    const dims = { depth: 61, trust: 55, reciprocity: 55, interaction: 58, sharedExperiences: 52, listening: 57 };
+    const state = sampleState();
+    state.people[0] = { ...state.people[0], history: [
+      { date: 'Oct 1', at: '2026-10-01', value: 40, layer: 2, dims },
+      { date: 'Oct 2', at: '2026-10-02', value: 45, layer: 7, dims: { depth: 'lots' } },
+      { date: 'Oct 3', at: '2026-10-03', value: 50, layer: 2, dims: { ...dims, trust: 140 } },
+    ] };
+    const history = validateBackup(JSON.parse(JSON.stringify(createBackup(state, NOW)))).data.people[0].history;
+    expect(history[0]).toEqual({ date: 'Oct 1', at: '2026-10-01', value: 40, layer: 2, dims });
+    expect(history[1]).toEqual({ date: 'Oct 2', at: '2026-10-02', value: 45 });
+    expect(history[2].dims.trust).toBe(100);
+  });
   it('summarises what will be imported', () => {
     const { summary } = validateBackup(createBackup(sampleState(), NOW));
     expect(summary.text).toBe('5 people, 7 journal entries, 10 goals, 1 event');

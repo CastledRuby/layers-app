@@ -3,7 +3,7 @@
 import { describe, expect, it } from 'vitest';
 import { INITIAL_PEOPLE, INITIAL_SKILLS } from './data/seed.js';
 import { backfillSkillDates, newestFirst, sortByDay, sortHistory } from './lib/dates.js';
-import { bumpSkills, chartDay, computeOverall, dimBumps, dimsEqual, goalBumpFor, keepDimsInLayer, layerDimBounds, makePerson, migrateDimsToLayers, movePerson, placeOnLayers, progressDelta, scaleDimsToSum } from './lib/progress.js';
+import { bumpSkills, chartDay, closenessTrend, computeOverall, dimBumps, dimsEqual, goalBumpFor, keepDimsInLayer, layerDimBounds, makePerson, migrateDimsToLayers, movePerson, placeOnLayers, progressDelta, scaleDimsToSum } from './lib/progress.js';
 
 const NOW = new Date(2026, 9, 3, 12); // Oct 3 2026, local noon
 
@@ -69,6 +69,30 @@ describe('movePerson', () => {
   it('puts a backdated change on the newest chart day instead of rewriting an old one', () => {
     const next = movePerson(base, { layer: 2, overall: 95, at: '2026-09-20', why: [] });
     expect(sortHistory(next.history).map(h => [h.at, h.value])).toEqual([['2026-10-01', 95]]);
+  });
+
+  it('keeps the six dimensions on the chart point, the new ones if they changed', () => {
+    const dims = { depth: 61.4, trust: 55, reciprocity: 55, interaction: 58, sharedExperiences: 52, listening: 57 };
+    const next = movePerson(base, { layer: 3, overall: 4, at: '2026-10-03', why: [], extra: { dims } });
+    expect(next.history.at(-1).dims).toEqual({ ...dims, depth: 61 });
+    expect(movePerson(base, { layer: 2, overall: 95, at: '2026-10-03', why: [] }).history.at(-1).dims).toEqual(base.dims);
+    expect(makePerson({ name: 'Bo', emoji: '🙂', layer: 3 }).history[0].dims).toEqual({ depth: 55, trust: 55, reciprocity: 55, interaction: 55, sharedExperiences: 55, listening: 55 });
+  });
+});
+
+describe('closenessTrend', () => {
+  it('climbs through the layers, 0 to 400, so a level-up goes up', () => {
+    const p = { layer: 3, history: [{ date: 'Oct 1', at: '2026-10-01', value: 90, layer: 2 }, { date: 'Oct 3', at: '2026-10-03', value: 4, layer: 3, dims: { depth: 51 } }] };
+    expect(closenessTrend(p)).toEqual([
+      { at: '2026-10-01', date: 'Oct 1', layer: 2, overall: 90, closeness: 190 },
+      { at: '2026-10-03', date: 'Oct 3', layer: 3, overall: 4, closeness: 204, dims: { depth: 51 } },
+    ]);
+  });
+
+  it("takes points saved without a layer to be on the next one that has it, or the person's own", () => {
+    const p = { layer: 4, history: [{ date: 'Sep 1', at: '2026-09-01', value: 60 }, { date: 'Sep 5', at: '2026-09-05', value: 95, layer: 3 }, { date: 'Sep 9', at: '2026-09-09', value: 10 }] };
+    expect(closenessTrend(p).map(x => [x.layer, x.closeness])).toEqual([[3, 260], [3, 295], [4, 310]]);
+    expect(closenessTrend({ layer: 2, history: [] })).toEqual([]);
   });
 });
 

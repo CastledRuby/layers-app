@@ -4,7 +4,7 @@
 > Run `npm run docs:map` after changing anything under `src/`, `electron/*.cjs` or `package.json` scripts.
 > Hand-written explanations live in the other files under [`docs/`](../README.md).
 
-Package: `layers-web` v1.0.39 · `src/`: 91 files, 15659 lines, 110 components, 430 top-level functions, 215 constants.
+Package: `layers-web` v1.0.39 · `src/`: 92 files, 15781 lines, 113 components, 434 top-level functions, 215 constants.
 
 ## Source files
 
@@ -20,7 +20,7 @@ Package: `layers-web` v1.0.39 · `src/`: 91 files, 15659 lines, 110 components, 
 | [lib/achievements.js](../../src/lib/achievements.js) | 37 | achievementProgress, newlyUnlocked, progressText | `data/constants` |
 | [lib/activity.js](../../src/lib/activity.js) | 48 | ACTIVITY_WEEKS, activityLevel, activityGrid | `lib/dates` |
 | [lib/analysis.js](../../src/lib/analysis.js) | 385 | ANALYSIS_MODELS, DEFAULT_ANALYSIS_MODEL, analysisModel, MAX_SCREENSHOTS, THEM, YOU, tokensFor, STAMP, chatSpeakers, detectPeople, … (+35) | `data/constants`, `lib/dates` |
-| [lib/backup.js](../../src/lib/backup.js) | 248 | BACKUP_VERSION, MAX_BACKUP_BYTES, createBackup, isObject, isText, isISODay, num, count, cleanHistory, cleanGoal, … (+9) | `lib/calendar`, `data/constants`, `data/seed`, `data/avatars`, `lib/util`, `lib/sync`, `lib/analysis` |
+| [lib/backup.js](../../src/lib/backup.js) | 258 | BACKUP_VERSION, MAX_BACKUP_BYTES, createBackup, isObject, isText, isISODay, num, count, cleanHistory, cleanGoal, … (+9) | `lib/calendar`, `data/constants`, `data/seed`, `data/avatars`, `lib/util`, `lib/sync`, `lib/analysis` |
 | [lib/calendar.js](../../src/lib/calendar.js) | 484 | WEEKDAY_NAMES, DEFAULT_DURATION, EVENT_TEMPLATES, templateFor, DATE_KINDS, dateKind, NOTIFY_DEFAULTS, notifySettings, dayDate, addDays, … (+30) | `lib/dates` |
 | [lib/chatBatch.js](../../src/lib/chatBatch.js) | 117 | TINY, batchPlan, batchDollars, QUEUE_KEY, isText, cleanItem, readQueue, saveQueue, waiting, pruneQueue, … (+7) | `lib/analysis`, `lib/chatImport` |
 | [lib/chatImport.js](../../src/lib/chatImport.js) | 482 | CONVERSATION_GAP_HOURS, MAX_TEXT, PROGRESS_KEY, STAMP, IOS_LINE, ANDROID_LINE, ch, MARKS, MARKED, ODD_SPACES, … (+44) | `lib/analysis` |
@@ -33,7 +33,7 @@ Package: `layers-web` v1.0.39 · `src/`: 91 files, 15659 lines, 110 components, 
 | [lib/offline.js](../../src/lib/offline.js) | 12 | shouldCacheOffline, cacheOffline | — |
 | [lib/photo.js](../../src/lib/photo.js) | 72 | MAX_PHOTO_BYTES, loadPhoto, shrinkForAnalysis, renderPhoto | `data/avatars` |
 | [lib/practice.js](../../src/lib/practice.js) | 116 | str, obj, SITUATIONS, situation, LINE, theirSamples, TURN_SCHEMA, turnRequest, turnResult, practicePartner, … (+6) | `data/constants`, `lib/analysis`, `lib/replies`, `lib/dates` |
-| [lib/progress.js](../../src/lib/progress.js) | 215 | layerForOverall, advanceLayer, computeOverall, dimsEqual, placeOnLayers, progressDelta, chartDay, movePerson, makePerson, generateGoalDescription, … (+10) | `data/constants`, `lib/dates`, `lib/util` |
+| [lib/progress.js](../../src/lib/progress.js) | 241 | layerForOverall, advanceLayer, computeOverall, dimsEqual, placeOnLayers, progressDelta, chartDay, dimsPoint, closenessTrend, movePerson, … (+12) | `data/constants`, `lib/dates`, `lib/util` |
 | [lib/reminders.js](../../src/lib/reminders.js) | 47 | markDone, markMissed, followUpEvent | `lib/dates` |
 | [lib/replies.js](../../src/lib/replies.js) | 113 | str, obj, STYLE_MAX, MARK, LINE, styleSamples, cleanStyle, hide, hideCircle, styleNotes, … (+8) | `data/constants`, `lib/analysis` |
 | [lib/sentence.js](../../src/lib/sentence.js) | 297 | WEEKDAYS, MONTHS, RATING_WORDS, TEMPLATE_WORDS, MEAL_TIMES, PART_TIMES, LOG_VERBS, LOG_NOUNS, FILLERS, PREPOSITIONS, … (+12) | `lib/calendar`, `lib/dates` |
@@ -53,6 +53,7 @@ Package: `layers-web` v1.0.39 · `src/`: 91 files, 15659 lines, 110 components, 
 | [components/ChatBatch.jsx](../../src/components/ChatBatch.jsx) | 52 | money, listOf, ChatBatchCard | `components/atoms`, `lib/analysis`, `lib/chatBatch`, `theme` |
 | [components/ChatExports.jsx](../../src/components/ChatExports.jsx) | 114 | EMOJI, Help, ChatExports | `components/atoms`, `data/constants`, `lib/chatImport`, `lib/dates`, `theme` |
 | [components/ChatTrendChart.jsx](../../src/components/ChatTrendChart.jsx) | 63 | COLOR, signed, ChatTrendChart | `data/constants`, `lib/chatTrend`, `theme` |
+| [components/ClosenessChart.jsx](../../src/components/ClosenessChart.jsx) | 98 | tick, tipStyle, ClosenessChart, LayersChart, DimsChart | `data/constants`, `lib/progress`, `theme` |
 | [components/closenessKeys.js](../../src/components/closenessKeys.js) | 40 | useCloseness, quizKey | `lib/closeness` |
 | [components/ClosenessQuiz.jsx](../../src/components/ClosenessQuiz.jsx) | 129 | ANSWER_EMOJI, QuizDots, QuizQuestion, QuizResult, QuizSheet | `components/Sheet`, `components/sheetLayer`, `components/atoms`, `data/constants`, `components/closenessKeys`, `lib/closeness`, `theme` |
 | [components/ErrorBoundary.jsx](../../src/components/ErrorBoundary.jsx) | 39 | — | `theme` |
@@ -97,7 +98,7 @@ Package: `layers-web` v1.0.39 · `src/`: 91 files, 15659 lines, 110 components, 
 | [views/MeView.jsx](../../src/views/MeView.jsx) | 420 | Toggle, Pick, syncedAgo, AnalysisKeyCard, CalendarsCard, MeView | `components/atoms`, `data/constants`, `lib/achievements`, `lib/calendar`, `lib/analysis`, `lib/chatBatch`, `lib/replies`, `components/ChatTrendChart`, `lib/chatTrend`, `lib/practice`, `lib/dates`, `lib/text`, `theme` |
 | [views/OnboardingView.jsx](../../src/views/OnboardingView.jsx) | 301 | QUICK_NAMES, STEP_LABELS, KEYS_TO_KNOW, shortDate, listNames, Progress, Switch, OnboardingView | `components/atoms`, `components/ClosenessQuiz`, `components/AvatarPicker`, `modals/KeyDateSheet`, `components/sheetLayer`, `components/illustrations`, `data/constants`, `lib/calendar`, `lib/dates`, `lib/util`, `theme` |
 | [views/PeopleView.jsx](../../src/views/PeopleView.jsx) | 231 | PeopleView | `components/atoms`, `components/sheetLayer`, `components/illustrations`, `data/constants`, `lib/dates`, `lib/text`, `theme` |
-| [views/PersonProfile.jsx](../../src/views/PersonProfile.jsx) | 331 | shortDate, keyDatesInOrder, AdjustSlider, PrepareTipsModal, PersonProfile | `components/ActivityCalendar`, `components/ChatTrendChart`, `lib/chatTrend`, `components/Sheet`, `components/atoms`, `components/rows`, `data/constants`, `lib/dates`, `lib/progress`, `lib/calendar`, `lib/dates`, `lib/text`, `theme` |
+| [views/PersonProfile.jsx](../../src/views/PersonProfile.jsx) | 319 | shortDate, keyDatesInOrder, AdjustSlider, PrepareTipsModal, PersonProfile | `components/ActivityCalendar`, `components/ChatTrendChart`, `lib/chatTrend`, `components/ClosenessChart`, `components/Sheet`, `components/atoms`, `components/rows`, `data/constants`, `lib/dates`, `lib/progress`, `lib/calendar`, `lib/dates`, `lib/text`, `theme` |
 | [views/TodayView.jsx](../../src/views/TodayView.jsx) | 440 | WEEKDAY_LONG, addDays, daysBetween, relativeLabel, fullDate, Dots, DayCell, WeekStrip, MonthGrid, SectionTitle, … (+4) | `components/atoms`, `components/PersonPick`, `components/sheetLayer`, `data/constants`, `lib/calendar`, `lib/dates`, `lib/text`, `theme` |
 | [fonts.js](../../src/fonts.js) | 28 | LATIN, LATIN_EXT, face, FONT_FACES | — |
 | [QuickAdd.jsx](../../src/QuickAdd.jsx) | 177 | RATING_LABELS, SAVED_MS, UNDO_MS, readSaved, listNames, whenText, MISSING_TEXT, QuickAdd | `components/atoms`, `lib/dates`, `lib/hooks`, `lib/sentence`, `lib/storage`, `theme` |
@@ -127,6 +128,9 @@ Package: `layers-web` v1.0.39 · `src/`: 91 files, 15659 lines, 110 components, 
 | `Help` | [ChatExports.jsx:17](../../src/components/ChatExports.jsx#L17) | `folder` | `ChatExports` |
 | `ChatExports` | [ChatExports.jsx:31](../../src/components/ChatExports.jsx#L31) | `state`, `people`, `yourName`, `progress`, `folder`, `onPick`, `onPickMe`, `onOpenFolder`, `initialOpen`, `onReply`, `showAll` | `CoachView` |
 | `ChatTrendChart` | [ChatTrendChart.jsx:15](../../src/components/ChatTrendChart.jsx#L15) | `points`, `practice`, `label` | `MeView`, `PersonProfile` |
+| `ClosenessChart` | [ClosenessChart.jsx:17](../../src/components/ClosenessChart.jsx#L17) | `person`, `color` | `PersonProfile` |
+| `LayersChart` | [ClosenessChart.jsx:44](../../src/components/ClosenessChart.jsx#L44) | `points`, `color` | `ClosenessChart` |
+| `DimsChart` | [ClosenessChart.jsx:63](../../src/components/ClosenessChart.jsx#L63) | `points` | `ClosenessChart` |
 | `QuizDots` | [ClosenessQuiz.jsx:21](../../src/components/ClosenessQuiz.jsx#L21) | `answers`, `at` | `QuizQuestion` |
 | `QuizQuestion` | [ClosenessQuiz.jsx:33](../../src/components/ClosenessQuiz.jsx#L33) | `quiz`, `name`, `onDone` | `QuizSheet`, `AddPersonModal` |
 | `QuizResult` | [ClosenessQuiz.jsx:64](../../src/components/ClosenessQuiz.jsx#L64) | `quiz`, `name`, `person`, `now` | `QuizSheet`, `AddPersonModal` |
@@ -299,16 +303,16 @@ Package: `layers-web` v1.0.39 · `src/`: 91 files, 15659 lines, 110 components, 
 | `isISODay` | [backup.js:26](../../src/lib/backup.js#L26) |  |  |
 | `num` | [backup.js:27](../../src/lib/backup.js#L27) |  |  |
 | `count` | [backup.js:28](../../src/lib/backup.js#L28) |  |  |
-| `cleanHistory` | [backup.js:30](../../src/lib/backup.js#L30) |  |  |
-| `cleanGoal` | [backup.js:36](../../src/lib/backup.js#L36) |  |  |
-| `cleanPerson` | [backup.js:51](../../src/lib/backup.js#L51) |  |  |
-| `text` | [backup.js:102](../../src/lib/backup.js#L102) |  |  |
-| `tone` | [backup.js:103](../../src/lib/backup.js#L103) |  |  |
-| `cleanAnalysis` | [backup.js:104](../../src/lib/backup.js#L104) |  |  |
-| `cleanEntry` | [backup.js:129](../../src/lib/backup.js#L129) |  |  |
-| `cleanEvent` | [backup.js:153](../../src/lib/backup.js#L153) |  |  |
-| `cleanSkills` | [backup.js:181](../../src/lib/backup.js#L181) |  |  |
-| `validateBackup` | [backup.js:193](../../src/lib/backup.js#L193) | ✓ | ✓ |
+| `cleanHistory` | [backup.js:32](../../src/lib/backup.js#L32) |  |  |
+| `cleanGoal` | [backup.js:46](../../src/lib/backup.js#L46) |  |  |
+| `cleanPerson` | [backup.js:61](../../src/lib/backup.js#L61) |  |  |
+| `text` | [backup.js:112](../../src/lib/backup.js#L112) |  |  |
+| `tone` | [backup.js:113](../../src/lib/backup.js#L113) |  |  |
+| `cleanAnalysis` | [backup.js:114](../../src/lib/backup.js#L114) |  |  |
+| `cleanEntry` | [backup.js:139](../../src/lib/backup.js#L139) |  |  |
+| `cleanEvent` | [backup.js:163](../../src/lib/backup.js#L163) |  |  |
+| `cleanSkills` | [backup.js:191](../../src/lib/backup.js#L191) |  |  |
+| `validateBackup` | [backup.js:203](../../src/lib/backup.js#L203) | ✓ | ✓ |
 | `templateFor` | [calendar.js:42](../../src/lib/calendar.js#L42) | ✓ |  |
 | `dateKind` | [calendar.js:52](../../src/lib/calendar.js#L52) | ✓ |  |
 | `notifySettings` | [calendar.js:72](../../src/lib/calendar.js#L72) | ✓ |  |
@@ -483,19 +487,21 @@ Package: `layers-web` v1.0.39 · `src/`: 91 files, 15659 lines, 110 components, 
 | `placeOnLayers` | [progress.js:36](../../src/lib/progress.js#L36) | ✓ | ✓ |
 | `progressDelta` | [progress.js:44](../../src/lib/progress.js#L44) | ✓ | ✓ |
 | `chartDay` | [progress.js:52](../../src/lib/progress.js#L52) | ✓ | ✓ |
-| `movePerson` | [progress.js:62](../../src/lib/progress.js#L62) | ✓ | ✓ |
-| `makePerson` | [progress.js:84](../../src/lib/progress.js#L84) | ✓ | ✓ |
-| `generateGoalDescription` | [progress.js:93](../../src/lib/progress.js#L93) | ✓ |  |
-| `bumpSkills` | [progress.js:103](../../src/lib/progress.js#L103) | ✓ | ✓ |
-| `raisedSkills` | [progress.js:116](../../src/lib/progress.js#L116) | ✓ |  |
-| `advanceSkillGoals` | [progress.js:122](../../src/lib/progress.js#L122) | ✓ |  |
-| `dimBumps` | [progress.js:136](../../src/lib/progress.js#L136) | ✓ | ✓ |
-| `goalBumpFor` | [progress.js:152](../../src/lib/progress.js#L152) | ✓ | ✓ |
-| `dimSum` | [progress.js:162](../../src/lib/progress.js#L162) |  |  |
-| `layerDimBounds` | [progress.js:163](../../src/lib/progress.js#L163) | ✓ | ✓ |
-| `scaleDimsToSum` | [progress.js:169](../../src/lib/progress.js#L169) | ✓ | ✓ |
-| `keepDimsInLayer` | [progress.js:184](../../src/lib/progress.js#L184) | ✓ | ✓ |
-| `migrateDimsToLayers` | [progress.js:202](../../src/lib/progress.js#L202) | ✓ | ✓ |
+| `dimsPoint` | [progress.js:60](../../src/lib/progress.js#L60) |  |  |
+| `closenessTrend` | [progress.js:71](../../src/lib/progress.js#L71) | ✓ | ✓ |
+| `movePerson` | [progress.js:88](../../src/lib/progress.js#L88) | ✓ | ✓ |
+| `makePerson` | [progress.js:110](../../src/lib/progress.js#L110) | ✓ | ✓ |
+| `generateGoalDescription` | [progress.js:119](../../src/lib/progress.js#L119) | ✓ |  |
+| `bumpSkills` | [progress.js:129](../../src/lib/progress.js#L129) | ✓ | ✓ |
+| `raisedSkills` | [progress.js:142](../../src/lib/progress.js#L142) | ✓ |  |
+| `advanceSkillGoals` | [progress.js:148](../../src/lib/progress.js#L148) | ✓ |  |
+| `dimBumps` | [progress.js:162](../../src/lib/progress.js#L162) | ✓ | ✓ |
+| `goalBumpFor` | [progress.js:178](../../src/lib/progress.js#L178) | ✓ | ✓ |
+| `dimSum` | [progress.js:188](../../src/lib/progress.js#L188) |  |  |
+| `layerDimBounds` | [progress.js:189](../../src/lib/progress.js#L189) | ✓ | ✓ |
+| `scaleDimsToSum` | [progress.js:195](../../src/lib/progress.js#L195) | ✓ | ✓ |
+| `keepDimsInLayer` | [progress.js:210](../../src/lib/progress.js#L210) | ✓ | ✓ |
+| `migrateDimsToLayers` | [progress.js:228](../../src/lib/progress.js#L228) | ✓ | ✓ |
 | `markDone` | [reminders.js:9](../../src/lib/reminders.js#L9) | ✓ | ✓ |
 | `markMissed` | [reminders.js:21](../../src/lib/reminders.js#L21) | ✓ |  |
 | `followUpEvent` | [reminders.js:29](../../src/lib/reminders.js#L29) | ✓ | ✓ |
@@ -592,6 +598,8 @@ Package: `layers-web` v1.0.39 · `src/`: 91 files, 15659 lines, 110 components, 
 | `money` | [ChatBatch.jsx:10](../../src/components/ChatBatch.jsx#L10) |  |  |
 | `listOf` | [ChatBatch.jsx:11](../../src/components/ChatBatch.jsx#L11) |  |  |
 | `signed` | [ChatTrendChart.jsx:13](../../src/components/ChatTrendChart.jsx#L13) |  |  |
+| `tick` | [ClosenessChart.jsx:14](../../src/components/ClosenessChart.jsx#L14) |  |  |
+| `tipStyle` | [ClosenessChart.jsx:15](../../src/components/ClosenessChart.jsx#L15) |  |  |
 | `useCloseness` | [closenessKeys.js:10](../../src/components/closenessKeys.js#L10) | ✓ |  |
 | `quizKey` | [closenessKeys.js:33](../../src/components/closenessKeys.js#L33) | ✓ |  |
 | `startsWord` | [peopleKeys.js:15](../../src/components/peopleKeys.js#L15) |  |  |
@@ -727,7 +735,7 @@ Package: `layers-web` v1.0.39 · `src/`: 91 files, 15659 lines, 110 components, 
 | `SPEND_KEY` | [analysis.js:356](../../src/lib/analysis.js#L356) |
 | `BACKUP_VERSION` | [backup.js:15](../../src/lib/backup.js#L15) |
 | `MAX_BACKUP_BYTES` | [backup.js:17](../../src/lib/backup.js#L17) |
-| `GRADES` | [backup.js:101](../../src/lib/backup.js#L101) |
+| `GRADES` | [backup.js:111](../../src/lib/backup.js#L111) |
 | `WEEKDAY_NAMES` | [calendar.js:26](../../src/lib/calendar.js#L26) |
 | `DEFAULT_DURATION` | [calendar.js:28](../../src/lib/calendar.js#L28) |
 | `EVENT_TEMPLATES` | [calendar.js:32](../../src/lib/calendar.js#L32) |
