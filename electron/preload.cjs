@@ -58,6 +58,9 @@ contextBridge.exposeInMainWorld('layersSystem', {
   listChatExports: () => ipcRenderer.invoke('chats-list'),
   readChatExport: (name) => ipcRenderer.invoke('chats-read', name),
   openChatsFolder: () => ipcRenderer.invoke('chats-open-folder'),
+  // iMessage from the newest iPhone backup (imessage.cjs): knownAt, when the
+  // backup the page already has was made, skips reading it again.
+  readIMessages: (knownAt) => ipcRenderer.invoke('imessage-read', knownAt),
   onChatExportsChanged: (cb) => {
     const handler = () => cb();
     ipcRenderer.on('chats-changed', handler);

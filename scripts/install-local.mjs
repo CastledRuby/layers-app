@@ -121,6 +121,26 @@ function readAsarFile(asarPath, name) {
 }
 
 const layersRunning = () => /Layers\.exe/i.test(spawnSync('tasklist', ['/FI', 'IMAGENAME eq Layers.exe', '/NH'], { encoding: 'utf8' }).stdout || '');
+// Whether Layers' page is running (a renderer process; its window is made,
+// shown or not, as it starts). A Layers whose main process hit an error on
+// start never gets one: it shows Electron's "Error" box, which still counts as
+// running, and can't answer --quit.
+function pageRunning() {
+  const r = spawnSync('powershell', ['-NoProfile', '-Command', "@(Get-CimInstance Win32_Process -Filter \"Name='Layers.exe'\" | Where-Object { $_.CommandLine -match '--type=renderer' }).Count"], { encoding: 'utf8' });
+  return Number((r.stdout || '').trim()) > 0;
+}
+async function waitForPage(seconds) {
+  for (let i = 0; i < seconds * 2 && !pageRunning(); i++) await sleep(500);
+  return pageRunning();
+}
+// Every package Layers needs when it runs (package.json's dependencies) is in
+// this copy's node_modules. On 2026-10-10 a copy without the Claude SDK (a
+// worktree whose npm install was incomplete) built a Layers that crashed on
+// start, and installed it here.
+function missingDependencies() {
+  const deps = Object.keys(JSON.parse(readFileSync(join(root, 'package.json'), 'utf8')).dependencies || {});
+  return deps.filter(name => !existsSync(join(root, 'node_modules', ...name.split('/'), 'package.json')));
+}
 function windowShowing() {
   const r = spawnSync('powershell', ['-NoProfile', '-Command', '@(Get-Process Layers -ErrorAction SilentlyContinue | Where-Object { $_.MainWindowHandle -ne 0 }).Count'], { encoding: 'utf8' });
   return Number((r.stdout || '').trim()) > 0;
@@ -147,6 +167,9 @@ async function main() {
   const head = gitOut('rev-parse', 'HEAD');
   if (ifChanged && alreadyInstalled(head)) { log(`Layers on this computer already has this code (${head.slice(0, 7)}).`); return; }
 
+  const missing = missingDependencies();
+  if (missing.length) fail(`This copy's node_modules is missing ${missing.join(', ')}, so the build would crash on start. Run npm install here, then npm run install:local.`);
+
   const uncommitted = Boolean(gitOut('status', '--porcelain', '--', ...APP_CODE));
   const release = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8')).version;
   const version = `${release}+local.${head.slice(0, 7)}${uncommitted ? '.uncommitted' : ''}`;
@@ -165,6 +188,12 @@ async function main() {
   const installer = join(OUT, `Layers Setup ${version}.exe`);
   if (!existsSync(installer)) fail(`The build has no ${relative(root, installer)}.`);
 
+  // A Layers that crashed on start can't quit itself: it's stopped instead.
+  if (layersRunning() && !(await waitForPage(5))) {
+    log('The running Layers crashed on start, so it was stopped.');
+    spawnSync('taskkill', ['/IM', 'Layers.exe', '/F'], { stdio: 'ignore' });
+    for (let i = 0; i < 20 && layersRunning(); i++) await sleep(500);
+  }
   const showWindow = layersRunning() && windowShowing();
   if (layersRunning() && existsSync(INSTALLED_EXE)) {
     log('Asking the running Layers to quit…');
@@ -189,6 +218,7 @@ async function main() {
   for (let i = 0; i < 20 && !layersRunning(); i++) await sleep(500);
   await sleep(3000); // still running a moment later, so it didn't crash on startup
   if (!layersRunning()) fail(`Layers ${version} is installed but didn't stay running. Start it from the Start menu to see what happens; your data backup is in ${backup}.`);
+  if (!(await waitForPage(15))) fail(`Layers ${version} is installed but hit a problem on start (its page never opened; there may be an "Error" box). Your data backup is in ${backup}.`);
 
   writeFileSync(STAMP, JSON.stringify({ commit: head, uncommitted, version, installedAt: new Date().toISOString() }, null, 2) + '\n');
   log(`Layers ${version} is installed and running${showWindow ? '' : ' (in the tray)'}.`);

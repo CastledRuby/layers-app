@@ -1,7 +1,7 @@
 {
   "name": "layers-web",
   "private": true,
-  "version": "1.0.37",
+  "version": "1.0.38",
   "author": "CastledRuby",
   "type": "module",
   "main": "electron/main.cjs",
@@ -86,6 +86,7 @@
       "electron/feeds.cjs",
       "electron/analysis.cjs",
       "electron/chatfiles.cjs",
+      "electron/imessage.cjs",
       "electron/icon.png",
       "electron/icon.ico",
       "electron/tray-icon-dark.png",

@@ -144,6 +144,28 @@ export function setSyncSettings(s) {
   try { window.localStorage.setItem(SYNC_KEY, JSON.stringify(s)); } catch { /* storage full: it shows again next time */ }
 }
 
+// Today's who to message, on this laptop: { day, skipped: [person ids put off
+// today], done: the id messaged today or null, opener: { personId, text } from
+// Claude or null }. A new day starts fresh.
+const NUDGE_KEY = 'layers-nudge';
+export function getNudge(day) {
+  try {
+    const v = JSON.parse(window.localStorage.getItem(NUDGE_KEY) || 'null');
+    if (v && v.day === day) {
+      return {
+        day,
+        skipped: Array.isArray(v.skipped) ? v.skipped.filter(id => typeof id === 'string') : [],
+        done: typeof v.done === 'string' ? v.done : null,
+        opener: v.opener && typeof v.opener.personId === 'string' && typeof v.opener.text === 'string' ? v.opener : null,
+      };
+    }
+  } catch { /* a fresh day */ }
+  return { day, skipped: [], done: null, opener: null };
+}
+export function setNudge(state) {
+  try { window.localStorage.setItem(NUDGE_KEY, JSON.stringify(state)); } catch { /* this session only */ }
+}
+
 export function getSnoozes(now = Date.now()) {
   try {
     const list = JSON.parse(window.localStorage.getItem(SNOOZES_KEY) || '[]');

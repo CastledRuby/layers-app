@@ -1,10 +1,11 @@
 // Chat exports for Coach (docs/electron.md, "Chat exports"): the "Layers
 // chats" folder in Documents (OneDrive on this laptop), where you save a
-// WhatsApp chat export from your phone (its zip, or the .txt) or Instagram's
-// "Download your information" (its zip, or the folder it was unzipped to),
-// straight in it or in folders of your own. Only reads: what's there, and the text of one export's chat. A zip is
-// opened here (Node's own inflate, nothing bundled); the page reads the chat
-// itself (src/lib/chatImport.js). Files are left as they are.
+// WhatsApp chat export from your phone (its zip, or the .txt), Instagram's
+// "Download your information" or Snapchat's "My Data" (its zip, or the
+// folder it was unzipped to), straight in it or in folders of your own. Only
+// reads: what's there, and the text of one export's chat. A zip is opened
+// here (Node's own inflate, nothing bundled); the page reads the chat itself
+// (src/lib/chatImport.js). Files are left as they are.
 
 const fs = require('fs');
 const path = require('path');
@@ -16,6 +17,9 @@ const MAX_TOTAL = 200 * 1024 * 1024; // everything read from one zip
 // Instagram's messages, in either layout of its download.
 const INSTAGRAM_JSON = /(?:^|\/)messages\/inbox\/[^/]+\/message_\d+\.json$/;
 const INSTAGRAM_HTML = /(?:^|\/)messages\/inbox\/[^/]+\/message_\d+\.html$/;
+// Snapchat's chats (json/chat_history.json) and its friends list (display names).
+const SNAPCHAT_JSON = /(?:^|\/)json\/(chat_history|friends)\.json$/;
+const SNAPCHAT_HTML = /(?:^|\/)html\/chat_history(\.html|\/)/;
 
 function chatsDir({ documents, userData, env = process.env }) {
   if (env.LAYERS_CHATS_DIR) return env.LAYERS_CHATS_DIR;
@@ -94,12 +98,15 @@ function zipEntryData(buf, entry) {
 }
 
 // What an export is, from its name and (for a zip) what's in it:
-// 'whatsapp', 'instagram', 'instagram-html' (downloaded as HTML), or null.
+// 'whatsapp', 'instagram', 'snapchat', 'instagram-html' or 'snapchat-html'
+// (downloaded as HTML), or null.
 function kindOf(name, entries) {
   if (/\.txt$/i.test(name)) return 'whatsapp';
   if (!entries) return null;
   if (entries.some(e => INSTAGRAM_JSON.test(e.name))) return 'instagram';
   if (entries.some(e => INSTAGRAM_HTML.test(e.name))) return 'instagram-html';
+  if (entries.some(e => /(?:^|\/)json\/chat_history\.json$/.test(e.name))) return 'snapchat';
+  if (entries.some(e => SNAPCHAT_HTML.test(e.name))) return 'snapchat-html';
   if (entries.some(e => /(^|\/)[^/]*\.txt$/i.test(e.name) && !e.name.startsWith('__MACOSX'))) return 'whatsapp';
   return null;
 }
@@ -127,17 +134,26 @@ function downloadName(rel) {
   return up.replace(/(^|\/)your_instagram_activity$/, '') || up || rel;
 }
 
+// Whether a folder is an unzipped Snapchat "My Data" download: it has
+// json/chat_history.json, or (downloaded as HTML only) html/chat_history.
+function isSnapchatDownload(folder, names) {
+  if (names.has('json') && fs.existsSync(path.join(folder, 'json', 'chat_history.json'))) return true;
+  return names.has('html') && (fs.existsSync(path.join(folder, 'html', 'chat_history.html')) || isDir(path.join(folder, 'html', 'chat_history')));
+}
+
 // Every chat export in the folder and the folders in it (however you've
 // arranged them, up to MAX_DEPTH down), each named by its path from the
 // folder ("Instagram/instagram-liam.zip"): [{ name, file }] for a zip or
 // .txt, [{ name, inbox }] for an unzipped Instagram download (named from
 // where it starts, since Windows' Extract All adds a folder of the same name
-// and newer downloads put messages under your_instagram_activity).
+// and newer downloads put messages under your_instagram_activity), and [{
+// name, snapchat }] for an unzipped Snapchat download.
 function findExports(dir) {
   const found = [];
   (function walk(folder, rel, depth) {
     let entries = [];
     try { entries = fs.readdirSync(folder, { withFileTypes: true }); } catch { return; }
+    if (rel && isSnapchatDownload(folder, new Set(entries.map(e => e.name)))) { found.push({ name: rel, snapchat: folder }); return; }
     entries.forEach(e => {
       if (e.name.startsWith('.')) return;
       const full = path.join(folder, e.name);
@@ -179,6 +195,28 @@ function inboxFiles(inbox) {
   return html ? { kind: 'instagram-html', files } : null;
 }
 
+// An unzipped Snapchat download's chats and friends list, named as in its
+// zip: { kind ('snapchat', or 'snapchat-html' if it has no JSON), files }.
+function snapchatFiles(folder) {
+  const files = [];
+  ['chat_history.json', 'friends.json'].forEach(name => {
+    const file = path.join(folder, 'json', name);
+    try {
+      const stat = fs.statSync(file);
+      if (stat.isFile()) files.push({ path: `json/${name}`, file, size: stat.size, modified: stat.mtimeMs });
+    } catch { /* not in this download */ }
+  });
+  return files.some(f => f.path === 'json/chat_history.json') ? { kind: 'snapchat', files } : { kind: 'snapchat-html', files: [] };
+}
+
+// What's in an unzipped download that was found ({ kind, files }), or null
+// for a zip or .txt.
+function unzippedFiles(found) {
+  if (found.inbox) return inboxFiles(found.inbox) || { kind: 'instagram', files: [] };
+  if (found.snapchat) return snapchatFiles(found.snapchat);
+  return null;
+}
+
 // A zip or .txt found in the folder: { stat }, or it throws.
 function statOf(file) {
   const stat = fs.statSync(file);
@@ -188,20 +226,20 @@ function statOf(file) {
 }
 
 // The chat exports in the folder and the folders in it, newest first: [{
-// name, kind, title, size, modified }]. An unzipped Instagram download is
-// one too, as big as its messages files and as new as the newest of them.
-// Other files are left out, and the folder is made if it's not there yet (so
-// it shows up in OneDrive on your phone).
+// name, kind, title, size, modified }]. An unzipped download is one too, as
+// big as its chat files and as new as the newest of them. Other files are
+// left out, and the folder is made if it's not there yet (so it shows up in
+// OneDrive on your phone).
 function listExports(dir) {
   try { fs.mkdirSync(dir, { recursive: true }); } catch { /* listed as empty */ }
   const out = [];
   findExports(dir).forEach(found => {
     try {
-      if (found.inbox) {
-        const ig = inboxFiles(found.inbox);
-        if (!ig) return;
-        const modified = ig.files.length ? Math.max(...ig.files.map(f => f.modified)) : fs.statSync(found.inbox).mtimeMs;
-        out.push({ name: found.name, kind: ig.kind, title: null, size: ig.files.reduce((n, f) => n + f.size, 0), modified });
+      const unzipped = unzippedFiles(found);
+      if (unzipped) {
+        if (!unzipped.files.length && !/-html$/.test(unzipped.kind)) return;
+        const modified = unzipped.files.length ? Math.max(...unzipped.files.map(f => f.modified)) : fs.statSync(found.inbox || found.snapchat).mtimeMs;
+        out.push({ name: found.name, kind: unzipped.kind, title: null, size: unzipped.files.reduce((n, f) => n + f.size, 0), modified });
         return;
       }
       const stat = statOf(found.file);
@@ -213,11 +251,11 @@ function listExports(dir) {
   return out.sort((a, b) => b.modified - a.modified);
 }
 
-// An unzipped Instagram download's messages, as from its zip.
-function readInbox(inbox) {
-  const found = inboxFiles(inbox);
-  if (!found) return { error: "That download doesn't have any messages in it." };
+// An unzipped download's chat files, as from its zip.
+function readUnzipped(found) {
   if (found.kind === 'instagram-html') return { error: 'That Instagram download is in HTML. Download it again choosing JSON as the format.' };
+  if (found.kind === 'snapchat-html') return { error: 'That Snapchat download is only HTML. Request it again with "Export JSON files" turned on.' };
+  if (!found.files.length) return { error: "That download doesn't have any messages in it." };
   let total = 0;
   const files = found.files.map(f => {
     if (f.size > MAX_ENTRY) throw new Error('A file in that download is too big to read.');
@@ -225,18 +263,20 @@ function readInbox(inbox) {
     if (total > MAX_TOTAL) throw new Error('That download is too big to read. Choose fewer things, or a shorter date range.');
     return { path: f.path, text: fs.readFileSync(f.file, 'utf8') };
   });
-  return { kind: 'instagram', title: null, files };
+  return { kind: found.kind, title: null, files };
 }
 
 // One export's chat text, by the name it was listed with (so nothing outside
 // the folder can be read): { kind, title, files: [{ path, text }] }: a
-// WhatsApp chat's .txt, or every Instagram messages file (from its zip or
-// its unzipped folder). { error } if it can't be read.
+// WhatsApp chat's .txt, every Instagram messages file, or Snapchat's chats
+// and friends list (from a zip or its unzipped folder). { error } if it
+// can't be read.
 function readExport(dir, name) {
   try {
     const found = findExports(dir).find(f => f.name === name);
     if (!found) throw new Error("That file isn't in the Layers chats folder.");
-    if (found.inbox) return readInbox(found.inbox);
+    const unzipped = unzippedFiles(found);
+    if (unzipped) return readUnzipped(unzipped);
     statOf(found.file);
     const buf = fs.readFileSync(found.file);
     const base = path.basename(found.file);
@@ -244,10 +284,11 @@ function readExport(dir, name) {
     const entries = zipEntries(buf);
     const kind = kindOf(base, entries);
     if (kind === 'instagram-html') return { error: 'That Instagram download is in HTML. Download it again choosing JSON as the format.' };
-    if (!kind) return { error: "That zip doesn't have a WhatsApp or Instagram chat in it." };
-    const wanted = kind === 'instagram'
-      ? entries.filter(e => INSTAGRAM_JSON.test(e.name))
-      : entries.filter(e => /(^|\/)[^/]*\.txt$/i.test(e.name) && !e.name.startsWith('__MACOSX')).slice(0, 1);
+    if (kind === 'snapchat-html') return { error: 'That Snapchat download is only HTML. Request it again with "Export JSON files" turned on.' };
+    if (!kind) return { error: "That zip doesn't have a WhatsApp, Instagram or Snapchat chat in it." };
+    const wanted = kind === 'instagram' ? entries.filter(e => INSTAGRAM_JSON.test(e.name))
+      : kind === 'snapchat' ? entries.filter(e => SNAPCHAT_JSON.test(e.name))
+        : entries.filter(e => /(^|\/)[^/]*\.txt$/i.test(e.name) && !e.name.startsWith('__MACOSX')).slice(0, 1);
     let total = 0;
     const files = wanted.map(e => {
       total += e.size;

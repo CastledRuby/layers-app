@@ -502,7 +502,7 @@ in a time window, oldest first. Each has a `tag` (unique per plan and day), a ti
 |---|---|---|
 | `alert` | A plan's `alert` minutes before it (all-day: 9:00 AM) | The title; "In 15 minutes · 10:00 AM · with Priya" |
 | `after` | When a plan with people ends, unless it's done (`askAfter`) | "How did it go with Priya?" |
-| `morning` | `morningTime`, on days with something on | "Today: 3 things", and each in a line |
+| `morning` | `morningTime`, on days with something on (or someone to message) | "Today: 3 things", and each in a line, with who to message (`messageNudge`) as "💬 It's been 5 weeks since you and Sam talked" |
 | `evening` | `eveningTime`, the night before a day with something on | "Tomorrow: …" |
 | `snooze` | A snoozed reminder's time | The title, "Snoozed reminder" |
 | `catchup` | `catchUpDay` (Saturday) at `morningTime`, when anyone's due a catch-up (`planIdeas`) | "Catch up this week: 3 people", "Priya (3 weeks) · …", with up to three people for Plan buttons |
@@ -765,8 +765,23 @@ Coach → Analyse a chat → **From your chats**: chats saved in the **Layers ch
     message"), a call starting, theme, nickname and group changes, empty (unsent)
     messages, and chats with Meta AI.
 
-  A download in HTML is named, with "choose JSON". Snapchat and iMessage have no export,
-  so they'll be screenshots in the phone app.
+  A download in HTML is named, with "choose JSON".
+- **iMessage** (decided 2026-10-10): back up the iPhone to this laptop with Apple Devices
+  (not encrypted), and its Messages chats, texts too, from the last three months show
+  here as iMessage (read by the main process, [electron.md](../electron.md)), named from
+  Contacts. Each message says whether it's yours, so it never asks "Which of these is
+  you?" (`ownerOf` takes `chat.me`). The card says which iPhone and when it was backed
+  up ("Back up again for newer messages"). `loadChatExports` keeps them until there's a
+  newer backup, and an encrypted backup is explained under the list. They work like an
+  export's chats, Analyse all new included. `sourceLabel` names where a chat came from.
+- **Snapchat** (decided 2026-10-09): Settings → My Data → Chat History (and Friends) with
+  Export JSON files on; save the emailed zip in the folder (or unzipped). `parseSnapchat`
+  reads `json/chat_history.json` in its newer layout (each conversation's messages, with
+  `IsSender`) or its older one (saved chats received and sent), names people from
+  `json/friends.json`'s display names, knows your messages as yours (`chat.me`), and turns
+  photos, voice notes and stickers into "(photo or video)" and the like (marked `note`).
+  A download in HTML only is named, with "Export JSON files". Snapchat only keeps chats
+  that were saved or not yet opened, so that's all there is.
 - **The same chat** from several files (exported again, or another week's download) is
   one chat (`mergeChats`, keyed by the WhatsApp chat's name or Instagram's thread),
   every message once. A WhatsApp chat saved as `chat.txt` (or the zip's own
@@ -794,6 +809,93 @@ Coach → Analyse a chat → **From your chats**: chats saved in the **Layers ch
   (`openCoach(null, 'analyse', chatKey)`). Only once there's a key.
 - **Where you got up to** is `layers-chat-progress` in localStorage (`{ [chat]: { at, me
   } }`), on this computer only; parsed files are kept in memory until they change.
+
+### The big picture: Claude's read of your week
+
+"Your week" (`WeekReviewSheet`; decided 2026-10-10) gets **Claude's read**: a headline,
+what went well, a pattern, one thing to try this week and who to reach out to
+([`lib/weekRead.js`](../../src/lib/weekRead.js)).
+
+- **What's sent** (`weekReadRequest`): the week's logs (up to 30: the day, the kind,
+  with whom, how meaningful, the note and how it felt, and for analysed chats Claude's
+  scores, what went well and what was missed) and who's due a catch-up (`planIdeas`),
+  every person a tag (`[them 1]`…), you `[you]` and anyone else `[someone]`. The answer
+  (`WEEK_SCHEMA`, no either-or fields) gets names back (`weekReadResult`).
+- **When**: opening "Your week" on the current week asks by itself, once, if anything
+  was logged, there's a key and the monthly limit isn't reached (about US$0.02). Earlier
+  weeks with logs have **Read this week with Claude**. Without a key there's no section.
+- **Kept**: `layers-week-reads` in localStorage (`{ [week's Monday]: { at, read } }`, the
+  newest 26 weeks), on this laptop only, so it's never asked twice.
+
+### Practise
+
+Coach → **Practise** (4; decided 2026-10-10): a text chat with Claude playing someone,
+then feedback the way Analyse gives it ([`lib/practice.js`](../../src/lib/practice.js),
+`components/Practice.jsx`). Prepare's **Practise with them first** (R) opens it with the
+person you're about to talk to.
+
+- **Situations** (`SITUATIONS`): just chatting, starting with someone new, asking to
+  hang out, reviving a quiet chat, and the harder ones (they share bad news, saying no
+  kindly, clearing up a misunderstanding). Each has a made-up person to play (a name and
+  how they are), who starts, and your aim, shown above the chat.
+- **With one of your people** instead: Claude plays them from their layer, up to 12 saved
+  details and a few of their own messages from chats you've logged (`theirSamples`),
+  every name hidden as for reply ideas (`hideCircle`). Made up, nothing about your
+  people is sent; names you mention are `[someone]` either way.
+- **Each turn** (`turnRequest` / `turnResult`, `TURN_SCHEMA`: reply) is one short text
+  in character, through the same main-process call as Analyse. Enter sends, Shift+Enter
+  is a new line, and **End, and feedback** (Ctrl+Enter, after two of your messages) sends
+  the practice as a chat (`practiceText`) through `analysisRequest` and `analysisResult`:
+  the scores, what went well, the opportunity and what to try next time.
+- **Kept**: each practice's scores (`addPractice`, `layers-practice` in localStorage, the
+  newest 200, on this laptop only). Me's "Your chats over time" draws their overall,
+  a day at a time (`practiceTrend`), as a dashed Practice line. A practice is never
+  logged. Its cost counts in Me.
+
+### Know what to say: who to message today
+
+Today's **Message … today** card (decided 2026-10-10), also a line in the morning
+summary. `messageNudge(state, day, skipped)` in [lib/calendar.js](../../src/lib/calendar.js)
+picks one person, for free: their key date today or tomorrow, else asking how something
+went (a saved detail with a day, `when`, in the last three days), else whoever has gone
+quietest past their usual gap (`quietDay`). Not anyone with a plan that day, already
+logged that day, or put off today.
+
+- **Claude's opener**: when Layers first opens that day (with a key, and within the
+  monthly limit, since nobody pressed anything), `LayersApp` asks Haiku for one opener
+  (`openerRequest` in [lib/replies.js](../../src/lib/replies.js)): why message them, up to
+  12 of their saved details, your latest three notes with them, and your style, every
+  name hidden (theirs `[them]`, yours `[you]`, anyone else's `[someone]`). About half a
+  cent; it counts in Me. Without a key, the card shows who and why only.
+- **The card**: **Copy opener** (O), **Messaged** (G: the quick log opens for them as
+  Messaged, and the card's done for the day), **Not today** (Z: the next person, if
+  there is one).
+- **Where it's kept**: `layers-nudge` in localStorage (`getNudge` / `setNudge` in
+  `lib/storage.js`): today's `{ day, skipped, done, opener }`, on this laptop only. A new
+  day starts fresh, and an opener isn't asked for twice.
+
+### Know what to say: reply ideas
+
+Coach → **What to say** (3; decided 2026-10-10): three replies to their latest messages,
+written by Claude in your style ([`lib/replies.js`](../../src/lib/replies.js),
+`components/ReplyIdeas.jsx`). Nothing is sent until you press **Suggest replies**
+(Ctrl+Enter), and only through the same main-process call as Analyse.
+
+- **The messages**: pasted (who it's with read from the names, `detectPeople`, or
+  chosen), or a conversation picked from "From your chats" in the tab, or **Reply ideas
+  for the latest** on a chat in Analyse, which opens the tab with that chat's latest
+  conversation in (its last 30 messages, `conversationText`).
+- **Your style**: a few of your own messages from chats you've analysed and logged
+  (`styleSamples`: lines signed with your name, "You" or "Me" in the chats kept on those
+  logs, newest first, each chat once), and **How you text** in Me → Chat analysis
+  (`profile.style`, up to 200 characters, `cleanStyle`; checked like a backup).
+- **What's sent** (`replyRequest`): the messages with names hidden as Analyse does
+  (`[them]`, or `[them 1]`… for a group, and `[you]`), and anyone else in your circle as
+  `[someone]`, in the messages and your samples; each person's layer; your samples and
+  your style line. The answer (`REPLY_SCHEMA`: read, natural, playful, deeper; no
+  either-or fields) gets first names back (`replyResult`). Its cost counts in Me.
+- **Copying**: each reply has **Copy**, and Q, W, E copy the natural, playful and deeper
+  one (focus leaves the box when they arrive). **Three more** asks again.
 
 ### Analyse all new
 

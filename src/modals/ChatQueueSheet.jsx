@@ -13,11 +13,11 @@ import { AvatarStack } from '../components/PersonPick.jsx';
 import { isTabbedToButton, isTyping } from '../components/sheetLayer.js';
 import { categoryMeta, DIM_LABELS, DIM_ORDER, ML_LABELS } from '../data/constants.js';
 import { analysisModel, analysisToKeep } from '../lib/analysis.js';
+import { sourceLabel } from '../lib/chatImport.js';
 import { formatCalendarDate, parseISODay } from '../lib/dates.js';
 import { ChatReviewSheet } from './ChatReviewSheet.jsx';
 import { COLORS } from '../theme.js';
 
-const SOURCE = { whatsapp: 'WhatsApp', instagram: 'Instagram' };
 
 // items: what's waiting (lib/chatBatch.js, waiting). onLog(items, leaveOut)
 // logs them ({ [item id]: [detail indexes] } left unsaved), onSkip(item),
@@ -80,7 +80,7 @@ export function ChatQueueSheet({ items, people, onLog, onSkip, onRemind, onClose
           {who.length > 0 && <AvatarStack people={who} size={34} />}
           <div className="min-w-0">
             <p className="text-sm font-semibold" style={{ color: COLORS.ink }}>{who.map(p => p.name).join(', ') || item.title}</p>
-            <p className="text-xs" style={{ color: COLORS.inkSoft }}>{SOURCE[item.source] || 'Chat'} · {item.title} · {formatCalendarDate(parseISODay(item.day))}{item.messages ? ` · ${item.messages} messages` : ''}</p>
+            <p className="text-xs" style={{ color: COLORS.inkSoft }}>{sourceLabel(item.source)} · {item.title} · {formatCalendarDate(parseISODay(item.day))}{item.messages ? ` · ${item.messages} messages` : ''}</p>
           </div>
         </div>
 

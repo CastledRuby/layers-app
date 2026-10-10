@@ -1,7 +1,7 @@
 # Roadmap
 
 Where Layers stands against [vision.md](vision.md), what was decided along the way, and
-what comes next. Last updated 2026-10-09, after 1.0.37 (anything since is at the top of
+what comes next. Last updated 2026-10-10, after 1.0.38 (anything since is at the top of
 [History](#history), marked not released yet). **What's next is
 [The next big changes](#the-next-big-changes-your-answers-2026-10-08)**, after
 [The plan from here](#the-plan-from-here-2026-10-07).
@@ -256,7 +256,12 @@ You asked for questions to decide the next big changes. Your answers:
   this laptop; there isn't one yet (Apple's backup folder is empty, checked 2026-10-09).
   Snapchat from its Download My Data, which has only saved messages.
 
-**And on 2026-10-09:**
+**And on 2026-10-09 and 10:** the order is iMessage, then Know what to say (reply ideas,
+a free daily nudge and openers by Claude), Practise (a chat, then feedback), the Big
+picture (weekly, in Your week), the phone web app and Snapchat. iMessage reads texts too,
+from the last three months (built 2026-10-10, see History).
+
+**Also on 2026-10-09:**
 
 - **Less effort comes first**; its proposal is [below](#proposal-analyse-all-new-chats-at-once-2026-10-09).
 - **Practice: both.** Made-up people by default, and your real people only when you
@@ -268,6 +273,35 @@ You asked for questions to decide the next big changes. Your answers:
   that backup.
 
 Each of the others comes back to you as a proposal before it's built.
+
+### Proposal: the phone web app (2026-10-10)
+
+The last of the six. **Your answers:** sign in to OneDrive to sync (2026-10-09), no Claude
+on the phone at first, the passphrase remembered on the phone, and everything (not just
+Today), synced.
+
+- **What it is**: the same Layers, built as a web app and served free by GitHub Pages
+  from the public repository (`castledruby.github.io/layers-app`), added to the iPhone's
+  Home Screen from Safari. The page holds no data: it lives on the phone and in the
+  encrypted sync file in OneDrive, as on the laptop. Every screen already works by touch.
+- **Sync**: the phone signs in to your Microsoft account (MSAL) and reads and writes
+  `Documents/Layers sync/layers-sync.json` through Microsoft Graph, with the same
+  encryption and merging as the laptop (`lib/syncFile.js`, plain Web Crypto). The
+  passphrase is kept encrypted by a key the browser holds and can't give back.
+- **Claude** stays on the laptop for now; on the phone those parts say so.
+
+**Needs you first:**
+1. **A free Microsoft app registration**, so the web app may sign in to OneDrive
+   (Azure portal → App registrations → New: personal Microsoft accounts only, a
+   single-page app address of the Pages site, permission Files.ReadWrite). Microsoft's
+   guide lists a "tenant" as needed; signing in to the portal with a personal account may
+   make one for you, or may ask you to sign up for a free Azure account, which needs a
+   card to check who you are. Try it, and say which happened. If it's blocked, the
+   fallback is picking the sync file in the Files app each time (your first choice on
+   2026-10-08 was the sign-in, so it's only a fallback).
+2. **GitHub Pages turned on** for CastledRuby/layers-app (Settings → Pages → Source:
+   GitHub Actions), since that's a change to your repository's settings. A release then
+   updates the phone app too.
 
 ### Proposal: analyse all new chats at once (2026-10-09)
 
@@ -624,15 +658,16 @@ its own. Changes made while building are marked.
 
 ## History
 
-### Instagram downloads, unzipped or in folders, read properly (after 1.0.37, not released yet)
+### Instagram downloads, unzipped or in folders, read properly (after 1.0.38, not released yet)
 
 - **Fixed** (2026-10-10): an Instagram download unzipped into the Layers chats folder
   was ignored, since only zips and .txt files straight in it were looked at. Now the
   folders in it are looked through too (six down), so a download is found wherever its
   `messages/inbox` is (Windows' Extract All adds a folder of the same name, and newer
   downloads put it under `your_instagram_activity`), as are several downloads, a
-  download in parts, and zips or WhatsApp chats kept in folders of your own. Messages
-  arriving inside a folder are noticed. "How to add one" says unzipped is fine.
+  download in parts, an unzipped Snapchat download, and zips or WhatsApp chats kept in
+  folders of your own. Messages arriving inside a folder are noticed. "How to add one"
+  says unzipped is fine.
 - **The conversation, not the data** (asked for 2026-10-10): checked against a real
   download of 29 chats. About 800 shared reels and posts were dropped, so replies to
   them made no sense; they're kept now as `(shared a reel: "its caption")`. Reactions
@@ -640,7 +675,56 @@ its own. Changes made while building are marked.
   of their own, calls say how long they were, and likes, theme and nickname changes and
   the Meta AI chat are left out.
 - **Analyse all new** counts only written messages when deciding a day is tiny, so a day
-  of reels sent back and forth is marked as seen rather than sent.
+  of reels sent back and forth is marked as seen rather than sent (snaps and stickers on
+  Snapchat too).
+
+### Snapchat (1.0.38)
+
+- **Snapchat chats in Coach**: Settings → My Data → Chat History (and Friends), with
+  Export JSON files on. Save the emailed zip in the Layers chats folder, and its chats show
+  in "From your chats", named from your friends list. Snapchat only keeps saved and
+  unopened chats.
+
+### The big picture (1.0.38)
+
+- **Your week** gets **Claude's read**: how the week went, what went well, a pattern, one
+  thing to try this week and who to reach out to. Asked by itself once a week when you
+  open it (about US$0.02, within the monthly limit) and kept; earlier weeks have a
+  button.
+
+### Practise (1.0.38)
+
+- **Coach → Practise** (4): pick a situation (just chatting, someone new, asking to hang
+  out, a quiet chat, bad news, saying no, a misunderstanding) and a made-up person or one
+  of yours, and text with Claude playing them. **End** gives feedback the way Analyse
+  does. Prepare's **Practise with them first** (R). A few cents a practice.
+- **Practice scores** are a dashed line in Me's "Your chats over time"; a practice is
+  never logged.
+
+### Know what to say: who to message today (1.0.38)
+
+- **Today: Message … today**: one person and why (a birthday today or tomorrow, asking
+  how something went, or it's been a while), worked out for free, and a line in the
+  morning summary. Claude writes an opener in your style when you first open Layers that
+  day (about half a cent; held to the monthly limit). O copies it, G logs that you
+  messaged them, Z puts them off till tomorrow.
+
+### Know what to say: reply ideas (1.0.38)
+
+- **Coach → What to say** (3): paste their latest messages, or pick a chat, and Claude
+  suggests three replies in your style (natural, playful, deeper) with a line on what
+  they seem to want. **Reply ideas for the latest** on a chat in Analyse opens it with
+  that chat in. Q, W, E copy them. Under a cent each with Haiku.
+- **Your style**: from your own messages in chats you've logged, and **How you text** in
+  Me → Chat analysis.
+
+### iMessage (1.0.38)
+
+- **iMessage chats in Coach**: back up your iPhone to this laptop (Apple Devices → Back
+  up all of the data on your iPhone to this computer, Encrypt unticked → Back Up Now),
+  and its Messages chats, texts too, from the last three months show in "From your
+  chats", named from your Contacts, with when the backup was made. They're analysed like
+  WhatsApp's, Analyse all new included. Layers only reads the backup, on this laptop.
 
 ### Analyse all new (1.0.37)
 

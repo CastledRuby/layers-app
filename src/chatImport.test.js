@@ -2,7 +2,7 @@
 // Android write it, Instagram's download, conversations split at long
 // pauses, who's who, and the text sent for analysis.
 import { describe, expect, it } from 'vitest';
-import { chatPeople, chatsFromExport, conversationLabel, conversationText, everywhereName, fixMetaText, mergeChats, ownerOf, parseInstagram, parseWhatsApp, splitConversations } from './lib/chatImport.js';
+import { chatPeople, chatsFromExport, conversationLabel, conversationText, everywhereName, fixMetaText, mergeChats, ownerOf, parseInstagram, parseSnapchat, parseWhatsApp, splitConversations } from './lib/chatImport.js';
 
 const LRM = String.fromCharCode(0x200e);
 const NNBSP = String.fromCharCode(0x202f);
@@ -199,5 +199,41 @@ describe('chats', () => {
     expect(text.length).toBeLessThan(51000);
     expect(text.startsWith('(Earlier messages in this conversation left out.)')).toBe(true);
     expect(text.endsWith(`message number 1999 ${'x'.repeat(20)}`)).toBe(true);
+  });
+});
+
+describe('Snapchat downloads', () => {
+  const friends = JSON.stringify({ Friends: [{ Username: 'amelie_s22', 'Display Name': 'Amelie' }, { Username: 'chlo.e', 'Display Name': 'Chloe B' }] });
+  it("reads the newer chat history: display names from the friends list, your messages yours, media named, groups by their title", () => {
+    const history = JSON.stringify({
+      amelie_s22: [
+        { From: 'amelie_s22', 'Media Type': 'TEXT', Created: '2026-10-06 08:41:03 UTC', Content: 'I got the job!!', 'Conversation Title': null, IsSender: false, 'Created(microseconds)': 1791276063000000 },
+        { From: 'liam_c', 'Media Type': 'TEXT', Created: '2026-10-06 08:42:00 UTC', Content: 'no way congrats', 'Conversation Title': null, IsSender: true },
+        { From: 'amelie_s22', 'Media Type': 'MEDIA', Created: '2026-10-06 08:43:00 UTC', Content: '', IsSender: false },
+        { From: 'amelie_s22', 'Media Type': 'STATUSPARTICIPANTREMOVED', Created: '2026-10-06 08:44:00 UTC', Content: '', IsSender: false },
+      ],
+      'abc-123': [{ From: 'chlo.e', 'Media Type': 'TEXT', Created: '2026-10-07 09:00:00 UTC', Content: 'game sat?', 'Conversation Title': 'Footy crew', IsSender: false }],
+    });
+    const chats = parseSnapchat([{ path: 'json/chat_history.json', text: history }, { path: 'json/friends.json', text: friends }]);
+    expect(chats.map(c => [c.key, c.title, c.participants, c.me])).toEqual([
+      ['snapchat:amelie_s22', 'Amelie', ['Amelie'], 'Me'],
+      ['snapchat:abc-123', 'Footy crew', ['Chloe B'], 'Me'],
+    ]);
+    expect(chats[0].messages.map(m => [m.sender, m.text, Boolean(m.note)])).toEqual([['Amelie', 'I got the job!!', false], ['Me', 'no way congrats', false], ['Amelie', '(photo or video)', true]]);
+    expect(chats[0].messages[0].at).toBe(1791276063000);
+    expect(chats[0].messages[1].at).toBe(Date.UTC(2026, 9, 6, 8, 42));
+    expect(ownerOf(chats[0], { yourName: 'Liam' })).toBe('Me');
+  });
+  it('reads the older saved chat history, received and sent', () => {
+    const history = JSON.stringify({
+      'Received Saved Chat History': [{ From: 'amelie_s22', 'Media Type': 'TEXT', Created: '2026-10-06 08:41:03 UTC', Text: 'hey' }],
+      'Sent Saved Chat History': [{ To: 'amelie_s22', 'Media Type': 'TEXT', Created: '2026-10-06 08:45:00 UTC', Text: 'hi!' }, { To: 'zed', 'Media Type': 'NOTE', Created: '2026-10-06 09:00:00 UTC' }],
+    });
+    const chats = chatsFromExport({ name: 'mydata~1.zip' }, { kind: 'snapchat', files: [{ path: 'json/chat_history.json', text: history }, { path: 'json/friends.json', text: friends }] });
+    expect(chats.map(c => [c.title, c.messages.map(m => `${m.sender}: ${m.text}`)])).toEqual([
+      ['Amelie', ['Amelie: hey', 'Me: hi!']],
+      ['zed', ['Me: (voice message)']],
+    ]);
+    expect(parseSnapchat([{ path: 'json/chat_history.json', text: 'oops' }])).toEqual([]);
   });
 });

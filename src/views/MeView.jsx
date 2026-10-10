@@ -9,8 +9,10 @@ import { achievementProgress, progressText } from '../lib/achievements.js';
 import { notifySettings } from '../lib/calendar.js';
 import { analysisModel, dollarsText, spendSummary } from '../lib/analysis.js';
 import { LIMITS, readLimit, saveLimit } from '../lib/chatBatch.js';
+import { cleanStyle, STYLE_MAX } from '../lib/replies.js';
 import { ChatTrendChart } from '../components/ChatTrendChart.jsx';
 import { chatTrend } from '../lib/chatTrend.js';
+import { practiceTrend, readPractice } from '../lib/practice.js';
 import { formatAbsoluteDate, formatCalendarDate, formatTime12, isJournalThisWeek, parseISODay, sortHistory } from '../lib/dates.js';
 import { updateStatusText } from '../lib/text.js';
 import { COLORS } from '../theme.js';
@@ -47,7 +49,8 @@ function syncedAgo(iso) {
 // Chat analysis with Claude: the Anthropic API key, kept by Windows on this
 // laptop (only whether there is one comes back). onSave resolves to what went
 // wrong, or null.
-function AnalysisKeyCard({ analysisKey, onSave, onRemove }) {
+// style / onSaveStyle: how you text, in your words, for reply ideas and openers.
+function AnalysisKeyCard({ analysisKey, onSave, onRemove, style = '', onSaveStyle }) {
   const [key, setKey] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
@@ -76,6 +79,15 @@ function AnalysisKeyCard({ analysisKey, onSave, onRemove }) {
           {spend.lastMonth.chats > 0 && <p className="mt-0.5"><span className="font-semibold">Last month:</span> about {dollarsText(spend.lastMonth.dollars)} for {spend.lastMonth.chats} {spend.lastMonth.chats === 1 ? 'chat' : 'chats'}</p>}
           <p className="mt-0.5" style={{ color: COLORS.inkSoft }}>Worked out on this laptop from what each answer used; console.anthropic.com has the exact bill.</p>
         </div>
+      )}
+      {analysisKey.hasKey && onSaveStyle && (
+        <label className="block mt-3">
+          <span className="text-xs font-semibold" style={{ color: COLORS.ink }}>How you text</span>
+          <input type="text" defaultValue={style} maxLength={STYLE_MAX} onBlur={e => { if (cleanStyle(e.target.value) !== style) onSaveStyle(cleanStyle(e.target.value)); }} onKeyDown={e => { if (e.key === 'Enter') e.currentTarget.blur(); }}
+            aria-label="How you text" placeholder="e.g. lowercase, short, lots of emoji, says 'haha'"
+            className="w-full text-xs rounded-xl px-3 py-2.5 mt-1.5" style={{ border: `1px solid ${COLORS.line}` }} />
+          <span className="text-xs mt-1 block" style={{ color: COLORS.inkSoft }}>Reply ideas and openers are written like you: from your own messages in chats you've logged, and this.</span>
+        </label>
       )}
       {analysisKey.hasKey && (
         <div className="mt-3" role="group" aria-label="Monthly limit">
@@ -143,6 +155,7 @@ function CalendarsCard({ calendars, onAdd, onRemove, onRefresh }) {
 }
 
 export function MeView({ people, journal, skills, profile, generalGoals = [], onUpdateProfile, onEditProfile, achievements, onAddSample, onRemoveSample, hasSamplePeople, canAddSample, onStartOver, onExport, onImportClick, backupInfo, onOpenBackups, hasUpdater, updateStatus, onCheckForUpdates, onInstallUpdate, onOpenDownloadPage, shortcutStatus, themeMode, onSetTheme, hasSystemBridge, autoLaunch, onToggleAutoLaunch, onOpenShortcuts, appVersion, sync = null, onSyncTurnOn, onSyncNow, onSyncOff, onOpenSyncFolder, calendars = null, onAddCalendar, onRemoveCalendar, onRefreshCalendars, analysisKey = null, onSaveAnalysisKey, onRemoveAnalysisKey }) {
+  const [practice] = useState(() => practiceTrend(readPractice())); // Practise's scores, read when Me opens
   const [chartSkill, setChartSkill] = useState(FOCUS_SKILL_KEY);
 
   // Strength is your highest skill and focus your lowest. Until something has
@@ -218,10 +231,10 @@ export function MeView({ people, journal, skills, profile, generalGoals = [], on
 
       {(() => {
         const points = chatTrend(journal);
-        return points.length > 0 && (
+        return (points.length > 0 || practice.length > 0) && (
           <div className="mt-7">
             <p className="font-display mb-3" style={{ fontSize: 18, color: COLORS.ink }}>Your chats over time</p>
-            <ChatTrendChart points={points} label="Skills from analysed chats" />
+            <ChatTrendChart points={points} practice={practice} label="Skills from analysed chats" />
           </div>
         );
       })()}
@@ -361,7 +374,7 @@ export function MeView({ people, journal, skills, profile, generalGoals = [], on
         )}
       </div>
 
-      {analysisKey && <AnalysisKeyCard analysisKey={analysisKey} onSave={onSaveAnalysisKey} onRemove={onRemoveAnalysisKey} />}
+      {analysisKey && <AnalysisKeyCard analysisKey={analysisKey} onSave={onSaveAnalysisKey} onRemove={onRemoveAnalysisKey} style={profile.style || ''} onSaveStyle={(value) => onUpdateProfile({ style: value })} />}
 
       {calendars && <CalendarsCard calendars={calendars} onAdd={onAddCalendar} onRemove={onRemoveCalendar} onRefresh={onRefreshCalendars} />}
 
