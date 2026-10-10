@@ -89,10 +89,60 @@ describe('Instagram downloads', () => {
   it('reads every chat, fixing the lettering, in order, without likes and reactions', () => {
     const [a, c] = parseInstagram(files);
     expect(a).toMatchObject({ id: 'amelie_123', title: 'Amélie', participants: ['Amélie', 'Liam'] });
-    expect(a.messages.map(m => [m.at, m.sender, m.text])).toEqual([[500, 'Liam', 'hi'], [1000, 'Amélie', '(photo)'], [1500, 'Amélie', 'look (shared a post)'], [3000, 'Liam', 'see you there 😂']]);
+    expect(a.messages.map(m => [m.at, m.sender, m.text])).toEqual([[500, 'Liam', 'hi'], [1000, 'Amélie', '(photo)'], [1500, 'Amélie', 'look (shared a link)'], [3000, 'Liam', 'see you there 😂']]);
     expect(c.title).toBe('Chloe');
     expect(fixMetaText('plain')).toBe('plain');
     expect(fixMetaText('already é')).toBe('already é');
+  });
+
+  // As a real download writes them (2026-10).
+  const thread = (id, title, messages) => ({ path: `your_instagram_activity/messages/inbox/${id}/message_1.json`, text: JSON.stringify({ title, participants: [{ name: title }, { name: 'Liam M' }], messages }) });
+  const real = [
+    thread('maddie_1', 'Maddie', [
+      { sender_name: 'Maddie', timestamp_ms: 1000, content: 'Maddie sent an attachment.', share: { link: 'https://www.instagram.com/reel/DcTgBGXRHCs/', share_text: meta('my biggest flex 😭\n\n#biceps #relatable'), original_content_owner: 'someone' } },
+      { sender_name: 'Liam M', timestamp_ms: 2000, content: 'HAHA that is you', reactions: [{ reaction: meta('❤️'), actor: 'Maddie' }] },
+      { sender_name: 'Maddie', timestamp_ms: 2500, content: meta('Reacted 😂 to your message ') },
+      { sender_name: 'Maddie', timestamp_ms: 2600, content: 'Liked a message' },
+      { sender_name: 'Liam M', timestamp_ms: 3000, content: 'You started an audio call' },
+      { sender_name: 'Liam M', timestamp_ms: 3100, content: 'Audio call ended', call_duration: 2597 },
+      { sender_name: 'Maddie', timestamp_ms: 3200, content: 'You missed an audio call', call_duration: 0 },
+      { sender_name: 'Maddie', timestamp_ms: 3300, content: meta('maddie4suree changed the theme to IT: Welcome to Derry 🎈') },
+      { sender_name: 'Maddie', timestamp_ms: 3400, content: 'maddie4suree set your nickname to Fish.' },
+      { sender_name: 'Maddie', timestamp_ms: 3500, content: '', photos: [{ uri: 'a.jpg' }, { uri: 'b.jpg' }] },
+      { sender_name: 'Maddie', timestamp_ms: 3600, content: 'Maddie sent an attachment.' },
+      { sender_name: 'Liam M', timestamp_ms: 3700, content: '', share: { link: 'https://media1.giphy.com/media/x/giphy.gif', original_content_owner: '' } },
+      { sender_name: 'Liam M', timestamp_ms: 3800, audio_files: [{ uri: 'a.mp4' }] },
+      { sender_name: 'Maddie', timestamp_ms: 3900, is_geoblocked_for_viewer: false },
+      { sender_name: 'Maddie', timestamp_ms: 4000, content: 'Can you call tn?' },
+    ]),
+    thread('aichat_1640233284361907', 'AI Chat', [{ sender_name: 'Meta AI', timestamp_ms: 1, content: 'Hi! How can I help?' }]),
+  ];
+
+  it('keeps the conversation: shared reels with their caption, reactions on their message, calls, and nothing else', () => {
+    const chats = parseInstagram(real);
+    expect(chats.map(c => c.id)).toEqual(['maddie_1']); // not Meta AI
+    expect(chats[0].messages.map(m => [m.sender, m.text, Boolean(m.note)])).toEqual([
+      ['Maddie', '(shared a reel: "my biggest flex 😭")', true],
+      ['Liam M', 'HAHA that is you', false],
+      ['Liam M', '(audio call, 43 min)', true],
+      ['Maddie', '(missed audio call)', true],
+      ['Maddie', '(2 photos)', true],
+      ['Maddie', '(attachment)', true],
+      ['Liam M', '(GIF)', true],
+      ['Liam M', '(voice message)', true],
+      ['Maddie', 'Can you call tn?', false],
+    ]);
+    expect(chats[0].messages[1].reactions).toEqual([{ by: 'Maddie', emoji: '❤️' }]);
+  });
+
+  it('writes it out for Claude with reactions, under your names in Layers', () => {
+    const [chat] = chatsFromExport({ name: 'instagram-liam' }, { kind: 'instagram', files: real });
+    const text = conversationText({ messages: chat.messages.slice(0, 3) }, { owner: 'Liam M', yourName: 'Liam', nameFor: (n) => (n === 'Maddie' ? 'Madeleine' : n) });
+    expect(text.split('\n').map(l => l.replace(/^\[[^\]]+\] /, ''))).toEqual([
+      'Madeleine: (shared a reel: "my biggest flex 😭")',
+      'Liam: HAHA that is you (Madeleine reacted ❤️)',
+      'Liam: (audio call, 43 min)',
+    ]);
   });
 
   it("knows you're the one in every chat", () => {
@@ -169,7 +219,7 @@ describe('Snapchat downloads', () => {
       ['snapchat:amelie_s22', 'Amelie', ['Amelie'], 'Me'],
       ['snapchat:abc-123', 'Footy crew', ['Chloe B'], 'Me'],
     ]);
-    expect(chats[0].messages.map(m => [m.sender, m.text])).toEqual([['Amelie', 'I got the job!!'], ['Me', 'no way congrats'], ['Amelie', '(photo or video)']]);
+    expect(chats[0].messages.map(m => [m.sender, m.text, Boolean(m.note)])).toEqual([['Amelie', 'I got the job!!', false], ['Me', 'no way congrats', false], ['Amelie', '(photo or video)', true]]);
     expect(chats[0].messages[0].at).toBe(1791276063000);
     expect(chats[0].messages[1].at).toBe(Date.UTC(2026, 9, 6, 8, 42));
     expect(ownerOf(chats[0], { yourName: 'Liam' })).toBe('Me');

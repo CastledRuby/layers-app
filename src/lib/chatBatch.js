@@ -6,8 +6,9 @@
 import { analysisDollars, analysisModel, KEPT_CHAT } from './analysis.js';
 import { chatPeople, chatRows, conversationText, isoDayOf } from './chatImport.js';
 
-// Fewer messages than this, or only one side talking, isn't worth a log: it's
-// marked as seen without being sent.
+// Fewer written messages than this (photos, shared reels and calls aren't
+// counted), or only one side writing, isn't worth a log: it's marked as seen
+// without being sent.
 export const TINY = 4;
 
 // What there is to analyse: { items, people (ids), noPeople, noOwner }. Each
@@ -33,7 +34,8 @@ export function batchPlan(chats = [], { people = [], yourName = '', progress = {
       else days.set(day, { start: conv.start, end: conv.end, messages: [...conv.messages] });
     });
     days.forEach((conv, day) => {
-      const tiny = conv.messages.length < TINY || new Set(conv.messages.map(m => m.sender)).size < 2;
+      const written = conv.messages.filter(m => !m.note);
+      const tiny = written.length < TINY || new Set(written.map(m => m.sender)).size < 2;
       if (!tiny) ids.forEach(id => who.add(id));
       items.push({
         id: `${chat.key}|${day}|${conv.start}`, chatKey: chat.key, title: chat.title, source: chat.source, day, end: conv.end, ids,

@@ -756,12 +756,26 @@ Coach → Analyse a chat → **From your chats**: chats saved in the **Layers ch
   hour, day or month first (day first unless a date only works month first, or this
   computer writes month first). A message over several lines stays one; notices
   (encryption, joined, left) are left out, deleted messages too, and attachments become
-  "(photo)", "(voice message)" and the like. The chat is named from the file.
-- **Instagram**: Accounts Centre → Download your information → Messages, as **JSON**.
-  `parseInstagram` reads every chat thread, undoing Instagram's spelling of non-English
-  characters as UTF-8 bytes (`fixMetaText`), leaving out likes and reactions, and
-  turning photos, shares and calls into "(photo)" and the like. A download in HTML is
-  named, with "choose JSON".
+  "(photo)", "(voice message)" and the like (marked `note`: no words of anyone's). The
+  chat is named from the file.
+- **Instagram**: Accounts Centre → Download your information → Messages, as **JSON**,
+  saved as the zip or unzipped (a folder), in the chats folder or a folder of your own
+  in it. `parseInstagram` reads every chat thread, undoing Instagram's spelling of
+  non-English characters as UTF-8 bytes (`fixMetaText`), and keeps the conversation,
+  checked against a real download (2026-10):
+  - A shared reel or post ("Maddie sent an attachment." with a `share`) is kept as what
+    it was and the first line of its caption, without hashtags or the link: `(shared a
+    reel: "my biggest flex")`, so a reply to it makes sense. A GIF is `(GIF)`.
+  - Reactions stay on the message they're on (`reactions: [{ by, emoji }]`) and are
+    written after it: `haha (Maddie reacted 😂)`.
+  - A call is `(audio call, 43 min)` or `(missed video call)`; photos, voice messages and
+    the like are `(2 photos)`, `(voice message)`; an attachment Instagram no longer has
+    is `(attachment)`. These are all marked `note`.
+  - Left out: "Liked a message", reactions sent on their own ("Reacted ❤️ to your
+    message"), a call starting, theme, nickname and group changes, empty (unsent)
+    messages, and chats with Meta AI.
+
+  A download in HTML is named, with "choose JSON".
 - **iMessage** (decided 2026-10-10): back up the iPhone to this laptop with Apple Devices
   (not encrypted), and its Messages chats, texts too, from the last three months show
   here as iMessage (read by the main process, [electron.md](../electron.md)), named from
@@ -771,13 +785,13 @@ Coach → Analyse a chat → **From your chats**: chats saved in the **Layers ch
   newer backup, and an encrypted backup is explained under the list. They work like an
   export's chats, Analyse all new included. `sourceLabel` names where a chat came from.
 - **Snapchat** (decided 2026-10-09): Settings → My Data → Chat History (and Friends) with
-  Export JSON files on; save the emailed zip in the folder. `parseSnapchat` reads
-  `json/chat_history.json` in its newer layout (each conversation's messages, with
+  Export JSON files on; save the emailed zip in the folder (or unzipped). `parseSnapchat`
+  reads `json/chat_history.json` in its newer layout (each conversation's messages, with
   `IsSender`) or its older one (saved chats received and sent), names people from
   `json/friends.json`'s display names, knows your messages as yours (`chat.me`), and turns
-  photos, voice notes and stickers into "(photo or video)" and the like. A download in HTML
-  only is named, with "Export JSON files". Snapchat only keeps chats that were saved or not
-  yet opened, so that's all there is.
+  photos, voice notes and stickers into "(photo or video)" and the like (marked `note`).
+  A download in HTML only is named, with "Export JSON files". Snapchat only keeps chats
+  that were saved or not yet opened, so that's all there is.
 - **The same chat** from several files (exported again, or another week's download) is
   one chat (`mergeChats`, keyed by the WhatsApp chat's name or Instagram's thread),
   every message once. A WhatsApp chat saved as `chat.txt` (or the zip's own
@@ -904,8 +918,8 @@ it carries on while you use the rest of Layers.
 - **What's sent** (`batchPlan`): each chat's new conversations (the same reckoning as the
   list, `chatRows`), a day with someone at a time. A day's conversations are merged and
   written out as one (`conversationText`), so a morning and an evening chat make one log.
-  Tiny ones (under `TINY`, 4 messages, or only one side talking) aren't sent, only marked
-  as seen. Chats with nobody in Layers are left out, and so are ones where it can't tell
+  Tiny ones (under `TINY`, 4 written messages, or only one side writing; notes such as
+  shared reels, photos and calls aren't counted) aren't sent, only marked as seen. Chats with nobody in Layers are left out, and so are ones where it can't tell
   which name is you, until you say. Each goes the way Analyse sends one (`analysisRequest`,
   names hidden), one at a time, with the model picked on the card.
 - **The card** (`ChatBatchCard`, above "From your chats"): **Analyse all new** (A) with how

@@ -38,7 +38,7 @@ export function ChatBatchCard({ plan, batch, model, people, onStart, onReview })
           <button type="button" onClick={onStart} className="w-full flex items-center justify-center gap-1.5 text-sm font-semibold rounded-full py-2.5" style={{ background: COLORS.accent, color: COLORS.onAccent }}>Analyse all new <Kbd onAccent>A</Kbd></button>
           <p className="text-xs mt-2" style={{ color: COLORS.inkSoft }}>
             {sending.length > 0 && `${sending.length} ${sending.length === 1 ? 'conversation' : 'conversations'} with ${listOf(names)} (a day with someone each), ${money(cost)} with ${analysisModel(model).short}. Each is sent to Anthropic the way Analyse sends one, names swapped for tags first. `}
-            {tiny > 0 && `${tiny} tiny ${tiny === 1 ? 'one' : 'ones'} (under ${TINY} messages, or only one side talking) ${tiny === 1 ? 'is' : 'are'} marked as seen without sending.`}
+            {tiny > 0 && `${tiny} tiny ${tiny === 1 ? 'one' : 'ones'} (under ${TINY} written messages, or only one side writing) ${tiny === 1 ? 'is' : 'are'} marked as seen without sending.`}
           </p>
           {limit > 0 && sending.length > 0 && spent + cost > limit && <p className="text-xs mt-1.5 font-semibold" style={{ color: COLORS.warn }}>That's more than is left of your US${limit} monthly limit ({money(spent)} spent), so it stops partway.</p>}
         </>
