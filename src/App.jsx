@@ -23,6 +23,7 @@ import { analysisToKeep, DEFAULT_ANALYSIS_MODEL, recordSpend, spendSummary } fro
 import { getFeedCache, setFeedCache, getNudge, getSyncSettings, setNudge, setSyncSettings, getSnoozes, loadSavedState, persistState, setSnoozes } from './lib/storage.js';
 import { openerRequest, openerResult, styleSamples } from './lib/replies.js';
 import { readLimit } from './lib/chatBatch.js';
+import { drillByKey, drillFor, readDrills } from './lib/drills.js';
 import { clamp, uid } from './lib/util.js';
 import { AddInfoModal } from './modals/AddInfoModal.jsx';
 import { AddPersonModal } from './modals/AddPersonModal.jsx';
@@ -758,6 +759,16 @@ function LayersApp() {
     setLogOpen(true);
   }
   function handleNudgeSkip(person) { changeNudge({ skipped: [...new Set([...nudgeDay.skipped, person.id])] }); }
+
+  // Today's drill (lib/drills.js, decided 2026-10-10): with Claude, until a
+  // drill's done today (on Today or in Practise); one done on Today stays to
+  // read until Layers is closed.
+  const [drills, setDrills] = useState(() => readDrills());
+  const [drillDoneHere, setDrillDoneHere] = useState(null); // the day one was done on Today
+  const doneToday = drills.today && drills.today.day === today ? drills.today : null;
+  const todayDrill = !onboarded || !analysisBridge || !hasAnalysisKey ? null
+    : !doneToday ? { drill: drillFor(today, drills.recent), done: null }
+      : drillDoneHere === today ? { drill: drillByKey(doneToday.key), done: doneToday } : null;
 
   // The queue's Log it (one) and Log all (several, in turn): each a Messaged
   // log on its day with Claude's ratings, keeping the review and the chat,
@@ -1639,12 +1650,13 @@ function LayersApp() {
                     {screen.name === 'tabs' && (
                       <>
                         {activeTab === 'today' && <TodayView wide={wide} today={today} selectedDay={selectedDay || today} onSelectDay={(d) => setSelectedDay(d === today ? null : d)} mode={calendarMode} onSetMode={setCalendarMode} people={people} journal={journal} events={shownEvents} generalGoals={generalGoals} skills={skills} profile={profile} onPlan={openPlan} onOpenEvent={(eventId, day) => setEventView({ eventId, day })} onLogEvent={openLogFromEvent} onTickEvent={(ev, day) => handleMarkEventDone(ev.id, day)} onMissEvent={(ev, day) => handleMarkEventMissed(ev.id, day)} onOpenPerson={openPerson} onAddPerson={() => setAddPersonOpen(true)} onOpenLog={() => openLog(null)} onSwitchTab={switchTab} onOpenGoals={openGoalsOverview} onOpenReview={setWeekReview} onOpenDay={setDayView} onOpenJump={() => { setJumpOpen(true); markTried('jump'); }} onHideFirstSteps={() => setProfile(p => ({ ...p, gettingStartedHidden: true }))}
-                          nudge={nudge ? { ...nudge, opener: openerText, writing: writingOpener === nudgeKey } : null} onNudgeMessaged={handleNudgeMessaged} onNudgeSkip={handleNudgeSkip} />}
+                          nudge={nudge ? { ...nudge, opener: openerText, writing: writingOpener === nudgeKey } : null} onNudgeMessaged={handleNudgeMessaged} onNudgeSkip={handleNudgeSkip}
+                          drill={todayDrill} onAnalyse={analysisBridge ? (request) => analysisBridge.runAnalysis(request) : undefined} onDrillDone={(next) => { setDrills(next); setDrillDoneHere(today); }} onDrillMore={() => openCoach(null, 'practise')} />}
                         {activeTab === 'people' && <PeopleView people={people} journal={journal} onOpenPerson={openPerson} onAddPerson={() => setAddPersonOpen(true)} onAddPhotos={() => setPhotoFolderOpen(true)} />}
                         {activeTab === 'coach' && <div className="page-col"><CoachView people={people} journal={journal} initialPersonId={coachInit.personId} initialTab={coachInit.tab} onOpenLog={openLog} onApproveInfo={handleApproveInfo} onApproveInfoAll={handleApproveInfoAll} onRemindAbout={handleRemindFollowUp} onLogFromAnalysis={handleLogFromAnalysis} onOpenPerson={openPerson}
                           onLogChat={(l) => handleLogSubmit({ personIds: l.personIds.filter(id => people.some(p => p.id === id)), type: 'messaged', meaningfulness: l.meaningfulness, notes: [], activeListening: l.activeListening, summary: l.summary || undefined, pickedDate: l.date, ratings: l.ratings, analysis: l.analysis })}
                           analysisReady={!analysisBridge ? 'none' : hasAnalysisKey ? 'ready' : 'no-key'} onAnalyse={(request) => analysisBridge.runAnalysis(request)} onOpenMe={() => switchTab('me')} yourName={profile.name}
-                          model={analysisModelId} onModel={setAnalysisModelId} chatExports={chatsBridge} initialChatKey={coachInit.chatKey || null} style={profile.style || ''}
+                          model={analysisModelId} onModel={setAnalysisModelId} chatExports={chatsBridge} initialChatKey={coachInit.chatKey || null} style={profile.style || ''} onDrillDone={setDrills}
                           chatBatch={analysisBridge && chatsBridge ? { ...chatBatch, waiting: waiting(chatBatch.queue, journal), onLog: handleLogQueued, onSkip: handleSkipQueued, onRemind: handleRemindQueued } : null} /></div>}
                         {activeTab === 'journal' && <div className="page-col"><JournalView today={today} people={people} generalGoals={generalGoals} journal={journal} goalFilter={journalGoal} onGoalFilter={setJournalGoal}
                           personFilter={journalPerson} onPersonFilter={setJournalPerson} dayFilter={journalDay} onDayFilter={setJournalDay} onOpenPerson={openPerson} onEditEntry={setEditingEntryId} onOpenReview={setReviewEntryId} /></div>}

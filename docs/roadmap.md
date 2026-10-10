@@ -255,7 +255,8 @@ answers were read back (see [History](#history)):
      pressed Done. The morning summary and Today have it already. *(Built 2026-10-10: its
      own notification, with Messaged and Not today.)*
    - **Practice drills**: one tricky message, you reply, instant feedback, beside
-     Practise's longer role-play.
+     Practise's longer role-play. *(Built 2026-10-10: a daily drill on Today, and more
+     in Practise.)*
    - **Closeness over time**: a chart of someone's layer and meter by day on their
      profile. Each profile already saves this (`history`). The six dimensions aren't
      saved by day yet, so they'd start being saved from then on. *(Built 2026-10-10, in
@@ -793,6 +794,11 @@ Step 1 of [the order from here](#the-order-from-here), with your choices of 2026
   through the layers they've been in (each band named), so a level-up goes up instead of
   dropping from 90% to 4%, with where they started and where they are now. **Show the six
   dimensions** draws those by day, kept with each log and Adjust from now on.
+- **Practice drills**: one tricky message (a dry "haha", bad news, a vague "we should
+  hang out", a favour to turn down and about 25 more), your reply, and Claude's score,
+  what worked and a reply that lands better in your style, for under a cent. **Today's
+  drill** sits on Today (R to reply) until you've done one that day; Coach → Practise has
+  a **Quick drill** above the role-play, with **Another**. Scores join Me's Practice line.
 
 ### Fixes from the audit of 2026-10-10 (not released yet)
 

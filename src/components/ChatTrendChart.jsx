@@ -55,7 +55,7 @@ export function ChatTrendChart({ points, practice = [], label = 'Skills from ana
       )}
       <p className="text-xs mt-2" style={{ color: COLORS.inkSoft }}>
         {chats > 0 ? <>From {chats} analysed {chats === 1 ? 'chat' : 'chats'} you logged{change ? ', and how each has moved since the first' : '. Analyse and log more to see a trend'}. </> : null}
-        {practice.length > 0 ? 'Practice is the overall score of the conversations you practised, a day at a time. ' : ''}Claude's scores out of 100: a coach's view, not a measure of you.
+        {practice.length > 0 ? 'Practice is your score in Practise, its conversations and drills, a day at a time. ' : ''}Claude's scores out of 100: a coach's view, not a measure of you.
       </p>
     </div>
   );

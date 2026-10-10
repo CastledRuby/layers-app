@@ -54,6 +54,7 @@ export const SHORTCUTS = [
   { keys: ['I'], desc: 'Today: plan the first idea' },
   { keys: ['W'], desc: 'Today: your week in review, then plan next week' },
   { keys: ['O', 'G', 'Z'], or: true, desc: 'Today, "Message … today": copy the Opener, Got in touch (messaged: logs it), or put them off till tomorrow' },
+  { keys: ['R'], desc: "Today: reply to Today's drill (↵ sends it for a score and a better reply)" },
   { keys: ['1–9'], desc: 'Picking people (log or plan): press their number, or type a name' },
   { keys: ['←', '→', 'Space'], desc: 'Picking people: move to anyone past the first nine, and pick them' },
   { keys: ['T', 'L', 'R', 'A'], or: true, desc: 'Planning "When?": step through time, length, repeat, reminder (1–7 picks the day)' },

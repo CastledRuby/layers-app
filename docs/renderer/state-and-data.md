@@ -880,6 +880,29 @@ person you're about to talk to.
   a day at a time (`practiceTrend`), as a dashed Practice line. A practice is never
   logged. Its cost counts in Me.
 
+### Practice drills
+
+Short drills (decided 2026-10-10: "a mix: short drills most days, and a longer role-play
+before something big"), in [`lib/drills.js`](../../src/lib/drills.js) and
+`components/Drill.jsx`:
+
+- **A drill** is one tricky message from a made-up person (`DRILLS`: a dry "haha", bad
+  news, a vague "we should hang out", a favour to turn down, "I'm fine." and about 25
+  more), with what a good reply does. You reply (Enter sends, Shift+Enter a new line), and
+  Claude (`drillRequest`, `DRILL_SCHEMA`) scores it 0–100 and writes what worked, a reply
+  that lands better in your style (your own logged messages and How you text, as reply
+  ideas use) and why. Anyone in your circle you name is `[someone]`. Under a cent; it
+  counts in Me.
+- **Today's drill** on Today (R to reply), with a key, until one's done that day.
+  `drillFor(day, recent)` picks it: one not done lately, the same all day. One done on
+  Today stays to read until Layers closes; **More in Practise** opens Coach → Practise.
+- **Quick drill** in Coach → Practise, above the role-play: today's until it's done, then
+  the next; **Another** moves on (`nextDrill`).
+- **Kept**: `layers-drills` in localStorage (`readDrills` / `saveDrill`): the latest done,
+  for Today, and the 20 done most lately, so they aren't picked again soon. Each score is
+  kept as practice too (`addPractice` with situation `'drill'` and its key), so it's in
+  Me's Practice line.
+
 ### Know what to say: who to message today
 
 Today's **Message … today** card (decided 2026-10-10), also a line in the morning

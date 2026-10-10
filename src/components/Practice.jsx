@@ -3,12 +3,16 @@
 // situation, and a made-up person or one of yours (Claude plays them from what
 // Layers knows, names hidden), then chat: Enter sends, Shift+Enter is a new
 // line, Ctrl+Enter ends it for feedback. The scores are kept on this laptop
-// for Me's "Your chats over time"; a practice is never logged.
+// for Me's "Your chats over time"; a practice is never logged. Above it, a
+// Quick drill (components/Drill.jsx): one tricky message, your reply, and
+// Claude's score and a better reply; Another moves on to the next.
 
 import { useEffect, useRef, useState } from 'react';
 import { Avatar, ChatBubble, ConvStateBadge, Kbd, LabeledBar } from './atoms.jsx';
 import { DIM_COLORS, getLayer } from '../data/constants.js';
 import { analysisModel, analysisRequest, analysisResult, recordSpend } from '../lib/analysis.js';
+import { Drill } from './Drill.jsx';
+import { drillByKey, drillFor, nextDrill, readDrills } from '../lib/drills.js';
 import { addPractice, practicePartner, practiceText, situation, SITUATIONS, theirSamples, turnRequest, turnResult } from '../lib/practice.js';
 import { toISODate } from '../lib/dates.js';
 import { COLORS } from '../theme.js';
@@ -18,7 +22,7 @@ const card = { background: COLORS.paperRaised, border: `1px solid ${COLORS.line}
 // ready: 'none' | 'no-key' | 'ready', as Analyse. onAnalyse sends a request
 // through the main process. startPersonId: practise with them (Prepare's
 // "Practise with them").
-export function Practice({ people, journal, yourName = '', ready = 'none', onAnalyse, model, onOpenMe, startPersonId = null }) {
+export function Practice({ people, journal, yourName = '', style = '', ready = 'none', onAnalyse, model, onOpenMe, startPersonId = null, onDrillDone }) {
   const [step, setStep] = useState('setup'); // 'setup' | 'chat' | 'feedback'
   const [situationKey, setSituationKey] = useState('chat');
   const [personId, setPersonId] = useState(startPersonId && people.some(p => p.id === startPersonId) ? startPersonId : null);
@@ -28,6 +32,11 @@ export function Practice({ people, journal, yourName = '', ready = 'none', onAna
   const [error, setError] = useState(null);
   const [feedback, setFeedback] = useState(null);
   const run = useRef(0); // a newer practice drops an older one's answers
+  // The quick drill: today's (as on Today) until it's done, then the next.
+  const [drillState, setDrillState] = useState(() => {
+    const saved = readDrills();
+    return { recent: saved.recent, key: drillFor(toISODate(new Date()), saved.recent).key, done: null };
+  });
   const box = useRef(null);
   const person = people.find(p => p.id === personId) || null;
   const s = situation(situationKey);
@@ -91,7 +100,10 @@ export function Practice({ people, journal, yourName = '', ready = 'none', onAna
   if (step === 'setup') {
     return (
       <div aria-label="Practise">
-        <p className="text-sm font-semibold mb-2" style={{ color: COLORS.ink }}>What do you want to practise?</p>
+        <Drill key={drillState.key} drill={drillByKey(drillState.key)} done={drillState.done} title="Quick drill" people={people} journal={journal} yourName={yourName} style={style} model={model} onAnalyse={onAnalyse}
+          onDone={(saved) => { setDrillState(d => ({ ...d, recent: saved.recent, done: saved.today })); if (onDrillDone) onDrillDone(saved); }}
+          onAnother={() => setDrillState(d => ({ recent: d.recent, key: nextDrill(d.key, d.recent).key, done: null }))} />
+        <p className="text-sm font-semibold mt-5 mb-2" style={{ color: COLORS.ink }}>Or a longer role-play: what do you want to practise?</p>
         <div className="flex flex-col gap-1.5" role="group" aria-label="Situation">
           {SITUATIONS.map(x => (
             <button key={x.key} type="button" onClick={() => setSituationKey(x.key)} aria-pressed={situationKey === x.key} className="text-left rounded-xl px-3 py-2" style={{ ...card, border: `1px solid ${situationKey === x.key ? COLORS.accent : COLORS.line}` }}>

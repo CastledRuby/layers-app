@@ -45,7 +45,7 @@ function hide(text, { people = [], everyone = [], yourName }) {
 // For other features that send text about your people (Practise).
 export const hideCircle = hide;
 
-function styleNotes({ samples = [], style = '', yourName, everyone = [] }) {
+export function styleNotes({ samples = [], style = '', yourName, everyone = [] }) {
   const lines = [];
   if (samples.length) lines.push(`Some of the user's own messages from other chats, for their style:\n${samples.map(s => `- ${hide(s, { everyone, yourName })}`).join('\n')}`);
   if (cleanStyle(style)) lines.push(`How the user describes their texting style: "${cleanStyle(style)}"`);

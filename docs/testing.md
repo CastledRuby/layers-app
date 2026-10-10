@@ -202,6 +202,11 @@ interact.
   week with nothing logged, and none without a key. `src/weekRead.test.js` covers
   `lib/weekRead.js`: the week's logs and who's quiet as tags, nothing for an empty week,
   names back, and the kept reads.
+- `drills.test.jsx` covers practice drills (Claude stood in for): Today's drill, R to
+  reply and Enter sending it with names hidden and your style, the score and a better
+  reply, kept as practice and gone from Today after a restart, none without a key, and
+  Practise's Quick drill with Another (done there, it's gone from Today too).
+  `src/drills.test.js` covers picking a drill, the request and answer, and what's kept.
 - `practice.test.jsx` covers Practise (Claude stood in for): a made-up person starting,
   Enter sending, your people's names hidden, End for feedback with Analyse's scores, the
   score kept for Me's chart and nothing logged, and Prepare's R practising with someone

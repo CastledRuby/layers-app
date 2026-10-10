@@ -11,15 +11,18 @@
 // in place of the week strip and the Day/Month switch.
 // W opens the week's review (shown as a card on Sundays; on a Monday, last
 // week's). On today, "Message … today" (`nudge`): O copies Claude's opener,
-// G (messaged) opens the quick log for them, Z puts them off till tomorrow. P
+// G (messaged) opens the quick log for them, Z puts them off till tomorrow.
+// "Today's drill" (`drill`, until you've done one today): R to reply. P
 // (anywhere) plans something on the day shown; that one lives in App.jsx.
 
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { Bell, Check, ChevronLeft, ChevronRight, Plus, Repeat, Search, X } from 'lucide-react';
 import { Kbd, ProgressBar } from '../components/atoms.jsx';
 import { AvatarStack } from '../components/PersonPick.jsx';
+import { Drill } from '../components/Drill.jsx';
 import { hasOpenSheet, isTabbedToButton as isTabbed, isTyping } from '../components/sheetLayer.js';
 import { getLayer, TYPE_META } from '../data/constants.js';
+import { DEFAULT_ANALYSIS_MODEL } from '../lib/analysis.js';
 import { alertOf, dayAgenda, isDaily, monthMarks, needsAnswer, planIdeas, templateFor } from '../lib/calendar.js';
 import { formatTime12, MONTH_NAMES, parseISODay, toISODate, WEEKDAY_SHORT } from '../lib/dates.js';
 import { focusSuggestion, homeGoalTitle, summaryFor } from '../lib/text.js';
@@ -152,7 +155,7 @@ function EventRow({ item, now, onOpen }) {
   );
 }
 
-export function TodayView({ today, selectedDay, onSelectDay, mode, onSetMode, people, journal, events, generalGoals, skills, profile, onPlan, onOpenEvent, onLogEvent, onTickEvent, onMissEvent, onOpenPerson, onAddPerson, onOpenLog, onSwitchTab, onOpenGoals, onOpenReview, onOpenDay, onOpenJump, onHideFirstSteps, wide = false, nudge = null, onNudgeMessaged, onNudgeSkip }) {
+export function TodayView({ today, selectedDay, onSelectDay, mode, onSetMode, people, journal, events, generalGoals, skills, profile, onPlan, onOpenEvent, onLogEvent, onTickEvent, onMissEvent, onOpenPerson, onAddPerson, onOpenLog, onSwitchTab, onOpenGoals, onOpenReview, onOpenDay, onOpenJump, onHideFirstSteps, wide = false, nudge = null, onNudgeMessaged, onNudgeSkip, drill = null, onAnalyse, onDrillDone, onDrillMore }) {
   // The opener copied (its text), so the button can say so.
   const [copiedOpener, setCopiedOpener] = useState(null);
   function copyOpener() {
@@ -184,6 +187,7 @@ export function TodayView({ today, selectedDay, onSelectDay, mode, onSetMode, pe
   }, [people, generalGoals]);
 
   // The nudge as it is now, for the keys below (they're set up less often).
+  const drillBox = useRef(null);
   const nudgeKeys = useRef(null);
   useLayoutEffect(() => { nudgeKeys.current = { nudge, copyOpener, onNudgeMessaged, onNudgeSkip }; });
   // Day-level keys; P for planning is global (App.jsx).
@@ -203,6 +207,7 @@ export function TodayView({ today, selectedDay, onSelectDay, mode, onSetMode, pe
       else if ((e.key === 'i' || e.key === 'I') && ideas[0]) { e.preventDefault(); onPlan({ day, personIds: [ideas[0].person.id], template: ideas[0].template }); }
       // On a Monday the week has barely begun, so W shows the one just gone.
       else if ((e.key === 'w' || e.key === 'W') && onOpenReview) { e.preventDefault(); onOpenReview(sel.getDay() === 1 ? addDays(day, -1) : day); }
+      else if ((e.key === 'r' || e.key === 'R') && day === today && drillBox.current) { e.preventDefault(); drillBox.current.focus(); }
       else if (day === today && nudgeKeys.current && nudgeKeys.current.nudge && /^[ogz]$/i.test(e.key)) {
         const n = nudgeKeys.current;
         const k = e.key.toLowerCase();
@@ -301,6 +306,13 @@ export function TodayView({ today, selectedDay, onSelectDay, mode, onSetMode, pe
             {onNudgeMessaged && <button type="button" onClick={() => onNudgeMessaged(nudge.person)} className="text-xs font-semibold rounded-full px-3.5 py-2 flex items-center gap-1.5" style={{ background: COLORS.accent, color: COLORS.onAccent }}>Messaged<Kbd onAccent>G</Kbd></button>}
             {onNudgeSkip && <button type="button" onClick={() => onNudgeSkip(nudge.person)} className="chip">Not today<Kbd>Z</Kbd></button>}
           </div>
+        </div>
+      )}
+
+      {day === today && drill && (
+        <div className="mt-4 fade-anim">
+          <Drill ref={drillBox} drill={drill.drill} done={drill.done} title="Today's drill" people={people} journal={journal} yourName={(profile && profile.name) || ''} style={(profile && profile.style) || ''}
+            model={DEFAULT_ANALYSIS_MODEL} onAnalyse={onAnalyse} onDone={onDrillDone} onMore={onDrillMore} boxKey="R" />
         </div>
       )}
 

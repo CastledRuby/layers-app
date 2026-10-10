@@ -89,7 +89,8 @@ export function practiceText(messages, { situationKey, person = null, yourName =
 
 // --- Kept scores (this laptop) ---------------------------------------------------
 // [{ at (ISO day), situation, personId?, grading: { overall, depth,
-// activeListening, reciprocity, naturalness } }], the newest 200.
+// activeListening, reciprocity, naturalness } }], the newest 200. A drill
+// (lib/drills.js) is situation 'drill' with its `drill` key, and only overall.
 const KEY = 'layers-practice';
 const num = (n) => (typeof n === 'number' && Number.isFinite(n) ? Math.max(0, Math.min(100, Math.round(n))) : null);
 export function readPractice() {
@@ -100,7 +101,8 @@ export function readPractice() {
 }
 export function addPractice(record) {
   const g = record.grading || {};
-  const clean = { at: record.at, situation: situation(record.situation).key, ...(record.personId ? { personId: record.personId } : {}), grading: { overall: num(g.overall), depth: num(g.depth), activeListening: num(g.activeListening), reciprocity: num(g.reciprocity), naturalness: num(g.naturalness) } };
+  const drill = record.situation === 'drill' && typeof record.drill === 'string' ? { situation: 'drill', drill: record.drill } : { situation: situation(record.situation).key };
+  const clean = { at: record.at, ...drill, ...(record.personId ? { personId: record.personId } : {}), grading: { overall: num(g.overall), depth: num(g.depth), activeListening: num(g.activeListening), reciprocity: num(g.reciprocity), naturalness: num(g.naturalness) } };
   const next = [...readPractice(), clean].slice(-200);
   try { window.localStorage.setItem(KEY, JSON.stringify(next)); } catch { /* this session only */ }
   return next;

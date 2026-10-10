@@ -68,7 +68,7 @@ function ModelButtons({ label, value, onPick, done = {} }) {
 // for one already saved. chatBatch: Analyse all new from LayersApp (running,
 // note, waiting, progress, saveProgress, start, stop, onLog, onSkip,
 // onRemind), or null.
-export function CoachView({ people, journal, initialPersonId, initialTab, onOpenLog, onApproveInfo, onApproveInfoAll, onRemindAbout, onLogFromAnalysis, onLogChat, onOpenPerson, analysisReady = 'none', onAnalyse, onOpenMe, yourName = '', model = DEFAULT_ANALYSIS_MODEL, onModel = () => {}, chatExports = null, initialChatKey = null, chatBatch = null, style = '' }) {
+export function CoachView({ people, journal, initialPersonId, initialTab, onOpenLog, onApproveInfo, onApproveInfoAll, onRemindAbout, onLogFromAnalysis, onLogChat, onOpenPerson, analysisReady = 'none', onAnalyse, onOpenMe, yourName = '', model = DEFAULT_ANALYSIS_MODEL, onModel = () => {}, chatExports = null, initialChatKey = null, chatBatch = null, style = '', onDrillDone }) {
   const [tab, setTab] = useState(initialTab || 'prepare');
   const [preparePersonId, setPreparePersonId] = useState(initialPersonId || (people[0] && people[0].id) || null);
   const [analysisPersonId, setAnalysisPersonId] = useState(initialTab === 'analyse' ? initialPersonId || null : null);
@@ -452,7 +452,7 @@ export function CoachView({ people, journal, initialPersonId, initialTab, onOpen
 
       {tab === 'practise' && (
         <div className="mt-5">
-          <Practice key={practiseStart.n} people={people} journal={journal} yourName={yourName} ready={analysisReady} onAnalyse={onAnalyse} model={model} onOpenMe={onOpenMe} startPersonId={practiseStart.personId} />
+          <Practice key={practiseStart.n} people={people} journal={journal} yourName={yourName} style={style} onDrillDone={onDrillDone} ready={analysisReady} onAnalyse={onAnalyse} model={model} onOpenMe={onOpenMe} startPersonId={practiseStart.personId} />
         </div>
       )}
 
