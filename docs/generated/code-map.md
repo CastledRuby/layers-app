@@ -4,13 +4,13 @@
 > Run `npm run docs:map` after changing anything under `src/`, `electron/*.cjs` or `package.json` scripts.
 > Hand-written explanations live in the other files under [`docs/`](../README.md).
 
-Package: `layers-web` v1.0.38 · `src/`: 90 files, 15449 lines, 110 components, 421 top-level functions, 211 constants.
+Package: `layers-web` v1.0.38 · `src/`: 91 files, 15465 lines, 110 components, 423 top-level functions, 211 constants.
 
 ## Source files
 
 | File | Lines | Declares | Imports from |
 |---|---|---|---|
-| [main.jsx](../../src/main.jsx) | 16 | quick | — |
+| [main.jsx](../../src/main.jsx) | 20 | quick | — |
 | [App.jsx](../../src/App.jsx) | 1730 | sampleData, SAMPLE_PERSON_IDS, SAMPLE_GOAL_IDS, skillsCameWithSamples, allSkillsZero, listNames, unlinkMissingPeople, addNotes, applyLog, namesText, … (+3) | `components/BottomNav`, `components/ErrorBoundary`, `components/PageTransition`, `components/sheetLayer`, `data/constants`, `data/seed`, `lib/dates`, `lib/achievements`, `lib/progress`, `lib/backup`, `lib/calendar`, `lib/hooks`, `lib/chatBatch`, `lib/reminders`, `lib/analysis`, `lib/storage`, `lib/replies`, `lib/chatBatch`, `lib/util`, `modals/AddInfoModal`, `modals/AddPersonModal`, `modals/ConfirmDialog`, `modals/EditEntryModal`, `modals/EditPersonModal`, `modals/EditProfileModal`, `modals/EventSheet`, `modals/GoalModal`, `modals/KeyDateSheet`, `modals/LogInteractionModal`, `modals/PlanSheet`, `modals/PhotoFolderSheet`, `lib/sync`, `lib/syncFile`, `modals/SyncSheet`, `lib/ics`, `lib/summary`, `modals/QuickAddInterestModal`, `modals/ShortcutsModal`, `modals/StartOverSheet`, `modals/DaySheet`, `modals/JumpSheet`, `lib/sentence`, `modals/TemplatePickerModal`, `modals/ChatReviewSheet`, `modals/WeekReviewSheet`, `theme`, `views/CoachView`, `views/GoalsView`, `views/JournalView`, `views/MeView`, `views/OnboardingView`, `views/PeopleView`, `views/PersonProfile`, `components/ClosenessQuiz`, `views/TodayView` |
 | [theme.js](../../src/theme.js) | 354 | THEME_LIGHT, THEME_DARK, COLORS, cssVarBlock, EASE, CSS | `fonts` |
 | [data/avatars.js](../../src/data/avatars.js) | 203 | AVATAR_COLS, AVATAR_GROUPS, findAvatars, INITIAL_COLORS, INITIALS_GROUP, isInitials, PHOTO_SIZE, PHOTO_GROUP, PHOTO_SRC, isPhoto, … (+16) | — |
@@ -30,6 +30,7 @@ Package: `layers-web` v1.0.38 · `src/`: 90 files, 15449 lines, 110 components, 
 | [lib/hooks.js](../../src/lib/hooks.js) | 279 | useToday, useDailyBackup, WIDE_QUERY, useWide, useSlideAcross, useSystemDark, useDailyCheckIn, notify, SCHEDULE_DAYS, LATE_MINUTES, … (+2) | `lib/dates`, `lib/calendar`, `lib/storage`, `lib/text`, `lib/analysis`, `lib/chatBatch`, `lib/chatImport` |
 | [lib/ics.js](../../src/lib/ics.js) | 190 | lines, unescape, readTime, readDuration, parseCalendar, zoneOffset, toInstant, pad, isoOf, wallDay, … (+7) | — |
 | [lib/jump.js](../../src/lib/jump.js) | 140 | MAX_ROWS, PAGES, ACTIONS, VERBS, PERSON_ACTIONS, addDays, shortDate, matchScore, personRow, personActionRows, … (+3) | `data/constants`, `lib/calendar`, `lib/dates`, `lib/sentence` |
+| [lib/offline.js](../../src/lib/offline.js) | 12 | shouldCacheOffline, cacheOffline | — |
 | [lib/photo.js](../../src/lib/photo.js) | 72 | MAX_PHOTO_BYTES, loadPhoto, shrinkForAnalysis, renderPhoto | `data/avatars` |
 | [lib/practice.js](../../src/lib/practice.js) | 116 | str, obj, SITUATIONS, situation, LINE, theirSamples, TURN_SCHEMA, turnRequest, turnResult, practicePartner, … (+6) | `data/constants`, `lib/analysis`, `lib/replies`, `lib/dates` |
 | [lib/progress.js](../../src/lib/progress.js) | 215 | layerForOverall, advanceLayer, computeOverall, dimsEqual, placeOnLayers, progressDelta, chartDay, movePerson, makePerson, generateGoalDescription, … (+10) | `data/constants`, `lib/dates`, `lib/util` |
@@ -220,7 +221,7 @@ Package: `layers-web` v1.0.38 · `src/`: 90 files, 15449 lines, 110 components, 
 
 | Function | Defined | Exported | Unit-tested |
 |---|---|---|---|
-| `quick` | [main.jsx:9](../../src/main.jsx#L9) |  |  |
+| `quick` | [main.jsx:10](../../src/main.jsx#L10) |  |  |
 | `sampleData` | [App.jsx:65](../../src/App.jsx#L65) |  |  |
 | `skillsCameWithSamples` | [App.jsx:80](../../src/App.jsx#L80) |  |  |
 | `allSkillsZero` | [App.jsx:81](../../src/App.jsx#L81) |  |  |
@@ -451,6 +452,8 @@ Package: `layers-web` v1.0.38 · `src/`: 90 files, 15449 lines, 110 components, 
 | `planRows` | [jump.js:78](../../src/lib/jump.js#L78) | ✓ |  |
 | `sentenceRow` | [jump.js:98](../../src/lib/jump.js#L98) | ✓ |  |
 | `jumpResults` | [jump.js:115](../../src/lib/jump.js#L115) | ✓ | ✓ |
+| `shouldCacheOffline` | [offline.js:5](../../src/lib/offline.js#L5) | ✓ | ✓ |
+| `cacheOffline` | [offline.js:8](../../src/lib/offline.js#L8) | ✓ | ✓ |
 | `loadPhoto` | [photo.js:11](../../src/lib/photo.js#L11) | ✓ |  |
 | `shrinkForAnalysis` | [photo.js:44](../../src/lib/photo.js#L44) | ✓ |  |
 | `renderPhoto` | [photo.js:59](../../src/lib/photo.js#L59) | ✓ |  |

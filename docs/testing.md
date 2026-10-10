@@ -34,6 +34,8 @@ They run in Node and take milliseconds. Add one whenever you change a function i
 - `src/prepare.test.js` covers Prepare's hooks (`buildPotentialHooks`): what they
   draw on (Claude's tip from the last analysed chat too), their order, the six-hook limit,
   and experiences only from Layer 3 on.
+- `src/offline.test.js` covers the phone web app's offline copy: only registered at an
+  https address, never in Layers for Windows, the iPhone project or the dev server.
 - `src/reminders.test.js` covers `lib/reminders.js`: the next occurrence, marking
   done, passed one-offs, the 15-minute notification window and follow-up reminders (the
   day after a detail's day, or three days later).

@@ -276,6 +276,12 @@ Each of the others comes back to you as a proposal before it's built.
 
 ### Proposal: the phone web app (2026-10-10)
 
+**Built 2026-10-10 (the web app itself)**: GitHub Pages is on for the repository, and
+each release now publishes the web app (offline copy, iPhone icon); see
+[build-and-release.md](build-and-release.md#the-phone-web-app-github-pages). The
+OneDrive sign-in comes after your Microsoft registration ("later", 2026-10-10), so for
+now the phone's data is its own.
+
 The last of the six. **Your answers:** sign in to OneDrive to sync (2026-10-09), no Claude
 on the phone at first, the passphrase remembered on the phone, and everything (not just
 Today), synced.
