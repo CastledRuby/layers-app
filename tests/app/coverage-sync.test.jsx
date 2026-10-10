@@ -9,6 +9,7 @@
 import { screen, waitFor, within } from '@testing-library/react';
 import { afterEach, describe, expect, it } from 'vitest';
 import { toISODate } from '../../src/lib/dates.js';
+import { createBackup } from '../../src/lib/backup.js';
 import { openSyncFile, sealSyncFile } from '../../src/lib/syncFile.js';
 import { nav, person, renderApp, savedPerson, savedState, seedState } from './harness.jsx';
 
@@ -141,5 +142,21 @@ describe('sync through OneDrive, once it is on', { timeout: 60000 }, () => {
     await waitFor(() => expect(Object.keys(bridge.files)).toEqual(['layers-sync.json']), LONG);
     const { payload } = await openSyncFile(bridge.files['layers-sync.json'], PASS);
     expect(payload.people.map(p => p.name)).toEqual(['Morgan', 'Riley']);
+  });
+  it("importing a backup turns sync off, so the sync file doesn't undo it", async () => {
+    const bridge = fakeBridge({ 'layers-sync.json': await fileWith({ people: [person('Morgan', { id: 'p-morgan', updatedAt: T3 }), person('Riley', { id: 'p-riley', updatedAt: T3 })] }) });
+    syncOn();
+    seedState({ people: [person('Morgan', { id: 'p-morgan', updatedAt: T1 })] });
+    const { user } = renderApp();
+    await user.click(nav('Me'));
+    const backup = createBackup({ people: [person('Sam', { id: 'p-sam', updatedAt: T1 })], journal: [], generalGoals: [], events: [], skills: {}, profile: { name: 'Tester', focus: null }, achievements: {} });
+    await user.upload(document.querySelector('input[type="file"][accept="application/json"]'), new File([JSON.stringify(backup)], 'layers-backup.json', { type: 'application/json' }));
+    expect(await screen.findByText(/Sync turns off on this laptop, so your other devices don't undo it/)).toBeTruthy();
+    await user.click(screen.getByRole('button', { name: 'Import' }));
+    await waitFor(() => expect(JSON.parse(window.localStorage.getItem('layers-sync')).on).toBe(false), LONG);
+    expect(bridge.passphrase).toBe(null);
+    await waitFor(() => expect(savedState().people.map(p => p.name)).toEqual(['Sam']), LONG);
+    await new Promise(r => setTimeout(r, 300));
+    expect(savedState().people.map(p => p.name)).toEqual(['Sam']);
   });
 });

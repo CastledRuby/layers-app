@@ -124,7 +124,7 @@ describe('Analyse all new: who is left out', { timeout: 60000 }, () => {
     seed();
     const { user } = renderApp();
     await openAnalyse(user);
-    expect(card().textContent).toMatch(/1 tiny one \(under 4 messages, or only one side talking\) is marked as seen without sending\./);
+    expect(card().textContent).toMatch(/1 tiny one \(under 4 written messages, or only one side writing\) is marked as seen without sending\./);
     expect(card().textContent).not.toMatch(/conversations? with/);
     await user.click(within(card()).getByRole('button', { name: /^Analyse all new/ }));
     await waitFor(() => expect(toasts()).toContain('Nothing worth sending: the tiny conversations are marked as seen'));

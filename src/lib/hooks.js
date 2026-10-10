@@ -7,7 +7,7 @@ import { toISODate } from './dates.js';
 import { plannedNotifications } from './calendar.js';
 import { addNotifiedReminder, getLastNotifiedDate, getNotifiedReminders, setLastNotifiedDate } from './storage.js';
 import { checkInReminder } from './text.js';
-import { analysisDollars, analysisModel, analysisRequest, analysisResult, recordSpend, spendSummary } from './analysis.js';
+import { analysisDollars, analysisModel, analysisRequest, analysisResult, otherSpeakers, recordSpend, spendSummary } from './analysis.js';
 import { batchDollars, pruneQueue, readLimit, readQueue, saveQueue } from './chatBatch.js';
 import { readChatProgress, saveChatProgress } from './chatImport.js';
 
@@ -258,7 +258,7 @@ export function useChatBatch({ analyse, people, yourName, onDone }) {
           if (!answer || (answer.error && !answer.usage)) { stopped = `Stopped: ${(answer && answer.error) || "Couldn't reach Claude."}`; break; }
           if (answer.error) { add({ ...base, error: answer.error }); failed += 1; }
           else {
-            const result = analysisResult(answer.result, group);
+            const result = analysisResult(answer.result, group, { others: otherSpeakers(item.text, group, you) });
             result.log.date = item.day; // the export's own times
             add({ ...base, result, cost: analysisDollars(answer.usage, used) });
             answered += 1;

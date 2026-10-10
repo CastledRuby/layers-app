@@ -661,7 +661,10 @@ will be sent.
   screenshots, shrunk to at most 1568 px (`shrinkForAnalysis`), and the pasted text with
   their name and yours replaced by tags (`hideNames`: the full name and each part of it,
   whole words only, any case): `[them]` for one person, `[them 1]`, `[them 2]`… in a
-  group, and `[you]`. Of each person, only their layer is sent, so the advice fits how
+  group, and `[you]`. Anyone else who signs messages and isn't in Layers (a group
+  member, `otherSpeakers`) is `[someone 1]`, `[someone 2]`…, said so at the top, and their
+  names come back in the answer (`analysisResult`'s `others`). Of each person, only
+  their layer is sent, so the advice fits how
   close you are, plus today's date (so "Yesterday 9:41 pm" can be dated) and whether
   this computer writes dates day first. Screenshots go as they are, so a name in one is
   seen; Claude is told to use only the tags.
@@ -991,8 +994,9 @@ devices ([electron.md](../electron.md) has the file side).
   both.
 - **Data replaced wholesale** (finishing setting up, **Start over**, restoring a backup)
   isn't counted as deleted (`createStamper().forget`), so it never wipes other devices.
-  Start over also turns sync off on this computer; turning it on again brings the other
-  devices' data back. (Before this, a fresh install's example people, replaced when you
+  Start over and restoring a backup also turn sync off on this computer (the import's
+  confirm says so), since the sync file's newer copies would otherwise win within
+  seconds; turning it on again merges the other devices' data back in. (Before this, a fresh install's example people, replaced when you
   start fresh, would have been "deleted" everywhere.)
 - **Me** shows it's on and when it last synced (or what went wrong), with **Sync now**,
   **Open folder** and **Turn off**.

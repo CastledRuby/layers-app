@@ -75,6 +75,14 @@ export function isYou(name, yourName = '') {
 // known as" on their profile).
 export const namesOf = (p) => [p.name, ...(Array.isArray(p.aka) ? p.aka : [])];
 
+// Everyone else who signs messages in a chat: not one of `people` (by any of
+// their names) and not you. In a group chat with someone who isn't in Layers,
+// they're hidden as [someone 1], [someone 2]… like everyone else.
+export function otherSpeakers(text, people = [], yourName = '') {
+  const known = new Set([...people.flatMap(namesOf), yourName, 'Me', 'You'].flatMap(nameParts).map(s => s.toLowerCase()));
+  return chatSpeakers(text).filter(n => !nameParts(n).some(part => known.has(part.toLowerCase())));
+}
+
 // The person a chat name means: the same full name or nickname, or the same
 // first name when only one person has it ("Amelie R" is Amelie, "Mel" is
 // Amelie if she's also known as Mel). Emoji and symbols around it don't
@@ -186,12 +194,14 @@ function nameParts(name) {
 
 // Pasted text with each person's name(s) as their tag ([them], or [them 1],
 // [them 2]… for `names`, where each is a name or a list of a person's names
-// and nicknames) and yours as [you]. Whole words, any case; longer names
-// first, and a part two people share goes to the first.
-export function hideNames(text, { names, theirName, yourName }) {
+// and nicknames), yours as [you] and `others` (otherSpeakers) as [someone 1],
+// [someone 2]…. Whole words, any case; longer names first, and a part two
+// people share goes to the first.
+export function hideNames(text, { names, theirName, yourName, others = [] }) {
   const theirs = names || (theirName ? [theirName] : []);
   const tokens = tokensFor(theirs.length);
-  const pairs = [...theirs.flatMap((n, i) => [].concat(n).flatMap(nameParts).map(part => [part, `[${tokens[i]}]`])), ...nameParts(yourName).map(part => [part, YOU])]
+  const pairs = [...theirs.flatMap((n, i) => [].concat(n).flatMap(nameParts).map(part => [part, `[${tokens[i]}]`])), ...nameParts(yourName).map(part => [part, YOU]),
+    ...others.flatMap((n, i) => nameParts(n).map(part => [part, `[someone ${i + 1}]`]))]
     .sort((a, b) => b[0].length - a[0].length);
   const done = new Set();
   let out = String(text || '');
@@ -204,15 +214,17 @@ export function hideNames(text, { names, theirName, yourName }) {
 }
 
 // First names back into everything Claude wrote ([them] or [them 2] -> the
-// name, [you] -> you), throughout the answer. `names`: one name, or a list.
-export function restoreNames(value, names) {
+// name, [you] -> you, [someone 1] -> others[0]), throughout the answer.
+// `names`: one name, or a list.
+export function restoreNames(value, names, others = []) {
   const firsts = (Array.isArray(names) ? names : [names]).map(n => String(n || '').trim().split(/\s+/)[0] || 'them');
   const swap = (s) => s
     .replace(/\[them(?: (\d+))?\]/gi, (tag, n) => (n ? firsts[Number(n) - 1] || 'them' : firsts.length === 1 ? firsts[0] : 'them'))
+    .replace(/\[someone (\d+)\]/gi, (tag, n) => others[Number(n) - 1] || 'someone')
     .replace(/\[you\]/gi, 'you');
   if (typeof value === 'string') return swap(value);
-  if (Array.isArray(value)) return value.map(v => restoreNames(v, names));
-  if (value && typeof value === 'object') return Object.fromEntries(Object.entries(value).map(([k, v]) => [k, restoreNames(v, names)]));
+  if (Array.isArray(value)) return value.map(v => restoreNames(v, names, others));
+  if (value && typeof value === 'object') return Object.fromEntries(Object.entries(value).map(([k, v]) => [k, restoreNames(v, names, others)]));
   return value;
 }
 
@@ -223,9 +235,11 @@ export function restoreNames(value, names) {
 export function analysisRequest({ people, person, yourName, text, images = [], model = DEFAULT_ANALYSIS_MODEL, today = new Date(), dayFirst }) {
   const group = people || (person ? [person] : []);
   const pasted = String(text || '').trim();
+  const others = otherSpeakers(pasted, group, yourName);
+  const alsoIn = others.length ? `Also in this chat, and not who it's about: ${others.map((_, i) => `[someone ${i + 1}]`).join(', ')}.\n\n` : '';
   const content = [
     ...images.slice(0, MAX_SCREENSHOTS).map(im => ({ type: 'image', source: { type: 'base64', media_type: im.mediaType, data: im.data } })),
-    { type: 'text', text: pasted ? `The chat:\n\n${hideNames(pasted, { names: group.map(namesOf), yourName })}` : `The chat is in the ${images.length === 1 ? 'screenshot' : 'screenshots'} above.` },
+    { type: 'text', text: pasted ? `${alsoIn}The chat:\n\n${hideNames(pasted, { names: group.map(namesOf), yourName, others })}` : `The chat is in the ${images.length === 1 ? 'screenshot' : 'screenshots'} above.` },
   ];
   return {
     system: analysisSystem({ layers: group.map(p => p.layer), today, ...(dayFirst === undefined ? {} : { dayFirst }) }),
@@ -240,11 +254,12 @@ export function analysisRequest({ people, person, yourName, text, images = [], m
 // own scales ready to save: { personIds, meaningfulness, ratings,
 // activeListening, summary, date } (date: the chat's day from its times, or
 // null). Details already on their profile are left out.
-export function analysisResult(raw, people, { today = new Date() } = {}) {
+// `others`: the names hidden as [someone 1]… (otherSpeakers of the chat sent).
+export function analysisResult(raw, people, { today = new Date(), others = [] } = {}) {
   const group = Array.isArray(people) ? people : [people];
   const names = group.map(p => p.name);
   const tokens = tokensFor(group.length);
-  const r = restoreNames(raw || {}, names);
+  const r = restoreNames(raw || {}, names, others);
   const clamp = (n, lo, hi) => Math.max(lo, Math.min(hi, Math.round(Number(n) || 0)));
   const listOf = (x) => (Array.isArray(x) ? x : []);
   const g = r.grading || {};

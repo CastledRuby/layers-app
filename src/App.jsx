@@ -1494,13 +1494,17 @@ function LayersApp() {
       if (!result.ok) { pushToast(result.error); return; }
       const { data, summary, warnings } = result;
       const from = data.exportedAt ? ` from ${formatAbsoluteDate(new Date(data.exportedAt))}` : '';
+      // With sync on, the sync file's newer copies would win within seconds,
+      // so sync turns off here, as Start over does.
+      const syncing = syncSettings.on && syncBridge;
       askConfirm({
         title: 'Import this backup?',
-        message: `This replaces everything currently in the app with this backup${from}: ${summary.text}.${warnings.length ? ` Some damaged records will be skipped: ${warnings.join('; ')}.` : ''}`,
+        message: `This replaces everything currently in the app with this backup${from}: ${summary.text}.${warnings.length ? ` Some damaged records will be skipped: ${warnings.join('; ')}.` : ''}${syncing ? " Sync turns off on this laptop, so your other devices don't undo it; turning it on again merges them with this backup." : ''}`,
         confirmLabel: 'Import',
         danger: true,
         onConfirm: () => {
           stamper.forget(); // what's replaced isn't counted as deleted (lib/sync.js)
+          if (syncing) { Promise.resolve(syncBridge.clearSyncPassphrase()).catch(() => {}); saveSync({ on: false, error: null }); }
           // Backups from before `at` existed: read their labels as of the export.
           setPeople(migrateDimsToLayers(backfillPeopleDates(data.people, data.exportedAt)).people);
           setJournal(backfillJournalDates(data.journal, data.exportedAt));
@@ -1513,7 +1517,7 @@ function LayersApp() {
           setCoachInit(c => ({ ...c, personId: null }));
           setOnboarded(true);
           setScreen({ name: 'tabs' }); setActiveTab('today');
-          pushToast('Backup imported');
+          pushToast(syncing ? 'Backup imported. Sync is off' : 'Backup imported');
         },
       });
     };
