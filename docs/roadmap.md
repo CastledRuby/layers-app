@@ -256,7 +256,12 @@ You asked for questions to decide the next big changes. Your answers:
   this laptop; there isn't one yet (Apple's backup folder is empty, checked 2026-10-09).
   Snapchat from its Download My Data, which has only saved messages.
 
-**And on 2026-10-09:**
+**And on 2026-10-09 and 10:** the order is iMessage, then Know what to say (reply ideas,
+a free daily nudge and openers by Claude), Practise (a chat, then feedback), the Big
+picture (weekly, in Your week), the phone web app and Snapchat. iMessage reads texts too,
+from the last three months (built 2026-10-10, see History).
+
+**Also on 2026-10-09:**
 
 - **Less effort comes first**; its proposal is [below](#proposal-analyse-all-new-chats-at-once-2026-10-09).
 - **Practice: both.** Made-up people by default, and your real people only when you
@@ -628,6 +633,54 @@ its own. Changes made while building are marked.
   box in the packaged app, with a temporary data folder as always.
 
 ## History
+
+### Snapchat (after 1.0.37, not released yet)
+
+- **Snapchat chats in Coach**: Settings → My Data → Chat History (and Friends), with
+  Export JSON files on. Save the emailed zip in the Layers chats folder, and its chats show
+  in "From your chats", named from your friends list. Snapchat only keeps saved and
+  unopened chats.
+
+### The big picture (after 1.0.37, not released yet)
+
+- **Your week** gets **Claude's read**: how the week went, what went well, a pattern, one
+  thing to try this week and who to reach out to. Asked by itself once a week when you
+  open it (about US$0.02, within the monthly limit) and kept; earlier weeks have a
+  button.
+
+### Practise (after 1.0.37, not released yet)
+
+- **Coach → Practise** (4): pick a situation (just chatting, someone new, asking to hang
+  out, a quiet chat, bad news, saying no, a misunderstanding) and a made-up person or one
+  of yours, and text with Claude playing them. **End** gives feedback the way Analyse
+  does. Prepare's **Practise with them first** (R). A few cents a practice.
+- **Practice scores** are a dashed line in Me's "Your chats over time"; a practice is
+  never logged.
+
+### Know what to say: who to message today (after 1.0.37, not released yet)
+
+- **Today: Message … today**: one person and why (a birthday today or tomorrow, asking
+  how something went, or it's been a while), worked out for free, and a line in the
+  morning summary. Claude writes an opener in your style when you first open Layers that
+  day (about half a cent; held to the monthly limit). O copies it, G logs that you
+  messaged them, Z puts them off till tomorrow.
+
+### Know what to say: reply ideas (after 1.0.37, not released yet)
+
+- **Coach → What to say** (3): paste their latest messages, or pick a chat, and Claude
+  suggests three replies in your style (natural, playful, deeper) with a line on what
+  they seem to want. **Reply ideas for the latest** on a chat in Analyse opens it with
+  that chat in. Q, W, E copy them. Under a cent each with Haiku.
+- **Your style**: from your own messages in chats you've logged, and **How you text** in
+  Me → Chat analysis.
+
+### iMessage (after 1.0.37, not released yet)
+
+- **iMessage chats in Coach**: back up your iPhone to this laptop (Apple Devices → Back
+  up all of the data on your iPhone to this computer, Encrypt unticked → Back Up Now),
+  and its Messages chats, texts too, from the last three months show in "From your
+  chats", named from your Contacts, with when the backup was made. They're analysed like
+  WhatsApp's, Analyse all new included. Layers only reads the backup, on this laptop.
 
 ### Analyse all new (1.0.37)
 

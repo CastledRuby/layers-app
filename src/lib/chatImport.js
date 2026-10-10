@@ -142,6 +142,64 @@ function instagramText(msg) {
   return content;
 }
 
+// Snapchat's "My Data" (decided 2026-10-09): json/chat_history.json, in its
+// newer layout ({ [conversation]: [{ From, Media Type, Created, Content,
+// Conversation Title, IsSender }] }) or its older one ({ "Received Saved Chat
+// History": [{ From, … Text }], "Sent Saved Chat History": [{ To, … }] }), and
+// json/friends.json for display names. It only holds chats that were saved or
+// not yet opened (Snapchat deletes the rest). As chats: [{ key, source,
+// title, participants, me, messages }], your messages under SNAP_ME.
+const SNAP_ME = 'Me';
+function snapTime(m) {
+  const micro = Number(m['Created(microseconds)']);
+  if (Number.isFinite(micro) && micro > 0) return Math.round(micro / 1000);
+  const t = Date.parse(String(m.Created || '').replace(' UTC', 'Z').replace(' ', 'T'));
+  return Number.isFinite(t) ? t : null;
+}
+function snapText(m) {
+  const type = String(m['Media Type'] || 'TEXT').toUpperCase();
+  const text = String(m.Content ?? m.Text ?? '').trim();
+  if (type === 'TEXT') return text;
+  if (type === 'MEDIA' || type === 'SNAP') return text || '(photo or video)';
+  if (type === 'NOTE') return '(voice message)';
+  if (type === 'STICKER') return '(sticker)';
+  if (type === 'SHARE') return text ? `${text} (shared)` : '(shared something)';
+  if (type === 'LOCATION') return '(location)';
+  return '';
+}
+export function parseSnapchat(files = []) {
+  const read = (re) => { const f = files.find(x => re.test(String(x.path))); if (!f) return null; try { return JSON.parse(f.text); } catch { return null; } };
+  const history = read(/chat_history\.json$/);
+  const friends = read(/friends\.json$/) || {};
+  const names = new Map();
+  Object.values(friends).forEach(list => (Array.isArray(list) ? list : []).forEach(fr => {
+    if (fr && typeof fr.Username === 'string' && typeof fr['Display Name'] === 'string' && fr['Display Name'].trim()) names.set(fr.Username, fr['Display Name'].trim());
+  }));
+  const nameOf = (user) => names.get(user) || user;
+  const chats = new Map();
+  const add = (id, title, sender, m) => {
+    const at = snapTime(m);
+    const text = snapText(m);
+    if (!at || !text || !sender) return;
+    const c = chats.get(id) || { key: `snapchat:${id}`, source: 'snapchat', title: '', participants: [], me: SNAP_ME, messages: [] };
+    if (title && !c.title) c.title = title;
+    if (sender !== SNAP_ME && !c.participants.includes(sender)) c.participants.push(sender);
+    c.messages.push({ at, sender, text });
+    chats.set(id, c);
+  };
+  if (history && (history['Received Saved Chat History'] || history['Sent Saved Chat History'])) {
+    (history['Received Saved Chat History'] || []).forEach(m => m && m.From && add(m.From, nameOf(m.From), nameOf(m.From), m));
+    (history['Sent Saved Chat History'] || []).forEach(m => m && m.To && add(m.To, nameOf(m.To), SNAP_ME, m));
+  } else if (history && typeof history === 'object') {
+    Object.entries(history).forEach(([id, list]) => (Array.isArray(list) ? list : []).forEach(m => {
+      if (!m) return;
+      const mine = m.IsSender === true;
+      add(id, m['Conversation Title'] || (mine ? '' : nameOf(m.From)) || nameOf(id), mine ? SNAP_ME : nameOf(m.From), m);
+    }));
+  }
+  return [...chats.values()].map(c => ({ ...c, title: c.title || c.participants.join(', ') || 'Snapchat', messages: c.messages.sort((a, b) => a.at - b.at) })).filter(c => c.messages.length);
+}
+
 // Instagram's messages files ({ path, text }), as chats: [{ id, title,
 // participants, messages }], each chat's messages in order.
 export function parseInstagram(files = []) {
@@ -185,6 +243,7 @@ export function chatsFromExport(file, read, { dayFirst } = {}) {
     }
     return [{ key: `whatsapp:${named.toLowerCase()}`, source: 'whatsapp', title: named, participants, messages }];
   }
+  if (read.kind === 'snapchat') return parseSnapchat(read.files);
   if (read.kind === 'instagram') {
     return parseInstagram(read.files).map(t => ({ key: `instagram:${t.id}`, source: 'instagram', title: t.title || t.participants.join(', '), participants: t.participants, messages: t.messages }));
   }
@@ -206,10 +265,11 @@ export function mergeChats(chats) {
   return [...byKey.values()];
 }
 
-// Which name in a chat is you: one you picked before, else your name (or its
+// Which name in a chat is you: the one an iPhone backup marks, else one you picked before, else your name (or its
 // first part), else on Instagram the name in every one of your chats, else in
 // a two-person chat the one who isn't the chat's name. Null if it can't tell.
 export function ownerOf(chat, { yourName = '', picked, everywhere = [] } = {}) {
+  if (chat.me) return chat.me; // iMessage and Snapchat know which messages are yours
   const names = [...new Set([...chat.participants, ...chat.messages.map(m => m.sender)])];
   if (picked && names.includes(picked)) return picked;
   const byName = names.filter(n => isYou(n, yourName));
@@ -310,17 +370,28 @@ export function saveChatProgress(key, change) {
   return next;
 }
 
+// Where a chat came from, in words.
+const SOURCES = { whatsapp: 'WhatsApp', instagram: 'Instagram', imessage: 'iMessage', snapchat: 'Snapchat' };
+export const sourceLabel = (source) => SOURCES[source] || 'Chat';
+
 // --- Reading the folder --------------------------------------------------------------
-// Each export read once, until its file changes.
+// Each export read once, until its file changes; the iPhone backup's chats
+// until there's a newer backup.
 const cache = new Map();
+let phone = null; // { at, chats }
+const isMessage = (m) => m && typeof m.at === 'number' && Number.isFinite(m.at) && typeof m.sender === 'string' && typeof m.text === 'string';
+const isChat = (c) => c && typeof c.key === 'string' && c.key.startsWith('imessage:') && typeof c.title === 'string' && Array.isArray(c.participants) && Array.isArray(c.messages);
 // Every chat in the Layers chats folder (bridge: the main process's
-// listChatExports and readChatExport): { chats, problems: [{ name, error }] }.
+// listChatExports and readChatExport), and iMessage from the newest iPhone
+// backup when the bridge can read one (readIMessages): { chats, problems:
+// [{ name, error }], iphone: { name, at } of the backup read, or null }.
 export async function loadChatExports(bridge, { dayFirst } = {}) {
   const files = await bridge.listChatExports();
   const all = [];
   const problems = [];
   for (const f of files || []) {
     if (f.kind === 'instagram-html') { problems.push({ name: f.name, error: 'That Instagram download is in HTML. Download it again choosing JSON as the format.' }); continue; }
+    if (f.kind === 'snapchat-html') { problems.push({ name: f.name, error: 'That Snapchat download is only HTML. Request it again with "Export JSON files" turned on.' }); continue; }
     const hit = cache.get(f.name);
     if (hit && hit.modified === f.modified) { all.push(...hit.chats); continue; }
     const read = await bridge.readChatExport(f.name);
@@ -329,5 +400,18 @@ export async function loadChatExports(bridge, { dayFirst } = {}) {
     cache.set(f.name, { modified: f.modified, chats });
     all.push(...chats);
   }
-  return { chats: mergeChats(all), problems };
+  let iphone = null;
+  if (bridge.readIMessages) {
+    const read = await Promise.resolve(bridge.readIMessages(phone ? phone.at : null)).catch(() => null);
+    if (read && read.backup) {
+      iphone = read.backup;
+      if (read.error) problems.push({ name: 'iPhone backup', error: read.error });
+      else if (read.same && phone) all.push(...phone.chats);
+      else if (Array.isArray(read.chats)) {
+        phone = { at: read.backup.at, chats: read.chats.filter(isChat).map(c => ({ ...c, source: 'imessage', messages: c.messages.filter(isMessage) })).filter(c => c.messages.length) };
+        all.push(...phone.chats);
+      }
+    }
+  }
+  return { chats: mergeChats(all), problems, iphone };
 }

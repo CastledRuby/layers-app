@@ -166,14 +166,46 @@ interact.
   WhatsApp chat's new conversation picked and its text written with exact times, the log
   on its day, the chat moving on (and its earlier conversations still there), how to add
   one, the folder opened, a new export noticed, the week review listing a chat to analyse and opening it in Coach, Instagram (you found as the name in
-  every chat, chats with people not in Layers tucked away, an HTML download named) and
-  "Which of these is you?". `src/chatImport.test.js` covers reading WhatsApp (iOS and
+  every chat, chats with people not in Layers tucked away, an HTML download named),
+  "Which of these is you?" and Snapchat (names from its friends list, your messages yours). `src/chatImport.test.js` covers reading WhatsApp (iOS and
   Android, notices, attachments, several lines, day or month first) and Instagram
-  (lettering, likes, photos), merging, who's who, splitting at pauses and the text
+  (lettering, likes, photos) and Snapchat (both layouts, the friends list, media), merging, who's who, splitting at pauses and the text
   sent; `src/chatFiles.test.js` covers `electron/chatfiles.cjs` (the folder, which files
   are exports, zips packed or stored, errors, nothing outside the folder, noticing a
   new file). The end-to-end tests open a real zip in the packaged app and see a second
   one arrive.
+- `imessage.test.jsx` covers iMessage from an iPhone backup (the main process stood in
+  for): its chats listed with the backup's day, your messages known as yours, the card
+  filled like an export's, the same backup not read twice, an encrypted one explained,
+  and how to back up. `src/imessage.test.js` covers `electron/imessage.cjs` on a made-up
+  backup (`tests/fakeIPhoneBackup.cjs`, laid out like a real one): the newest found,
+  names from Contacts, text only in `attributedBody` (short and long), reactions left
+  out, three months back, not read again, no backup or an encrypted one, and nothing
+  written in it. The end-to-end tests read a made-up backup in the packaged app.
+- `weekRead.test.jsx` covers Claude's read in "Your week" (Claude stood in for): this
+  week read by itself once, names hidden and put back, kept when reopened, none for a
+  week with nothing logged, and none without a key. `src/weekRead.test.js` covers
+  `lib/weekRead.js`: the week's logs and who's quiet as tags, nothing for an empty week,
+  names back, and the kept reads.
+- `practice.test.jsx` covers Practise (Claude stood in for): a made-up person starting,
+  Enter sending, your people's names hidden, End for feedback with Analyse's scores, the
+  score kept for Me's chart and nothing logged, and Prepare's R practising with someone
+  Claude plays from what you know. `src/practice.test.js` covers `lib/practice.js`: the
+  requests for a made-up person and one of yours (names hidden), their own lines, the
+  situations, the practice as a chat, and the kept scores.
+- `nudge.test.jsx` covers Today's who to message (Claude stood in for): who and why,
+  the opener written once that day with names hidden and your style, O copying it, Z
+  putting them off (kept after a restart, not asked again), G opening the quick log as
+  Messaged, and no opener without a key or past the monthly limit. `src/calendar.test.js`
+  covers `messageNudge` (a birthday first, then a follow-up, then the quietest; plans,
+  logs and put-offs left out) and its line in the morning summary.
+- `replies.test.jsx` covers What to say (Claude stood in for): pasted messages with who
+  it's with, the request with names hidden and your style (your own logged messages and
+  How you text), the replies with names back, Q W E copying, what it cost counted, Reply
+  ideas for the latest from a chat in Analyse, and How you text kept in Me.
+  `src/replies.test.js` covers `lib/replies.js`: your samples (newest first, each chat
+  once, no photos), every name in your circle hidden, a group's tags, the schema, names
+  back, and the opener's request.
 - `chatBatch.test.jsx` covers Analyse all new (the folder, key and Claude stood in for):
   each day with someone sent once with names hidden, a tiny one only marked as seen, the
   chats moving on, the answers reviewed (a detail left out, a reminder, logged on its day

@@ -97,7 +97,7 @@ describe('chats from your exports', () => {
     const card = await openAnalyse(user);
     expect(await within(card).findByText(/Save to Files → OneDrive → Documents → Layers chats/)).toBeTruthy();
     expect(within(card).getByText(/Download your information → just Messages, as JSON/)).toBeTruthy();
-    expect(within(card).getByText(/Snapchat and iMessage don't export chats/)).toBeTruthy();
+    expect(within(card).getByText(/Apple Devices → Back up all of the data on your iPhone to this computer/)).toBeTruthy();
     await user.click(within(card).getByRole('button', { name: /Folder/ }));
     expect(bridge.openChatsFolder).toHaveBeenCalled();
 
@@ -158,5 +158,22 @@ describe('chats from your exports', () => {
     await user.click(within(card).getByRole('button', { name: /3 messages/ }));
     expect(within(screen.getByLabelText('Your own chat')).getByRole('group', { name: "Who it's with" }).textContent).toMatch(/Amelie.*Chloe/);
     expect(screen.getByLabelText('The chat').value).toMatch(/\] Liam: im in$/);
+  });
+
+  it("reads Snapchat's download: names from its friends list, and your messages already known as yours", async () => {
+    const t = new Date(Date.now() - 2 * 3600 * 1000);
+    const utc = (d) => `${d.toISOString().replace('T', ' ').slice(0, 19)} UTC`;
+    const history = { amelie_s22: [
+      { From: 'amelie_s22', 'Media Type': 'TEXT', Created: utc(t), Content: 'snap me the notes?', IsSender: false },
+      { From: 'liam_c', 'Media Type': 'TEXT', Created: utc(new Date(t.getTime() + 60000)), Content: 'on it', IsSender: true },
+    ] };
+    fakeBridge({ 'mydata~1.zip': { kind: 'snapchat', files: [{ path: 'json/chat_history.json', text: JSON.stringify(history) }, { path: 'json/friends.json', text: JSON.stringify({ Friends: [{ Username: 'amelie_s22', 'Display Name': 'Amelie' }] }) }] } });
+    seedState({ profile: { name: 'Liam', focus: 'mix' }, people: [person('Amelie')] });
+    const { user } = renderApp();
+    const card = await openAnalyse(user);
+    await user.click(await within(card).findByRole('button', { name: /Amelie.*Snapchat · Amelie.*1 new/ }));
+    expect(within(card).queryByText('Which of these is you?')).toBeNull();
+    await user.click(within(card).getByRole('button', { name: /2 messages/ }));
+    expect(screen.getByLabelText('The chat').value).toMatch(/\] Amelie: snap me the notes\?\n\[.*\] Liam: on it$/);
   });
 });

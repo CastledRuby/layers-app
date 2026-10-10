@@ -8,23 +8,27 @@ import { useState } from 'react';
 import { ChevronRight, FolderOpen } from 'lucide-react';
 import { Avatar } from './atoms.jsx';
 import { getLayer } from '../data/constants.js';
-import { chatRows, conversationLabel } from '../lib/chatImport.js';
+import { chatRows, conversationLabel, sourceLabel } from '../lib/chatImport.js';
+import { formatCalendarDate } from '../lib/dates.js';
 import { COLORS } from '../theme.js';
 
-const SOURCE = { whatsapp: { emoji: '💬', label: 'WhatsApp' }, instagram: { emoji: '📷', label: 'Instagram' } };
+const EMOJI = { whatsapp: '💬', instagram: '📷', imessage: '🗨️', snapchat: '👻' };
 
 function Help({ folder }) {
   return (
     <div className="text-xs mt-2 space-y-1.5" style={{ color: COLORS.inkSoft }}>
       <p><span className="font-semibold" style={{ color: COLORS.ink }}>WhatsApp:</span> on your phone, open the chat → Export chat → Without media → Save to Files → OneDrive → {folder}. It shows here a few seconds after OneDrive brings it down.</p>
       <p><span className="font-semibold" style={{ color: COLORS.ink }}>Instagram:</span> Accounts Centre → Your information and permissions → Download your information → just Messages, as JSON, for the last week or so. Save the zip in the same folder.</p>
-      <p>Snapchat and iMessage don't export chats: those will be screenshots, in the phone app.</p>
+      <p><span className="font-semibold" style={{ color: COLORS.ink }}>Snapchat:</span> Settings → My Data → choose Chat History (and Friends), with Export JSON files on → Submit. When Snapchat emails you, download the zip and save it in the same folder. It only has chats that were saved or not opened yet.</p>
+      <p><span className="font-semibold" style={{ color: COLORS.ink }}>iMessage:</span> plug your iPhone into this laptop, open Apple Devices → Back up all of the data on your iPhone to this computer (Encrypt local backup unticked) → Back Up Now. Layers reads the newest backup, so back up again for newer messages.</p>
     </div>
   );
 }
 
-// initialOpen: a chat to show opened (from the week review).
-export function ChatExports({ state, people, yourName, progress, folder = 'Documents → Layers chats', onPick, onPickMe, onOpenFolder, initialOpen = null }) {
+// initialOpen: a chat to show opened (from the week review). onReply(chat,
+// conv, owner): Reply ideas for a chat's latest conversation (What to say).
+// showAll: every conversation listed, not just new ones (picking one to reply to).
+export function ChatExports({ state, people, yourName, progress, folder = 'Documents → Layers chats', onPick, onPickMe, onOpenFolder, initialOpen = null, onReply = null, showAll = false }) {
   const [open, setOpen] = useState(initialOpen); // the chat shown
   const [showEarlier, setShowEarlier] = useState(false);
   const [showOthers, setShowOthers] = useState(false);
@@ -40,15 +44,15 @@ export function ChatExports({ state, people, yourName, progress, folder = 'Docum
     const { chat, owner, ids, convs, fresh } = row;
     const isOpen = open === chat.key;
     const who = ids.map(id => people.find(p => p.id === id)).filter(Boolean);
-    const shown = showEarlier ? convs : fresh;
+    const shown = showEarlier || showAll ? convs : fresh;
     const names = [...new Set([...chat.participants, ...chat.messages.map(m => m.sender)])];
     return (
       <div key={chat.key} className="rounded-xl mt-1.5" style={{ border: `1px solid ${isOpen ? COLORS.accent : COLORS.line}` }}>
         <button type="button" onClick={() => { setOpen(isOpen ? null : chat.key); setShowEarlier(false); }} aria-expanded={isOpen} className="w-full flex items-center gap-2.5 px-3 py-2.5 text-left">
-          <span aria-hidden="true">{SOURCE[chat.source].emoji}</span>
+          <span aria-hidden="true">{EMOJI[chat.source] || '💬'}</span>
           <span className="flex-1 min-w-0">
             <span className="text-sm font-semibold block truncate" style={{ color: COLORS.ink }}>{chat.title}</span>
-            <span className="text-xs" style={{ color: COLORS.inkSoft }}>{SOURCE[chat.source].label}{who.length ? ` · ${who.map(p => p.name).join(', ')}` : ''}</span>
+            <span className="text-xs" style={{ color: COLORS.inkSoft }}>{sourceLabel(chat.source)}{who.length ? ` · ${who.map(p => p.name).join(', ')}` : ''}</span>
           </span>
           {who.slice(0, 3).map(p => <Avatar key={p.id} person={p} size={22} ringColor={getLayer(p.layer).color} />)}
           <span className="text-xs font-semibold shrink-0" style={{ color: fresh.length ? COLORS.accent : COLORS.inkSoft }}>{fresh.length ? `${fresh.length} new` : 'Nothing new'}</span>
@@ -65,6 +69,7 @@ export function ChatExports({ state, people, yourName, progress, folder = 'Docum
               </>
             ) : (
               <>
+                {onReply && convs.length > 0 && <button type="button" onClick={() => onReply(chat, convs[0], owner)} className="chip mb-1" style={{ padding: '4px 10px' }}>💬 Reply ideas for the latest</button>}
                 {shown.length === 0 && <p className="text-xs" style={{ color: COLORS.inkSoft }}>Nothing new since you last analysed this chat. Export it again after you've talked.</p>}
                 {shown.slice(0, showEarlier ? 30 : 10).map(conv => {
                   const opener = conv.messages.find(m => m.sender !== owner) || conv.messages[0];
@@ -75,7 +80,7 @@ export function ChatExports({ state, people, yourName, progress, folder = 'Docum
                     </button>
                   );
                 })}
-                {convs.length > fresh.length && <button type="button" onClick={() => setShowEarlier(v => !v)} className="text-xs font-semibold mt-2" style={{ color: COLORS.accent }}>{showEarlier ? 'Only new ones' : `Earlier conversations (${convs.length - fresh.length})`}</button>}
+                {!showAll && convs.length > fresh.length && <button type="button" onClick={() => setShowEarlier(v => !v)} className="text-xs font-semibold mt-2" style={{ color: COLORS.accent }}>{showEarlier ? 'Only new ones' : `Earlier conversations (${convs.length - fresh.length})`}</button>}
               </>
             )}
           </div>
@@ -92,7 +97,8 @@ export function ChatExports({ state, people, yourName, progress, folder = 'Docum
         {onOpenFolder && <button type="button" onClick={onOpenFolder} className="flex items-center gap-1 text-xs font-semibold" style={{ color: COLORS.accent }}><FolderOpen size={13} />Folder</button>}
       </div>
       {!state && <p className="text-xs mt-1.5" style={{ color: COLORS.inkSoft }}>Reading your chats…</p>}
-      {state && !rows.length && <p className="text-xs mt-1.5" style={{ color: COLORS.inkSoft }}>Export a chat into the Layers chats folder and its conversations show here, ready to analyse.</p>}
+      {state && !rows.length && <p className="text-xs mt-1.5" style={{ color: COLORS.inkSoft }}>Export a chat into the Layers chats folder, or back up your iPhone to this laptop, and its conversations show here, ready to analyse.</p>}
+      {state && state.iphone && <p className="text-xs mt-1.5" style={{ color: COLORS.inkSoft }}>iMessage from {state.iphone.name || 'your iPhone'}, backed up {formatCalendarDate(new Date(state.iphone.at))}, {new Date(state.iphone.at).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}. Back up again for newer messages.</p>}
       {(help || (state && !rows.length)) && <Help folder={folder} />}
       {state && state.problems.map(p => <p key={p.name} className="text-xs mt-1.5" role="alert" style={{ color: COLORS.alert }}>{p.name}: {p.error}</p>)}
       {yours.map(renderRow)}

@@ -3,8 +3,9 @@
 A private relationship-development and social-skills coaching app. It tracks the
 people in your circle across four "layers" of closeness, logs interactions, sets goals,
 and coaches you on conversations. Your data is kept on the device in `localStorage`, with
-a daily backup in Documents. Turning on sync adds one encrypted file in OneDrive, and a
-chat is sent to Claude only when you press Analyse.
+a daily backup in Documents. Turning on sync adds one encrypted file in OneDrive. Claude
+is used only with your own API key: for what you ask (Analyse, What to say, Practise), and
+once a day for an opener to the person to message, within your monthly limit.
 
 It's a React 19 + Vite single-page app, packaged for Windows and Linux with Electron. An
 iPhone app (Capacitor) is built for the simulator on GitHub so far.

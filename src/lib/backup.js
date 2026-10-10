@@ -217,7 +217,7 @@ export function validateBackup(raw, { source = 'backup' } = {}) {
   const events = (raw.events || []).map(e => cleanEvent(e, seen, skipped)).filter(Boolean);
   const skills = cleanSkills(raw.skills);
   const profile = isObject(raw.profile)
-    ? { ...raw.profile, name: typeof raw.profile.name === 'string' ? raw.profile.name : '', focus: typeof raw.profile.focus === 'string' ? raw.profile.focus : null }
+    ? { ...raw.profile, name: typeof raw.profile.name === 'string' ? raw.profile.name : '', focus: typeof raw.profile.focus === 'string' ? raw.profile.focus : null, style: typeof raw.profile.style === 'string' ? raw.profile.style.slice(0, 200) : undefined }
     : { name: '', focus: null };
   const exportedAt = typeof raw.exportedAt === 'string' && !isNaN(new Date(raw.exportedAt).getTime()) ? raw.exportedAt : null;
   // Recorded achievements: { key: 'YYYY-MM-DD' }. Older backups have none

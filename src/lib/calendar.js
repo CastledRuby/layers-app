@@ -239,6 +239,38 @@ export function quietDay(person, journal = []) {
   return { day: toISODate(addDays(dayDate(last), limit)), limit, last, usual };
 }
 
+// Today's "who to message" (Know what to say, decided 2026-10-10): one person
+// and why, worked out here, so it's free. In order: their key date today or
+// tomorrow, asking how something went (a saved detail whose day was in the
+// last three days), then whoever has gone quietest past their usual gap
+// (quietDay). Not anyone with a plan that day, already logged that day, or
+// put off (`skipped`, their ids). { person, kind: 'date' | 'followup' |
+// 'quiet', text } or null.
+export function messageNudge({ people = [], journal = [], events = [] }, day, skipped = []) {
+  const busy = new Set([
+    ...events.filter(ev => occursOn(ev, day) && !isMissedOn(ev, day)).flatMap(ev => ev.personIds || []),
+    ...journal.filter(j => j.at === day).map(j => j.personId),
+    ...skipped,
+  ]);
+  const open = people.filter(p => !busy.has(p.id));
+  const tomorrow = toISODate(addDays(dayDate(day), 1));
+  for (const when of [day, tomorrow]) {
+    for (const p of open) {
+      const kd = (p.dates || []).find(d => keyDateOn(d, when));
+      if (kd) return { person: p, kind: 'date', text: `${keyDateLabel(p, kd)} is ${when === day ? 'today' : 'tomorrow'}` };
+    }
+  }
+  const from = toISODate(addDays(dayDate(day), -3));
+  const follow = open.flatMap(p => ['important', 'plans'].flatMap(cat => (p[cat] || []).filter(it => it && !it.archived && typeof it.when === 'string' && it.when >= from && it.when < day).map(it => ({ p, it }))))
+    .sort((a, b) => b.it.when.localeCompare(a.it.when))[0];
+  if (follow) return { person: follow.p, kind: 'followup', text: `Ask ${follow.p.name} how "${follow.it.text}" went` };
+  const quiet = open.map(p => ({ p, q: quietDay(p, journal) })).filter(x => x.q && x.q.day <= day)
+    .map(x => ({ ...x, days: Math.round((dayDate(day) - dayDate(x.q.last)) / 86400000) }))
+    .sort((a, b) => b.days / b.q.limit - a.days / a.q.limit)[0];
+  if (quiet) return { person: quiet.p, kind: 'quiet', text: `It's been ${sinceText(quiet.days)} since you and ${quiet.p.name} talked` };
+  return null;
+}
+
 // One week, Monday to Sunday, around `day`: the weekly review. Daily
 // routines aren't counted as plans, so they don't drown out the rest.
 export function weekSummary({ people = [], journal = [], events = [], generalGoals = [] }, day) {
@@ -328,7 +360,9 @@ export function plannedNotifications(state, settings, from, to, snoozes = []) {
         out.push({ tag: `f:${it.ev.id}:${day}`, at: at(day, it.end), kind: 'after', eventId: it.ev.id, day, title: `How did it go with ${withWho(it.ev)}?`, body: `${it.ev.title}. Log it, or just tick it off.` });
       });
     }
-    const lines = summaryLine(agenda);
+    // The morning's who to message (messageNudge), as things stand.
+    const nudge = messageNudge(state, day);
+    const lines = [...summaryLine(agenda), ...(nudge ? [`💬 ${nudge.text}`] : [])];
     if (s.morningSummary && lines.length) {
       out.push({ tag: `m:${day}`, at: at(day, s.morningTime), kind: 'morning', day, title: `Today: ${lines.length === 1 ? '1 thing' : `${lines.length} things`}`, body: lines.join(' · ') });
     }

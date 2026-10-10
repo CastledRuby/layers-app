@@ -24,8 +24,8 @@ always opens maximised, and from 900 px wide Layers fills it; the phone frame on
 in a narrow window.)*
 
 **Privacy is core.** Layers is local-first: everything is stored on the device. *(The
-optional OneDrive sync file is encrypted, and a chat goes to Claude only when you press
-Analyse.)* Its
+optional OneDrive sync file is encrypted. Claude is used only with your own API key: for
+what you ask, and once a day for an opener, within your monthly limit.)* Its
 relationship scores are a reflection tool, not a measurement instrument. They make no
 claim to objectively measure another person's feelings.
 
@@ -97,7 +97,7 @@ claim to objectively measure another person's feelings.
     conversation topics, not only generic advice.
 - **Conversation Coach, Analyse.** It works with mock data for now, but it must work for
   any person you've added, not hardcoded demo IDs. *(Since 1.0.36 it is a real analysis
-  by Claude, run only when you press Analyse.)* It offers:
+  by Claude, run when you press Analyse.)* It offers:
   - conversation reconstruction
   - a conversation-state assessment
   - grading across several dimensions

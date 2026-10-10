@@ -9,6 +9,7 @@ const { findFaces } = require('./faces.cjs');
 const { calendarName, cleanFeedUrl, feedStore, fetchFeed } = require('./feeds.cjs');
 const { checkKey, cleanKey, keyStore, runAnalysis } = require('./analysis.cjs');
 const { chatsDir, listExports, readExport, watchExports } = require('./chatfiles.cjs');
+const { backupRoots, readIMessages } = require('./imessage.cjs');
 const { FILE: SYNC_FILE, passphraseStore, readSyncFiles, removeSyncCopies, setAsideSyncFile, syncDir, writeSyncFile } = require('./sync.cjs');
 
 // Windows groups taskbar entries, toast notifications, and jump lists by
@@ -100,6 +101,7 @@ if (!gotSingleInstanceLock || quitRequested) {
     setupSummary();
     setupAnalysis();
     setupChats();
+    setupIMessage();
     setupQuickAdd();
     registerGlobalShortcut();
 
@@ -676,6 +678,14 @@ function setupChats() {
   });
   const stop = watchExports(dir(), () => { if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send('chats-changed'); });
   app.on('will-quit', stop);
+}
+
+// iMessage from the newest iPhone backup on this laptop (imessage.cjs): read
+// only when the page asks, and only again when there's a newer backup
+// (knownAt, the one it has).
+function setupIMessage() {
+  const roots = () => backupRoots({ home: app.getPath('home'), appData: app.getPath('appData'), userData: app.getPath('userData') });
+  ipcMain.handle('imessage-read', (_event, knownAt) => readIMessages({ roots: roots(), knownAt: typeof knownAt === 'number' ? knownAt : null }).catch(() => ({ none: true })));
 }
 
 function setupCalendar() {

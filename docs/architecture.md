@@ -11,7 +11,7 @@ that file into a single window and adds desktop features: tray icon, single-inst
 lock, global shortcuts and the quick-add box, launch at login and GitHub-Releases
 auto-update. It also does what the page can't do itself, each in its own module in
 `electron/`: Windows notifications, daily backups, the encrypted OneDrive sync file, chat
-exports, faces in photos, other calendars and chat analysis with Claude (see
+exports and iMessage chats from an iPhone backup, faces in photos, other calendars and chat analysis with Claude (see
 [electron.md](electron.md)). These are exposed to the page through a small preload bridge
 (`electron/preload.cjs`). The calendar's notifications are scheduled with Windows, so
 they arrive even when Layers is closed; the daily check-in nudge comes from the page
@@ -28,7 +28,7 @@ flowchart LR
     Q[Quick-add window<br/>the page as #quick]
     U[electron-updater<br/>GitHub Releases]
     A[Login item<br/>auto-launch]
-    M[toasts · backups · sync · chatfiles<br/>faces · feeds · analysis .cjs]
+    M[toasts · backups · sync · chatfiles<br/>imessage · faces · feeds · analysis .cjs]
   end
   subgraph Preload["Preload — electron/preload.cjs<br/>(contextIsolation: true)"]
     LU[window.layersUpdater]
@@ -80,6 +80,7 @@ feature is guarded by `hasUpdater` / `hasSystemBridge` checks in `LayersApp`.
 │   ├── backups.cjs           Daily backups in Documents\Layers backups, the newest 14
 │   ├── sync.cjs              Moves the encrypted OneDrive sync file; keeps its passphrase
 │   ├── chatfiles.cjs         Reads chat exports from Documents\Layers chats
+│   ├── imessage.cjs          Reads iMessage chats from the newest iPhone backup on this laptop
 │   ├── faces.cjs             Finds faces in photos with Windows' own face detector
 │   ├── feeds.cjs             Other calendars: keeps the iCal addresses, downloads them
 │   ├── analysis.cjs          Chat analysis with Claude: keeps the API key, sends the request

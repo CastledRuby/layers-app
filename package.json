@@ -86,6 +86,7 @@
       "electron/feeds.cjs",
       "electron/analysis.cjs",
       "electron/chatfiles.cjs",
+      "electron/imessage.cjs",
       "electron/icon.png",
       "electron/icon.ico",
       "electron/tray-icon-dark.png",
