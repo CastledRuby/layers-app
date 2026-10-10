@@ -157,6 +157,12 @@ Electron's "Error" box) can't answer `--quit`, so it's stopped instead. And it o
 says "is installed and running" once the new Layers' page is running, not just its
 process.
 
+**Other copies of Layers** (added 2026-10-10): other Claude sessions' end-to-end tests
+run their own `Layers.exe` from their worktrees. The install only asks the one in the
+install folder to quit (or stops it if it crashed on start), and waits up to five
+minutes for other copies to close before running the installer, because Windows'
+installer refuses while any `Layers.exe` is open (it exited with 2).
+
 ## The phone web app (GitHub Pages)
 
 The same Layers, built for the web (`npm run build`, into `dist/`, relative paths) and

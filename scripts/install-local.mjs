@@ -120,15 +120,24 @@ function readAsarFile(asarPath, name) {
   return buf.toString('utf8', base + Number(entry.offset), base + Number(entry.offset) + entry.size);
 }
 
-const layersRunning = () => /Layers\.exe/i.test(spawnSync('tasklist', ['/FI', 'IMAGENAME eq Layers.exe', '/NH'], { encoding: 'utf8' }).stdout || '');
+// Every running Layers.exe: [{ id, installed (it's the one in the install
+// folder), renderer (its page) }]. Copies elsewhere aren't the Layers on this
+// computer: another Claude session's end-to-end tests run their own build
+// (2026-10-10), and only the installed one is asked to quit, stopped or
+// checked on. Windows' installer won't run past any of them, though.
+function layersProcesses() {
+  const r = spawnSync('powershell', ['-NoProfile', '-Command', 'Get-CimInstance Win32_Process -Filter "Name=\'Layers.exe\'" | ForEach-Object { [pscustomobject]@{ id = $_.ProcessId; path = $_.ExecutablePath; renderer = [bool]($_.CommandLine -match \'--type=renderer\') } } | ConvertTo-Json -Compress'], { encoding: 'utf8' });
+  let list = [];
+  try { const v = JSON.parse((r.stdout || '').trim() || '[]'); list = Array.isArray(v) ? v : [v]; } catch { /* none running */ }
+  return list.filter(Boolean).map(p => ({ id: p.id, installed: String(p.path || '').toLowerCase() === INSTALLED_EXE.toLowerCase(), renderer: !!p.renderer }));
+}
+const layersRunning = () => layersProcesses().some(p => p.installed);
+const otherCopies = () => layersProcesses().filter(p => !p.installed);
 // Whether Layers' page is running (a renderer process; its window is made,
 // shown or not, as it starts). A Layers whose main process hit an error on
 // start never gets one: it shows Electron's "Error" box, which still counts as
 // running, and can't answer --quit.
-function pageRunning() {
-  const r = spawnSync('powershell', ['-NoProfile', '-Command', "@(Get-CimInstance Win32_Process -Filter \"Name='Layers.exe'\" | Where-Object { $_.CommandLine -match '--type=renderer' }).Count"], { encoding: 'utf8' });
-  return Number((r.stdout || '').trim()) > 0;
-}
+const pageRunning = () => layersProcesses().some(p => p.installed && p.renderer);
 async function waitForPage(seconds) {
   for (let i = 0; i < seconds * 2 && !pageRunning(); i++) await sleep(500);
   return pageRunning();
@@ -141,8 +150,9 @@ function missingDependencies() {
   const deps = Object.keys(JSON.parse(readFileSync(join(root, 'package.json'), 'utf8')).dependencies || {});
   return deps.filter(name => !existsSync(join(root, 'node_modules', ...name.split('/'), 'package.json')));
 }
+// Whether the installed Layers has its window showing (not a test copy's).
 function windowShowing() {
-  const r = spawnSync('powershell', ['-NoProfile', '-Command', '@(Get-Process Layers -ErrorAction SilentlyContinue | Where-Object { $_.MainWindowHandle -ne 0 }).Count'], { encoding: 'utf8' });
+  const r = spawnSync('powershell', ['-NoProfile', '-Command', '@(Get-Process Layers -ErrorAction SilentlyContinue | Where-Object { $_.MainWindowHandle -ne 0 -and $_.Path -eq $env:LAYERS_INSTALLED_EXE }).Count'], { encoding: 'utf8', env: { ...process.env, LAYERS_INSTALLED_EXE: INSTALLED_EXE } });
   return Number((r.stdout || '').trim()) > 0;
 }
 
@@ -191,7 +201,7 @@ async function main() {
   // A Layers that crashed on start can't quit itself: it's stopped instead.
   if (layersRunning() && !(await waitForPage(5))) {
     log('The running Layers crashed on start, so it was stopped.');
-    spawnSync('taskkill', ['/IM', 'Layers.exe', '/F'], { stdio: 'ignore' });
+    layersProcesses().filter(p => p.installed).forEach(p => spawnSync('taskkill', ['/PID', String(p.id), '/F'], { stdio: 'ignore' }));
     for (let i = 0; i < 20 && layersRunning(); i++) await sleep(500);
   }
   const showWindow = layersRunning() && windowShowing();
@@ -200,6 +210,17 @@ async function main() {
     spawnSync(INSTALLED_EXE, ['--quit'], { stdio: 'ignore', timeout: 20000, env: appEnv });
     for (let i = 0; i < 40 && layersRunning(); i++) await sleep(500);
     if (layersRunning()) fail("Layers didn't quit, so nothing was installed. Quit it from the tray icon and run npm run install:local.");
+  }
+
+  // Windows' installer won't run while any Layers.exe is open (it exited with 2
+  // when another session's tests had theirs open), so wait for those to close.
+  if (otherCopies().length) {
+    log("Waiting for other copies of Layers (another session's tests, perhaps) to close…");
+    for (let i = 0; i < 300 && otherCopies().length; i++) await sleep(1000);
+    if (otherCopies().length) {
+      if (existsSync(INSTALLED_EXE) && !layersRunning()) spawn(INSTALLED_EXE, showWindow ? [] : ['--hidden'], { detached: true, stdio: 'ignore', env: appEnv }).unref();
+      fail("Other copies of Layers are still open (another session's tests, perhaps), and Windows won't install while they are. The Layers that was installed before was started again; run npm run install:local once they've closed.");
+    }
   }
 
   const backup = backUpData(version);
