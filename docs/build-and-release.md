@@ -157,6 +157,12 @@ Electron's "Error" box) can't answer `--quit`, so it's stopped instead. And it o
 says "is installed and running" once the new Layers' page is running, not just its
 process.
 
+**Only main installs** (decided 2026-10-10): a commit in a linked worktree (a Claude
+session's, under `.claude/worktrees/`) doesn't install; merging it into main does
+(the post-merge hook), as does `npm run install:local` run by hand. Several sessions
+committing at once had each replaced the last one's install. Sessions already running
+keep their own copy of the script until they merge main.
+
 **Other copies of Layers** (added 2026-10-10): other Claude sessions' end-to-end tests
 run their own `Layers.exe` from their worktrees. The install only asks the one in the
 install folder to quit (or stops it if it crashed on start), and waits up to five

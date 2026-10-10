@@ -83,8 +83,21 @@ function alreadyInstalled(head) {
   return git('diff', '--quiet', stamp.commit, head, '--', ...APP_CODE).status === 0;
 }
 
+// Whether this copy is a linked worktree (a Claude session's, under
+// .claude/worktrees/) rather than the main checkout: its git folder isn't the
+// shared one.
+function inWorktree() {
+  return resolve(root, gitOut('rev-parse', '--git-dir')).toLowerCase() !== resolve(root, gitOut('rev-parse', '--git-common-dir')).toLowerCase();
+}
+
+// Only main installs from the hooks (decided 2026-10-10): several Claude
+// sessions commit in their own worktrees at once, and each install replaced
+// the last, so the Layers on this computer changed with whichever session
+// committed last. A worktree's commits don't install; merging into main
+// does, and npm run install:local still installs any copy by hand.
 function skipReason() {
   if (process.env.LAYERS_NO_INSTALL) return 'LAYERS_NO_INSTALL is set';
+  if (ifChanged && inWorktree()) return 'this is a worktree, and only main installs (merge into main, or run npm run install:local here)';
   if (process.env.LAYERS_RELEASING) return 'npm run release installs its own build';
   if (process.platform !== 'win32') return 'Layers is installed on Windows only';
   if (['rebase-merge', 'rebase-apply'].some(p => existsSync(resolve(root, gitOut('rev-parse', '--git-path', p))))) return 'a rebase is in progress; the next commit installs';
