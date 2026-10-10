@@ -4,14 +4,14 @@
 > Run `npm run docs:map` after changing anything under `src/`, `electron/*.cjs` or `package.json` scripts.
 > Hand-written explanations live in the other files under [`docs/`](../README.md).
 
-Package: `layers-web` v1.0.37 · `src/`: 89 files, 15257 lines, 110 components, 412 top-level functions, 206 constants.
+Package: `layers-web` v1.0.37 · `src/`: 90 files, 15388 lines, 110 components, 418 top-level functions, 210 constants.
 
 ## Source files
 
 | File | Lines | Declares | Imports from |
 |---|---|---|---|
 | [main.jsx](../../src/main.jsx) | 16 | quick | — |
-| [App.jsx](../../src/App.jsx) | 1729 | sampleData, SAMPLE_PERSON_IDS, SAMPLE_GOAL_IDS, skillsCameWithSamples, allSkillsZero, listNames, unlinkMissingPeople, addNotes, applyLog, namesText, … (+3) | `components/BottomNav`, `components/ErrorBoundary`, `components/PageTransition`, `components/sheetLayer`, `data/constants`, `data/seed`, `lib/dates`, `lib/achievements`, `lib/progress`, `lib/backup`, `lib/calendar`, `lib/hooks`, `lib/chatBatch`, `lib/reminders`, `lib/analysis`, `lib/storage`, `lib/replies`, `lib/chatBatch`, `lib/util`, `modals/AddInfoModal`, `modals/AddPersonModal`, `modals/ConfirmDialog`, `modals/EditEntryModal`, `modals/EditPersonModal`, `modals/EditProfileModal`, `modals/EventSheet`, `modals/GoalModal`, `modals/KeyDateSheet`, `modals/LogInteractionModal`, `modals/PlanSheet`, `modals/PhotoFolderSheet`, `lib/sync`, `lib/syncFile`, `modals/SyncSheet`, `lib/ics`, `lib/summary`, `modals/QuickAddInterestModal`, `modals/ShortcutsModal`, `modals/StartOverSheet`, `modals/DaySheet`, `modals/JumpSheet`, `lib/sentence`, `modals/TemplatePickerModal`, `modals/ChatReviewSheet`, `modals/WeekReviewSheet`, `theme`, `views/CoachView`, `views/GoalsView`, `views/JournalView`, `views/MeView`, `views/OnboardingView`, `views/PeopleView`, `views/PersonProfile`, `components/ClosenessQuiz`, `views/TodayView` |
+| [App.jsx](../../src/App.jsx) | 1730 | sampleData, SAMPLE_PERSON_IDS, SAMPLE_GOAL_IDS, skillsCameWithSamples, allSkillsZero, listNames, unlinkMissingPeople, addNotes, applyLog, namesText, … (+3) | `components/BottomNav`, `components/ErrorBoundary`, `components/PageTransition`, `components/sheetLayer`, `data/constants`, `data/seed`, `lib/dates`, `lib/achievements`, `lib/progress`, `lib/backup`, `lib/calendar`, `lib/hooks`, `lib/chatBatch`, `lib/reminders`, `lib/analysis`, `lib/storage`, `lib/replies`, `lib/chatBatch`, `lib/util`, `modals/AddInfoModal`, `modals/AddPersonModal`, `modals/ConfirmDialog`, `modals/EditEntryModal`, `modals/EditPersonModal`, `modals/EditProfileModal`, `modals/EventSheet`, `modals/GoalModal`, `modals/KeyDateSheet`, `modals/LogInteractionModal`, `modals/PlanSheet`, `modals/PhotoFolderSheet`, `lib/sync`, `lib/syncFile`, `modals/SyncSheet`, `lib/ics`, `lib/summary`, `modals/QuickAddInterestModal`, `modals/ShortcutsModal`, `modals/StartOverSheet`, `modals/DaySheet`, `modals/JumpSheet`, `lib/sentence`, `modals/TemplatePickerModal`, `modals/ChatReviewSheet`, `modals/WeekReviewSheet`, `theme`, `views/CoachView`, `views/GoalsView`, `views/JournalView`, `views/MeView`, `views/OnboardingView`, `views/PeopleView`, `views/PersonProfile`, `components/ClosenessQuiz`, `views/TodayView` |
 | [theme.js](../../src/theme.js) | 354 | THEME_LIGHT, THEME_DARK, COLORS, cssVarBlock, EASE, CSS | `fonts` |
 | [data/avatars.js](../../src/data/avatars.js) | 203 | AVATAR_COLS, AVATAR_GROUPS, findAvatars, INITIAL_COLORS, INITIALS_GROUP, isInitials, PHOTO_SIZE, PHOTO_GROUP, PHOTO_SRC, isPhoto, … (+16) | — |
 | [data/constants.js](../../src/data/constants.js) | 349 | LAYERS, getLayer, DIM_ORDER, DIM_LABELS, DIM_COLORS, LAYER_BASE_DIMS, CATEGORIES, categoryMeta, TABS, SHORTCUTS, … (+29) | `theme` |
@@ -43,6 +43,7 @@ Package: `layers-web` v1.0.37 · `src/`: 89 files, 15257 lines, 110 components, 
 | [lib/text.js](../../src/lib/text.js) | 171 | summaryFor, updateStatusText, homeGoalTitle, generateSuggestions, getCheckInSuggestions, checkInReminder, HOOKS, buildPotentialHooks, focusSuggestion | `data/constants`, `lib/dates` |
 | [lib/tips.js](../../src/lib/tips.js) | 47 | SOON_DAYS, addDays, datesAround, planTips | `data/constants`, `lib/calendar`, `lib/dates`, `lib/text` |
 | [lib/util.js](../../src/lib/util.js) | 9 | clamp, uidCounter, uid | — |
+| [lib/weekRead.js](../../src/lib/weekRead.js) | 78 | str, obj, DAYS, MAX_LOGS, WEEK_SCHEMA, weekReadRequest, weekReadResult, KEY, readWeekReads, saveWeekRead | `data/constants`, `lib/analysis`, `lib/replies`, `lib/dates` |
 | [components/ActivityCalendar.jsx](../../src/components/ActivityCalendar.jsx) | 51 | CELL, GAP, shade, ActivityCalendar | `lib/activity`, `lib/dates`, `theme` |
 | [components/atoms.jsx](../../src/components/atoms.jsx) | 156 | CircularProgress, ProgressBar, LabeledBar, Avatar, LayerBadge, ChatBubble, Timeline, ConvStateBadge, Kbd, KeyedField | `data/constants`, `data/avatars`, `lib/dates`, `lib/util`, `theme` |
 | [components/avatarKeys.js](../../src/components/avatarKeys.js) | 135 | PICKER_GROUPS, EMOJI_FROM, useAvatarPicker | `data/avatars`, `lib/photo` |
@@ -88,7 +89,7 @@ Package: `layers-web` v1.0.37 · `src/`: 89 files, 15257 lines, 110 components, 
 | [modals/StartOverSheet.jsx](../../src/modals/StartOverSheet.jsx) | 166 | STEPS, HOLD_MS, count, PARTS, HoldButton, StartOverSheet | `components/Sheet`, `components/sheetLayer`, `components/atoms`, `theme` |
 | [modals/SyncSheet.jsx](../../src/modals/SyncSheet.jsx) | 69 | MIN_PASSPHRASE, SyncSheet | `components/Sheet`, `components/sheetLayer`, `components/atoms`, `theme` |
 | [modals/TemplatePickerModal.jsx](../../src/modals/TemplatePickerModal.jsx) | 98 | TemplatePickerModal | `components/Sheet`, `components/sheetLayer`, `components/atoms`, `data/constants`, `theme` |
-| [modals/WeekReviewSheet.jsx](../../src/modals/WeekReviewSheet.jsx) | 117 | addDays, short, Stat, WeekReviewSheet | `components/Sheet`, `components/sheetLayer`, `components/atoms`, `components/PersonPick`, `lib/calendar`, `lib/chatImport`, `lib/dates`, `theme` |
+| [modals/WeekReviewSheet.jsx](../../src/modals/WeekReviewSheet.jsx) | 169 | addDays, short, Stat, WeekReviewSheet | `components/Sheet`, `components/sheetLayer`, `components/atoms`, `components/PersonPick`, `lib/calendar`, `lib/chatImport`, `lib/dates`, `lib/analysis`, `lib/chatBatch`, `lib/weekRead`, `theme` |
 | [views/CoachView.jsx](../../src/views/CoachView.jsx) | 745 | Tones, ModelButtons, CoachView | `components/atoms`, `components/sheetLayer`, `lib/analysis`, `components/pickers`, `components/ChatExports`, `components/ChatBatch`, `components/ReplyIdeas`, `components/Practice`, `modals/ChatQueueSheet`, `lib/chatBatch`, `lib/chatImport`, `lib/dates`, `data/avatars`, `lib/photo`, `data/constants`, `data/scenarios`, `lib/text`, `theme` |
 | [views/GoalsView.jsx](../../src/views/GoalsView.jsx) | 72 | GoalsView | `components/atoms`, `components/rows`, `data/constants`, `theme` |
 | [views/JournalView.jsx](../../src/views/JournalView.jsx) | 183 | PERIODS, Chip, JournalView | `components/ActivityCalendar`, `data/constants`, `lib/dates`, `lib/text`, `theme` |
@@ -184,8 +185,8 @@ Package: `layers-web` v1.0.37 · `src/`: 89 files, 15257 lines, 110 components, 
 | `StartOverSheet` | [StartOverSheet.jsx:54](../../src/modals/StartOverSheet.jsx#L54) | `counts`, `onExport`, `onClose`, `onConfirm` | `LayersApp` |
 | `SyncSheet` | [SyncSheet.jsx:16](../../src/modals/SyncSheet.jsx#L16) | `hasFile`, `folder`, `onClose`, `onTurnOn` | `LayersApp` |
 | `TemplatePickerModal` | [TemplatePickerModal.jsx:23](../../src/modals/TemplatePickerModal.jsx#L23) | `title`, `subtitle`, `onClose`, `onPick`, `allowMultiple`, `templates` | `LogInteractionModal` |
-| `Stat` | [WeekReviewSheet.jsx:24](../../src/modals/WeekReviewSheet.jsx#L24) | `value`, `label`, `children` | `WeekReviewSheet` |
-| `WeekReviewSheet` | [WeekReviewSheet.jsx:36](../../src/modals/WeekReviewSheet.jsx#L36) | `day`, `people`, `journal`, `events`, `generalGoals`, `onClose`, `onPlan`, `chatExports`, `yourName`, `onOpenChat`, `onAnalyseAll` | `LayersApp` |
+| `Stat` | [WeekReviewSheet.jsx:29](../../src/modals/WeekReviewSheet.jsx#L29) | `value`, `label`, `children` | `WeekReviewSheet` |
+| `WeekReviewSheet` | [WeekReviewSheet.jsx:41](../../src/modals/WeekReviewSheet.jsx#L41) | `day`, `people`, `journal`, `events`, `generalGoals`, `onClose`, `onPlan`, `chatExports`, `yourName`, `onOpenChat`, `onAnalyseAll`, `onAnalyse` | `LayersApp` |
 | `Tones` | [CoachView.jsx:32](../../src/views/CoachView.jsx#L32) | `item`, `intro` | `CoachView` |
 | `ModelButtons` | [CoachView.jsx:46](../../src/views/CoachView.jsx#L46) | `label`, `value`, `onPick`, `done` | `CoachView` |
 | `CoachView` | [CoachView.jsx:71](../../src/views/CoachView.jsx#L71) | `people`, `journal`, `initialPersonId`, `initialTab`, `onOpenLog`, `onApproveInfo`, `onApproveInfoAll`, `onRemindAbout`, `onLogFromAnalysis`, `onLogChat`, `onOpenPerson`, `analysisReady`, `onAnalyse`, `onOpenMe`, `yourName`, `model`, `onModel`, `chatExports`, `initialChatKey`, `chatBatch`, `style` | `LayersApp` |
@@ -567,6 +568,12 @@ Package: `layers-web` v1.0.37 · `src/`: 89 files, 15257 lines, 110 components, 
 | `clamp` | [util.js:4](../../src/lib/util.js#L4) | ✓ | ✓ |
 | `uidCounter` | [util.js:6](../../src/lib/util.js#L6) |  |  |
 | `uid` | [util.js:8](../../src/lib/util.js#L8) | ✓ |  |
+| `str` | [weekRead.js:13](../../src/lib/weekRead.js#L13) |  |  |
+| `obj` | [weekRead.js:14](../../src/lib/weekRead.js#L14) |  |  |
+| `weekReadRequest` | [weekRead.js:23](../../src/lib/weekRead.js#L23) | ✓ | ✓ |
+| `weekReadResult` | [weekRead.js:60](../../src/lib/weekRead.js#L60) | ✓ | ✓ |
+| `readWeekReads` | [weekRead.js:69](../../src/lib/weekRead.js#L69) | ✓ | ✓ |
+| `saveWeekRead` | [weekRead.js:72](../../src/lib/weekRead.js#L72) | ✓ | ✓ |
 | `shade` | [ActivityCalendar.jsx:13](../../src/components/ActivityCalendar.jsx#L13) |  |  |
 | `useAvatarPicker` | [avatarKeys.js:26](../../src/components/avatarKeys.js#L26) | ✓ |  |
 | `money` | [ChatBatch.jsx:10](../../src/components/ChatBatch.jsx#L10) |  |  |
@@ -616,8 +623,8 @@ Package: `layers-web` v1.0.37 · `src/`: 89 files, 15257 lines, 110 components, 
 | `whenText` | [PlanTipsSheet.jsx:14](../../src/modals/PlanTipsSheet.jsx#L14) |  |  |
 | `dueLabel` | [QuickGoalSheet.jsx:23](../../src/modals/QuickGoalSheet.jsx#L23) |  |  |
 | `count` | [StartOverSheet.jsx:19](../../src/modals/StartOverSheet.jsx#L19) |  |  |
-| `addDays` | [WeekReviewSheet.jsx:21](../../src/modals/WeekReviewSheet.jsx#L21) |  |  |
-| `short` | [WeekReviewSheet.jsx:22](../../src/modals/WeekReviewSheet.jsx#L22) |  |  |
+| `addDays` | [WeekReviewSheet.jsx:26](../../src/modals/WeekReviewSheet.jsx#L26) |  |  |
+| `short` | [WeekReviewSheet.jsx:27](../../src/modals/WeekReviewSheet.jsx#L27) |  |  |
 | `syncedAgo` | [MeView.jsx:40](../../src/views/MeView.jsx#L40) |  |  |
 | `shortDate` | [OnboardingView.jsx:42](../../src/views/OnboardingView.jsx#L42) |  |  |
 | `listNames` | [OnboardingView.jsx:43](../../src/views/OnboardingView.jsx#L43) |  |  |
@@ -793,6 +800,10 @@ Package: `layers-web` v1.0.37 · `src/`: 89 files, 15257 lines, 110 components, 
 | `KEYS` | [syncFile.js:82](../../src/lib/syncFile.js#L82) |
 | `HOOKS` | [text.js:78](../../src/lib/text.js#L78) |
 | `SOON_DAYS` | [tips.js:13](../../src/lib/tips.js#L13) |
+| `DAYS` | [weekRead.js:15](../../src/lib/weekRead.js#L15) |
+| `MAX_LOGS` | [weekRead.js:16](../../src/lib/weekRead.js#L16) |
+| `WEEK_SCHEMA` | [weekRead.js:18](../../src/lib/weekRead.js#L18) |
+| `KEY` | [weekRead.js:68](../../src/lib/weekRead.js#L68) |
 | `CELL` | [ActivityCalendar.jsx:11](../../src/components/ActivityCalendar.jsx#L11) |
 | `GAP` | [ActivityCalendar.jsx:12](../../src/components/ActivityCalendar.jsx#L12) |
 | `PICKER_GROUPS` | [avatarKeys.js:23](../../src/components/avatarKeys.js#L23) |

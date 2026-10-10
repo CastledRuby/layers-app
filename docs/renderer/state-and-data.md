@@ -789,6 +789,23 @@ Coach → Analyse a chat → **From your chats**: chats saved in the **Layers ch
 - **Where you got up to** is `layers-chat-progress` in localStorage (`{ [chat]: { at, me
   } }`), on this computer only; parsed files are kept in memory until they change.
 
+### The big picture: Claude's read of your week
+
+"Your week" (`WeekReviewSheet`; decided 2026-10-10) gets **Claude's read**: a headline,
+what went well, a pattern, one thing to try this week and who to reach out to
+([`lib/weekRead.js`](../../src/lib/weekRead.js)).
+
+- **What's sent** (`weekReadRequest`): the week's logs (up to 30: the day, the kind,
+  with whom, how meaningful, the note and how it felt, and for analysed chats Claude's
+  scores, what went well and what was missed) and who's due a catch-up (`planIdeas`),
+  every person a tag (`[them 1]`…), you `[you]` and anyone else `[someone]`. The answer
+  (`WEEK_SCHEMA`, no either-or fields) gets names back (`weekReadResult`).
+- **When**: opening "Your week" on the current week asks by itself, once, if anything
+  was logged, there's a key and the monthly limit isn't reached (about US$0.02). Earlier
+  weeks with logs have **Read this week with Claude**. Without a key there's no section.
+- **Kept**: `layers-week-reads` in localStorage (`{ [week's Monday]: { at, read } }`, the
+  newest 26 weeks), on this laptop only, so it's never asked twice.
+
 ### Practise
 
 Coach → **Practise** (4; decided 2026-10-10): a text chat with Claude playing someone,

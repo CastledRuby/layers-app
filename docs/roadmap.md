@@ -629,6 +629,13 @@ its own. Changes made while building are marked.
 
 ## History
 
+### The big picture (after 1.0.37, not released yet)
+
+- **Your week** gets **Claude's read**: how the week went, what went well, a pattern, one
+  thing to try this week and who to reach out to. Asked by itself once a week when you
+  open it (about US$0.02, within the monthly limit) and kept; earlier weeks have a
+  button.
+
 ### Practise (after 1.0.37, not released yet)
 
 - **Coach → Practise** (4): pick a situation (just chatting, someone new, asking to hang

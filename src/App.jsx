@@ -1665,7 +1665,8 @@ function LayersApp() {
                 onOpenEvent={(eventId, d) => setEventView({ eventId, day: d })} onPlan={openPlan} onPrepare={openPrepare} onClose={() => setDayView(null)} />
             )}
             {weekReview && <WeekReviewSheet day={weekReview} people={people} journal={journal} events={events} generalGoals={generalGoals} onClose={() => setWeekReview(null)} onPlan={openPlan}
-              chatExports={hasAnalysisKey ? chatsBridge : null} yourName={profile.name} onOpenChat={(key) => { setWeekReview(null); openCoach(null, 'analyse', key); }} onAnalyseAll={() => { setWeekReview(null); openCoach(null, 'analyse'); }} />}
+              chatExports={hasAnalysisKey ? chatsBridge : null} yourName={profile.name} onOpenChat={(key) => { setWeekReview(null); openCoach(null, 'analyse', key); }} onAnalyseAll={() => { setWeekReview(null); openCoach(null, 'analyse'); }}
+              onAnalyse={analysisBridge && hasAnalysisKey ? (request) => analysisBridge.runAnalysis(request) : null} />}
             {recheckFor && people.some(p => p.id === recheckFor) && (() => {
               const p = people.find(x => x.id === recheckFor);
               return <QuizSheet name={p.name} person={p} now={{ layer: p.layer, overall: p.overall }} onClose={() => setRecheckFor(null)} onDone={(placement) => handleRecheck(p.id, placement)} />;

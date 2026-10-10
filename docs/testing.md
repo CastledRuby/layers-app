@@ -176,6 +176,11 @@ interact.
   names from Contacts, text only in `attributedBody` (short and long), reactions left
   out, three months back, not read again, no backup or an encrypted one, and nothing
   written in it. The end-to-end tests read a made-up backup in the packaged app.
+- `weekRead.test.jsx` covers Claude's read in "Your week" (Claude stood in for): this
+  week read by itself once, names hidden and put back, kept when reopened, none for a
+  week with nothing logged, and none without a key. `src/weekRead.test.js` covers
+  `lib/weekRead.js`: the week's logs and who's quiet as tags, nothing for an empty week,
+  names back, and the kept reads.
 - `practice.test.jsx` covers Practise (Claude stood in for): a made-up person starting,
   Enter sending, your people's names hidden, End for feedback with Analyse's scores, the
   score kept for Me's chart and nothing logged, and Prepare's R practising with someone
