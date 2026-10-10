@@ -12,6 +12,7 @@ import { LIMITS, readLimit, saveLimit } from '../lib/chatBatch.js';
 import { cleanStyle, STYLE_MAX } from '../lib/replies.js';
 import { ChatTrendChart } from '../components/ChatTrendChart.jsx';
 import { chatTrend } from '../lib/chatTrend.js';
+import { practiceTrend, readPractice } from '../lib/practice.js';
 import { formatAbsoluteDate, formatCalendarDate, formatTime12, isJournalThisWeek, parseISODay, sortHistory } from '../lib/dates.js';
 import { updateStatusText } from '../lib/text.js';
 import { COLORS } from '../theme.js';
@@ -154,6 +155,7 @@ function CalendarsCard({ calendars, onAdd, onRemove, onRefresh }) {
 }
 
 export function MeView({ people, journal, skills, profile, generalGoals = [], onUpdateProfile, onEditProfile, achievements, onAddSample, onRemoveSample, hasSamplePeople, canAddSample, onStartOver, onExport, onImportClick, backupInfo, onOpenBackups, hasUpdater, updateStatus, onCheckForUpdates, onInstallUpdate, onOpenDownloadPage, shortcutStatus, themeMode, onSetTheme, hasSystemBridge, autoLaunch, onToggleAutoLaunch, onOpenShortcuts, appVersion, sync = null, onSyncTurnOn, onSyncNow, onSyncOff, onOpenSyncFolder, calendars = null, onAddCalendar, onRemoveCalendar, onRefreshCalendars, analysisKey = null, onSaveAnalysisKey, onRemoveAnalysisKey }) {
+  const [practice] = useState(() => practiceTrend(readPractice())); // Practise's scores, read when Me opens
   const [chartSkill, setChartSkill] = useState(FOCUS_SKILL_KEY);
 
   // Strength is your highest skill and focus your lowest. Until something has
@@ -229,10 +231,10 @@ export function MeView({ people, journal, skills, profile, generalGoals = [], on
 
       {(() => {
         const points = chatTrend(journal);
-        return points.length > 0 && (
+        return (points.length > 0 || practice.length > 0) && (
           <div className="mt-7">
             <p className="font-display mb-3" style={{ fontSize: 18, color: COLORS.ink }}>Your chats over time</p>
-            <ChatTrendChart points={points} label="Skills from analysed chats" />
+            <ChatTrendChart points={points} practice={practice} label="Skills from analysed chats" />
           </div>
         );
       })()}

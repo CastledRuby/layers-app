@@ -789,6 +789,31 @@ Coach → Analyse a chat → **From your chats**: chats saved in the **Layers ch
 - **Where you got up to** is `layers-chat-progress` in localStorage (`{ [chat]: { at, me
   } }`), on this computer only; parsed files are kept in memory until they change.
 
+### Practise
+
+Coach → **Practise** (4; decided 2026-10-10): a text chat with Claude playing someone,
+then feedback the way Analyse gives it ([`lib/practice.js`](../../src/lib/practice.js),
+`components/Practice.jsx`). Prepare's **Practise with them first** (R) opens it with the
+person you're about to talk to.
+
+- **Situations** (`SITUATIONS`): just chatting, starting with someone new, asking to
+  hang out, reviving a quiet chat, and the harder ones (they share bad news, saying no
+  kindly, clearing up a misunderstanding). Each has a made-up person to play (a name and
+  how they are), who starts, and your aim, shown above the chat.
+- **With one of your people** instead: Claude plays them from their layer, up to 12 saved
+  details and a few of their own messages from chats you've logged (`theirSamples`),
+  every name hidden as for reply ideas (`hideCircle`). Made up, nothing about your
+  people is sent; names you mention are `[someone]` either way.
+- **Each turn** (`turnRequest` / `turnResult`, `TURN_SCHEMA`: reply) is one short text
+  in character, through the same main-process call as Analyse. Enter sends, Shift+Enter
+  is a new line, and **End, and feedback** (Ctrl+Enter, after two of your messages) sends
+  the practice as a chat (`practiceText`) through `analysisRequest` and `analysisResult`:
+  the scores, what went well, the opportunity and what to try next time.
+- **Kept**: each practice's scores (`addPractice`, `layers-practice` in localStorage, the
+  newest 200, on this laptop only). Me's "Your chats over time" draws their overall,
+  a day at a time (`practiceTrend`), as a dashed Practice line. A practice is never
+  logged. Its cost counts in Me.
+
 ### Know what to say: who to message today
 
 Today's **Message … today** card (decided 2026-10-10), also a line in the morning

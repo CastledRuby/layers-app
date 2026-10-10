@@ -176,6 +176,12 @@ interact.
   names from Contacts, text only in `attributedBody` (short and long), reactions left
   out, three months back, not read again, no backup or an encrypted one, and nothing
   written in it. The end-to-end tests read a made-up backup in the packaged app.
+- `practice.test.jsx` covers Practise (Claude stood in for): a made-up person starting,
+  Enter sending, your people's names hidden, End for feedback with Analyse's scores, the
+  score kept for Me's chart and nothing logged, and Prepare's R practising with someone
+  Claude plays from what you know. `src/practice.test.js` covers `lib/practice.js`: the
+  requests for a made-up person and one of yours (names hidden), their own lines, the
+  situations, the practice as a chat, and the kept scores.
 - `nudge.test.jsx` covers Today's who to message (Claude stood in for): who and why,
   the opener written once that day with names hidden and your style, O copying it, Z
   putting them off (kept after a restart, not asked again), G opening the quick log as

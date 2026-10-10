@@ -42,6 +42,9 @@ function hide(text, { people = [], everyone = [], yourName }) {
   return rest.split(MARK).map((part, i) => (i % 2 ? `[${part}]` : part)).join('');
 }
 
+// For other features that send text about your people (Practise).
+export const hideCircle = hide;
+
 function styleNotes({ samples = [], style = '', yourName, everyone = [] }) {
   const lines = [];
   if (samples.length) lines.push(`Some of the user's own messages from other chats, for their style:\n${samples.map(s => `- ${hide(s, { everyone, yourName })}`).join('\n')}`);

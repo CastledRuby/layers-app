@@ -629,6 +629,15 @@ its own. Changes made while building are marked.
 
 ## History
 
+### Practise (after 1.0.37, not released yet)
+
+- **Coach → Practise** (4): pick a situation (just chatting, someone new, asking to hang
+  out, a quiet chat, bad news, saying no, a misunderstanding) and a made-up person or one
+  of yours, and text with Claude playing them. **End** gives feedback the way Analyse
+  does. Prepare's **Practise with them first** (R). A few cents a practice.
+- **Practice scores** are a dashed line in Me's "Your chats over time"; a practice is
+  never logged.
+
 ### Know what to say: who to message today (after 1.0.37, not released yet)
 
 - **Today: Message … today**: one person and why (a birthday today or tomorrow, asking

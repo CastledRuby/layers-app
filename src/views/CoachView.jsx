@@ -1,7 +1,8 @@
-// Conversation Coach tab: Prepare, Analyse and What to say (ReplyIdeas).
-// Keys (no sheet open, not typing): 1 Prepare, 2 Analyse, 3 What to say; on Prepare, ← →
-// who you're about to talk to, L logs the conversation with them, A
-// analyses a chat with them, O opens their profile. On an analysed chat, S
+// Conversation Coach tab: Prepare, Analyse, What to say (ReplyIdeas) and
+// Practise (Practice). Keys (no sheet open, not typing): 1 Prepare, 2 Analyse,
+// 3 What to say, 4 Practise; on Prepare, ← → who you're about to talk to, L
+// logs the conversation with them, A analyses a chat with them, R practises
+// with them, O opens their profile. On an analysed chat, S
 // saves every detail found and L logs it; Ctrl+Enter in the chat box analyses.
 // On Analyse, A analyses all new chats from your exports and R reviews the
 // answers waiting (ChatQueueSheet has its own keys).
@@ -15,6 +16,7 @@ import { DateDropdown } from '../components/pickers.jsx';
 import { ChatExports } from '../components/ChatExports.jsx';
 import { ChatBatchCard } from '../components/ChatBatch.jsx';
 import { ReplyIdeas } from '../components/ReplyIdeas.jsx';
+import { Practice } from '../components/Practice.jsx';
 import { ChatQueueSheet } from '../modals/ChatQueueSheet.jsx';
 import { batchPlan } from '../lib/chatBatch.js';
 import { chatPeople, conversationLabel, conversationText, isoDayOf, loadChatExports, readChatProgress, saveChatProgress, sourceLabel } from '../lib/chatImport.js';
@@ -118,6 +120,9 @@ export function CoachView({ people, journal, initialPersonId, initialTab, onOpen
   const exportsOn = (tab === 'analyse' || tab === 'reply') && analysisReady === 'ready' && !!chatExports;
   // Reply ideas on a chat in Analyse: What to say, with its latest conversation in.
   const [replyStart, setReplyStart] = useState(null); // { n, chat, conv, owner }
+  // Practise with them, from Prepare: the Practise tab with them picked.
+  const [practiseStart, setPractiseStart] = useState({ n: 0, personId: null });
+  function practiseWith(personId) { setPractiseStart(s => ({ n: s.n + 1, personId })); setTab('practise'); }
   function replyFromChat(chat, conv, owner) { setReplyStart(s => ({ n: (s ? s.n : 0) + 1, chat, conv, owner })); setTab('reply'); }
   // Analyse all new: what there is to send, from the chats read.
   const batchOn = !!chatBatch;
@@ -291,6 +296,7 @@ export function CoachView({ people, journal, initialPersonId, initialTab, onOpen
       if (e.key === '1') { act(() => setTab('prepare')); return; }
       if (e.key === '2') { act(() => setTab('analyse')); return; }
       if (e.key === '3') { act(() => setTab('reply')); return; }
+      if (e.key === '4') { act(() => setTab('practise')); return; }
       if (tab === 'analyse' && chatBatch && exportsOn && (!scenarioPerson || step === 'pick')) {
         if (key === 'a' && plan && plan.items.length && !chatBatch.running) { act(startBatch); return; }
         if (key === 'r' && chatBatch.waiting.length) { act(() => setReviewing(true)); return; }
@@ -309,6 +315,7 @@ export function CoachView({ people, journal, initialPersonId, initialTab, onOpen
       } else if (key === 'l') act(() => onOpenLog(preparePerson.id));
       else if (key === 'a') act(() => { if (preparePerson.id !== analysisPersonId) resetAnalyse(); setAnalysisPersonId(preparePerson.id); setTab('analyse'); });
       else if (key === 'o') act(() => onOpenPerson(preparePerson.id));
+      else if (key === 'r') act(() => practiseWith(preparePerson.id));
     }
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
@@ -321,7 +328,7 @@ export function CoachView({ people, journal, initialPersonId, initialTab, onOpen
       <p className="text-sm mt-1" style={{ color: COLORS.inkSoft }}>Noticing, responding and adapting, not scripts.</p>
 
       <div className="flex items-center gap-2 mt-4">
-        {[{ k: 'prepare', label: 'Prepare' }, { k: 'analyse', label: 'Analyse a chat' }, { k: 'reply', label: 'What to say' }].map((t, i) => (
+        {[{ k: 'prepare', label: 'Prepare' }, { k: 'analyse', label: 'Analyse a chat' }, { k: 'reply', label: 'What to say' }, { k: 'practise', label: 'Practise' }].map((t, i) => (
           <button key={t.k} onClick={() => setTab(t.k)} aria-pressed={tab === t.k} className="flex items-center gap-1.5 text-xs font-semibold rounded-full pl-3 pr-1.5 py-1" style={{ background: tab === t.k ? COLORS.accent : COLORS.paperRaised, color: tab === t.k ? COLORS.onAccent : COLORS.inkSoft, border: `1px solid ${tab === t.k ? COLORS.accent : COLORS.line}` }}>{t.label}<Kbd onAccent={tab === t.k}>{i + 1}</Kbd></button>
         ))}
       </div>
@@ -437,8 +444,15 @@ export function CoachView({ people, journal, initialPersonId, initialTab, onOpen
             <button onClick={() => onOpenLog(preparePerson ? preparePerson.id : null)} className="flex-1 flex items-center justify-center gap-1.5 text-sm font-semibold rounded-full py-3 text-center" style={{ background: COLORS.accent, color: COLORS.onAccent }}>Log this conversation <Kbd onAccent>L</Kbd></button>
             <button onClick={() => { const id = preparePerson ? preparePerson.id : null; if (id !== analysisPersonId) resetAnalyse(); setAnalysisPersonId(id); setTab('analyse'); }} className="flex-1 flex items-center justify-center gap-1.5 text-sm font-semibold rounded-full py-3 text-center" style={{ background: COLORS.paperRaised, color: COLORS.accent, border: `1px solid ${COLORS.accent}` }}>Analyse your chat <Kbd>A</Kbd></button>
           </div>
+          {preparePerson && <button type="button" onClick={() => practiseWith(preparePerson.id)} className="w-full flex items-center justify-center gap-1.5 text-sm font-semibold rounded-full py-2.5 mt-2" style={{ background: COLORS.paperRaised, color: COLORS.accent, border: `1px solid ${COLORS.line}` }}>Practise with {preparePerson.name.split(' ')[0]} first <Kbd>R</Kbd></button>}
 
           <p className="text-xs text-center mt-5" style={{ color: COLORS.inkSoft }}>Good social skills are about noticing, responding and adapting, not forcing a particular outcome.</p>
+        </div>
+      )}
+
+      {tab === 'practise' && (
+        <div className="mt-5">
+          <Practice key={practiseStart.n} people={people} journal={journal} yourName={yourName} ready={analysisReady} onAnalyse={onAnalyse} model={model} onOpenMe={onOpenMe} startPersonId={practiseStart.personId} />
         </div>
       )}
 
