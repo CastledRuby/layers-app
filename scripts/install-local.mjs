@@ -6,8 +6,7 @@
 //
 //   npm run install:local                          build and install now
 //   node scripts/install-local.mjs --if-changed    (the hooks) skip when the
-//                                                  installed app already has this code,
-//                                                  or has newer work from main than this branch
+//                                                  installed app already has this code
 //
 // It builds the Windows installer the way a release does (electron-builder,
 // NSIS only, into dist-install/) and runs it silently. Nothing is published.
@@ -85,33 +84,21 @@ function alreadyInstalled(head) {
   return git('diff', '--quiet', stamp.commit, head, '--', ...APP_CODE).status === 0;
 }
 
-// The commit the installed app was built from, read from its own version
-// (1.0.38+local.abc1234 is that commit, a plain 1.0.38 its release tag), so an
-// install that never wrote the stamp still counts. Falls back to the stamp.
-function installedCommit() {
-  try {
-    const version = JSON.parse(readAsarFile(INSTALLED_ASAR, 'package.json')).version;
-    const local = /\+local\.([0-9a-f]{7,40})/.exec(version);
-    const commit = gitOut('rev-parse', '--verify', '--quiet', `${local ? local[1] : `v${version}`}^{commit}`);
-    if (commit) return { commit, version };
-  } catch { /* not installed, or unreadable */ }
-  const stamp = readStamp();
-  return stamp && stamp.commit ? { commit: stamp.commit, version: stamp.version } : null;
+// Whether this copy is a linked worktree (a Claude session's, under
+// .claude/worktrees/) rather than the main checkout: its git folder isn't the
+// shared one.
+function inWorktree() {
+  return resolve(root, gitOut('rev-parse', '--git-dir')).toLowerCase() !== resolve(root, gitOut('rev-parse', '--git-common-dir')).toLowerCase();
 }
 
-// Would this install take away app changes that main has and this branch
-// doesn't? Returns the installed version when its commit is on main but not
-// in HEAD, so a branch cut before it would put an older Layers back.
-function behindInstalled(head) {
-  const installed = installedCommit();
-  if (!installed || installed.commit === head) return null;
-  const onMain = git('merge-base', '--is-ancestor', installed.commit, 'main').status === 0;
-  const inHead = git('merge-base', '--is-ancestor', installed.commit, head).status === 0;
-  return onMain && !inHead && git('diff', '--quiet', installed.commit, head, '--', ...APP_CODE).status !== 0 ? installed.version : null;
-}
-
+// Only main installs from the hooks (decided 2026-10-10): several Claude
+// sessions commit in their own worktrees at once, and each install replaced
+// the last, so the Layers on this computer changed with whichever session
+// committed last. A worktree's commits don't install; merging into main
+// does, and npm run install:local still installs any copy by hand.
 function skipReason() {
   if (process.env.LAYERS_NO_INSTALL) return 'LAYERS_NO_INSTALL is set';
+  if (ifChanged && inWorktree()) return 'this is a worktree, and only main installs (merge into main, or run npm run install:local here)';
   if (process.env.LAYERS_RELEASING) return 'npm run release installs its own build';
   if (process.platform !== 'win32') return 'Layers is installed on Windows only';
   if (['rebase-merge', 'rebase-apply'].some(p => existsSync(resolve(root, gitOut('rev-parse', '--git-path', p))))) return 'a rebase is in progress; the next commit installs';
@@ -203,11 +190,6 @@ async function main() {
   await takeLock();
   const head = gitOut('rev-parse', 'HEAD');
   if (ifChanged && alreadyInstalled(head)) { log(`Layers on this computer already has this code (${head.slice(0, 7)}).`); return; }
-  const newer = ifChanged && behindInstalled(head);
-  if (newer) {
-    log(`Not installing: the Layers on this computer (${newer}) has app changes from main that this branch doesn't. Merge main into this branch and the next commit installs, or run npm run install:local to install this branch anyway.`);
-    return;
-  }
 
   const missing = missingDependencies();
   if (missing.length) fail(`This copy's node_modules is missing ${missing.join(', ')}, so the build would crash on start. Run npm install here, then npm run install:local.`);

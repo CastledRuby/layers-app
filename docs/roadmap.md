@@ -3,8 +3,8 @@
 Where Layers stands against [vision.md](vision.md), what was decided along the way, and
 what comes next. Last updated 2026-10-10, after 1.0.38 (anything since is at the top of
 [History](#history), marked not released yet). **What's next is
-[The next big changes](#the-next-big-changes-your-answers-2026-10-08)**, after
-[The plan from here](#the-plan-from-here-2026-10-07).
+[Where Layers goes next](#where-layers-goes-next-your-answers-2026-10-10)**, from your
+answers to 20 planning questions.
 
 **How it got here:**
 
@@ -168,6 +168,107 @@ anyone else whose Windows has it on. It also removes Windows'
 "unknown publisher" warning when installing and updating. It needs a code-signing
 certificate, which is paid: roughly US$100–400 a year, or Azure Trusted Signing at about
 US$10 a month. Once there is one, `npm run release` can sign with it.
+
+## Where Layers goes next (your answers, 2026-10-10)
+
+You answered 20 planning questions on where Layers goes after 1.0.37. Your answers come
+first, then what's already built, what they change, and the order from here. (The
+questions: the "Where Layers goes next" page on claude.ai.)
+
+### Your answers
+
+**What Layers is for**
+- **All four**: a coach you use every day, a memory for your relationships, a planner for
+  seeing people, and a trainer for your social skills. You'd know it's working by all
+  four signs: you see people more often, relationships get closer, conversations get
+  better, and it takes less effort.
+- **Just you.** Layers stays shaped around how you work, so code signing (P8) stays
+  parked.
+- **Claude throughout the app**, wherever it makes the advice better.
+
+**The next big changes**
+- **The order**: Know what to say, then Practise, then the big picture. The phone web
+  app after them, maybe later.
+- **Reply ideas** learn your style **from your side of the chats you've analysed**.
+- **The daily "who to message" nudge** in three places: a **morning notification**,
+  **on Today**, and an **evening notification**.
+- **Practice is a mix**: short drills most days, and a longer role-play before something
+  big.
+- **The big-picture read is weekly**, in Sunday's review.
+
+**The phone**
+- **Day one**: see Today and your plans, and log and plan quickly. Analysing chats from
+  screenshots, and everything else, later.
+- **Reminders**: the laptop sends them for now; none on the phone until the real app.
+- **The Apple Developer account within a few months**, and the **Watch after the phone**.
+
+**Chats, Claude and privacy**
+- **More chats: all four**: iMessage, Snapchat, Messenger or Discord, and in-person
+  conversations (notes you write afterwards, analysed like a chat).
+- **What goes to Claude: whatever gives the best advice.**
+- **The monthly limit rises to US$10–20** as features earn it.
+- **Google Calendar: full two-way.**
+
+**The app itself**
+- **Simplify everything, with advanced settings to go deeper**: Goals, skills and
+  achievements, the six dimensions and Adjust, and Prepare.
+- **Closeness over time**: trends and history, not only where someone is now.
+- **The pace stays as now**: small pieces, a release every few days.
+
+### Already built
+
+Most of the order above was built on 2026-10-10 and released in 1.0.38, before these
+answers were read back (see [History](#history)):
+
+- **Reply ideas** (Coach → What to say), in your style from chats you've logged.
+- **Who to message today**: on Today and in the morning summary, with Claude's opener.
+- **Practise**: a text chat with Claude playing someone, then feedback.
+- **The big picture**: Claude's read of your week, in Your week.
+- **iMessage** from an iPhone backup, and **Snapchat** from its My Data download.
+- **The phone web app**, published by GitHub Pages with each release. Its OneDrive
+  sign-in waits for your Microsoft app registration
+  ([its proposal](#proposal-the-phone-web-app-2026-10-10)).
+
+### What this changes
+
+- **The phone**: you'd put the web app after the Claude features, maybe later. Both
+  were built anyway, so nothing is lost. What's left is its OneDrive sign-in. Your
+  answers add that reminders stay on the laptop for now, and that the Apple account
+  comes within a few months, so the real iPhone app (with its own reminders) follows
+  the web app, then the Watch.
+- **Privacy**: reply ideas, the opener and Practise already send what you know about
+  someone and how you write, names hidden. Your answer allows the same wherever it
+  helps, Analyse included. **Names stay hidden** by default, since that costs the advice
+  nothing. Each feature says once what it sends, rather than warning every time.
+- **Cost**: the starting limit can rise from US$5. Me → Chat analysis already offers
+  US$2, 5, 10, 20 or none.
+- **Google Calendar**: today it's read from the secret iCal address, which can't write
+  back. Two-way needs a Google sign-in, with a one-time setup on Google's developer site,
+  like the one planned for OneDrive.
+- **Simplify**: a medium-to-large change to how the app looks, so it comes back as its
+  own proposal before anything is hidden.
+
+### The order from here
+
+1. **Finishing what's built, from your answers** (small, each on its own):
+   - **The evening nudge**: at 8:00 PM, only if you haven't logged a chat with them or
+     pressed Done. The morning summary and Today have it already.
+   - **Practice drills**: one tricky message, you reply, instant feedback, beside
+     Practise's longer role-play.
+   - **Closeness over time**: a chart of someone's layer and meter by day on their
+     profile. Each profile already saves this (`history`). The six dimensions aren't
+     saved by day yet, so they'd start being saved from then on.
+   - **The starting limit**: US$10, now that reply ideas, the opener, Practise and the
+     big picture all draw on it.
+2. **The phone**: the web app's OneDrive sign-in, once your Microsoft registration is
+   done. Reminders stay on the laptop. Then the Apple account, the real iPhone app, and
+   the Watch.
+
+**Each needs its own proposal first:**
+- **Simple by default**: a simpler app, with advanced settings to go deeper.
+- **Google Calendar, two-way.**
+- **More chats**: in-person notes first (no export needed), then Messenger or Discord
+  from their data downloads.
 
 ## The plan from here (2026-10-07)
 

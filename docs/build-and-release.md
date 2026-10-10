@@ -124,13 +124,6 @@ does too after `git merge` or `git pull`. To run it yourself: `npm run install:l
    scripts, branding drafts, the hooks and the iPhone project (`ios/`, `.github/`,
    `capacitor.config.json`) aren't part of the Windows app, so a commit that only
    changes those finishes in a second.
-
-   It also won't go backwards. If the installed commit (read from the installed app's
-   own version, so it counts even when an install didn't finish writing
-   `layers-installed.json`) is on `main` but not in this branch, and the app differs, installing would put an older Layers back (a worktree
-   branch cut before newer work on `main`). It says so and installs nothing: merge
-   `main` into the branch, and the next commit installs. `npm run install:local`
-   installs the branch anyway.
 2. **Build the installer** the way a release does: `build:electron`, then
    `electron-builder --win nsis` into `dist-install/`. It's versioned like
    `1.0.28+local.abc1234`: the last release, then the commit (`.uncommitted` is added
@@ -171,6 +164,12 @@ here"). A running Layers whose page never opened (it hit an error on start, show
 Electron's "Error" box) can't answer `--quit`, so it's stopped instead. And it only
 says "is installed and running" once the new Layers' page is running, not just its
 process.
+
+**Only main installs** (decided 2026-10-10): a commit in a linked worktree (a Claude
+session's, under `.claude/worktrees/`) doesn't install; merging it into main does
+(the post-merge hook), as does `npm run install:local` run by hand. Several sessions
+committing at once had each replaced the last one's install. Sessions already running
+keep their own copy of the script until they merge main.
 
 **Other copies of Layers** (added 2026-10-10): other Claude sessions' end-to-end tests
 run their own `Layers.exe` from their worktrees. The install only asks the one in the
