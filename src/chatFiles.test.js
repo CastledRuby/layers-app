@@ -63,6 +63,8 @@ describe('the Layers chats folder', () => {
       'WhatsApp Chat - Amelie.zip': zip({ '_chat.txt': CHAT }),
       'instagram-liam-2026-10-07.zip': zip({ 'your_instagram_activity/messages/inbox/chloe_9/message_1.json': INSTA, 'media/x.txt': 'not a chat' }),
       'instagram-html.zip': zip({ 'messages/inbox/chloe_9/message_1.html': '<html>' }),
+      'mydata~1.zip': zip({ 'json/chat_history.json': '{}', 'json/friends.json': '{}', 'json/account.json': '{}' }),
+      'snap-html.zip': zip({ 'html/chat_history.html': '<html>' }),
       'photos.zip': zip({ 'a.jpg': 'x' }),
       'notes.pdf': 'x',
       'broken.zip': 'not a zip',
@@ -71,10 +73,14 @@ describe('the Layers chats folder', () => {
     fs.utimesSync(path.join(dir, 'WhatsApp Chat - Amelie.zip'), t, t);
     fs.utimesSync(path.join(dir, 'instagram-liam-2026-10-07.zip'), t - 60, t - 60);
     fs.utimesSync(path.join(dir, 'instagram-html.zip'), t - 120, t - 120);
+    fs.utimesSync(path.join(dir, 'mydata~1.zip'), t - 180, t - 180);
+    fs.utimesSync(path.join(dir, 'snap-html.zip'), t - 240, t - 240);
     expect(listExports(dir).map(f => [f.name, f.kind, f.title])).toEqual([
       ['WhatsApp Chat - Amelie.zip', 'whatsapp', 'Amelie'],
       ['instagram-liam-2026-10-07.zip', 'instagram', null],
       ['instagram-html.zip', 'instagram-html', null],
+      ['mydata~1.zip', 'snapchat', null],
+      ['snap-html.zip', 'snapchat-html', null],
     ]);
     const missing = path.join(folder(), 'Layers chats');
     expect(listExports(missing)).toEqual([]);
@@ -92,12 +98,14 @@ describe('the Layers chats folder', () => {
     expect(readExport(dir, 'WhatsApp Chat - Zoe.zip').files[0].text).toBe(CHAT);
     expect(readExport(dir, 'WhatsApp Chat with Ava.txt')).toMatchObject({ kind: 'whatsapp', title: 'Ava' });
     expect(readExport(dir, 'insta.zip')).toMatchObject({ kind: 'instagram', files: [{ text: INSTA }, { text: INSTA }] });
+    const snap = path.join(folder({ 'mydata~1.zip': zip({ 'json/chat_history.json': '{"a":[]}', 'json/friends.json': '{"Friends":[]}', 'json/account.json': '{"secret":1}' }) }), 'mydata~1.zip');
+    expect(readExport(path.dirname(snap), 'mydata~1.zip')).toEqual({ kind: 'snapchat', title: null, files: [{ path: 'json/chat_history.json', text: '{"a":[]}' }, { path: 'json/friends.json', text: '{"Friends":[]}' }] }); // nothing else in the download is read
   });
 
   it("says why it can't read something, and reads nothing outside the folder", () => {
     const dir = folder({ 'html.zip': zip({ 'messages/inbox/a_1/message_1.html': 'x' }), 'photos.zip': zip({ 'a.jpg': 'x' }), 'bad.zip': 'nope' });
     expect(readExport(dir, 'html.zip').error).toMatch(/choosing JSON/);
-    expect(readExport(dir, 'photos.zip').error).toMatch(/doesn't have a WhatsApp or Instagram chat/);
+    expect(readExport(dir, 'photos.zip').error).toMatch(/doesn't have a WhatsApp, Instagram or Snapchat chat/);
     expect(readExport(dir, 'bad.zip').error).toMatch(/isn't a zip/);
     fs.writeFileSync(path.join(path.dirname(dir), 'outside.txt'), CHAT);
     expect(readExport(dir, '../outside.txt').error).toMatch(/isn't in the Layers chats folder/);

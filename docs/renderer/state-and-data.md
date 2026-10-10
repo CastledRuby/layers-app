@@ -760,7 +760,14 @@ Coach → Analyse a chat → **From your chats**: chats saved in the **Layers ch
   up ("Back up again for newer messages"). `loadChatExports` keeps them until there's a
   newer backup, and an encrypted backup is explained under the list. They work like an
   export's chats, Analyse all new included. `sourceLabel` names where a chat came from.
-  Snapchat is still to come.
+- **Snapchat** (decided 2026-10-09): Settings → My Data → Chat History (and Friends) with
+  Export JSON files on; save the emailed zip in the folder. `parseSnapchat` reads
+  `json/chat_history.json` in its newer layout (each conversation's messages, with
+  `IsSender`) or its older one (saved chats received and sent), names people from
+  `json/friends.json`'s display names, knows your messages as yours (`chat.me`), and turns
+  photos, voice notes and stickers into "(photo or video)" and the like. A download in HTML
+  only is named, with "Export JSON files". Snapchat only keeps chats that were saved or not
+  yet opened, so that's all there is.
 - **The same chat** from several files (exported again, or another week's download) is
   one chat (`mergeChats`, keyed by the WhatsApp chat's name or Instagram's thread),
   every message once. A WhatsApp chat saved as `chat.txt` (or the zip's own

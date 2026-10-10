@@ -629,6 +629,13 @@ its own. Changes made while building are marked.
 
 ## History
 
+### Snapchat (after 1.0.37, not released yet)
+
+- **Snapchat chats in Coach**: Settings → My Data → Chat History (and Friends), with
+  Export JSON files on. Save the emailed zip in the Layers chats folder, and its chats show
+  in "From your chats", named from your friends list. Snapchat only keeps saved and
+  unopened chats.
+
 ### The big picture (after 1.0.37, not released yet)
 
 - **Your week** gets **Claude's read**: how the week went, what went well, a pattern, one

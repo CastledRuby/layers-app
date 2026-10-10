@@ -160,10 +160,10 @@ interact.
   WhatsApp chat's new conversation picked and its text written with exact times, the log
   on its day, the chat moving on (and its earlier conversations still there), how to add
   one, the folder opened, a new export noticed, the week review listing a chat to analyse and opening it in Coach, Instagram (you found as the name in
-  every chat, chats with people not in Layers tucked away, an HTML download named) and
-  "Which of these is you?". `src/chatImport.test.js` covers reading WhatsApp (iOS and
+  every chat, chats with people not in Layers tucked away, an HTML download named),
+  "Which of these is you?" and Snapchat (names from its friends list, your messages yours). `src/chatImport.test.js` covers reading WhatsApp (iOS and
   Android, notices, attachments, several lines, day or month first) and Instagram
-  (lettering, likes, photos), merging, who's who, splitting at pauses and the text
+  (lettering, likes, photos) and Snapchat (both layouts, the friends list, media), merging, who's who, splitting at pauses and the text
   sent; `src/chatFiles.test.js` covers `electron/chatfiles.cjs` (the folder, which files
   are exports, zips packed or stored, errors, nothing outside the folder, noticing a
   new file). The end-to-end tests open a real zip in the packaged app and see a second

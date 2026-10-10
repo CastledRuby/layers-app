@@ -12,13 +12,14 @@ import { chatRows, conversationLabel, sourceLabel } from '../lib/chatImport.js';
 import { formatCalendarDate } from '../lib/dates.js';
 import { COLORS } from '../theme.js';
 
-const EMOJI = { whatsapp: '💬', instagram: '📷', imessage: '🗨️' };
+const EMOJI = { whatsapp: '💬', instagram: '📷', imessage: '🗨️', snapchat: '👻' };
 
 function Help({ folder }) {
   return (
     <div className="text-xs mt-2 space-y-1.5" style={{ color: COLORS.inkSoft }}>
       <p><span className="font-semibold" style={{ color: COLORS.ink }}>WhatsApp:</span> on your phone, open the chat → Export chat → Without media → Save to Files → OneDrive → {folder}. It shows here a few seconds after OneDrive brings it down.</p>
       <p><span className="font-semibold" style={{ color: COLORS.ink }}>Instagram:</span> Accounts Centre → Your information and permissions → Download your information → just Messages, as JSON, for the last week or so. Save the zip in the same folder.</p>
+      <p><span className="font-semibold" style={{ color: COLORS.ink }}>Snapchat:</span> Settings → My Data → choose Chat History (and Friends), with Export JSON files on → Submit. When Snapchat emails you, download the zip and save it in the same folder. It only has chats that were saved or not opened yet.</p>
       <p><span className="font-semibold" style={{ color: COLORS.ink }}>iMessage:</span> plug your iPhone into this laptop, open Apple Devices → Back up all of the data on your iPhone to this computer (Encrypt local backup unticked) → Back Up Now. Layers reads the newest backup, so back up again for newer messages.</p>
     </div>
   );

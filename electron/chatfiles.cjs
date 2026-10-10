@@ -1,7 +1,7 @@
 // Chat exports for Coach (docs/electron.md, "Chat exports"): the "Layers
 // chats" folder in Documents (OneDrive on this laptop), where you save a
-// WhatsApp chat export from your phone (its zip, or the .txt) or Instagram's
-// "Download your information" zip. Only reads: what's there, and the text of
+// WhatsApp chat export from your phone (its zip, or the .txt), Instagram's
+// "Download your information" zip, or Snapchat's "My Data" zip. Only reads: what's there, and the text of
 // one file's chat. A zip is opened here (Node's own inflate, nothing bundled);
 // the page reads the chat itself (src/lib/chatImport.js). Files are left as
 // they are.
@@ -16,6 +16,9 @@ const MAX_TOTAL = 200 * 1024 * 1024; // everything read from one zip
 // Instagram's messages, in either layout of its download.
 const INSTAGRAM_JSON = /(?:^|\/)messages\/inbox\/[^/]+\/message_\d+\.json$/;
 const INSTAGRAM_HTML = /(?:^|\/)messages\/inbox\/[^/]+\/message_\d+\.html$/;
+// Snapchat's chats (json/chat_history.json) and its friends list (display names).
+const SNAPCHAT_JSON = /(?:^|\/)json\/(chat_history|friends)\.json$/;
+const SNAPCHAT_HTML = /(?:^|\/)html\/chat_history(\.html|\/)/;
 
 function chatsDir({ documents, userData, env = process.env }) {
   if (env.LAYERS_CHATS_DIR) return env.LAYERS_CHATS_DIR;
@@ -94,12 +97,15 @@ function zipEntryData(buf, entry) {
 }
 
 // What an export is, from its name and (for a zip) what's in it:
-// 'whatsapp', 'instagram', 'instagram-html' (downloaded as HTML), or null.
+// 'whatsapp', 'instagram', 'snapchat', 'instagram-html' or 'snapchat-html'
+// (downloaded as HTML), or null.
 function kindOf(name, entries) {
   if (/\.txt$/i.test(name)) return 'whatsapp';
   if (!entries) return null;
   if (entries.some(e => INSTAGRAM_JSON.test(e.name))) return 'instagram';
   if (entries.some(e => INSTAGRAM_HTML.test(e.name))) return 'instagram-html';
+  if (entries.some(e => /(?:^|\/)json\/chat_history\.json$/.test(e.name))) return 'snapchat';
+  if (entries.some(e => SNAPCHAT_HTML.test(e.name))) return 'snapchat-html';
   if (entries.some(e => /(^|\/)[^/]*\.txt$/i.test(e.name) && !e.name.startsWith('__MACOSX'))) return 'whatsapp';
   return null;
 }
@@ -140,7 +146,8 @@ function listExports(dir) {
 }
 
 // One export's chat text: { kind, title, files: [{ path, text }] }: a
-// WhatsApp chat's .txt, or every Instagram messages file. { error } if it
+// WhatsApp chat's .txt, every Instagram messages file, or Snapchat's chats
+// and friends list. { error } if it
 // can't be read.
 function readExport(dir, name) {
   try {
@@ -149,10 +156,11 @@ function readExport(dir, name) {
     const entries = zipEntries(buf);
     const kind = kindOf(name, entries);
     if (kind === 'instagram-html') return { error: 'That Instagram download is in HTML. Download it again choosing JSON as the format.' };
-    if (!kind) return { error: "That zip doesn't have a WhatsApp or Instagram chat in it." };
-    const wanted = kind === 'instagram'
-      ? entries.filter(e => INSTAGRAM_JSON.test(e.name))
-      : entries.filter(e => /(^|\/)[^/]*\.txt$/i.test(e.name) && !e.name.startsWith('__MACOSX')).slice(0, 1);
+    if (kind === 'snapchat-html') return { error: 'That Snapchat download is only HTML. Request it again with "Export JSON files" turned on.' };
+    if (!kind) return { error: "That zip doesn't have a WhatsApp, Instagram or Snapchat chat in it." };
+    const wanted = kind === 'instagram' ? entries.filter(e => INSTAGRAM_JSON.test(e.name))
+      : kind === 'snapchat' ? entries.filter(e => SNAPCHAT_JSON.test(e.name))
+        : entries.filter(e => /(^|\/)[^/]*\.txt$/i.test(e.name) && !e.name.startsWith('__MACOSX')).slice(0, 1);
     let total = 0;
     const files = wanted.map(e => {
       total += e.size;
