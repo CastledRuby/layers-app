@@ -796,8 +796,8 @@ A review of everything built between 1.0.32 and 1.0.37, with a test for each fix
 - More tests: Analyse all new, sync merging, kept reviews, zero people, nicknames and
   calendar edge cases.
 
-Still open from the audit: a surname only in the chat ("Amelie Rose" when Layers has
-"Amelie") goes to Claude as "[them] Rose".
+- **A surname only in the chat**: when a chat signs someone's messages "Amelie Rose" and
+  Layers has "Amelie", the surname is hidden too; before, it went as "[them] Rose".
 
 ### The phone web app (1.0.39)
 

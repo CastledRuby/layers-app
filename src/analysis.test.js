@@ -64,6 +64,16 @@ describe('names', () => {
     expect(restoreNames({ a: '[someone 1] backed [them] up', b: ['[someone 2]', '[someone 3]'] }, 'Priya Shah', ['Jess Moore', 'Tom'])).toEqual({ a: 'Jess Moore backed Priya up', b: ['Tom', 'someone'] });
   });
 
+  it('hides a surname that is only in the chat, when the chat signs them or you with it', () => {
+    const chat = '[2026-10-06 21:41] Amelie Rose: hi Sam, it\'s Amelie Rose!\n[2026-10-06 21:42] Sam Jones: hey Rose';
+    expect(hideNames(chat, { theirName: 'Amelie', yourName: 'Sam' }))
+      .toBe('[2026-10-06 21:41] [them]: hi [you], it\'s [them]!\n[2026-10-06 21:42] [you]: hey [them]');
+    // "Sam Tan" signing isn't Sam Lee, so Tan isn't taken as Sam Lee's surname.
+    expect(hideNames('Sam Tan: hi', { theirName: 'Sam Lee', yourName: '' })).toBe('[them] Tan: hi');
+    const sent = analysisRequest({ person: { ...priya, name: 'Priya' }, yourName: 'Sam', text: 'Priya Shah: guess what\nSam: what', today: TODAY }).content[0].text;
+    expect(sent).not.toMatch(/Shah|Priya|Sam/);
+  });
+
   it('puts their first name back throughout the answer, and "you" for you', () => {
     expect(restoreNames({ a: ['[them] liked it', { b: '[You] asked [THEM]' }], n: 3 }, 'Priya Shah'))
       .toEqual({ a: ['Priya liked it', { b: 'you asked Priya' }], n: 3 });

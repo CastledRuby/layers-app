@@ -192,15 +192,27 @@ function nameParts(name) {
   return [...new Set([full, ...full.split(/\s+/).filter(w => w.length > 1)])];
 }
 
+// The fuller names a chat signs someone's messages with: "Amelie Rose" for
+// Amelie, so a surname that's only in the chat is hidden with her name. A
+// signed name counts when it starts with all of one of theirs ("Sam Tan" isn't
+// "Sam Lee").
+function signedAs(names, speakers) {
+  const words = (s) => String(s || '').trim().toLowerCase().split(/\s+/).filter(Boolean);
+  return speakers.filter(sp => names.some(n => { const a = words(n); const b = words(sp); return a.length && a.length < b.length && a.every((w, i) => w === b[i]); }));
+}
+
 // Pasted text with each person's name(s) as their tag ([them], or [them 1],
 // [them 2]… for `names`, where each is a name or a list of a person's names
 // and nicknames), yours as [you] and `others` (otherSpeakers) as [someone 1],
-// [someone 2]…. Whole words, any case; longer names first, and a part two
+// [someone 2]…. A fuller name the chat signs them or you with is hidden too
+// (signedAs). Whole words, any case; longer names first, and a part two
 // people share goes to the first.
 export function hideNames(text, { names, theirName, yourName, others = [] }) {
-  const theirs = names || (theirName ? [theirName] : []);
+  const speakers = chatSpeakers(text);
+  const theirs = (names || (theirName ? [theirName] : [])).map(n => [...[].concat(n), ...signedAs([].concat(n), speakers)]);
+  const yours = yourName ? [yourName, ...signedAs([yourName], speakers)] : [];
   const tokens = tokensFor(theirs.length);
-  const pairs = [...theirs.flatMap((n, i) => [].concat(n).flatMap(nameParts).map(part => [part, `[${tokens[i]}]`])), ...nameParts(yourName).map(part => [part, YOU]),
+  const pairs = [...theirs.flatMap((n, i) => n.flatMap(nameParts).map(part => [part, `[${tokens[i]}]`])), ...yours.flatMap(nameParts).map(part => [part, YOU]),
     ...others.flatMap((n, i) => nameParts(n).map(part => [part, `[someone ${i + 1}]`]))]
     .sort((a, b) => b[0].length - a[0].length);
   const done = new Set();

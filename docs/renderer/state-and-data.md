@@ -661,7 +661,9 @@ will be sent.
   screenshots, shrunk to at most 1568 px (`shrinkForAnalysis`), and the pasted text with
   their name and yours replaced by tags (`hideNames`: the full name and each part of it,
   whole words only, any case): `[them]` for one person, `[them 1]`, `[them 2]`… in a
-  group, and `[you]`. Anyone else who signs messages and isn't in Layers (a group
+  group, and `[you]`. A fuller name the chat signs them or you with ("Amelie Rose:" when
+  Layers has Amelie) is hidden too, so a surname only in the chat doesn't go
+  (`signedAs`). Anyone else who signs messages and isn't in Layers (a group
   member, `otherSpeakers`) is `[someone 1]`, `[someone 2]`…, said so at the top, and their
   names come back in the answer (`analysisResult`'s `others`). Of each person, only
   their layer is sent, so the advice fits how

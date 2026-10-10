@@ -4,7 +4,7 @@
 > Run `npm run docs:map` after changing anything under `src/`, `electron/*.cjs` or `package.json` scripts.
 > Hand-written explanations live in the other files under [`docs/`](../README.md).
 
-Package: `layers-web` v1.0.39 · `src/`: 91 files, 15598 lines, 110 components, 427 top-level functions, 214 constants.
+Package: `layers-web` v1.0.39 · `src/`: 91 files, 15610 lines, 110 components, 428 top-level functions, 214 constants.
 
 ## Source files
 
@@ -19,7 +19,7 @@ Package: `layers-web` v1.0.39 · `src/`: 91 files, 15598 lines, 110 components, 
 | [data/seed.js](../../src/data/seed.js) | 176 | INITIAL_PEOPLE, INITIAL_GENERAL_GOALS, INITIAL_JOURNAL, INITIAL_SKILLS, EMPTY_SKILLS | — |
 | [lib/achievements.js](../../src/lib/achievements.js) | 37 | achievementProgress, newlyUnlocked, progressText | `data/constants` |
 | [lib/activity.js](../../src/lib/activity.js) | 48 | ACTIVITY_WEEKS, activityLevel, activityGrid | `lib/dates` |
-| [lib/analysis.js](../../src/lib/analysis.js) | 373 | ANALYSIS_MODELS, DEFAULT_ANALYSIS_MODEL, analysisModel, MAX_SCREENSHOTS, THEM, YOU, tokensFor, STAMP, chatSpeakers, detectPeople, … (+34) | `data/constants`, `lib/dates` |
+| [lib/analysis.js](../../src/lib/analysis.js) | 385 | ANALYSIS_MODELS, DEFAULT_ANALYSIS_MODEL, analysisModel, MAX_SCREENSHOTS, THEM, YOU, tokensFor, STAMP, chatSpeakers, detectPeople, … (+35) | `data/constants`, `lib/dates` |
 | [lib/backup.js](../../src/lib/backup.js) | 248 | BACKUP_VERSION, MAX_BACKUP_BYTES, createBackup, isObject, isText, isISODay, num, count, cleanHistory, cleanGoal, … (+9) | `lib/calendar`, `data/constants`, `data/seed`, `data/avatars`, `lib/util`, `lib/sync`, `lib/analysis` |
 | [lib/calendar.js](../../src/lib/calendar.js) | 459 | WEEKDAY_NAMES, DEFAULT_DURATION, EVENT_TEMPLATES, templateFor, DATE_KINDS, dateKind, NOTIFY_DEFAULTS, notifySettings, dayDate, addDays, … (+29) | `lib/dates` |
 | [lib/chatBatch.js](../../src/lib/chatBatch.js) | 106 | TINY, batchPlan, batchDollars, QUEUE_KEY, isText, cleanItem, readQueue, saveQueue, waiting, pruneQueue, … (+5) | `lib/analysis`, `lib/chatImport` |
@@ -278,20 +278,21 @@ Package: `layers-web` v1.0.39 · `src/`: 91 files, 15598 lines, 110 components, 
 | `analysisSystem` | [analysis.js:147](../../src/lib/analysis.js#L147) | ✓ | ✓ |
 | `escapeRe` | [analysis.js:187](../../src/lib/analysis.js#L187) |  |  |
 | `nameParts` | [analysis.js:189](../../src/lib/analysis.js#L189) |  |  |
-| `hideNames` | [analysis.js:200](../../src/lib/analysis.js#L200) | ✓ | ✓ |
-| `restoreNames` | [analysis.js:219](../../src/lib/analysis.js#L219) | ✓ | ✓ |
-| `analysisRequest` | [analysis.js:235](../../src/lib/analysis.js#L235) | ✓ | ✓ |
-| `analysisResult` | [analysis.js:258](../../src/lib/analysis.js#L258) | ✓ | ✓ |
-| `analysisToKeep` | [analysis.js:312](../../src/lib/analysis.js#L312) | ✓ | ✓ |
-| `analysisDollars` | [analysis.js:328](../../src/lib/analysis.js#L328) | ✓ |  |
-| `dollarsText` | [analysis.js:332](../../src/lib/analysis.js#L332) | ✓ | ✓ |
-| `analysisCost` | [analysis.js:334](../../src/lib/analysis.js#L334) | ✓ | ✓ |
-| `monthOf` | [analysis.js:345](../../src/lib/analysis.js#L345) |  |  |
-| `readSpend` | [analysis.js:346](../../src/lib/analysis.js#L346) | ✓ |  |
-| `addSpend` | [analysis.js:350](../../src/lib/analysis.js#L350) | ✓ | ✓ |
-| `recordSpend` | [analysis.js:356](../../src/lib/analysis.js#L356) | ✓ |  |
-| `spendSummary` | [analysis.js:362](../../src/lib/analysis.js#L362) | ✓ | ✓ |
-| `typicalCost` | [analysis.js:370](../../src/lib/analysis.js#L370) | ✓ | ✓ |
+| `signedAs` | [analysis.js:199](../../src/lib/analysis.js#L199) |  |  |
+| `hideNames` | [analysis.js:210](../../src/lib/analysis.js#L210) | ✓ | ✓ |
+| `restoreNames` | [analysis.js:231](../../src/lib/analysis.js#L231) | ✓ | ✓ |
+| `analysisRequest` | [analysis.js:247](../../src/lib/analysis.js#L247) | ✓ | ✓ |
+| `analysisResult` | [analysis.js:270](../../src/lib/analysis.js#L270) | ✓ | ✓ |
+| `analysisToKeep` | [analysis.js:324](../../src/lib/analysis.js#L324) | ✓ | ✓ |
+| `analysisDollars` | [analysis.js:340](../../src/lib/analysis.js#L340) | ✓ |  |
+| `dollarsText` | [analysis.js:344](../../src/lib/analysis.js#L344) | ✓ | ✓ |
+| `analysisCost` | [analysis.js:346](../../src/lib/analysis.js#L346) | ✓ | ✓ |
+| `monthOf` | [analysis.js:357](../../src/lib/analysis.js#L357) |  |  |
+| `readSpend` | [analysis.js:358](../../src/lib/analysis.js#L358) | ✓ |  |
+| `addSpend` | [analysis.js:362](../../src/lib/analysis.js#L362) | ✓ | ✓ |
+| `recordSpend` | [analysis.js:368](../../src/lib/analysis.js#L368) | ✓ |  |
+| `spendSummary` | [analysis.js:374](../../src/lib/analysis.js#L374) | ✓ | ✓ |
+| `typicalCost` | [analysis.js:382](../../src/lib/analysis.js#L382) | ✓ | ✓ |
 | `createBackup` | [backup.js:20](../../src/lib/backup.js#L20) | ✓ | ✓ |
 | `isObject` | [backup.js:24](../../src/lib/backup.js#L24) |  |  |
 | `isText` | [backup.js:25](../../src/lib/backup.js#L25) |  |  |
@@ -720,8 +721,8 @@ Package: `layers-web` v1.0.39 · `src/`: 91 files, 15598 lines, 110 components, 
 | `STAMP` | [analysis.js:37](../../src/lib/analysis.js#L37) |
 | `ANALYSIS_SCHEMA` | [analysis.js:136](../../src/lib/analysis.js#L136) |
 | `WEEKDAYS` | [analysis.js:142](../../src/lib/analysis.js#L142) |
-| `KEPT_CHAT` | [analysis.js:311](../../src/lib/analysis.js#L311) |
-| `SPEND_KEY` | [analysis.js:344](../../src/lib/analysis.js#L344) |
+| `KEPT_CHAT` | [analysis.js:323](../../src/lib/analysis.js#L323) |
+| `SPEND_KEY` | [analysis.js:356](../../src/lib/analysis.js#L356) |
 | `BACKUP_VERSION` | [backup.js:15](../../src/lib/backup.js#L15) |
 | `MAX_BACKUP_BYTES` | [backup.js:17](../../src/lib/backup.js#L17) |
 | `GRADES` | [backup.js:101](../../src/lib/backup.js#L101) |
