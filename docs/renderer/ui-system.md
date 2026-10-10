@@ -303,7 +303,8 @@ coarse)`, as on a phone) it works by tapping alone. The keys stay for the laptop
 - **Room for a finger**: chips at least 38 px tall, icon buttons 40 px, skin-tone swatches
   32 px.
 - **Text boxes are 16 px**, which stops iPhones zooming in when you tap one.
-- **Hover effects don't stick** after a tap (the avatar choices, swatches and big buttons).
+- **Hover effects don't stick** after a tap (the avatar choices, swatches, Add person, the
+  + button and the `.tile` choice buttons).
 - **Safe areas**: the frame is `100dvh` with the notch's inset at the top, and the tab
   bar and sheet footers leave room for the home bar (`env(safe-area-inset-*)`, 0
   elsewhere).

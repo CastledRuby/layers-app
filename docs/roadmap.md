@@ -482,8 +482,12 @@ watches). It comes after the phone.
 3. **The iPhone app** with Capacitor: built on GitHub's macOS machines, on your phone
    through TestFlight. Reminders through Capacitor's local notifications, from the same
    `plannedNotifications` the laptop uses. Touch-sized controls where the laptop leans
-   on keys.
-4. **Sync** between the two through the encrypted file.
+   on keys. *(Partly built 2026-10-07, in 1.0.34: the iPhone project builds for the
+   simulator on GitHub, and the controls are touch-sized. TestFlight waits for the Apple
+   Developer account; see also [the phone web app](#proposal-the-phone-web-app-2026-10-10).)*
+4. **Sync** between the two through the encrypted file. *(The laptop's side is built,
+   2026-10-07, in 1.0.34: [sync through OneDrive](renderer/state-and-data.md#syncing-through-onedrive).
+   The phone's side comes with the phone app.)*
 5. **The Watch**, later: today's plans, and "How did it go?".
 
 ### What it needs from you

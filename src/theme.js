@@ -345,6 +345,8 @@ input[type="range"] { width: 100%; }
   .icon-btn { min-width: 40px; min-height: 40px; }
   .tone-swatch { width: 32px; height: 32px; }
   .avatar-choice:hover, .tone-swatch:hover, .avatar-choice--initials:hover, .add-person-btn:hover, .fab-btn:hover { transform: none; }
+  .tile:hover:not(:disabled) { transform: none; box-shadow: none; border-color: ${COLORS.line}; background: ${COLORS.tile}; }
+  .tile--accent:hover:not(:disabled) { border-color: ${COLORS.accent}; background: ${COLORS.accentSoft}; }
 }
 
 @media (prefers-reduced-motion: reduce) {

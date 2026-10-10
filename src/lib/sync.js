@@ -1,7 +1,8 @@
 // Ready for syncing (docs/roadmap.md, "Proposal: Layers on your phone", step
 // 1): when each record last changed, what was deleted, and how two copies of
-// the data come together. Nothing syncs yet; the laptop keeps this in what it
-// saves and in backups, so the phone can merge with it later.
+// the data come together. The laptop keeps this in what it saves and in
+// backups; sync through OneDrive (lib/syncFile.js, syncOnce) merges with it,
+// and so will the phone later.
 //
 // createStamper keeps `updatedAt` on people, journal entries, plans and goals
 // (a person's and the general ones), and on the profile, without touching

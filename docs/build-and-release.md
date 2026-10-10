@@ -44,13 +44,16 @@ inlines it into `electron/app/index.html`.
 To check what a build packaged:
 
 ```powershell
-npx @electron/asar list release/win-unpacked/resources/app.asar
+npx @electron/asar list release/1.0.37/win-unpacked/resources/app.asar
 ```
 
 In 1.0.24 the asar was about 3 MB with around 340 entries: `electron/…`, `package.json`,
 and `node_modules/` for the two runtime packages of the time and their dependencies.
-The Anthropic SDK has added to that since 1.0.36. The 1.0.23 asar was 55 MB, because
-`react`, all of `recharts`/d3 and about 4,200 `lucide-react` files were in it.
+Since 1.0.36 the Anthropic SDK is in it too: measured on 2026-10-10 it was about 14 MB
+with around 3,100 entries, about 2,200 of them `@anthropic-ai/sdk` (and about 500 more
+for its `@babel/runtime` and `json-schema-to-ts`). That's expected. The 1.0.23 asar was
+55 MB, because `react`, all of `recharts`/d3 and about 4,200 `lucide-react` files were
+in it.
 
 ## Releasing
 
@@ -118,8 +121,15 @@ does too after `git merge` or `git pull`. To run it yourself: `npm run install:l
 1. **Skip if nothing changed.** With `--if-changed` (the hooks), it compares the app's
    files at `HEAD` with the commit last installed. That commit is recorded in
    `.git/layers-installed.json`, which `npm run release` writes too. Docs, tests,
-   scripts, branding drafts and the hooks aren't part of the app, so a commit that only
+   scripts, branding drafts, the hooks and the iPhone project (`ios/`, `.github/`,
+   `capacitor.config.json`) aren't part of the Windows app, so a commit that only
    changes those finishes in a second.
+
+   It also won't go backwards. If the installed commit is on `main` but not in this
+   branch, and the app differs, installing would put an older Layers back (a worktree
+   branch cut before newer work on `main`). It says so and installs nothing: merge
+   `main` into the branch, and the next commit installs. `npm run install:local`
+   installs the branch anyway.
 2. **Build the installer** the way a release does: `build:electron`, then
    `electron-builder --win nsis` into `dist-install/`. It's versioned like
    `1.0.28+local.abc1234`: the last release, then the commit (`.uncommitted` is added

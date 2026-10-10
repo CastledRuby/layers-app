@@ -5,11 +5,15 @@ can't. Two commands cover them:
 
 | Command | What it runs | When | Time |
 |---|---|---|---|
-| `npm run verify` | lint, code-map check, unit tests, app tests, renderer build | after every change; the pre-commit hook runs it automatically | about 30 s |
-| `npm run test:e2e` | builds the packaged app, then drives the real `Layers.exe` | before a release; `npm run release` runs it on the exact build it publishes | about 2 min |
+| `npm run verify` | lint, code-map check, unit tests, app tests, renderer build | after every change; the pre-commit hook runs it automatically | about 3 min (most of it the app tests; longer when the laptop is busy) |
+| `npm run test:e2e` | builds the packaged app, then drives the real `Layers.exe` | before a release; `npm run release` runs it on the exact build it publishes | about 4 min (packaging, then about 2 min of tests) |
 
 `npm test` runs just the Vitest tests (unit tests plus app tests). `npm run test:watch`
 reruns them as you edit.
+
+If many app tests fail with "Test timed out" at once, the laptop is probably busy (a game
+or another build). `npx vitest run --maxWorkers=1` runs one file at a time; if they pass
+that way, close what's busy and commit again.
 
 ## 1. Unit tests: `src/*.test.js`
 

@@ -6,7 +6,8 @@
 //
 //   npm run install:local                          build and install now
 //   node scripts/install-local.mjs --if-changed    (the hooks) skip when the
-//                                                  installed app already has this code
+//                                                  installed app already has this code,
+//                                                  or has newer work from main than this branch
 //
 // It builds the Windows installer the way a release does (electron-builder,
 // NSIS only, into dist-install/) and runs it silently. Nothing is published.
@@ -37,7 +38,8 @@ const KEEP_BACKUPS = 10;
 const OUT = join(root, 'dist-install');
 const GENERATED = 'electron/app/index.html';
 // Paths that don't end up in the app: changing only these needs no install.
-const APP_CODE = ['.', ':(exclude)docs', ':(exclude)tests', ':(exclude)scripts', ':(exclude).githooks', ':(exclude).claude', ':(exclude)branding', ':(exclude)*.md', `:(exclude)${GENERATED}`];
+// The iPhone project and its GitHub build don't reach the Windows app either.
+const APP_CODE = ['.', ':(exclude)docs', ':(exclude)tests', ':(exclude)scripts', ':(exclude).githooks', ':(exclude).claude', ':(exclude)branding', ':(exclude)*.md', `:(exclude)${GENERATED}`, ':(exclude)ios', ':(exclude).github', ':(exclude)capacitor.config.json'];
 
 const ifChanged = process.argv.includes('--if-changed');
 const sleep = (ms) => new Promise(r => setTimeout(r, ms));
@@ -81,6 +83,17 @@ function alreadyInstalled(head) {
   if (gitOut('status', '--porcelain', '--', ...APP_CODE)) return false;
   if (stamp.commit === head) return true;
   return git('diff', '--quiet', stamp.commit, head, '--', ...APP_CODE).status === 0;
+}
+
+// Would this install take away app changes that main has and this branch
+// doesn't? True when the installed commit is on main but not in HEAD, so a
+// branch cut before it would put an older Layers back on this computer.
+function behindInstalled(head) {
+  const stamp = readStamp();
+  if (!stamp || !stamp.commit || stamp.commit === head) return false;
+  const onMain = git('merge-base', '--is-ancestor', stamp.commit, 'main').status === 0;
+  const inHead = git('merge-base', '--is-ancestor', stamp.commit, head).status === 0;
+  return onMain && !inHead && git('diff', '--quiet', stamp.commit, head, '--', ...APP_CODE).status !== 0;
 }
 
 function skipReason() {
@@ -166,6 +179,10 @@ async function main() {
   await takeLock();
   const head = gitOut('rev-parse', 'HEAD');
   if (ifChanged && alreadyInstalled(head)) { log(`Layers on this computer already has this code (${head.slice(0, 7)}).`); return; }
+  if (ifChanged && behindInstalled(head)) {
+    log(`Not installing: the Layers on this computer (${readStamp().version}) has app changes from main that this branch doesn't. Merge main into this branch and the next commit installs, or run npm run install:local to install this branch anyway.`);
+    return;
+  }
 
   const missing = missingDependencies();
   if (missing.length) fail(`This copy's node_modules is missing ${missing.join(', ')}, so the build would crash on start. Run npm install here, then npm run install:local.`);

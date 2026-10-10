@@ -4,7 +4,7 @@
 > Run `npm run docs:map` after changing anything under `src/`, `electron/*.cjs` or `package.json` scripts.
 > Hand-written explanations live in the other files under [`docs/`](../README.md).
 
-Package: `layers-web` v1.0.37 · `src/`: 90 files, 15449 lines, 110 components, 421 top-level functions, 211 constants.
+Package: `layers-web` v1.0.37 · `src/`: 90 files, 15452 lines, 110 components, 421 top-level functions, 211 constants.
 
 ## Source files
 
@@ -12,7 +12,7 @@ Package: `layers-web` v1.0.37 · `src/`: 90 files, 15449 lines, 110 components, 
 |---|---|---|---|
 | [main.jsx](../../src/main.jsx) | 16 | quick | — |
 | [App.jsx](../../src/App.jsx) | 1730 | sampleData, SAMPLE_PERSON_IDS, SAMPLE_GOAL_IDS, skillsCameWithSamples, allSkillsZero, listNames, unlinkMissingPeople, addNotes, applyLog, namesText, … (+3) | `components/BottomNav`, `components/ErrorBoundary`, `components/PageTransition`, `components/sheetLayer`, `data/constants`, `data/seed`, `lib/dates`, `lib/achievements`, `lib/progress`, `lib/backup`, `lib/calendar`, `lib/hooks`, `lib/chatBatch`, `lib/reminders`, `lib/analysis`, `lib/storage`, `lib/replies`, `lib/chatBatch`, `lib/util`, `modals/AddInfoModal`, `modals/AddPersonModal`, `modals/ConfirmDialog`, `modals/EditEntryModal`, `modals/EditPersonModal`, `modals/EditProfileModal`, `modals/EventSheet`, `modals/GoalModal`, `modals/KeyDateSheet`, `modals/LogInteractionModal`, `modals/PlanSheet`, `modals/PhotoFolderSheet`, `lib/sync`, `lib/syncFile`, `modals/SyncSheet`, `lib/ics`, `lib/summary`, `modals/QuickAddInterestModal`, `modals/ShortcutsModal`, `modals/StartOverSheet`, `modals/DaySheet`, `modals/JumpSheet`, `lib/sentence`, `modals/TemplatePickerModal`, `modals/ChatReviewSheet`, `modals/WeekReviewSheet`, `theme`, `views/CoachView`, `views/GoalsView`, `views/JournalView`, `views/MeView`, `views/OnboardingView`, `views/PeopleView`, `views/PersonProfile`, `components/ClosenessQuiz`, `views/TodayView` |
-| [theme.js](../../src/theme.js) | 354 | THEME_LIGHT, THEME_DARK, COLORS, cssVarBlock, EASE, CSS | `fonts` |
+| [theme.js](../../src/theme.js) | 356 | THEME_LIGHT, THEME_DARK, COLORS, cssVarBlock, EASE, CSS | `fonts` |
 | [data/avatars.js](../../src/data/avatars.js) | 203 | AVATAR_COLS, AVATAR_GROUPS, findAvatars, INITIAL_COLORS, INITIALS_GROUP, isInitials, PHOTO_SIZE, PHOTO_GROUP, PHOTO_SRC, isPhoto, … (+16) | — |
 | [data/constants.js](../../src/data/constants.js) | 349 | LAYERS, getLayer, DIM_ORDER, DIM_LABELS, DIM_COLORS, LAYER_BASE_DIMS, CATEGORIES, categoryMeta, TABS, SHORTCUTS, … (+29) | `theme` |
 | [data/scenarios.js](../../src/data/scenarios.js) | 115 | SCENARIOS | — |
@@ -38,7 +38,7 @@ Package: `layers-web` v1.0.37 · `src/`: 90 files, 15449 lines, 110 components, 
 | [lib/sentence.js](../../src/lib/sentence.js) | 297 | WEEKDAYS, MONTHS, RATING_WORDS, TEMPLATE_WORDS, MEAL_TIMES, PART_TIMES, LOG_VERBS, LOG_NOUNS, FILLERS, PREPOSITIONS, … (+12) | `lib/calendar`, `lib/dates` |
 | [lib/storage.js](../../src/lib/storage.js) | 179 | STORAGE_KEY, DATA_VERSION, UNREADABLE_PREFIX, keepCopy, loadSavedState, persistState, LAST_NOTIFIED_KEY, getLastNotifiedDate, setLastNotifiedDate, NOTIFIED_REMINDERS_KEY, … (+14) | `lib/backup`, `lib/progress` |
 | [lib/summary.js](../../src/lib/summary.js) | 96 | LAYER_NAMES, esc, longDay, layerColor, layerDeep, layerTint, avatar, section, summaryHtml, summaryFileName | `data/constants`, `data/avatars`, `lib/activity`, `lib/calendar`, `lib/dates`, `lib/text`, `theme` |
-| [lib/sync.js](../../src/lib/sync.js) | 180 | KINDS, KEEP_DELETED_DAYS, COLLECTIONS, DAY_MS, prune, createStamper, cleanDeleted, stampOf, mergeList, mergeSkills, … (+3) | — |
+| [lib/sync.js](../../src/lib/sync.js) | 181 | KINDS, KEEP_DELETED_DAYS, COLLECTIONS, DAY_MS, prune, createStamper, cleanDeleted, stampOf, mergeList, mergeSkills, … (+3) | — |
 | [lib/syncFile.js](../../src/lib/syncFile.js) | 168 | SYNC_FORMAT, ITERATIONS, MAIN_FILE, subtle, enc, dec, toB64, fromB64, keys, KEYS, … (+5) | `lib/backup`, `lib/sync` |
 | [lib/text.js](../../src/lib/text.js) | 171 | summaryFor, updateStatusText, homeGoalTitle, generateSuggestions, getCheckInSuggestions, checkInReminder, HOOKS, buildPotentialHooks, focusSuggestion | `data/constants`, `lib/dates` |
 | [lib/tips.js](../../src/lib/tips.js) | 47 | SOON_DAYS, addDays, datesAround, planTips | `data/constants`, `lib/calendar`, `lib/dates`, `lib/text` |
@@ -537,15 +537,15 @@ Package: `layers-web` v1.0.37 · `src/`: 90 files, 15449 lines, 110 components, 
 | `section` | [summary.js:34](../../src/lib/summary.js#L34) |  |  |
 | `summaryHtml` | [summary.js:39](../../src/lib/summary.js#L39) | ✓ | ✓ |
 | `summaryFileName` | [summary.js:93](../../src/lib/summary.js#L93) | ✓ | ✓ |
-| `prune` | [sync.js:25](../../src/lib/sync.js#L25) |  |  |
-| `createStamper` | [sync.js:33](../../src/lib/sync.js#L33) | ✓ | ✓ |
-| `cleanDeleted` | [sync.js:107](../../src/lib/sync.js#L107) | ✓ | ✓ |
-| `stampOf` | [sync.js:114](../../src/lib/sync.js#L114) |  |  |
-| `mergeList` | [sync.js:119](../../src/lib/sync.js#L119) |  |  |
-| `mergeSkills` | [sync.js:138](../../src/lib/sync.js#L138) |  |  |
-| `mergeAchievements` | [sync.js:145](../../src/lib/sync.js#L145) |  |  |
-| `mergeData` | [sync.js:154](../../src/lib/sync.js#L154) | ✓ | ✓ |
-| `mergeDeleted` | [sync.js:171](../../src/lib/sync.js#L171) |  |  |
+| `prune` | [sync.js:26](../../src/lib/sync.js#L26) |  |  |
+| `createStamper` | [sync.js:34](../../src/lib/sync.js#L34) | ✓ | ✓ |
+| `cleanDeleted` | [sync.js:108](../../src/lib/sync.js#L108) | ✓ | ✓ |
+| `stampOf` | [sync.js:115](../../src/lib/sync.js#L115) |  |  |
+| `mergeList` | [sync.js:120](../../src/lib/sync.js#L120) |  |  |
+| `mergeSkills` | [sync.js:139](../../src/lib/sync.js#L139) |  |  |
+| `mergeAchievements` | [sync.js:146](../../src/lib/sync.js#L146) |  |  |
+| `mergeData` | [sync.js:155](../../src/lib/sync.js#L155) | ✓ | ✓ |
+| `mergeDeleted` | [sync.js:172](../../src/lib/sync.js#L172) |  |  |
 | `subtle` | [syncFile.js:25](../../src/lib/syncFile.js#L25) |  |  |
 | `enc` | [syncFile.js:26](../../src/lib/syncFile.js#L26) |  |  |
 | `dec` | [syncFile.js:27](../../src/lib/syncFile.js#L27) |  |  |
@@ -794,10 +794,10 @@ Package: `layers-web` v1.0.37 · `src/`: 90 files, 15449 lines, 110 components, 
 | `SYNC_KEY` | [storage.js:134](../../src/lib/storage.js#L134) |
 | `NUDGE_KEY` | [storage.js:150](../../src/lib/storage.js#L150) |
 | `LAYER_NAMES` | [summary.js:15](../../src/lib/summary.js#L15) |
-| `KINDS` | [sync.js:18](../../src/lib/sync.js#L18) |
-| `KEEP_DELETED_DAYS` | [sync.js:21](../../src/lib/sync.js#L21) |
-| `COLLECTIONS` | [sync.js:22](../../src/lib/sync.js#L22) |
-| `DAY_MS` | [sync.js:23](../../src/lib/sync.js#L23) |
+| `KINDS` | [sync.js:19](../../src/lib/sync.js#L19) |
+| `KEEP_DELETED_DAYS` | [sync.js:22](../../src/lib/sync.js#L22) |
+| `COLLECTIONS` | [sync.js:23](../../src/lib/sync.js#L23) |
+| `DAY_MS` | [sync.js:24](../../src/lib/sync.js#L24) |
 | `SYNC_FORMAT` | [syncFile.js:15](../../src/lib/syncFile.js#L15) |
 | `ITERATIONS` | [syncFile.js:16](../../src/lib/syncFile.js#L16) |
 | `MAIN_FILE` | [syncFile.js:17](../../src/lib/syncFile.js#L17) |

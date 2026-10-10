@@ -121,6 +121,12 @@ describe('Sheets', () => {
     await wait(250);
     expect(queryDialog('What are you logging?')).toBeNull();
   });
+
+  it("on a touch screen a tapped tile doesn't stay lifted and tinted", () => {
+    const touch = CSS.slice(CSS.indexOf('@media (hover: none) and (pointer: coarse)'));
+    expect(touch).toMatch(/\.tile:hover:not\(:disabled\) \{[^}]*transform: none;[^}]*box-shadow: none;[^}]*background: var\(--c-tile\)/);
+    expect(touch).toMatch(/\.tile--accent:hover:not\(:disabled\) \{[^}]*background: var\(--c-accent-soft\)/);
+  });
 });
 
 // WCAG relative luminance and contrast ratio, for '#RRGGBB' colours.
