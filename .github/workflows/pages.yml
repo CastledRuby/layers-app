@@ -6,8 +6,9 @@
 #
 # On a push to main, not on the release itself: the github-pages environment
 # only deploys from main, and a release runs at its tag, so 1.0.39's deploy was
-# refused. npm run release pushes main just before publishing, and main is
-# only pushed for releases.
+# refused. npm run release pushes main just before publishing; only that push
+# (its newest commit is "Release vX.Y.Z") publishes, since main is sometimes
+# pushed between releases too.
 name: Phone web app
 
 on:
@@ -26,6 +27,7 @@ concurrency:
 
 jobs:
   build:
+    if: github.event_name == 'workflow_dispatch' || startsWith(github.event.head_commit.message, 'Release v')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

@@ -189,7 +189,9 @@ Screen.
 - **It runs when a release pushes `main`**, not on the published release: the
   `github-pages` environment only deploys from `main`, and a release-triggered run is at
   its tag (`v1.0.39`'s deploy was refused that way and was run by hand from `main`). Only
-  releases push `main`.
+  a release's push publishes (its newest commit is "Release vX.Y.Z"): `main` is
+  sometimes pushed between releases too, and that push left the web app with unreleased
+  changes on 2026-10-10.
 
 - **The page holds no data.** Yours lives in that browser's storage on the phone; the
   OneDrive sign-in that syncs it with the laptop comes once the Microsoft app
