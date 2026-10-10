@@ -1,6 +1,7 @@
 // Small presentational building blocks.
 
 import { useState } from 'react';
+import { ArrowBigUp, CornerDownLeft, Delete } from 'lucide-react';
 import { CONV_STATES, getLayer } from '../data/constants.js';
 import { INITIAL_COLORS, initialsOf, isInitials, isPhoto } from '../data/avatars.js';
 import { timelineDateLabel } from '../lib/dates.js';
@@ -133,8 +134,18 @@ export function ConvStateBadge({ stateKey }) {
 
 // A key you can press for the thing next to it. Hidden from screen readers
 // (the button's own label says what it does), so it never changes a name.
+// Enter, Shift and Backspace are drawn as icons: the key font drew ↵ as a
+// stray box at this size. "Ctrl+↵" reads Ctrl + the Enter icon.
+const KEY_ICONS = { '↵': CornerDownLeft, '⇧': ArrowBigUp, '⌫': Delete };
+function keyContent(children) {
+  if (typeof children !== 'string' || ![...children].some(ch => KEY_ICONS[ch])) return children;
+  return children.split(/([↵⇧⌫])/).filter(Boolean).map((part, i) => {
+    const Icon = KEY_ICONS[part];
+    return Icon ? <Icon key={i} size={11} strokeWidth={2.4} className="kbd-icon" /> : part;
+  });
+}
 export function Kbd({ children, onAccent }) {
-  return <span className={`kbd${onAccent ? ' kbd--on-accent' : ''}`} aria-hidden="true">{children}</span>;
+  return <span className={`kbd${onAccent ? ' kbd--on-accent' : ''}`} aria-hidden="true">{keyContent(children)}</span>;
 }
 
 // A text box with its key on the right: the letter the sheet's keys use to

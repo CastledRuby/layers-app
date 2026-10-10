@@ -243,8 +243,9 @@ button:active:not(:disabled) { transform: scale(0.97); }
 .chip-in { animation: chipIn .22s ${EASE}; }
 
 /* A key you can press, shown next to what it does. */
-.kbd { display: inline-flex; align-items: center; justify-content: center; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 5px; font: 600 10px/1 ui-monospace, 'Cascadia Mono', Consolas, monospace; color: ${COLORS.inkSoft}; background: color-mix(in srgb, ${COLORS.ink} 5%, transparent); border: 1px solid ${COLORS.line}; border-bottom-width: 2px; flex-shrink: 0; }
+.kbd { display: inline-flex; align-items: center; justify-content: center; gap: 2px; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 5px; font: 600 10px/1 ui-monospace, 'Cascadia Mono', Consolas, monospace; color: ${COLORS.inkSoft}; background: color-mix(in srgb, ${COLORS.ink} 5%, transparent); border: 1px solid ${COLORS.line}; border-bottom-width: 2px; flex-shrink: 0; }
 .kbd--on-accent { color: ${COLORS.onAccent}; background: color-mix(in srgb, ${COLORS.onAccent} 16%, transparent); border-color: color-mix(in srgb, ${COLORS.onAccent} 35%, transparent); }
+.kbd-icon { flex-shrink: 0; }
 .tile > .kbd { position: absolute; top: 9px; right: 9px; }
 /* The avatar picker (AvatarPicker.jsx): a grid of emoji, the one picked
    ringed, skin-tone swatches, and a big preview. */
