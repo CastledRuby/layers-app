@@ -158,7 +158,7 @@ export function CoachView({ people, journal, initialPersonId, initialTab, onOpen
   const session = (sessionKey && sessions[sessionKey]) || { infoStatus: {}, logged: false };
   const infoStatus = session.infoStatus;
   // One chat is logged once, whichever model's answer it's logged from.
-  const logged = session.logged || Boolean(scenario && scenario.own && ownChat && Object.entries(sessions).some(([k, s]) => s.logged && k.startsWith(`${scenarioPerson.id}:own:${ownChat.run}:`)));
+  const logged = session.logged || Boolean(scenario && scenario.own && ownChat && scenarioPerson && Object.entries(sessions).some(([k, s]) => s.logged && k.startsWith(`${scenarioPerson.id}:own:${ownChat.run}:`)));
   function updateSession(change) {
     setSessions(all => {
       const current = all[sessionKey] || { infoStatus: {}, logged: false };

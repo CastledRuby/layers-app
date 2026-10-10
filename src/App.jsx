@@ -784,7 +784,10 @@ function LayersApp() {
       loggedIds[item.id] = done.entries.map(e => e.id);
     });
     const count = Object.keys(loggedIds).length;
-    if (!count) return;
+    if (!count) {
+      if (items.some(item => item.result)) pushToast(items.length === 1 ? "Who that chat was with isn't in Layers any more, so nothing was logged. X skips it." : "Nobody those chats were with is in Layers any more, so nothing was logged.");
+      return;
+    }
     setPeople(state.people);
     setGeneralGoals(prev => raised.reduce((goals, r) => advanceSkillGoals(goals, r), prev));
     setJournal(prev => [...entries, ...prev]);

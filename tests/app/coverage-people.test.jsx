@@ -130,7 +130,7 @@ describe('nicknames in exported chats', { timeout: 60000 }, () => {
 });
 
 describe('an answer waiting for someone since removed', { timeout: 60000 }, () => {
-  it('logs nothing, and can be skipped', async () => {
+  it('logs nothing, says why, and can be skipped', async () => {
     const errors = trackErrors();
     fakeBridge();
     const yesterday = new Date(Date.now() - DAY);
@@ -147,6 +147,7 @@ describe('an answer waiting for someone since removed', { timeout: 60000 }, () =
     const sheet = dialog('Ready to review');
     expect(within(sheet).getByText('Riley')).toBeTruthy();
     await user.keyboard('{Enter}');
+    expect(await screen.findByText(/isn't in Layers any more, so nothing was logged/)).toBeTruthy();
     expect(savedState().journal).toEqual([]);
     await user.keyboard('x');
     await waitFor(() => expect(screen.queryByRole('dialog', { name: 'Ready to review' })).toBeNull());
