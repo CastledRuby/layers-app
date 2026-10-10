@@ -4,7 +4,7 @@
 > Run `npm run docs:map` after changing anything under `src/`, `electron/*.cjs` or `package.json` scripts.
 > Hand-written explanations live in the other files under [`docs/`](../README.md).
 
-Package: `layers-web` v1.0.39 · `src/`: 94 files, 16032 lines, 114 components, 444 top-level functions, 219 constants.
+Package: `layers-web` v1.0.39 · `src/`: 94 files, 16079 lines, 114 components, 444 top-level functions, 222 constants.
 
 ## Source files
 
@@ -12,7 +12,7 @@ Package: `layers-web` v1.0.39 · `src/`: 94 files, 16032 lines, 114 components, 
 |---|---|---|---|
 | [main.jsx](../../src/main.jsx) | 20 | quick | — |
 | [App.jsx](../../src/App.jsx) | 1769 | sampleData, SAMPLE_PERSON_IDS, SAMPLE_GOAL_IDS, skillsCameWithSamples, allSkillsZero, listNames, unlinkMissingPeople, addNotes, applyLog, namesText, … (+3) | `components/BottomNav`, `components/ErrorBoundary`, `components/PageTransition`, `components/sheetLayer`, `data/constants`, `data/seed`, `lib/dates`, `lib/achievements`, `lib/progress`, `lib/backup`, `lib/calendar`, `lib/hooks`, `lib/chatBatch`, `lib/reminders`, `lib/analysis`, `lib/storage`, `lib/replies`, `lib/chatBatch`, `lib/drills`, `lib/util`, `modals/AddInfoModal`, `modals/AddPersonModal`, `modals/ConfirmDialog`, `modals/EditEntryModal`, `modals/EditPersonModal`, `modals/EditProfileModal`, `modals/EventSheet`, `modals/GoalModal`, `modals/KeyDateSheet`, `modals/LogInteractionModal`, `modals/PlanSheet`, `modals/PhotoFolderSheet`, `lib/sync`, `lib/syncFile`, `modals/SyncSheet`, `lib/ics`, `lib/summary`, `modals/QuickAddInterestModal`, `modals/ShortcutsModal`, `modals/StartOverSheet`, `modals/DaySheet`, `modals/JumpSheet`, `lib/sentence`, `modals/TemplatePickerModal`, `modals/ChatReviewSheet`, `modals/WeekReviewSheet`, `theme`, `views/CoachView`, `views/GoalsView`, `views/JournalView`, `views/MeView`, `views/OnboardingView`, `views/PeopleView`, `views/PersonProfile`, `components/ClosenessQuiz`, `views/TodayView` |
-| [theme.js](../../src/theme.js) | 357 | THEME_LIGHT, THEME_DARK, COLORS, cssVarBlock, EASE, CSS | `fonts` |
+| [theme.js](../../src/theme.js) | 404 | THEME_LIGHT, THEME_DARK, COLORS, cssVarBlock, EASE, GRAIN, DEPTH_LIGHT, DEPTH_DARK, CSS | `fonts` |
 | [data/avatars.js](../../src/data/avatars.js) | 203 | AVATAR_COLS, AVATAR_GROUPS, findAvatars, INITIAL_COLORS, INITIALS_GROUP, isInitials, PHOTO_SIZE, PHOTO_GROUP, PHOTO_SRC, isPhoto, … (+16) | — |
 | [data/constants.js](../../src/data/constants.js) | 350 | LAYERS, getLayer, DIM_ORDER, DIM_LABELS, DIM_COLORS, LAYER_BASE_DIMS, CATEGORIES, categoryMeta, TABS, SHORTCUTS, … (+29) | `theme` |
 | [data/scenarios.js](../../src/data/scenarios.js) | 115 | SCENARIOS | — |
@@ -683,7 +683,10 @@ Package: `layers-web` v1.0.39 · `src/`: 94 files, 16032 lines, 114 components, 
 | `THEME_DARK` | [theme.js:31](../../src/theme.js#L31) |
 | `COLORS` | [theme.js:58](../../src/theme.js#L58) |
 | `EASE` | [theme.js:65](../../src/theme.js#L65) |
-| `CSS` | [theme.js:67](../../src/theme.js#L67) |
+| `GRAIN` | [theme.js:71](../../src/theme.js#L71) |
+| `DEPTH_LIGHT` | [theme.js:72](../../src/theme.js#L72) |
+| `DEPTH_DARK` | [theme.js:78](../../src/theme.js#L78) |
+| `CSS` | [theme.js:85](../../src/theme.js#L85) |
 | `AVATAR_COLS` | [avatars.js:6](../../src/data/avatars.js#L6) |
 | `AVATAR_GROUPS` | [avatars.js:8](../../src/data/avatars.js#L8) |
 | `INITIAL_COLORS` | [avatars.js:50](../../src/data/avatars.js#L50) |

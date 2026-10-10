@@ -64,6 +64,24 @@ function cssVarBlock(theme) {
 // The app's easing: quick to start, gentle to settle.
 const EASE = 'cubic-bezier(0.22,1,0.36,1)';
 
+// Soft depth (chosen 2026-10-11): layered shadows with a faint top highlight
+// on cards, a gentle sheen on filled buttons, and a very faint grain and glow
+// behind everything. Each theme has its own, since dark needs deeper shadows
+// and a dimmer highlight.
+const GRAIN = (alpha) => `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 ${alpha} 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")`;
+const DEPTH_LIGHT = `--shadow-card: inset 0 1px 0 rgba(255,255,255,.7), 0 1px 2px rgba(25,30,45,.05), 0 8px 22px -10px rgba(25,30,45,.16);
+  --shadow-card-hover: inset 0 1px 0 rgba(255,255,255,.7), 0 2px 4px rgba(25,30,45,.06), 0 14px 30px -12px rgba(25,30,45,.22);
+  --shadow-chip: inset 0 1px 0 rgba(255,255,255,.75), 0 1px 1.5px rgba(25,30,45,.05);
+  --sheen: linear-gradient(180deg, rgba(255,255,255,.16), rgba(255,255,255,0) 55%);
+  --glow: radial-gradient(130% 55% at 50% -12%, color-mix(in srgb, var(--c-accent) 9%, transparent), transparent 62%);
+  --grain: ${GRAIN('.035')};`;
+const DEPTH_DARK = `--shadow-card: inset 0 1px 0 rgba(255,255,255,.045), 0 1px 2px rgba(0,0,0,.3), 0 10px 26px -12px rgba(0,0,0,.55);
+  --shadow-card-hover: inset 0 1px 0 rgba(255,255,255,.06), 0 2px 4px rgba(0,0,0,.32), 0 16px 34px -14px rgba(0,0,0,.6);
+  --shadow-chip: inset 0 1px 0 rgba(255,255,255,.05), 0 1px 1.5px rgba(0,0,0,.25);
+  --sheen: linear-gradient(180deg, rgba(255,255,255,.14), rgba(255,255,255,0) 55%);
+  --glow: radial-gradient(130% 55% at 50% -12%, color-mix(in srgb, var(--c-accent) 12%, transparent), transparent 62%);
+  --grain: ${GRAIN('.06')};`;
+
 export const CSS = `
 ${FONT_FACES}
 
@@ -77,12 +95,14 @@ input, textarea { font-family: 'Manrope', ui-sans-serif, system-ui, sans-serif; 
 
 .layers-root {
   ${cssVarBlock(THEME_LIGHT)}
+  ${DEPTH_LIGHT}
   transition: background-color .25s ease;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
 }
 .layers-root.dark {
   ${cssVarBlock(THEME_DARK)}
+  ${DEPTH_DARK}
   color-scheme: dark;
 }
 
@@ -330,6 +350,32 @@ input[type="range"] { width: 100%; }
 @keyframes spin { to { transform: rotate(360deg); } }
 .spin { animation: spin 1s linear infinite; }
 
+/* Soft depth (DEPTH_LIGHT / DEPTH_DARK above). Cards are the rounded-2xl
+   panels: they sit on a layered shadow with a faint top highlight, and rise
+   in gently when they appear (a few at a time, a beat apart). Dashed ones are
+   empty states and stay flat, as do the calendar's day cells. */
+.phone-frame { background-image: var(--grain), var(--glow); }
+.rounded-2xl:not([style*="dashed"]):not(.day-cell) { box-shadow: var(--shadow-card); }
+.scroll-area .rounded-2xl:not(.day-cell) { animation: cardIn .42s ${EASE} backwards; }
+.scroll-area .rounded-2xl:nth-child(2) { animation-delay: .04s; }
+.scroll-area .rounded-2xl:nth-child(3) { animation-delay: .08s; }
+.scroll-area .rounded-2xl:nth-child(4) { animation-delay: .12s; }
+.scroll-area .rounded-2xl:nth-child(n+5) { animation-delay: .16s; }
+@keyframes cardIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+button.rounded-2xl:not(:disabled):not(.day-cell):hover, .tile:hover:not(:disabled) { box-shadow: var(--shadow-card-hover); }
+/* Chips and key-caps: a light top edge, as if slightly raised. */
+.chip { box-shadow: var(--shadow-chip); }
+.chip--on { box-shadow: inset 0 1px 0 color-mix(in srgb, ${COLORS.accent} 10%, transparent), 0 0 0 1px color-mix(in srgb, ${COLORS.accent} 8%, transparent); }
+.kbd { background-image: linear-gradient(180deg, color-mix(in srgb, ${COLORS.paperRaised} 70%, transparent), transparent); }
+/* Filled buttons (the main ones, the floating +, and accent buttons styled
+   inline) get a gentle sheen from the top, and a soft accent shadow on hover. */
+.primary-btn, .fab-btn, .add-person-btn, .seg-btn--on, button[style*="background: var(--c-accent)"] { background-image: var(--sheen) !important; }
+button[style*="background: var(--c-accent)"]:not(:disabled):hover { box-shadow: 0 6px 16px -4px color-mix(in srgb, ${COLORS.accent} 45%, transparent); }
+/* The tabs lift off the page a little; an open sheet softly blurs what's behind it. */
+.nav-bar { box-shadow: 0 -10px 26px -18px rgba(10,12,20,.35); }
+.sheet-overlay { backdrop-filter: blur(2px); -webkit-backdrop-filter: blur(2px); }
+.toast { box-shadow: 0 10px 26px -6px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,.08); }
+
 /* A phone's notch and home bar (0 everywhere else). */
 .nav-bar { padding-bottom: calc(12px + env(safe-area-inset-bottom)); }
 .sheet-footer { padding-bottom: calc(22px + env(safe-area-inset-bottom)); }
@@ -352,5 +398,6 @@ input[type="range"] { width: 100%; }
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+  .scroll-area .rounded-2xl { animation: none; }
 }
 `;

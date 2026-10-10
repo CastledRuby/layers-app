@@ -64,10 +64,28 @@ still flash once, because `theme.json` doesn't exist until the app has reported 
    - `.seg` and `.seg-btn`: the 1–5 scale
    - `.primary-btn`: a sheet's main button
    - `.icon-btn`: round icon buttons such as back and close
-   - `.kbd`: a key hint
+   - `.kbd`: a key hint. `Kbd` draws ↵, ⇧ and ⌫ as icons (`.kbd-icon`), since the key
+     font drew ↵ as a stray box at 10 px; "Ctrl+↵" reads Ctrl and the Enter icon.
 
    The string starts with the `@font-face` rules from
    [`src/fonts.js`](../../src/fonts.js).
+
+### Soft depth (2026-10-11)
+
+Chosen for a subtle sense of depth, one set of tokens per theme (`DEPTH_LIGHT` /
+`DEPTH_DARK` in `theme.js`, as `--shadow-card`, `--shadow-card-hover`, `--shadow-chip`,
+`--sheen`, `--glow` and `--grain`):
+
+- **Cards**: any `rounded-2xl` panel sits on a layered shadow with a faint top highlight
+  (not dashed empty states, and not the calendar's `.day-cell`s). A card button lifts its
+  shadow on hover.
+- **Behind everything**: a faint accent glow at the top of `.phone-frame` and a very
+  faint grain (an inline SVG noise).
+- **Filled buttons** (`.primary-btn`, `.fab-btn`, `.add-person-btn`, the picked
+  `.seg-btn`, and buttons styled inline with the accent background) get a sheen from the
+  top, and an accent shadow on hover. Chips and key hints have a light top edge.
+- **The tab bar** casts a soft shadow up the page, and an open sheet's backdrop blurs
+  what's behind it a little.
 
 ### Fonts
 
@@ -334,6 +352,9 @@ start, gentle to settle):
   little overshoot, a ring ripples out (`navRipple`) and the icon hops (`navHop`).
 - **Pages** slide in from the side their tab is on, sharpening from a slight blur
   (`page-anim--fwd`, `page-anim--back`; `PageTransition`).
+- **Cards** rise in gently as they appear (`cardIn`: 6 px and a fade, the first few a
+  beat apart). It only holds its start state (`backwards`), so a card's press and hover
+  still work after; with reduce motion they don't move at all.
 - **Press and hold** (`.hold-btn`): a fill runs across the button while it's held
   (`--hold-ms`), for "Delete for good?" in `StartOverSheet`.
 - The level-up pulse, glow and banner.

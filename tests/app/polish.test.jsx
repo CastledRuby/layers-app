@@ -146,6 +146,22 @@ describe('Colours', () => {
   });
 });
 
+describe('Soft depth (2026-10-11)', () => {
+  const block = (sel) => CSS.slice(CSS.indexOf(`${sel} {`), CSS.indexOf('}', CSS.indexOf(`${sel} {`)));
+  it('each theme has its own shadows, sheen, glow and grain', () => {
+    ['--shadow-card:', '--shadow-card-hover:', '--shadow-chip:', '--sheen:', '--glow:', '--grain:'].forEach(token => {
+      expect(block('.layers-root')).toContain(token);
+      expect(block('.layers-root.dark')).toContain(token);
+    });
+  });
+  it('cards rise in without holding their end state, and not at all with reduce motion; day cells stay flat', () => {
+    expect(CSS).toMatch(/\.scroll-area \.rounded-2xl:not\(\.day-cell\) \{ animation: cardIn [^;]* backwards; \}/);
+    expect(CSS).toMatch(/\.rounded-2xl:not\(\[style\*="dashed"\]\):not\(\.day-cell\) \{ box-shadow: var\(--shadow-card\); \}/);
+    const reduced = CSS.slice(CSS.indexOf('@media (prefers-reduced-motion: reduce)'));
+    expect(reduced).toContain('.scroll-area .rounded-2xl { animation: none; }');
+  });
+});
+
 describe('Less typing: tap-to-add templates', () => {
   it('"Something new" adds interests and plans by tapping', async () => {
     seedState({ people: [person('Morgan')] });
