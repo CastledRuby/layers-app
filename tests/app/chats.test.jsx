@@ -96,7 +96,7 @@ describe('chats from your exports', () => {
     const { user } = renderApp();
     const card = await openAnalyse(user);
     expect(await within(card).findByText(/Save to Files → OneDrive → Documents → Layers chats/)).toBeTruthy();
-    expect(within(card).getByText(/Download your information → just Messages, as JSON/)).toBeTruthy();
+    expect(within(card).getByText(/Download your information → just Messages, as JSON.*unzipped is fine too/)).toBeTruthy();
     expect(within(card).getByText(/Snapchat and iMessage don't export chats/)).toBeTruthy();
     await user.click(within(card).getByRole('button', { name: /Folder/ }));
     expect(bridge.openChatsFolder).toHaveBeenCalled();
@@ -114,12 +114,17 @@ describe('chats from your exports', () => {
         insta('amelie_1', 'Amelie', ['Amelie', 'liam.c'], [{ sender_name: 'liam.c', timestamp_ms: t + 1000, content: 'haha yes' }, { sender_name: 'Amelie', timestamp_ms: t, content: 'did you see this' }]),
         insta('jess_2', 'Jess', ['Jess', 'liam.c'], [{ sender_name: 'Jess', timestamp_ms: t, content: 'hey' }]),
       ] },
+      // An unzipped download (a folder) is read the same way.
+      'instagram-liam-2026-10-09': { kind: 'instagram', files: [
+        insta('mia_3', 'Mia', ['Mia', 'liam.c'], [{ sender_name: 'Mia', timestamp_ms: t, content: 'are you coming?' }]),
+      ] },
       'instagram-old.zip': { kind: 'instagram-html' },
     });
-    seedState({ profile: { name: 'Liam', focus: 'mix' }, people: [person('Amelie')] });
+    seedState({ profile: { name: 'Liam', focus: 'mix' }, people: [person('Amelie'), person('Mia')] });
     const { user } = renderApp();
     const card = await openAnalyse(user);
     expect(await within(card).findByText(/Download it again choosing JSON/)).toBeTruthy();
+    expect(within(card).getByRole('button', { name: /Mia.*Instagram.*1 new/ })).toBeTruthy();
     expect(within(card).queryByRole('button', { name: /^📷\s*Jess/ })).toBeNull();
     await user.click(within(card).getByRole('button', { name: /Show chats with people not in Layers \(1\)/ }));
     expect(within(card).getByRole('button', { name: /Jess.*Instagram/ })).toBeTruthy();

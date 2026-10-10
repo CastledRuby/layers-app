@@ -104,11 +104,62 @@ describe('the Layers chats folder', () => {
     expect(readExport(dir, 'missing.zip').error).toMatch(/isn't in the Layers chats folder/);
   });
 
+  it('reads an unzipped Instagram download, however deep its messages are', () => {
+    const dir = folder({ 'WhatsApp Chat with Ava.txt': CHAT });
+    const put = (rel, text) => { const file = path.join(dir, ...rel.split('/')); fs.mkdirSync(path.dirname(file), { recursive: true }); fs.writeFileSync(file, text); };
+    // Windows' Extract All puts it in a folder of the same name.
+    const inbox = 'instagram-liam-2026-10-09/instagram-liam-2026-10-09/your_instagram_activity/messages/inbox';
+    put(`${inbox}/chloe_9/message_1.json`, INSTA);
+    put(`${inbox}/chloe_9/message_2.json`, INSTA);
+    put(`${inbox}/chloe_9/photos/1.jpg`, 'x');
+    put(`${inbox}/max_4/message_1.json`, INSTA);
+    put('instagram-liam-2026-10-09/media/posts/202601/1.jpg', 'x');
+    put('just-messages/messages/inbox/zoe_2/message_1.json', INSTA); // only its messages folder
+    put('instagram-html/messages/inbox/a_1/message_1.html', '<html>');
+    put('holiday/photos/1.jpg', 'x');
+    const t = Date.now() / 1000;
+    fs.utimesSync(path.join(dir, 'WhatsApp Chat with Ava.txt'), t - 60, t - 60);
+    fs.utimesSync(path.join(dir, ...`${inbox}/max_4/message_1.json`.split('/')), t + 60, t + 60);
+
+    const listed = listExports(dir);
+    expect(listed.map(f => [f.name, f.kind]).sort()).toEqual([
+      ['WhatsApp Chat with Ava.txt', 'whatsapp'],
+      ['instagram-html', 'instagram-html'],
+      ['instagram-liam-2026-10-09', 'instagram'],
+      ['just-messages', 'instagram'],
+    ]);
+    const download = listed.find(f => f.name === 'instagram-liam-2026-10-09');
+    expect(listed[0]).toBe(download); // as new as its newest messages file
+    expect(download.size).toBe(3 * INSTA.length);
+
+    const read = readExport(dir, 'instagram-liam-2026-10-09');
+    expect(read.kind).toBe('instagram');
+    expect(read.files.map(f => f.path).sort()).toEqual(['messages/inbox/chloe_9/message_1.json', 'messages/inbox/chloe_9/message_2.json', 'messages/inbox/max_4/message_1.json']);
+    expect(read.files.every(f => f.text === INSTA)).toBe(true);
+    expect(readExport(dir, 'just-messages').files).toEqual([{ path: 'messages/inbox/zoe_2/message_1.json', text: INSTA }]);
+    expect(readExport(dir, 'instagram-html').error).toMatch(/choosing JSON/);
+    expect(readExport(dir, 'holiday').error).toMatch(/doesn't have an Instagram download's messages/);
+    expect(readExport(dir, '..').error).toMatch(/isn't in the Layers chats folder/);
+    expect(readExport(dir, `instagram-liam-2026-10-09${path.sep}instagram-liam-2026-10-09`).error).toMatch(/isn't in the Layers chats folder/);
+  });
+
   it('notices a new export arriving', async () => {
     const dir = folder();
     let calls = 0;
     const stop = watchExports(dir, () => { calls += 1; }, 50);
     fs.writeFileSync(path.join(dir, 'WhatsApp Chat - Amelie.zip'), zip({ '_chat.txt': CHAT }));
+    await new Promise((resolve) => { setTimeout(resolve, 400); });
+    stop();
+    expect(calls).toBeGreaterThanOrEqual(1);
+  });
+
+  it('notices messages arriving inside an unzipped download', async () => {
+    const dir = folder();
+    const thread = path.join(dir, 'instagram-liam', 'messages', 'inbox', 'chloe_9');
+    fs.mkdirSync(thread, { recursive: true });
+    let calls = 0;
+    const stop = watchExports(dir, () => { calls += 1; }, 50);
+    fs.writeFileSync(path.join(thread, 'message_1.json'), INSTA);
     await new Promise((resolve) => { setTimeout(resolve, 400); });
     stop();
     expect(calls).toBeGreaterThanOrEqual(1);

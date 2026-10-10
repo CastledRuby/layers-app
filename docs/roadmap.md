@@ -624,6 +624,14 @@ its own. Changes made while building are marked.
 
 ## History
 
+### Unzipped Instagram downloads (after 1.0.37, not released yet)
+
+- **Fixed** (2026-10-10): an Instagram download unzipped into the Layers chats folder
+  was ignored, since only zips and .txt files were looked at. A folder is read now,
+  wherever its `messages/inbox` is inside it (Windows' Extract All adds a folder of the
+  same name, and newer downloads put it under `your_instagram_activity`), and messages
+  arriving inside it are noticed. "How to add one" says unzipped is fine.
+
 ### Analyse all new (1.0.37)
 
 - **Analyse all new** (A) in Coach → Analyse sends every new conversation in your chats

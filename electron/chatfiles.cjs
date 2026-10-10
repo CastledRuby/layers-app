@@ -1,10 +1,10 @@
 // Chat exports for Coach (docs/electron.md, "Chat exports"): the "Layers
 // chats" folder in Documents (OneDrive on this laptop), where you save a
 // WhatsApp chat export from your phone (its zip, or the .txt) or Instagram's
-// "Download your information" zip. Only reads: what's there, and the text of
-// one file's chat. A zip is opened here (Node's own inflate, nothing bundled);
-// the page reads the chat itself (src/lib/chatImport.js). Files are left as
-// they are.
+// "Download your information" (its zip, or the folder it was unzipped to).
+// Only reads: what's there, and the text of one export's chat. A zip is
+// opened here (Node's own inflate, nothing bundled); the page reads the chat
+// itself (src/lib/chatImport.js). Files are left as they are.
 
 const fs = require('fs');
 const path = require('path');
@@ -111,6 +111,62 @@ function whatsAppTitle(name) {
   return m ? m[1].trim() : null;
 }
 
+function isDir(p) {
+  try { return fs.statSync(p).isDirectory(); } catch { return false; }
+}
+
+// An unzipped Instagram download: its messages/inbox folder, up to a few
+// folders down (Windows' Extract All adds a folder of the same name, and
+// newer downloads put messages under your_instagram_activity), or null.
+function inboxIn(folder, depth = 5) {
+  if (path.basename(folder) === 'inbox' && path.basename(path.dirname(folder)) === 'messages') return folder;
+  if (depth === 0) return null;
+  let entries = [];
+  try { entries = fs.readdirSync(folder, { withFileTypes: true }); } catch { return null; }
+  for (const e of entries) {
+    const sub = path.join(folder, e.name);
+    if (e.name.startsWith('.') || e.name === '__MACOSX' || !(e.isDirectory() || (e.isSymbolicLink() && isDir(sub)))) continue;
+    const found = inboxIn(sub, depth - 1);
+    if (found) return found;
+  }
+  return null;
+}
+
+// An unzipped Instagram download's messages files, each named as it is in
+// the zip so the page reads it the same way: { kind ('instagram', or
+// 'instagram-html' if downloaded as HTML), files: [{ path, file, size,
+// modified }] }, or null if it isn't one.
+function instagramFolder(folder) {
+  const inbox = inboxIn(folder);
+  if (!inbox) return null;
+  const files = [];
+  let html = false;
+  let threads = [];
+  try { threads = fs.readdirSync(inbox); } catch { return null; }
+  threads.forEach(thread => {
+    let names = [];
+    try { names = fs.readdirSync(path.join(inbox, thread)); } catch { return; }
+    names.forEach(name => {
+      if (/^message_\d+\.html$/.test(name)) html = true;
+      if (!/^message_\d+\.json$/.test(name)) return;
+      const file = path.join(inbox, thread, name);
+      try {
+        const stat = fs.statSync(file);
+        if (stat.isFile()) files.push({ path: `messages/inbox/${thread}/${name}`, file, size: stat.size, modified: stat.mtimeMs });
+      } catch { /* gone since it was listed */ }
+    });
+  });
+  if (files.length) return { kind: 'instagram', files };
+  return html ? { kind: 'instagram-html', files } : null;
+}
+
+// A folder in the folder, by its name only.
+function folderIn(dir, name) {
+  const folder = path.join(dir, String(name));
+  if (path.basename(String(name)) !== name || name === '.' || name === '..' || !isDir(folder)) throw new Error("That isn't in the Layers chats folder.");
+  return folder;
+}
+
 // A file in the folder, by its name only: { file, stat }.
 function fileIn(dir, name) {
   const file = path.join(dir, String(name));
@@ -122,28 +178,54 @@ function fileIn(dir, name) {
 }
 
 // The chat exports in the folder, newest first: [{ name, kind, title, size,
-// modified }]. Other files are left out, and the folder is made if it's not
-// there yet (so it shows up in OneDrive on your phone).
+// modified }]. An unzipped Instagram download is one too, as big as its
+// messages files and as new as the newest of them. Other files are left out,
+// and the folder is made if it's not there yet (so it shows up in OneDrive on
+// your phone).
 function listExports(dir) {
   try { fs.mkdirSync(dir, { recursive: true }); } catch { /* listed as empty */ }
   let names = [];
   try { names = fs.readdirSync(dir); } catch { return []; }
   const out = [];
-  names.filter(n => /\.(zip|txt)$/i.test(n)).forEach(name => {
+  names.forEach(name => {
     try {
-      const { file, stat } = fileIn(dir, name);
-      const kind = kindOf(name, /\.zip$/i.test(name) ? zipEntriesOfFile(file, stat.size) : null);
-      if (kind) out.push({ name, kind, title: kind === 'whatsapp' ? whatsAppTitle(name) : null, size: stat.size, modified: stat.mtimeMs });
+      if (/\.(zip|txt)$/i.test(name)) {
+        const { file, stat } = fileIn(dir, name);
+        const kind = kindOf(name, /\.zip$/i.test(name) ? zipEntriesOfFile(file, stat.size) : null);
+        if (kind) out.push({ name, kind, title: kind === 'whatsapp' ? whatsAppTitle(name) : null, size: stat.size, modified: stat.mtimeMs });
+        return;
+      }
+      if (name.startsWith('.') || !isDir(path.join(dir, name))) return;
+      const found = instagramFolder(path.join(dir, name));
+      if (!found) return;
+      const modified = found.files.length ? Math.max(...found.files.map(f => f.modified)) : fs.statSync(path.join(dir, name)).mtimeMs;
+      out.push({ name, kind: found.kind, title: null, size: found.files.reduce((n, f) => n + f.size, 0), modified });
     } catch { /* not a chat export, or damaged: skipped */ }
   });
   return out.sort((a, b) => b.modified - a.modified);
 }
 
+// An unzipped Instagram download's messages, as from its zip.
+function readFolder(dir, name) {
+  const found = instagramFolder(folderIn(dir, name));
+  if (!found) return { error: "That folder doesn't have an Instagram download's messages in it." };
+  if (found.kind === 'instagram-html') return { error: 'That Instagram download is in HTML. Download it again choosing JSON as the format.' };
+  let total = 0;
+  const files = found.files.map(f => {
+    if (f.size > MAX_ENTRY) throw new Error('A file in that download is too big to read.');
+    total += f.size;
+    if (total > MAX_TOTAL) throw new Error('That download is too big to read. Choose fewer things, or a shorter date range.');
+    return { path: f.path, text: fs.readFileSync(f.file, 'utf8') };
+  });
+  return { kind: 'instagram', title: null, files };
+}
+
 // One export's chat text: { kind, title, files: [{ path, text }] }: a
-// WhatsApp chat's .txt, or every Instagram messages file. { error } if it
-// can't be read.
+// WhatsApp chat's .txt, or every Instagram messages file (from its zip or
+// its unzipped folder). { error } if it can't be read.
 function readExport(dir, name) {
   try {
+    if (!/\.(zip|txt)$/i.test(String(name)) && isDir(path.join(dir, String(name)))) return readFolder(dir, name);
     const buf = fs.readFileSync(fileIn(dir, name).file);
     if (/\.txt$/i.test(name)) return { kind: 'whatsapp', title: whatsAppTitle(name), files: [{ path: name, text: buf.toString('utf8') }] };
     const entries = zipEntries(buf);
@@ -165,14 +247,15 @@ function readExport(dir, name) {
   }
 }
 
-// Calls onChange (once things settle) when files come and go in the folder,
-// such as OneDrive bringing down a new export. Returns a stop function.
+// Calls onChange (once things settle) when files come and go in the folder or
+// the folders in it, such as OneDrive bringing down a new export or an
+// unzipped download. Returns a stop function.
 function watchExports(dir, onChange, wait = 1500) {
   let timer = null;
   let watcher = null;
   try {
     fs.mkdirSync(dir, { recursive: true });
-    watcher = fs.watch(dir, () => { clearTimeout(timer); timer = setTimeout(onChange, wait); });
+    watcher = fs.watch(dir, { recursive: true }, () => { clearTimeout(timer); timer = setTimeout(onChange, wait); });
     watcher.on('error', () => {});
   } catch { /* nothing to watch: Coach still looks when it opens */ }
   return () => { clearTimeout(timer); if (watcher) watcher.close(); };

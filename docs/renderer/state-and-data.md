@@ -747,8 +747,8 @@ Coach → Analyse a chat → **From your chats**: chats saved in the **Layers ch
   computer writes month first). A message over several lines stays one; notices
   (encryption, joined, left) are left out, deleted messages too, and attachments become
   "(photo)", "(voice message)" and the like. The chat is named from the file.
-- **Instagram**: Accounts Centre → Download your information → Messages, as **JSON**.
-  `parseInstagram` reads every chat thread, undoing Instagram's spelling of non-English
+- **Instagram**: Accounts Centre → Download your information → Messages, as **JSON**,
+  saved as the zip or unzipped (a folder). `parseInstagram` reads every chat thread, undoing Instagram's spelling of non-English
   characters as UTF-8 bytes (`fixMetaText`), leaving out likes and reactions, and
   turning photos, shares and calls into "(photo)" and the like. A download in HTML is
   named, with "choose JSON". Snapchat and iMessage have no export, so they'll be

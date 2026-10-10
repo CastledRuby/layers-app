@@ -356,7 +356,7 @@ function chatZip(name, text) {
 }
 const waStamp = (d) => `[${d.getDate()}/${d.getMonth() + 1}/${String(d.getFullYear()).slice(2)}, ${d.getHours() % 12 || 12}:${String(d.getMinutes()).padStart(2, '0')}:00 ${d.getHours() < 12 ? 'am' : 'pm'}]`;
 
-test('chats from your exports: a WhatsApp export in the folder is opened by the packaged app, and a new one is noticed', async () => {
+test('chats from your exports: a WhatsApp export in the folder is opened by the packaged app, and a new one or an unzipped Instagram download is noticed', async () => {
   const dataDir = tempDataDir();
   const chats = path.join(dataDir, 'Chats');
   fs.mkdirSync(chats, { recursive: true });
@@ -379,6 +379,11 @@ test('chats from your exports: a WhatsApp export in the folder is opened by the 
   // OneDrive brings down another export: it shows without reopening.
   fs.writeFileSync(path.join(chats, 'WhatsApp Chat - Noah.zip'), chatZip('_chat.txt', `${waStamp(new Date())} Noah: game tonight?`));
   await expect(card.getByRole('button', { name: /Noah.*WhatsApp/ })).toBeVisible({ timeout: 15000 });
+  // An Instagram download unzipped into it (with Extract All's extra folder) shows too.
+  const thread = path.join(chats, 'instagram-sam-2026-10-09', 'instagram-sam-2026-10-09', 'your_instagram_activity', 'messages', 'inbox', 'priya_17');
+  fs.mkdirSync(thread, { recursive: true });
+  fs.writeFileSync(path.join(thread, 'message_1.json'), JSON.stringify({ title: 'Priya', participants: [{ name: 'Priya' }, { name: 'Sam' }], messages: [{ sender_name: 'Priya', timestamp_ms: Date.now(), content: 'coming saturday?' }] }));
+  await expect(card.getByRole('button', { name: /Priya.*Instagram.*1 new/ })).toBeVisible({ timeout: 15000 });
   await quit(app);
 });
 
