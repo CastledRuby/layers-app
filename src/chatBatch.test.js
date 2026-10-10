@@ -43,6 +43,18 @@ describe('what Analyse all new sends', () => {
     expect(picked.items[0].text).toContain('Liam: yo'); // you, under your name, so it's hidden before sending
   });
 
+  it("counts only what's written: a day of reels and photos sent back and forth is tiny", () => {
+    const note = (when, sender, text) => ({ ...msg(when, sender, text), note: true });
+    const reels = chat('instagram:amelie', 'Amelie', [
+      note(at(8, 9), 'Amelie', '(shared a reel: "lol")'), note(at(8, 9, 1), 'Liam', '(shared a reel)'), note(at(8, 9, 2), 'Amelie', '(photo)'),
+      msg(at(8, 9, 3), 'Liam', 'haha'), msg(at(8, 9, 4), 'Amelie', 'ikr'), msg(at(8, 9, 5), 'Liam', 'same'),
+    ]);
+    const [item] = batchPlan([reels], { people: [amelie], yourName: 'Liam', now: NOW }).items;
+    expect(item).toMatchObject({ messages: 6, tiny: true });
+    const talked = chat('instagram:amelie', 'Amelie', [...reels.messages, msg(at(8, 9, 6), 'Amelie', 'see you sat?')]);
+    expect(batchPlan([talked], { people: [amelie], yourName: 'Liam', now: NOW }).items[0].tiny).toBe(false);
+  });
+
   it('costs roughly a couple of cents a conversation with Haiku, nothing for tiny ones, more with a thinking model', () => {
     const haiku = batchDollars(plan.items, 'claude-haiku-4-5');
     expect(haiku).toBeGreaterThan(0.02);

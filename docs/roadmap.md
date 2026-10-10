@@ -664,6 +664,26 @@ its own. Changes made while building are marked.
 
 ## History
 
+### Instagram downloads, unzipped or in folders, read properly (after 1.0.38, not released yet)
+
+- **Fixed** (2026-10-10): an Instagram download unzipped into the Layers chats folder
+  was ignored, since only zips and .txt files straight in it were looked at. Now the
+  folders in it are looked through too (six down), so a download is found wherever its
+  `messages/inbox` is (Windows' Extract All adds a folder of the same name, and newer
+  downloads put it under `your_instagram_activity`), as are several downloads, a
+  download in parts, an unzipped Snapchat download, and zips or WhatsApp chats kept in
+  folders of your own. Messages arriving inside a folder are noticed. "How to add one"
+  says unzipped is fine.
+- **The conversation, not the data** (asked for 2026-10-10): checked against a real
+  download of 29 chats. About 800 shared reels and posts were dropped, so replies to
+  them made no sense; they're kept now as `(shared a reel: "its caption")`. Reactions
+  are written after the message they're on ("(Maddie reacted 😂)") instead of as lines
+  of their own, calls say how long they were, and likes, theme and nickname changes and
+  the Meta AI chat are left out.
+- **Analyse all new** counts only written messages when deciding a day is tiny, so a day
+  of reels sent back and forth is marked as seen rather than sent (snaps and stickers on
+  Snapchat too).
+
 ### Snapchat (1.0.38)
 
 - **Snapchat chats in Coach**: Settings → My Data → Chat History (and Friends), with

@@ -18,8 +18,8 @@ function Help({ folder }) {
   return (
     <div className="text-xs mt-2 space-y-1.5" style={{ color: COLORS.inkSoft }}>
       <p><span className="font-semibold" style={{ color: COLORS.ink }}>WhatsApp:</span> on your phone, open the chat → Export chat → Without media → Save to Files → OneDrive → {folder}. It shows here a few seconds after OneDrive brings it down.</p>
-      <p><span className="font-semibold" style={{ color: COLORS.ink }}>Instagram:</span> Accounts Centre → Your information and permissions → Download your information → just Messages, as JSON, for the last week or so. Save the zip in the same folder.</p>
-      <p><span className="font-semibold" style={{ color: COLORS.ink }}>Snapchat:</span> Settings → My Data → choose Chat History (and Friends), with Export JSON files on → Submit. When Snapchat emails you, download the zip and save it in the same folder. It only has chats that were saved or not opened yet.</p>
+      <p><span className="font-semibold" style={{ color: COLORS.ink }}>Instagram:</span> Accounts Centre → Your information and permissions → Download your information → just Messages, as JSON, for the last week or so. Save the zip in the same folder (unzipped is fine too).</p>
+      <p><span className="font-semibold" style={{ color: COLORS.ink }}>Snapchat:</span> Settings → My Data → choose Chat History (and Friends), with Export JSON files on → Submit. When Snapchat emails you, download the zip and save it in the same folder (unzipped is fine too). It only has chats that were saved or not opened yet.</p>
       <p><span className="font-semibold" style={{ color: COLORS.ink }}>iMessage:</span> plug your iPhone into this laptop, open Apple Devices → Back up all of the data on your iPhone to this computer (Encrypt local backup unticked) → Back Up Now. Layers reads the newest backup, so back up again for newer messages.</p>
     </div>
   );
@@ -72,7 +72,7 @@ export function ChatExports({ state, people, yourName, progress, folder = 'Docum
                 {onReply && convs.length > 0 && <button type="button" onClick={() => onReply(chat, convs[0], owner)} className="chip mb-1" style={{ padding: '4px 10px' }}>💬 Reply ideas for the latest</button>}
                 {shown.length === 0 && <p className="text-xs" style={{ color: COLORS.inkSoft }}>Nothing new since you last analysed this chat. Export it again after you've talked.</p>}
                 {shown.slice(0, showEarlier ? 30 : 10).map(conv => {
-                  const opener = conv.messages.find(m => m.sender !== owner) || conv.messages[0];
+                  const opener = conv.messages.find(m => m.sender !== owner && !m.note) || conv.messages.find(m => m.sender !== owner) || conv.messages[0];
                   return (
                     <button key={conv.start} type="button" onClick={() => onPick(chat, conv, owner)} className="w-full text-left rounded-lg px-2.5 py-2 mt-1" style={{ background: COLORS.paper }}>
                       <span className="text-xs font-semibold block" style={{ color: COLORS.ink }}>{conversationLabel(conv)}</span>

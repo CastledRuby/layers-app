@@ -162,14 +162,19 @@ interact.
   WhatsApp chat's new conversation picked and its text written with exact times, the log
   on its day, the chat moving on (and its earlier conversations still there), how to add
   one, the folder opened, a new export noticed, the week review listing a chat to analyse and opening it in Coach, Instagram (you found as the name in
-  every chat, chats with people not in Layers tucked away, an HTML download named),
-  "Which of these is you?" and Snapchat (names from its friends list, your messages yours). `src/chatImport.test.js` covers reading WhatsApp (iOS and
-  Android, notices, attachments, several lines, day or month first) and Instagram
-  (lettering, likes, photos) and Snapchat (both layouts, the friends list, media), merging, who's who, splitting at pauses and the text
-  sent; `src/chatFiles.test.js` covers `electron/chatfiles.cjs` (the folder, which files
-  are exports, zips packed or stored, errors, nothing outside the folder, noticing a
-  new file). The end-to-end tests open a real zip in the packaged app and see a second
-  one arrive.
+  every chat, chats with people not in Layers tucked away, an unzipped download read the
+  same, a shared reel and a reaction in the text, an HTML download named), "Which of
+  these is you?" and Snapchat (names from its friends list, your messages yours).
+  `src/chatImport.test.js` covers reading WhatsApp (iOS and Android, notices,
+  attachments, several lines, day or month first), Instagram (lettering, likes, photos,
+  and a real download's reels, reactions, calls, theme and nickname notices and Meta AI
+  chat) and Snapchat (both layouts, the friends list, media as notes), merging, who's
+  who, splitting at pauses and the text sent; `src/chatFiles.test.js` covers
+  `electron/chatfiles.cjs` (the folder, which files are exports, zips packed or stored,
+  exports in folders of your own, unzipped Instagram and Snapchat downloads however deep
+  or in parts, errors, nothing outside the folder or too deep, noticing a new file, also
+  inside a folder). The end-to-end tests open a real zip in the packaged app and see a
+  second one arrive, then an Instagram download unzipped into the folder.
 - `imessage.test.jsx` covers iMessage from an iPhone backup (the main process stood in
   for): its chats listed with the backup's day, your messages known as yours, the card
   filled like an export's, the same backup not read twice, an encrypted one explained,
@@ -209,7 +214,7 @@ interact.
   at once), the answers kept after a restart without asking again, stopping at the
   monthly limit (and the limit raised in Me) and when Claude can't be reached, and the
   week review's way in. `src/chatBatch.test.js` covers what's sent (days merged, tiny ones,
-  chats left out), the estimate, the queue (kept, cleaned, what's waiting, pruned) and the
+  only written messages counted, chats left out), the estimate, the queue (kept, cleaned, what's waiting, pruned) and the
   limit.
 - `calendars.test.jsx` covers your Google Calendar (the main process stood in for):
   adding it in Me (a bad address refused), its event on Today marked as Google's and
