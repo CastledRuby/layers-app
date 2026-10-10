@@ -34,9 +34,15 @@ They run in Node and take milliseconds. Add one whenever you change a function i
 - `src/prepare.test.js` covers Prepare's hooks (`buildPotentialHooks`): what they
   draw on (Claude's tip from the last analysed chat too), their order, the six-hook limit,
   and experiences only from Layer 3 on.
-- `src/reminders.test.js` covers `lib/reminders.js`: the next occurrence, marking
-  done, passed one-offs, the 15-minute notification window and follow-up reminders (the
-  day after a detail's day, or three days later).
+- `src/reminders.test.js` covers `lib/reminders.js`: marking a plan done (a one-off for
+  good, a repeating one for the day, older saves' single `doneOn`) and follow-up
+  reminders (the day after a detail's day, or three days later).
+- `src/calendar.test.js` covers `lib/calendar.js`: which days a plan falls on, key dates,
+  a day's agenda and the month's marks, "How did it go?", the notifications planned
+  (`plannedNotifications`), `layers://` links and snoozing, plan ideas, clashes, someone
+  gone quiet, the catch-up list and the week's summary.
+- `src/toasts.test.js` covers `electron/toasts.cjs`: each notification's toast XML and
+  buttons, and only well-formed, future notifications scheduled.
 
 ## 2. App tests: `tests/app/*.test.jsx`
 
@@ -230,11 +236,12 @@ interact.
 | `renderApp()` | mounts the app; returns `{ user, ... }` for `user.click` / `user.keyboard` |
 | `relaunch(app)` | unmounts and mounts again from what was saved |
 | `savedState()`, `savedPerson(name)` | what's in `localStorage` now |
-| `dialog(title)`, `confirmDialog(title)` | a sheet or confirm dialog by its title |
+| `dialog(title)`, `confirmDialog(title)` | a sheet or confirm dialog by its title (`findDialog` waits for one, `queryDialog` gives `null` if there isn't one) |
 | `logDetails()` | the quick log's sheet, whatever its title ("Talked with Morgan") |
 | `openExtra(user, 'Rate each part')`, `done(user, sheetTitle)` | open a More details sheet from its chip, and close a sheet with Done |
 | `nav('Journal')` | a bottom-nav tab |
 | `toasts()` | the toast messages on screen |
+| `wait(ms)` | lets timers and effects run for that long |
 | `trackErrors()` | collects uncaught errors and React error logs, to assert there were none |
 
 A new feature should get an app test that uses it the way a person would. A bug fix
@@ -258,8 +265,13 @@ actually visible. Those need the browser preview or the end-to-end tests.
   a second window (single instance)
 - `Layers.exe --quit` quits a running Layers cleanly
 - a login launch (`--hidden`) starts in the tray
+- the window is always maximised, and restoring it down puts it straight back
 - if the page's process crashes, the window reloads by itself
 - the exe identifies itself as Layers (name, description, company), not Electron
+- a plan is handed to Windows with its buttons, and a pressed button reaches Layers
+- a daily backup is saved a few seconds after starting
+- the quick-add box, Ctrl+Alt+L, photos, sync, Google Calendar, chat exports, chat
+  analysis and the summary PDF, as described with their app tests above
 
 `npm run test:e2e` builds the renderer and packages `dist-e2e/win-unpacked/` (git
 ignores it), then runs the tests. Options:
@@ -271,7 +283,8 @@ ignores it), then runs the tests. Options:
 through the `LAYERS_USER_DATA_DIR` environment variable, which `electron/main.cjs`
 honours before anything else. The single-instance lock lives in that folder, so the
 tests also run fine while your own Layers is open. `LAYERS_NO_UPDATES=1` stops the
-test app from checking GitHub for updates. The tests never turn on "Launch at login",
+test app from checking GitHub for updates, and `LAYERS_NO_SCHEDULE=1` stops it putting
+real notifications on Windows. The tests never turn on "Launch at login",
 because that writes to the real Windows registry.
 
 ## The pre-commit hook

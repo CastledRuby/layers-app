@@ -35,7 +35,7 @@ how the app behaves for you is listed with the default chosen, so it can be chan
 | People & Layers | ✅ Done | Every layer change gets a dated timeline step. Logging keeps the dimensions inside the layer (P3 option C), so Adjust agrees with the layer shown, and its preview shows any change of percentage. |
 | Goals | ✅ Mostly | Skill goals move with their skills (1.0.28). Goals linked to a reminder move when it's logged. Every part of a goal works by keys (2026-10-06), and logs record the goals they moved. |
 | Coach, Prepare | ✅ Done (1.0.28) | Hooks come from all saved interests, plans, preferences, things to ask about, recent topics and reflections. Personal experiences are kept for Layer 3 and closer. |
-| Coach, Analyse | ✅ Done | Your own chat, pasted or as screenshots, read by Claude Haiku 4.5 only when you press Analyse, with your own API key; the four sample chats stay to try it out. |
+| Coach, Analyse | ✅ Done | Your own chat, pasted (or as screenshots on a touch screen), read by Claude Haiku 4.5 only when you press Analyse, with your own API key; the four sample chats stay to try it out. |
 | Social skills | ✅ Done | The chart records points, and achievements are stored with dates. Strength and focus come from your real levels. |
 | Journal | ✅ Done (1.0.28) | Edit or delete an entry. Filters by person, type and period, plus search, which includes reflections. Every filter row fits on screen (1.0.29). |
 | Logging flow | ✅ Done | The quick log asks only for the date, how meaningful it was and a note. Each extra (ratings, active listening, something new, goals, reflection) opens in its own small sheet from a chip. Every step works from the keyboard. |
@@ -176,7 +176,7 @@ finish plotting the roadmap. Your answers to two rounds of questions set this or
 each step is committed and installed on its own, and anything bigger than drafted
 comes back to you first.
 
-1. **Release 1.0.33**: everything built since 1.0.32.
+1. ✅ **Release 1.0.33**: everything built since 1.0.32 (released 2026-10-07).
 2. **The phone, before the Apple account**:
    - ✅ **Sync through OneDrive, on the laptop now** (built 2026-10-07): one encrypted sync file in OneDrive,
      merged record by record (step 1's `mergeData`). The **passphrase is typed once in
@@ -354,28 +354,33 @@ after anyone. Two ways to use them; **you picked 7, built 2026-10-06** (see Hist
 ### E. The next big task: you picked Layers on your phone
 
 9. **Layers on your phone** *(picked)*: the proposal is
-   [below](#proposal-layers-on-your-phone-2026-10-06), waiting for your answers.
+   [below](#proposal-layers-on-your-phone-2026-10-06), with your answers.
 
 The other three, in the order you picked on 2026-10-07 (see
 [The plan from here](#the-plan-from-here-2026-10-07)): your calendars (Google, read-only),
 then activity and the summary, then analysis by a cloud AI only when you ask.
 
-10. **Your other calendars** (school, uni, work, Google or Outlook): read-only first,
+10. ✅ **Your other calendars** (school, uni, work, Google or Outlook): read-only first,
    from a calendar's private link, so Today shows your timetable and planning warns about
-   clashes. Two-way later. It saves typing in things like Mentor every weekday.
-11. **Activity and a one-page summary**: a GitHub-style calendar of the last six months
+   clashes. Two-way later. It saves typing in things like Mentor every weekday. *(Built
+   2026-10-07 as Your Google Calendar, read-only; released in 1.0.35.)*
+11. ✅ **Activity and a one-page summary**: a GitHub-style calendar of the last six months
    on each profile (and one for everyone on the Journal), shaded by how much and how
    meaningful; tapping a day filters the Journal. **Export summary** makes a one-page PDF
-   of someone: layer, dimensions, what you know, timeline, goals and recent logs.
-12. **Real conversation analysis**: Analyse a pasted or screenshotted chat instead of the
+   of someone: layer, dimensions, what you know, timeline, goals and recent logs. *(Built
+   2026-10-07; released in 1.0.35.)*
+12. ✅ **Real conversation analysis**: Analyse a pasted or screenshotted chat instead of the
    four samples. It needs an AI model: a local one (private, but heavy) or a cloud one
    that runs only when you ask, with a clear warning. The privacy principle comes first,
-   so it needs its own decision.
+   so it needs its own decision. *(Decided and built 2026-10-07: Claude Haiku 4.5, only
+   when you ask; released in 1.0.36.)*
 
 ### F. Housekeeping (nothing you'd notice; these can just be done)
 
 13. ✅ **Stale-build guard** (2026-10-07) for packaging by hand: fail if `electron/app/index.html` is
-    older than `src/` ([known-issues.md](known-issues.md)).
+    older than `src/` ([known-issues.md](known-issues.md)). *(Changed while building: it
+    checks a fingerprint of `src/` written into the page, since file times can't be
+    trusted.)*
 14. ✅ **Analyse: more suggestion tones** (2026-10-07). Every suggestion in the four
     sample chats now has natural, playful and deeper versions; where the advice is "don't
     message yet", they're a light close, if you'd still like to say something.

@@ -28,13 +28,16 @@
 
 `scripts/sync-app.mjs` copies that file to `electron/app/index.html`, the only renderer
 file electron-builder packages. **`electron/app/index.html` is a committed build
-artifact.** If it's older than the files in `src/`, the desktop app is running old code.
+artifact.** If it was built from an older `src/`, the desktop app is running old code.
+`sync-app.mjs` stamps it with a fingerprint of the source, and
+`scripts/check-fresh-build.cjs` refuses to package a page whose fingerprint doesn't match.
 
 ## Dependencies vs devDependencies
 
 electron-builder copies every package in `dependencies`, plus its dependencies, into
-`app.asar`. Only list packages that `electron/main.cjs` `require`s at runtime:
-`electron-updater` and `electron-window-state`. Everything the renderer imports (`react`,
+`app.asar`. Only list packages that the main process (`electron/*.cjs`) `require`s at
+runtime: `electron-updater`, `electron-window-state` and, from 1.0.36, `@anthropic-ai/sdk`
+(chat analysis, `electron/analysis.cjs`). Everything the renderer imports (`react`,
 `react-dom`, `recharts`, `lucide-react`, …) goes in `devDependencies`, because Vite
 inlines it into `electron/app/index.html`.
 
@@ -44,10 +47,10 @@ To check what a build packaged:
 npx @electron/asar list release/win-unpacked/resources/app.asar
 ```
 
-From 1.0.24, the asar is about 3 MB with around 340 entries: `electron/…`, `package.json`,
-and `node_modules/` for the two runtime packages and their dependencies. The 1.0.23 asar
-was 55 MB, because `react`, all of `recharts`/d3 and about 4,200 `lucide-react` files
-were in it.
+In 1.0.24 the asar was about 3 MB with around 340 entries: `electron/…`, `package.json`,
+and `node_modules/` for the two runtime packages of the time and their dependencies.
+The Anthropic SDK has added to that since 1.0.36. The 1.0.23 asar was 55 MB, because
+`react`, all of `recharts`/d3 and about 4,200 `lucide-react` files were in it.
 
 ## Releasing
 
@@ -136,6 +139,7 @@ It takes about a minute and a half. One install runs at a time
 - while `npm run release` commits, because the release installs its own build
 - during a rebase
 - when `LAYERS_NO_INSTALL` is set
+- off Windows
 
 A failed install never undoes the commit: the hook says what went wrong, and
 `npm run install:local` tries again. It needs Windows to let new builds run, so if Smart

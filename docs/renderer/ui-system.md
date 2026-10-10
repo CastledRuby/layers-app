@@ -51,7 +51,8 @@ still flash once, because `theme.json` doesn't exist until the app has reported 
 
 1. **Tailwind utilities** in `className` handle layout and spacing (`flex`,
    `grid grid-cols-2`, `px-5`, `rounded-2xl`, `text-sm`…). The config is stock and
-   scans `src/**/*.{js,jsx}`.
+   scans `index.html` and `src/**/*.{js,jsx}`; `src/index.css` pulls in Tailwind's
+   layers.
 2. **Inline `style={{…}}` with `COLORS.*`** handles every colour, so colours follow the theme.
 3. **The `CSS` template string** (injected by `<style>{CSS}</style>` inside
    `.layers-root`) holds structural classes Tailwind doesn't express well: `.phone-frame`,
@@ -63,7 +64,9 @@ still flash once, because `theme.json` doesn't exist until the app has reported 
    - `.seg` and `.seg-btn`: the 1–5 scale
    - `.primary-btn`: a sheet's main button
    - `.icon-btn`: round icon buttons such as back and close
-   - `.kbd`: a key hint It starts with the `@font-face` rules from
+   - `.kbd`: a key hint
+
+   The string starts with the `@font-face` rules from
    [`src/fonts.js`](../../src/fonts.js).
 
 ### Fonts
@@ -317,7 +320,8 @@ All the keyframes are in `CSS`, with one easing for most of them (`EASE`: quick 
 start, gentle to settle):
 
 - **Sheets** slide up with their backdrop fading in (`sheetUp`, `fadeIn`), and slide
-  away when dismissed (`sheetDown`, `fadeOut`).
+  away when dismissed (`sheetDown`, `fadeOut`). The Ctrl+K box drops down and lifts
+  away instead (`sheetDrop`, `sheetLift`).
 - **Steps** inside a sheet slide in from the right going forward and from the left going
   back (`step-in`, `step-back`).
 - **Picks** pop (`.pop`): the chosen 1–5, a rating, a ticked box, a selected person.

@@ -42,6 +42,7 @@ There are also illustrations for direction A:
   - the tray icons, at 16 px and `@2x`
   - `electron/installer-sidebar.bmp`
   - `public/icon.svg`
+  - the iPhone app's icon, `AppIcon-512@2x.png` in `ios/` (1024 px, square)
 
   See [electron.md](../docs/electron.md#icons). To change the brand, edit
   `draw-drafts.cjs`, then run `node branding/draw-drafts.cjs` and `npm run brand:render`.

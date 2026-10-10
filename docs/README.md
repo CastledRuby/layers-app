@@ -1,8 +1,10 @@
 # Layers — project docs
 
 Layers is a private relationship-development and social-skills coaching app. It is a
-React single-page app packaged as a Windows/Linux desktop app with Electron, and it keeps
-all data in `localStorage` on the device.
+React single-page app packaged as a Windows/Linux desktop app with Electron (an iPhone
+app, wrapped with Capacitor, is built for the simulator so far). It keeps its data in
+`localStorage` on the device, with daily backups in Documents and, if you turn sync on,
+one encrypted sync file in OneDrive.
 
 These docs map the project so you can find your way around a codebase whose renderer
 is split across `src/` by role (data, logic, components, modals, views).
@@ -15,11 +17,11 @@ is split across `src/` by role (data, logic, components, modals, views).
 | See where each goal stands and what's next (fixes, then proposals) | [roadmap.md](roadmap.md) |
 | Get the big picture: processes, folders, how a build becomes an `.exe` | [architecture.md](architecture.md) |
 | See the brand (Rings): logo, app and tray icons, how they are drawn, and the drafts | [../branding/README.md](../branding/README.md) |
-| Run, build, version and ship a release, and how every commit gets installed on this computer | [build-and-release.md](build-and-release.md) |
+| Run, build, version and ship a release, how every commit gets installed on this computer, and the iPhone build | [build-and-release.md](build-and-release.md) |
 | Run the tests, or add one: unit, app and end-to-end tests, and the pre-commit hook | [testing.md](testing.md) |
-| Change the desktop shell: window, tray, shortcuts, auto-update, IPC | [electron.md](electron.md) |
+| Change the desktop shell: window, tray, shortcuts, quick add, auto-update, Windows notifications, the files it keeps (backups, sync, chat exports, keys), IPC | [electron.md](electron.md) |
 | Find which file a screen, sheet or helper lives in, or see how screens connect | [renderer/app-structure.md](renderer/app-structure.md) |
-| Understand the data model, persistence and the layer/progress maths | [renderer/state-and-data.md](renderer/state-and-data.md) |
+| Understand the data model, persistence and the layer/progress maths, the calendar, chat analysis, syncing and the backup format | [renderer/state-and-data.md](renderer/state-and-data.md) |
 | Change colours, themes, layout, sheets/modals, toasts or shortcuts | [renderer/ui-system.md](renderer/ui-system.md) |
 | See what's broken, risky or worth cleaning up | [known-issues.md](known-issues.md) |
 | Jump to an exact line: every component, function, constant, IPC channel | [generated/code-map.md](generated/code-map.md) *(auto-generated)* |
@@ -41,8 +43,8 @@ npm run docs:map
 npm run docs:map -- --check
 ```
 
-The second command makes no changes and exits non-zero if the map is out of date. It
-also lists IPC channels that are wired on only one side of the Electron bridge. The
+The second command makes no changes and exits non-zero if the map is out of date. The
+map also lists IPC channels that are wired on only one side of the Electron bridge. The
 pre-commit hook regenerates the map on every commit, and `npm run verify` runs the check
 (see [testing.md](testing.md#the-pre-commit-hook)).
 

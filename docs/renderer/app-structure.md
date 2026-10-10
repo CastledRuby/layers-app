@@ -4,8 +4,9 @@ The renderer is split by role. Imports only point down the list below, so there 
 circular imports:
 
 ```text
-src/main.jsx                  mounts <LayersApp/>
+src/main.jsx                  mounts <LayersApp/> (or <QuickAdd/> for #quick)
 src/App.jsx                   LayersApp: all state, handlers, keyboard shortcuts, Electron wiring, layout
+src/QuickAdd.jsx              the quick-add box (below)
 src/theme.js                  design tokens (THEME_*, COLORS) and the global CSS string
 src/data/                     static data: no React, no logic
 src/lib/                      pure logic: no React (except hooks.js), unit-tested
@@ -23,19 +24,22 @@ and constant are in [../generated/code-map.md](../generated/code-map.md).
 |---|---|
 | [`theme.js`](../../src/theme.js) | `THEME_LIGHT` / `THEME_DARK` palettes, `COLORS` (CSS-variable references), and the `CSS` string injected by `<style>{CSS}</style>`: theme variables, phone frame, sheet layer, nav, FAB, toasts, animations. See [ui-system.md](ui-system.md). |
 | [`fonts.js`](../../src/fonts.js) | The bundled Fraunces and Manrope `@font-face` rules (`FONT_FACES`), used at the top of `CSS` |
-| [`data/constants.js`](../../src/data/constants.js) | `LAYERS` (the 4 relationship layers), the six dimensions (`DIM_*`) and new people's starting values (`LAYER_BASE_DIMS`), info `CATEGORIES`, keyboard `SHORTCUTS`, emoji lists, `ACTIVITY_TEMPLATES` (the log's Add detail: what you did together) and `activityTemplatesFor`, `NOTE_TEMPLATES` (interest topics) and where one is saved (`NOTE_TEMPLATE_CATEGORY`), `ML_LABELS` (how meaningful, 1–5), goal `PRESETS` + `PRESET_VARIANTS`, which skill each skill goal follows (`SKILL_GOAL_PRESETS`, `SKILL_GOAL_STEP`), interaction `TYPE_META`, active-listening `AL_ITEMS`, the log's "What stood out?" (`STANDOUTS`, `STANDOUT_BUMP`), `CONV_STATES`, `ACHIEVEMENTS`, onboarding `FOCUS_OPTIONS`, skills order and the Me tab's per-skill tips (`SKILL_TIPS`) |
-| [`data/avatars.js`](../../src/data/avatars.js) | A person's avatars: `AVATAR_GROUPS` (People, Faces, Animals, Things, each a whole number of 8-wide rows), `SKIN_TONES`, and `withTone` / `splitTone` / `groupOf` / `avatarName`; and initials, `INITIAL_COLORS`, `INITIALS_GROUP`, `initialsOf` ("EM", "Is"), `isInitials`; and photos, `PHOTO_GROUP`, `isPhoto`, `photoBox` (where a picture sits in the circle), with `cleanAvatar` for saved data. The emoji is one string with any tone inside it; initials and photos are `person.avatar`, which `Avatar` (`components/atoms.jsx`, given `person`) draws instead |
-| [`lib/photo.js`](../../src/lib/photo.js) | Photos for avatars: `loadPhoto` reads a chosen picture (up to 25 MB), `renderPhoto` draws the cropped circle as a 160 px JPEG. Only that small image is kept. `shrinkForAnalysis` makes a screenshot at most 1568 px long, as JPEG, for chat analysis |
+| [`data/constants.js`](../../src/data/constants.js) | `LAYERS` (the 4 relationship layers), the six dimensions (`DIM_*`) and new people's starting values (`LAYER_BASE_DIMS`), info `CATEGORIES`, the bottom tabs' order (`TABS`), keyboard `SHORTCUTS`, emoji lists, `ACTIVITY_TEMPLATES` (the log's Add detail: what you did together) and `activityTemplatesFor`, `NOTE_TEMPLATES` (interest topics) and where one is saved (`NOTE_TEMPLATE_CATEGORY`), Something new's suggestions (`INFO_TEMPLATES`), How it felt's phrases (`REFLECTION_TEMPLATES`), Coach tips by kind of plan (`PLAN_TIPS`), `ML_LABELS` (how meaningful, 1–5), goal `PRESETS` + `PRESET_VARIANTS`, which skill each skill goal follows (`SKILL_GOAL_PRESETS`, `SKILL_GOAL_STEP`), interaction `TYPE_META`, active-listening `AL_ITEMS`, the log's "What stood out?" (`STANDOUTS`, `STANDOUT_BUMP`), `CONV_STATES`, `ACHIEVEMENTS`, onboarding `FOCUS_OPTIONS`, skills order and the Me tab's per-skill tips (`SKILL_TIPS`) |
+| [`data/avatars.js`](../../src/data/avatars.js) | A person's avatars: `AVATAR_GROUPS` (People, Faces, Animals, Things, each a whole number of 8-wide rows), `SKIN_TONES`, and `withTone` / `splitTone` / `groupOf` / `avatarName`; and initials, `INITIAL_COLORS`, `INITIALS_GROUP`, `initialsOf` ("EM", "Is"), `isInitials`; and photos, `PHOTO_GROUP`, `isPhoto`, `photoBox` (where a picture sits in the circle), where a picture starts (`startCrop`, `faceCrop`, `cropAround`), `isPictureFile` and `personForFile` (for a folder of photos), with `cleanAvatar` for saved data and `findAvatars` (/ in the picker). The emoji is one string with any tone inside it; initials and photos are `person.avatar`, which `Avatar` (`components/atoms.jsx`, given `person`) draws instead |
+| [`lib/photo.js`](../../src/lib/photo.js) | Photos for avatars: `loadPhoto` reads a chosen picture (up to 25 MB), `renderPhoto` draws the cropped circle as a 160 px JPEG. Only that small image is kept. `findFaces` asks Windows' face detector (through the bridge) where the faces are. `shrinkForAnalysis` makes a screenshot at most 1568 px long, as JPEG, for chat analysis |
 | [`data/seed.js`](../../src/data/seed.js) | Example people, goals, journal and skills (`INITIAL_*`), `EMPTY_SKILLS`. Each sample person sits exactly where Adjust would place them. |
 | [`data/scenarios.js`](../../src/data/scenarios.js) | `SCENARIOS`: the four sample chats in the Coach "Analyse" tab, with transcripts and gradings. A real chat's analysis has the same shape ([lib/analysis.js](../../src/lib/analysis.js)). |
 | [`lib/util.js`](../../src/lib/util.js) | `clamp`, `uid` |
 | [`lib/dates.js`](../../src/lib/dates.js) | Every date helper: relative/absolute labels, chart history (`sortHistory`, `pushHistoryPoint`), the stored-`at` helpers for journal entries, info items and timeline steps, date ordering (`newestFirst`, `sortByDay`), and the `backfill*` loaders. See [state-and-data.md](state-and-data.md#dates-store-the-day-derive-the-label). |
-| [`lib/progress.js`](../../src/lib/progress.js) | The progression model: `computeOverall`, `layerForOverall`, `advanceLayer`, `placeOnLayers`, `progressDelta`, `dimsEqual`, `chartDay`, `movePerson`, `makePerson`, `bumpSkills`, `raisedSkills`, `advanceSkillGoals`, `generateGoalDescription`. See [state-and-data.md](state-and-data.md#progression-model). |
+| [`lib/progress.js`](../../src/lib/progress.js) | The progression model: `computeOverall`, `layerForOverall`, `advanceLayer`, `placeOnLayers`, `progressDelta`, `dimsEqual`, `chartDay`, `movePerson`, `makePerson`, `bumpSkills`, `raisedSkills`, `advanceSkillGoals`, `generateGoalDescription`, how much a log grows each dimension and goal (`dimBumps`, `goalBumpFor`), and keeping the dimensions inside the layer's band (`layerDimBounds`, `scaleDimsToSum`, `keepDimsInLayer`, `migrateDimsToLayers`). See [state-and-data.md](state-and-data.md#progression-model). |
 | [`lib/closeness.js`](../../src/lib/closeness.js) | The closeness quiz: `QUIZ` (eleven questions, Layer 1 to 4), `ANSWERS` (Yes, Sort of, No), `nextQuestion` (stops once a layer isn't reached) and `quizPlacement` (the layer and how far into it). See [state-and-data.md](state-and-data.md#where-new-people-start) |
 | [`lib/text.js`](../../src/lib/text.js) | Sentence builders: `summaryFor`, `homeGoalTitle`, `generateSuggestions`, `getCheckInSuggestions`, `checkInReminder`, `buildPotentialHooks` (Prepare's hooks, [below](#prepares-hooks)), `focusSuggestion` (Today's "Try this next"), `updateStatusText` |
-| [`lib/storage.js`](../../src/lib/storage.js) | `loadSavedState` (checks saved data at startup) / `persistState` (the `layers-app-state-v1` key), and the notification bookkeeping: the check-in nudge's last day, the notifications Layers already showed itself, and snoozes (`getSnoozes` / `setSnoozes`). See [state-and-data.md](state-and-data.md#loading-saved-data). |
+| [`lib/storage.js`](../../src/lib/storage.js) | `loadSavedState` (checks saved data at startup) / `persistState` (the `layers-app-state-v1` key), and the notification bookkeeping: the check-in nudge's last day, the notifications Layers already showed itself, and snoozes (`getSnoozes` / `setSnoozes`); other calendars' events as last fetched (`getFeedCache` / `setFeedCache`) and sync's settings for this computer (`getSyncSettings` / `setSyncSettings`). See [state-and-data.md](state-and-data.md#loading-saved-data). |
 | [`lib/backup.js`](../../src/lib/backup.js) | `createBackup` / `validateBackup` for Export and Import. See [state-and-data.md](state-and-data.md#backup-format). |
-| [`lib/calendar.js`](../../src/lib/calendar.js) | The calendar: `EVENT_TEMPLATES`, `DATE_KINDS`, `occursOn`, `isDoneOn`, `isMissedOn` (didn't happen), `dayAgenda` (one day's plan), `monthMarks` (the month's dots), `needsAnswer` ("How did it go?"), `planIdeas`, `plannedNotifications`, `notifySettings`, `snoozeUntil`, `parseActionUrl`. See [state-and-data.md](state-and-data.md#the-calendar). |
+| [`lib/calendar.js`](../../src/lib/calendar.js) | The calendar: `EVENT_TEMPLATES`, `DATE_KINDS`, `occursOn`, `isDoneOn`, `isMissedOn` (didn't happen), `dayAgenda` (one day's plan), `monthMarks` (the month's dots), `needsAnswer` ("How did it go?"), `planIdeas`, `recentPlans` (Plan again), `clashesOn` (overlaps), `usualGap` and `quietDay` (gone quiet), `weekSummary` (the week review), `plannedNotifications`, `notifySettings`, `snoozeUntil`, `parseActionUrl`. See [state-and-data.md](state-and-data.md#the-calendar). |
+| [`lib/sentence.js`](../../src/lib/sentence.js) | `readSentence` (a typed sentence read as a plan or a log, with what's still missing, for the quick-add box and Ctrl+K) and `planFieldsOf` (the plan to save). See [the quick-add box](#the-quick-add-box). |
+| [`lib/jump.js`](../../src/lib/jump.js) | Ctrl+K: `jumpResults` (the rows for what's typed), its `PAGES`, `ACTIONS` and `PERSON_ACTIONS`, and `matchScore`. See [below](#ctrlk-jump-to-anything). |
+| [`lib/tips.js`](../../src/lib/tips.js) | Coach tips for one plan: `planTips` (for `PlanTipsSheet`) and `datesAround` (a person's key dates in the two weeks from it). |
 | [`lib/reminders.js`](../../src/lib/reminders.js) | `markDone` (a plan done for good, or for one day), `markMissed` (it didn't happen that day) and `followUpEvent`. |
 | [`lib/activity.js`](../../src/lib/activity.js) | The activity calendar: `activityGrid` (26 weeks of days, Monday to Sunday, ending with this week, each with its logs' count and a level 0–4 from `activityLevel`: their meaningfulness added up) for `components/ActivityCalendar.jsx`, on a profile and the Journal. |
 | [`lib/summary.js`](../../src/lib/summary.js) | A one-page summary of someone: `summaryHtml` (a self-contained A4 page, everything escaped, no scripts) and `summaryFileName`. `LayersApp`'s `handleExportSummary` hands it to the main process (`export-summary`), which saves it as a PDF. |
@@ -47,11 +51,11 @@ and constant are in [../generated/code-map.md](../generated/code-map.md).
 | [`lib/syncFile.js`](../../src/lib/syncFile.js) | Sync through OneDrive: `sealSyncFile` / `openSyncFile` (the encrypted file), `syncOnce` (one round: read, check, merge, write) and `syncErrorText`. `LayersApp` runs it automatically once it's on (`runSync`). See [state-and-data.md](state-and-data.md#syncing-through-onedrive). |
 | [`lib/sync.js`](../../src/lib/sync.js) | Ready for syncing: `createStamper` (`updatedAt` on what's saved, and the `deleted` list; `LayersApp` stamps each save and backup), `mergeData` (two copies record by record) and `cleanDeleted`. See [state-and-data.md](state-and-data.md#ready-for-syncing). |
 | [`lib/achievements.js`](../../src/lib/achievements.js) | `achievementProgress` (how close you are to each one), `newlyUnlocked` and `progressText`. See [state-and-data.md](state-and-data.md#achievements). |
-| [`lib/hooks.js`](../../src/lib/hooks.js) | `useToday` (the local date, updated at midnight), `useDailyCheckIn` (the once-a-day check-in nudge) `useCalendarNotifications` (hands the calendar's notifications to Windows, or shows them itself in a browser) and `useChatBatch` (Analyse all new's runner, used by `LayersApp`). The only React in `lib/`. |
-| [`components/`](../../src/components/) | `Sheet` + `SheetPortal`, `sheetLayer.js` (the portal context and the open-sheet stack Esc uses), `ErrorBoundary` (the "This screen hit a problem" fallback around the current screen), `PageTransition` (slides a new page in), `peopleKeys.js` (picking people by number or name), `ClosenessQuiz.jsx` (`QuizQuestion`, `QuizResult`, `QuizSheet`: "How close are you two?") with its state and keys in `closenessKeys.js`, `AvatarPicker.jsx` (`AvatarPicker`, `AvatarSheet`: initials in nine colours, a photo cropped to the circle, or an emoji) with its state and keys in `avatarKeys.js` (arrows pick, T the skin tone, G the group, / finds one by name; for a photo U chooses it, the arrows move it and + and - zoom), `atoms.jsx` (`CircularProgress`, `ProgressBar`, `LabeledBar`, `Avatar`, `LayerBadge`, `ChatBubble`, `Timeline`, `ConvStateBadge`), `rows.jsx` (`GoalRow`, `InfoItemRow`), `BottomNav`, `pickers.jsx` (`DateDropdown`, `TimeDropdown`, each with a compact chip form), `PersonPick.jsx` (`PersonPick`, `AvatarStack`), `illustrations.jsx`, `ChatTrendChart.jsx` (skills over time from analysed chats), `ChatBatch.jsx` (`ChatBatchCard`: Coach's Analyse all new and Ready to review), `ChatExports.jsx` (Coach's "From your chats": each chat's new conversations, "Which of these is you?", how to add one) |
+| [`lib/hooks.js`](../../src/lib/hooks.js) | `useToday` (the local date, updated at midnight), `useDailyCheckIn` (the once-a-day check-in nudge), `useDailyBackup` (the Windows app's daily backup), `useWide` (a window 900 px or more), `useSlideAcross` (People's list sliding between the middle and beside a profile), `useSystemDark` (Windows' dark mode, for Match Windows), `useCalendarNotifications` (hands the calendar's notifications to Windows, or shows them itself in a browser) and `useChatBatch` (Analyse all new's runner, used by `LayersApp`). The only React in `lib/`. |
+| [`components/`](../../src/components/) | `Sheet` + `SheetPortal`, `sheetLayer.js` (the portal context and the open-sheet stack Esc uses), `ErrorBoundary` (the "This screen hit a problem" fallback around the current screen), `PageTransition` (slides a new page in), `peopleKeys.js` (picking people by number or name), `ClosenessQuiz.jsx` (`QuizQuestion`, `QuizResult`, `QuizSheet`: "How close are you two?") with its state and keys in `closenessKeys.js`, `AvatarPicker.jsx` (`AvatarPicker`, `AvatarSheet`, `PhotoCrop`: initials in nine colours, a photo cropped to the circle, or an emoji) with its state and keys in `avatarKeys.js` (arrows pick, T the skin tone, G the group, / finds one by name; for a photo U chooses it, the arrows move it and + and - zoom), `atoms.jsx` (`CircularProgress`, `ProgressBar`, `LabeledBar`, `Avatar`, `LayerBadge`, `ChatBubble`, `Timeline`, `ConvStateBadge`, `Kbd`, `KeyedField`), `rows.jsx` (`GoalRow`, `InfoItemRow`), `BottomNav`, `pickers.jsx` (`DateDropdown`, `TimeDropdown`, each with a compact chip form), `PersonPick.jsx` (`PersonPick`, `PeopleGrid`, `AvatarStack`), `illustrations.jsx` (`RingsEmpty`, `RingsWelcome`), `ActivityCalendar.jsx` (the activity calendar, on a profile and the Journal), `ChatTrendChart.jsx` (skills over time from analysed chats), `ChatBatch.jsx` (`ChatBatchCard`: Coach's Analyse all new and Ready to review), `ChatExports.jsx` (Coach's "From your chats": each chat's new conversations, "Which of these is you?", how to add one) |
 | [`modals/`](../../src/modals/) | `ConfirmDialog`, `EditPersonModal`, `EditEntryModal` (edit or delete a journal entry), `EditProfileModal` (your name and focus), `LogInteractionModal` (with its detail sheets in `LogDetailSheets`), `PlanSheet`, `EventSheet`, `KeyDateSheet`, `GoalModal`, `TemplatePickerModal`, `QuickAddInterestModal`, `AddInfoModal`, `AddPersonModal`, `ShortcutsModal`, `StartOverSheet` (Delete my data and start over), `JumpSheet` (Ctrl+K), `DaySheet` (one day in a popup), `PlanTipsSheet` (Coach tips for a plan), `QuickGoalSheet` (a new goal while planning or logging), `PhotoFolderSheet` (photos for several people from a folder), `SyncSheet` (the passphrase for sync through OneDrive), `ChatReviewSheet` (an analysed chat's review and the chat, from the Journal), `ChatQueueSheet` ("Ready to review": the answers from Analyse all new, to log or skip), `WeekReviewSheet` ("Your week": who you saw, plans done, goals moved, chats to analyse, who to catch up with; Enter plans next week, 1–5 plans with someone) |
 | [`views/`](../../src/views/) | `TodayView`, `PeopleView`, `PersonProfile` (with `AdjustSlider`, `PrepareTipsModal`), `GoalsView`, `JournalView`, `CoachView`, `MeView`, `OnboardingView` |
-| [`App.jsx`](../../src/App.jsx) | `LayersApp`, plus the small helpers it uses: `sampleData` and the sample-people checks (`SAMPLE_PERSON_IDS`, `SAMPLE_GOAL_IDS`, `skillsCameWithSamples`, `allSkillsZero`), `unlinkMissingPeople`, `addNotes` and `listNames` |
+| [`App.jsx`](../../src/App.jsx) | `LayersApp`, plus the small helpers it uses: `sampleData` and the sample-people checks (`SAMPLE_PERSON_IDS`, `SAMPLE_GOAL_IDS`, `skillsCameWithSamples`, `allSkillsZero`), `unlinkMissingPeople`, `addNotes` and `listNames`; `applyLog` (one log worked out without saving anything, used by `handleLogSubmit` and the chat queue's Log all), `newDetail` and `addDetails` (details from an analysed chat), and `namesText` |
 
 Where new code goes: anything without React goes in `lib/` (and gets a unit test in
 `src/*.test.js`); a new screen gets its own file in `views/`, a new sheet one in
@@ -90,9 +94,9 @@ stateDiagram-v2
   Onboarding --> Tabs: handleOnboardingComplete
   state Tabs {
     direction LR
-    home --> people
-    people --> coach
-    coach --> journal
+    coach --> people
+    people --> today
+    today --> journal
     journal --> me
   }
   Tabs --> Person: openPerson(id)
@@ -103,10 +107,10 @@ stateDiagram-v2
   Tabs --> Tabs: switchTab / Ctrl+1…5
 ```
 
-- `activeTab`: `'today' | 'people' | 'coach' | 'journal' | 'me'` (`switchTab`, `BottomNav`, Ctrl+1–5). `BottomNav`'s `TABS` sets the order, Coach, People, **Today**, Journal, Me, with Today in the centre; Ctrl+1–5 follow it, so Ctrl+3 is Today. Layers still opens on Today.
+- `activeTab`: `'today' | 'people' | 'coach' | 'journal' | 'me'` (`switchTab`, `BottomNav`, Ctrl+1–5). `TABS` in `data/constants.js` sets the order, Coach, People, **Today**, Journal, Me, with Today in the centre; Ctrl+1–5 follow it, so Ctrl+3 is Today. Layers still opens on Today.
 - `screen`: `{ name: 'tabs' }` · `{ name: 'person', personId }` · `{ name: 'goals' }`
 - `openCoach(personId, tab)` switches to the Coach tab, pre-selecting a person and a sub-tab (`'prepare' | 'analyse'`) through `coachInit`.
-- The FAB (+) and bottom nav only render when `screen.name === 'tabs'`.
+- The FAB (+) and bottom nav only render when `screen.name === 'tabs'`, or beside a profile in a wide window (`showNav`).
 - **Which page you're on**: `BottomNav` marks the current tab (`aria-current="page"`) on a glowing pill that slides to the new tab, with a ripple and an icon hop. `PageTransition` (around the screen, keyed by `pageKey`) slides the new page in from the side it's on: forward for a tab further right or a person or goals screen, back otherwise. The scroll goes back to the top on every page change. Styles in [ui-system.md](ui-system.md#motion).
 
 ## Screens
@@ -153,7 +157,10 @@ Every modal is a `Sheet` (or `ConfirmDialog`). Most are opened by a boolean flag
 | `LogInteractionModal` | FAB, `N`, `openLog(personId)`, or a plan's **Log it** (`openLogFromEvent`, filled in) | `LayersApp` (`logOpen`, `logPrefill`) |
 | `PlanSheet` | `P`, **+ Plan**, an idea, a profile's **Plan something**, the log's "Plan something", a plan's **Edit** or **Plan it again** (`openPlan`) | `LayersApp` (`planState`) |
 | `EventSheet` | Tapping a plan on Today, or a notification's body | `LayersApp` (`eventView`) |
-| `ChatReviewSheet` | A Journal entry's Review button (analysed chats) | `LayersApp` (`reviewEntryId`) |
+| `ChatReviewSheet` | A Journal entry's Review button (analysed chats), or E in `ChatQueueSheet` (its full review) | `LayersApp` (`reviewEntryId`), `ChatQueueSheet` |
+| `ChatQueueSheet` | **Ready to review** (R) on Coach's Analyse | `CoachView` (`reviewing`) |
+| `QuizSheet` | A profile's **Where are we now?**, or Ctrl+K's W on a person; while setting up, Shift+Enter or **Questions** (Q) | `LayersApp` (`recheckFor`), `OnboardingView` |
+| `AvatarSheet` | A card's avatar (A) while setting up | `OnboardingView` |
 | `WeekReviewSheet` | `W` on Today, Today's Sunday card, or the review and catch-up notifications (`layers://review`) | `LayersApp` (`weekReview`) |
 | `DaySheet` | Enter on Today, or tapping the day that's picked already | `LayersApp` (`dayView`) |
 | `JumpSheet` | Ctrl+K, anywhere (even over a sheet) | `LayersApp` (`jumpOpen`) |
@@ -274,8 +281,8 @@ AM–11:00 AM · reminder 15 min before") and warns when it overlaps a plan you 
 that day (`clashesOn`; plans that only touch don't count).
 
 `EventSheet` shows one plan on one day. Before it starts it offers **Edit**, **Plan it
-again** and **Delete**; **Log it** and **Mark done** come once it has started, since
-there's nothing to log yet. A plan with people has **Coach tips** (`T`).
+again** and **Delete**; **Log it**, **Mark done** and **It didn't happen** come once it
+has started, since there's nothing to log yet. A plan with people has **Coach tips** (`T`).
 
 `DaySheet` is one day in a popup: its key dates, plans (↑ ↓ pick one, Enter opens it) and
 logs. ← → move to the day before or after (Today follows), `P` plans something that day,
@@ -295,8 +302,9 @@ rows come from `jumpResults` ([lib/jump.js](../../src/lib/jump.js)):
   browser storage, `layers-jump-recent`), then Log and Plan.
 - **Typing:** people, plans from two weeks back to four ahead (by title or who's in
   them), pages (Today, Month, People, Coach, Journal, Me, Goals, Your week) and actions
-  (Log, Plan, Add a person, New goal, Light, Dark, Match Windows, Export, Restore, the
-  backups folder and updates when the build has them, Keyboard shortcuts, Start over).
+  (Log, Plan, Add a person, New goal, Add photos from a folder, Light, Dark, Match
+  Windows, Export, Restore, the backups folder and updates when the build has them,
+  Keyboard shortcuts, Start over).
   The start of a name ranks first, then the start of any word, then initials, then
   anywhere; pages and actions also match their other words ("settings" finds Me).
 - **"plan sam", "log sam", "prep sam":** that person's action comes first.
@@ -351,7 +359,7 @@ These are defined once in `SHORTCUTS` (shown by `ShortcutsModal`) and implemente
   the first idea. Ctrl+1–5 follow the tabs: Ctrl+2 is People (the map), Ctrl+3 Today.
 - **The calendar's sheets** have keys too: PlanSheet's are [above](#plansheet-steps)
   (Shift+Enter saves and plans another); EventSheet E to edit, C to plan it again, T for Coach tips,
-  and once it has started L to log and Enter to mark done; DaySheet ↑ ↓, Enter, T, ← →
+  and once it has started L to log, Enter to mark done and X for didn't happen; DaySheet ↑ ↓, Enter, T, ← →
   and P (above); QuickGoalSheet 1–7, V, N, D, ← → and Enter; KeyDateSheet 1–5 for the kind,
   then the day typed in its box (T; "14 Mar", "14/3", with a year if you like, read by
   `readDayMonth` in `lib/dates.js`), Y every year or just once, Backspace back and Enter
@@ -364,7 +372,9 @@ These are defined once in `SHORTCUTS` (shown by `ShortcutsModal`) and implemente
   the icon, T temporary, Enter; `EditProfileModal` N your name, 1–4 your focus, Enter.
   Coach's Prepare (`CoachView`'s own listener, while no sheet is open) has ← → for who
   you're about to talk to, L log, A analyse, O their profile, and 1 and 2 for Prepare
-  and Analyse.
+  and Analyse. `ChatQueueSheet` (Ready to review): Enter logs one, X skips it, E its
+  full review, B its reminders, 1–9 leave a detail out, ← → the one before or after,
+  and Shift+Enter logs them all.
 - **`PhotoFolderSheet`**: U (or Enter) chooses a folder (`<input webkitdirectory>`;
   pictures only, sorted by name), then for each picture 1–9 or a name picks who it's for
   (the shared `usePeopleKeys`; a picture named after someone starts on them,
@@ -393,5 +403,6 @@ sheet and you're not typing in a text box. Each key is shown next to what it doe
 Enter on a button you reached with Tab presses that button instead
 (`isTabbedToButton` in `sheetLayer.js`). A key already handled, such as Enter in a
 text box that then closed its sheet, isn't handled again by the sheet underneath. That
-stops Enter in a detail sheet from also saving the log. The OS-wide **Ctrl+Shift+L** is
-registered by Electron, not here.
+stops Enter in a detail sheet from also saving the log. The OS-wide **Ctrl+Shift+L** (the
+quick-add box) and **Ctrl+Alt+L** (Layers to the front, or back) are registered by
+Electron, not here.

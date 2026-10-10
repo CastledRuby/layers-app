@@ -19,9 +19,13 @@ prototype:
 - visually consistent and easy to navigate
 - laid out mobile-first, even on a Windows laptop
 
-The desktop window shows it as a centred "phone frame" card.
+The desktop window shows it as a centred "phone frame" card. *(Since 1.0.36 the window
+always opens maximised, and from 900 px wide Layers fills it; the phone frame only shows
+in a narrow window.)*
 
-**Privacy is core.** Layers is local-first: everything is stored on the device. Its
+**Privacy is core.** Layers is local-first: everything is stored on the device. *(The
+optional OneDrive sync file is encrypted, and a chat goes to Claude only when you press
+Analyse.)* Its
 relationship scores are a reflection tool, not a measurement instrument. They make no
 claim to objectively measure another person's feelings.
 
@@ -30,7 +34,8 @@ claim to objectively measure another person's feelings.
 - **Windows desktop app.**
   - Packaged as both a portable `.exe` and an NSIS installer `.exe`.
   - Launches as a real desktop app, not a browser tab.
-  - Has a proper Layers icon (the dark icon is preferred over the light one).
+  - Has a proper Layers icon (the dark icon is preferred over the light one). *(Since
+    1.0.29 the icon is the Rings brand; see [branding](../branding/README.md).)*
   - Has the correct Windows taskbar identity.
 - **Single instance.** Launching Layers again while it's running must not start a second
   process, window or tray icon. It should bring the existing window to the front and
@@ -65,7 +70,8 @@ claim to objectively measure another person's feelings.
 - **Sample data, cleanly separable.** Sample people, goals, journal entries and history
   must never be hardcoded dependencies elsewhere. No feature should assume "Alex" or
   "Jamie" exists. Me/Settings offers both "Delete sample data / start over" and "Restore
-  sample data", and the app works correctly with zero people.
+  sample data" (today "Remove sample people" and "Add sample people"), and the app works
+  correctly with zero people.
 - **Data-model stability.** Saved data stays compatible across changes. If the data model
   changes, migrate it rather than silently dropping user data.
 
@@ -90,7 +96,8 @@ claim to objectively measure another person's feelings.
   - It surfaces hooks from the person's saved interests, recent log entries and past
     conversation topics, not only generic advice.
 - **Conversation Coach, Analyse.** It works with mock data for now, but it must work for
-  any person you've added, not hardcoded demo IDs. It offers:
+  any person you've added, not hardcoded demo IDs. *(Since 1.0.36 it is a real analysis
+  by Claude, run only when you press Analyse.)* It offers:
   - conversation reconstruction
   - a conversation-state assessment
   - grading across several dimensions
@@ -130,6 +137,10 @@ claim to objectively measure another person's feelings.
   | Esc | Close dialog |
   | ? | Shortcuts list |
   | Ctrl+Shift+L | Bring Layers to the front, from anywhere. It must not also trigger quick log. |
+
+  *(Changed in 1.0.31: Ctrl+Shift+L now opens the quick-add box, and Ctrl+Alt+L brings
+  Layers to the front. The full, current list is `SHORTCUTS` in `src/data/constants.js`,
+  shown in Me.)*
 
 ## Working principles
 

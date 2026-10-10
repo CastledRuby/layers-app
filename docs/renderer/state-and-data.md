@@ -31,9 +31,10 @@ These keys are saved as one JSON blob under `localStorage['layers-app-state-v1']
 | `profile` | `Profile` | `{ name: '', focus: null }` |
 | `onboarded` | `boolean` | `false` |
 | `themeMode` | `'system' \| 'light' \| 'dark'` | `'system'`: Match Windows. Saves from before 2026-10-05 have none, so they follow Windows too (the owner's choice). |
-| `theme` | `'light' \| 'dark'`: what's showing, worked out from `themeMode` | `'light'` |
+| `theme` | `'light' \| 'dark'`: what's showing, worked out from `themeMode` (not state of its own) | Windows' light or dark mode, since `themeMode` starts as `'system'` |
 | `achievements` | `{ [key]: 'YYYY-MM-DD' }`, or `null` until worked out | `null` (saved as `{}`). See [Achievements](#achievements). |
 | `deleted` | `{ id, kind: 'person'\|'entry'\|'event'\|'goal', at }[]`: what was deleted in the last 90 days | `[]`. Saved only; see [Ready for syncing](#ready-for-syncing). |
+| `dataVersion` | `number`: the shape of the saved data (`DATA_VERSION`, now 2) | Saved only; see [Dimensions stay inside the layer](#dimensions-stay-inside-the-layer). |
 
 `layers-calendars` holds your other calendars' events as last fetched (`{ fetchedAt, items,
 errors }`), so Today shows them offline; like `layers-sync`, it's this computer's only:
@@ -49,7 +50,7 @@ Three more keys belong to notifications ([below](#notifications)):
 
 `useToday` ([`src/lib/hooks.js`](../../src/lib/hooks.js)) holds the local date. It
 notices a new day within a minute of midnight, or as soon as the window becomes visible
-again. `LayersApp` passes `today` to `TodayView`, `PersonProfile` and `JournalView`, whose
+again. `LayersApp` passes `today` to `TodayView`, `PersonProfile`, `GoalsView` and `JournalView`, whose
 cached date maths (the day plan, ideas, profile suggestions,
 goal due labels, the journal's period filters) runs from it, so it refreshes at midnight
 even when the app has been in the tray for days.
@@ -82,7 +83,8 @@ for later failures until a save has worked again (the `saveFailed` ref).
 ### UI-only state (not persisted)
 
 `screen`, `activeTab`, `coachInit`, `searchFocus` (which search box `/` should focus once
-its tab renders), toasts, every modal-open flag and its target (`goalEditing`,
+its tab renders), the calendar's `selectedDay` and `calendarMode`, the Journal's filters,
+toasts, every modal-open flag and its target (`goalEditing`,
 `addInfoTarget`, `editingEntryId`, …), `confirmState`, updater status, auto-launch flag,
 shortcut status, app version, and `sheetLayer` (the DOM node sheets portal into).
 
@@ -102,6 +104,7 @@ type Person = {
   interests: InfoItem[]; preferences: InfoItem[]; plans: InfoItem[];
   experiences: InfoItem[]; important: InfoItem[]; // the five CATEGORIES
   goals: Goal[];
+  dates?: KeyDate[];                          // birthdays and other key days (below)
   history: HistoryPoint[];                    // layer-progress chart
   timeline: TimelineStep[];
   justLeveledUp?: boolean;                    // drives the level-up pulse; cleared by onClearLevelUpFlag
@@ -116,6 +119,7 @@ type InfoItem = {
   id: string; emoji: string; text: string;
   at: string;                                 // 'YYYY-MM-DD': the day it was last mentioned or edited ("Last mentioned" is derived from it)
   updated?: string;                           // legacy label ('Today', '9 days ago'), only until backfilled
+  when?: string;                              // 'YYYY-MM-DD': the day it happens, from an analysed chat
   temporary: boolean; archived: boolean;
 };
 
@@ -170,7 +174,7 @@ type Event = {                                // a plan on the calendar; see The
   duration?: number;                          // minutes; missing means 60
   alert?: number | null;                      // minutes before to notify; null = none; missing means 0 (at the time, as before 1.0.30)
   template?: string;                          // EVENT_TEMPLATES key: the emoji, and the type a log of it gets
-  updatedAt?: string;                         // ISO timestamp of the last change (for syncing later)
+  updatedAt?: string;                         // ISO timestamp of the last change (for syncing, and the order of Plan again)
   defaultMeaningfulness?: number;
   goalId?: string;                            // one of its people's goals; logging the reminder moves only that goal
   doneAt?: string;                            // one-off: the day it was marked done. It's finished for good.
@@ -187,6 +191,10 @@ type Profile = {
   morningSummary?: boolean; morningTime?: number;   // on, 8:00 AM (minutes since midnight)
   eveningHeadsUp?: boolean; eveningTime?: number;   // on, 8:00 PM
   askAfter?: boolean;                         // "How did it go?" when a plan with people ends; on
+  keyDateReminders?: boolean;                 // birthdays and key dates; on
+  catchUpWeekly?: boolean; catchUpDay?: number;     // the weekly catch-up list; on, Saturday (0=Sun…6=Sat)
+  quietNudges?: boolean;                      // when someone Personal or Close goes quiet; on
+  weeklyReview?: boolean; reviewTime?: number;      // "Your week" on Sundays; on, 7:00 PM
   checkInNotifications?: boolean;             // Me → Notifications; missing means on
   tried?: { jump?: true; quick?: true };      // Ctrl+K and the quick-add box used at least once (Today's getting-started list)
   gettingStartedHidden?: boolean;             // Hide on that list; cleared when you set up again
@@ -342,7 +350,7 @@ of the people in the log. Before 1.0.28 skill goals only moved with "Mark progre
 
 ### Moving a person
 
-Logging, Coach and Adjust all finish with
+Logging, Coach, Adjust and "Where are we now?" (`handleRecheck`) all finish with
 `movePerson(p, { layer, overall, at, why, extra })`. It sets the new layer and
 percentage plus any `extra` fields (dimensions, goals, info items), and records:
 
@@ -556,7 +564,8 @@ clearing skills and achievements when starting over. The effect then works them 
 
 **Quiet recording.** Only achievements you reach by using the app get a toast ("🏅
 Achievement unlocked: …"). Ones that loading data earns are recorded without one: at
-startup, at onboarding, when the sample people are added or removed, and on import.
+startup, at onboarding, when the sample people are added or removed, on import, after
+Start over, and when a sync brings in another device's changes.
 The `quietAchievements` ref starts `true` for startup, and those handlers set it again
 before changing state. The effect reads it and clears it. It's also quiet while
 `achievements` is `null` and before onboarding, so an upgrade doesn't announce everything
@@ -587,7 +596,8 @@ from `uid()`. `SAMPLE_PERSON_IDS` and `SAMPLE_GOAL_IDS` in `App.jsx` are how Me 
 
 Step 1 of the phone proposal ([roadmap.md](../roadmap.md#proposal-layers-on-your-phone-2026-10-06)):
 what's saved, and every backup, says when each record last changed and what was deleted,
-so a phone's copy can be merged with this one later. Nothing syncs yet.
+so another device's copy can be merged with this one. The OneDrive sync file
+([below](#syncing-through-onedrive)) is built on it; the phone comes later.
 
 - **`updatedAt`** (an ISO time) on people, journal entries, plans, goals (a person's and
   the general ones) and the profile. `createStamper` in
@@ -604,8 +614,8 @@ so a phone's copy can be merged with this one later. Nothing syncs yet.
   merged one by one, so a goal moved on the phone and a note changed on the laptop both
   survive (their other lists follow whichever copy of the person changed last); a
   deletion wins over changes before it and loses to changes after it; skills keep the
-  copy that's further on, and achievements the day first earned. It isn't used yet: the
-  phone and the OneDrive sync file come in later steps. `src/sync.test.js` covers it.
+  copy that's further on, and achievements the day first earned. Each sync uses it
+  (`syncOnce`, [below](#syncing-through-onedrive)). `src/sync.test.js` covers it.
 
 ### Other calendars, read-only
 
@@ -883,18 +893,22 @@ own saved data gets the same check at startup ([Loading saved data](#loading-sav
 | Situation | What happens |
 |---|---|
 | Not JSON, not an object, or no `people` list | Refused: "That file isn't a Layers backup." |
+| `version` that isn't a number of 1 or more | Refused: an unknown format |
 | `version` newer than `BACKUP_VERSION` | Refused: update Layers first |
 | A top-level list (`people`, `journal`, `generalGoals`, `events`) or `skills`/`profile` has the wrong type | Refused as damaged, instead of silently importing it as empty |
+| A `people` list where none of the people can be read | Refused as damaged |
 | Larger than 20 MB (`MAX_BACKUP_BYTES`) | Refused before it's read |
 | A person without an `id` or `name`, or a duplicate `id` | Skipped, and counted in the confirm dialog |
-| A journal entry or event for a person who isn't in the backup; a goal without a title; a saved detail without text; an event without a title or valid date | Skipped and counted |
+| A journal entry for a person who isn't in the backup; a goal without a title; a saved detail without text; an event without a title or valid date | Skipped and counted |
+| An event with people who aren't in the backup | Repaired: those people are taken off it |
 | Missing lists, out-of-range numbers, unknown types | Repaired: lists become empty, numbers are clamped (layer 1–4, dimensions and progress 0–100, meaningfulness 1–5), unknown interaction types become `other` |
 | A journal entry's `summary` or `reflection` that isn't text, or `standouts` that isn't a list of strings | Repaired: a bad `summary` or `reflection` is dropped, because it's shown as it is, and `standouts` keeps only its strings |
+| Optional fields that aren't what they should be: a rating that isn't 1–5 for a known dimension, an analysis without scores (`cleanAnalysis`), an avatar that isn't initials or a photo (`cleanAvatar`), a key date or a detail's `when` that isn't a real day, a plan's bad `duration`, `alert` or done day | That field (or list item) is dropped |
 | `achievements` missing or not an object | Read as `null`, so the app works them out again from the data, quietly ([Achievements](#achievements)) |
 | An unknown achievement key, or a date that isn't `YYYY-MM-DD` | That entry is dropped |
 | `deleted` missing, or an entry without an `id`, a known `kind` or a real time | Read as `[]`, or that entry is dropped (`cleanDeleted`) |
 
-Old backups without `version`, `events`, `generalGoals` or `achievements` still import.
+Old backups without `version`, `events`, `generalGoals`, `achievements` or `deleted` still import.
 The confirm dialog shows the export date, what will be imported ("5 people, 7 journal
 entries, 10 goals, 1 event") and anything that will be skipped. After confirming, records
 without an `at` are dated as described [above](#records-saved-before-at-existed), anchored to the

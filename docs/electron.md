@@ -1,7 +1,9 @@
 # Electron shell
 
 Two files make up the desktop layer: [`electron/main.cjs`](../electron/main.cjs) (main process) and
-[`electron/preload.cjs`](../electron/preload.cjs) (bridge). Exact line numbers for every IPC
+[`electron/preload.cjs`](../electron/preload.cjs) (bridge). `main.cjs` keeps some features in
+their own modules beside it: `toasts.cjs`, `backups.cjs`, `faces.cjs`, `sync.cjs`,
+`feeds.cjs`, `analysis.cjs` and `chatfiles.cjs`, each described below. Exact line numbers for every IPC
 channel are in [generated/code-map.md](generated/code-map.md#electron-ipc).
 
 ## Main process responsibilities
@@ -22,11 +24,11 @@ channel are in [generated/code-map.md](generated/code-map.md#electron-ipc).
 | Faces in pictures | `setupFaces()`, [`faces.cjs`](../electron/faces.cjs) | `find-faces` takes picture paths (the preload turns the page's `File`s into paths with `webUtils.getPathForFile`) and asks **Windows' own face detector** (`Windows.Media.FaceAnalysis`, as the Photos app uses) where the faces are: one PowerShell run (`-EncodedCommand`, the paths on standard input) for a whole folder, about 1.5 s for nine pictures. Only absolute paths to picture files that exist are asked about; it gives up after 30 s, and answers nothing off Windows. Nothing is bundled and nothing leaves the computer. Photos from a folder and the avatar picker's Photo start their circle on the biggest face (`faceCrop`). |
 | Sync through OneDrive | `setupSync()`, [`sync.cjs`](../electron/sync.cjs) | Only moves the encrypted sync file and keeps the passphrase; the page encrypts, decrypts and merges ([state-and-data.md](renderer/state-and-data.md#syncing-through-onedrive)). The file is `Documents\Layers sync\layers-sync.json` (Documents is in OneDrive on this laptop), or `Sync` in the data folder for tests, or `LAYERS_SYNC_DIR`. It's written to a temporary file and renamed over, so nothing ever sees half of it. Every `layers-sync*.json` is read (OneDrive names a clashing copy after the computer), and merged copies are removed. One that can't be read is kept as `layers-sync.unreadable-<time>.bak`. The passphrase is `sync-passphrase.bin` in the data folder, encrypted by Windows for this user (`safeStorage`, DPAPI). |
 | Other calendars | `setupFeeds()`, [`feeds.cjs`](../electron/feeds.cjs) | Your Google Calendar, read-only. The secret iCal addresses you add in Me are kept in `calendars.bin` in the data folder, encrypted by Windows (`safeStorage`), never given back to the page (only names and hosts), never synced or backed up. `feeds-add` takes https (or webcal) addresses only, and fetches once to check it's a calendar and read its name; `feeds-fetch` downloads each (20 s limit, 5 MB) and hands the page the files to read ([lib/ics.js](../src/lib/ics.js)). Fetching only downloads. |
-| Chat analysis with Claude | `setupAnalysis()`, [`analysis.cjs`](../electron/analysis.cjs) | Coach's **Analyse your own chat**. Your Anthropic API key is `anthropic-key.bin` in the data folder, encrypted by Windows (`safeStorage`); the page only learns whether there is one. `analysis-key-set` takes keys shaped like `sk-ant-…` and checks one works by listing the models (free) before keeping it. `analysis-run` is the only thing that sends a chat anywhere, and only when you press Analyse: it lets through text and up to six base64 screenshots (no links, no files), asks the model Coach picked, if it's one of `MODELS` (Claude Haiku 4.5, the cheapest and the default, then Sonnet 5.5, Opus 5.5 and Fable 5.1; anything else gets Haiku), through the official `@anthropic-ai/sdk`, waiting up to 5 minutes since the bigger models think first, with structured outputs keeping the answer to the page's JSON schema, and gives back `{ result, usage }` or `{ error }` in words (with `usage` and `model` too when Claude answered but it couldn't be used, since that's charged) (a key that doesn't work, no credit left, offline, a refusal, too long; a request Claude turns down says why in Anthropic's own words, and mentions screenshots only when there were some). The page builds the request and hides names ([lib/analysis.js](../src/lib/analysis.js)). |
+| Chat analysis with Claude | `setupAnalysis()`, [`analysis.cjs`](../electron/analysis.cjs) | Coach's **Analyse your own chat**. Your Anthropic API key is `anthropic-key.bin` in the data folder, encrypted by Windows (`safeStorage`); the page only learns whether there is one. `analysis-key-set` takes keys shaped like `sk-ant-…` and checks one works by listing the models (free) before keeping it. `analysis-run` is the only thing that sends a chat anywhere, and only when you press Analyse: it lets through text and up to six base64 screenshots (no links, no files), asks the model Coach picked, if it's one of `MODELS` (Claude Haiku 4.5, the cheapest and the default, then Sonnet 5.5, Opus 5.5 and Fable 5.1; anything else gets Haiku), through the official `@anthropic-ai/sdk`, waiting up to 5 minutes since the bigger models think first, with structured outputs keeping the answer to the page's JSON schema, and gives back `{ result, usage, model }` or `{ error }` in words (with `usage` and `model` too when Claude answered but it couldn't be used, since that's charged) (a key that doesn't work, no credit left, offline, a refusal, too long; a request Claude turns down says why in Anthropic's own words, and mentions screenshots only when there were some). The page builds the request and hides names ([lib/analysis.js](../src/lib/analysis.js)). |
 | Chat exports | `setupChats()`, [`chatfiles.cjs`](../electron/chatfiles.cjs) | The **Layers chats** folder for Coach's "From your chats": `Documents\Layers chats` (Documents is in OneDrive here, so a WhatsApp export saved to it on the phone comes down by itself), or `Chats` in the data folder for tests, or `LAYERS_CHATS_DIR`. It's made at startup so it shows in OneDrive. `chats-list` lists the chat exports in it, newest first: a WhatsApp export (its zip, or the .txt; named from the file, "WhatsApp Chat - Amelie.zip"), an Instagram "Download your information" zip (its `messages/inbox/*/message_*.json`), or one downloaded as HTML (so the page can say to choose JSON). Listing reads only a zip's central directory. `chats-read` reads one by name (nothing outside the folder): the WhatsApp chat's text, or every Instagram messages file, unzipped with Node's own `zlib` (nothing bundled; up to 300 MB a file, 60 MB unpacked per entry, 200 MB in all; no ZIP64). The page parses them ([lib/chatImport.js](../src/lib/chatImport.js)). `fs.watch` on the folder sends `chats-changed` 1.5 s after files stop changing. Only reads: files are never changed or removed. |
 | A summary as a PDF | `setupSummary()` | `export-summary` takes the page `src/lib/summary.js` makes, draws it in a hidden window with scripts off, `printToPDF` (A4 from the page's own `@page`), and saves it where you pick (Documents by default), then opens it. In the end-to-end tests `LAYERS_SUMMARY_DIR` saves it there without asking or opening it. |
 | Version | `setupVersionInfo()` | Returns `app.getVersion()`, the version baked in at package time. The Me tab shows it. |
-| Show from a notification | `ipcMain.on('show-window', showWindow)` | Registered in `setupVersionInfo()`. The renderer sends it when you click one of its notifications. |
+| Show from a notification | `ipcMain.on('show-window', showWindow)` | Registered in `setupWindowIpc()`. The renderer sends it when you click one of its notifications. |
 
 ### Startup
 
@@ -82,8 +84,10 @@ while Layers runs. Clicking it calls `layersSystem.showWindow()`.
 | `--hidden` | Start in the tray without showing the window. The login item passes it. |
 | `--quit` | Ask a running Layers to quit cleanly, then exit. |
 | `PORTABLE_EXECUTABLE_FILE` | Set by electron-builder's portable launcher to the `.exe` itself. Layers uses it for the login item and to tell the portable build from the installed one. |
-| `LAYERS_USER_DATA_DIR` | Use this folder for userData (`localStorage`, `theme.json`, `window-state.json` and the single-instance lock), and its `Backups` folder for daily backups. It's applied before the lock, so a test copy can run beside your own Layers. The end-to-end tests give every launch a new temporary folder ([testing.md](testing.md#3-end-to-end-tests-testse2especjs)). |
+| `LAYERS_USER_DATA_DIR` | Use this folder for userData (`localStorage`, `theme.json`, `window-state.json` and the single-instance lock), and its `Backups`, `Sync` and `Chats` folders for daily backups, the sync file and chat exports. It's applied before the lock, so a test copy can run beside your own Layers, and such a copy never registers `layers://`. The end-to-end tests give every launch a new temporary folder ([testing.md](testing.md#3-end-to-end-tests-testse2especjs)). |
 | `LAYERS_CHATS_DIR` | Use this folder as the Layers chats folder (otherwise `Chats` in `LAYERS_USER_DATA_DIR`, or `Documents\Layers chats`). |
+| `LAYERS_SYNC_DIR` | Use this folder for the sync file (otherwise `Sync` in `LAYERS_USER_DATA_DIR`, or `Documents\Layers sync`). The end-to-end tests point two copies at one folder. |
+| `LAYERS_SUMMARY_DIR` | Save a summary PDF in this folder without asking or opening it. One end-to-end test uses it. |
 | `LAYERS_NO_UPDATES` | Don't load `electron-updater`. `check-for-updates` answers `not-configured`. The end-to-end tests set it so they never contact GitHub. |
 | `LAYERS_NO_SCHEDULE` | Don't schedule Windows notifications. The end-to-end tests set it, so they never put toasts on your computer. |
 | `LAYERS_SCHEDULE_DUMP` | Write the toasts that would be scheduled (tag, time, XML) to this file instead. One end-to-end test uses it. |
@@ -127,7 +131,8 @@ All but the sidebar are listed one by one in `build.files`.
 
 ## Renderer bridge (preload)
 
-`contextBridge.exposeInMainWorld` exposes two objects. The renderer checks for them
+`contextBridge.exposeInMainWorld` exposes three objects: `layersUpdater` and `layersSystem`
+for the main window, and `layersQuick` for the quick-add box. The renderer checks for them
 before use (`hasUpdater`, `hasSystemBridge` in `LayersApp`), so the same bundle runs in a
 plain browser.
 
@@ -208,10 +213,13 @@ sends it back when it's already in front).
 ## Packaging config
 
 The electron-builder config is the `"build"` key in [`package.json`](../package.json). It
-packages `electron/main.cjs`, `electron/preload.cjs`, the three icons and
-`electron/app/**` into an asar (`compression: "store"`). electron-builder also bundles
+packages `electron/main.cjs`, `electron/preload.cjs`, the other `electron/*.cjs` modules,
+the icons (`icon.png`, `icon.ico` and the four tray icons) and
+`electron/app/**` into an asar (`compression: "store"`). The modules are listed one by one
+in `build.files`, so a new `electron/*.cjs` module must be added there. electron-builder also bundles
 every package listed under `dependencies`, with its own dependencies. So `dependencies`
-holds only what `main.cjs` `require`s: `electron-updater` and `electron-window-state`.
+holds only what the main process `require`s: `electron-updater`, `electron-window-state`
+and `@anthropic-ai/sdk`.
 Renderer libraries (`react`, `react-dom`, `recharts`, `lucide-react`) are
 `devDependencies`, because the single-file build already inlines them into `index.html`.
 See [build-and-release.md](build-and-release.md#dependencies-vs-devdependencies).
