@@ -956,8 +956,9 @@ it carries on while you use the rest of Layers.
   (`ChatReviewSheet`), **B** plans "how did it go?" the day after its details that have a
   day, **← →** move, and **Shift+Enter** logs them all. Each log is worked out from the one
   before (`applyLog`), so one Undo takes them all back.
-- **The monthly limit** (`layers-analysis-limit`, Me → Chat analysis): US$2, 5 (the
-  default), 10, 20 or none. Before each conversation, this month's spend
+- **The monthly limit** (`layers-analysis-limit`, Me → Chat analysis): US$2, 5, 10 (the
+  default since 2026-10-10; it was 5), 20 or none. A US$2 or 5 picked before then rose to
+  10 once (`layers-analysis-limit-raised` marks it done). Before each conversation, this month's spend
   (`spendSummary`) plus its estimate is checked against it. One chat at a time isn't held
   to it.
 - **The week review** has **Analyse them all in Coach** beside "Chats to analyse".

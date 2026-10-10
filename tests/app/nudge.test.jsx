@@ -78,7 +78,7 @@ describe('who to message today', () => {
     expect(within(card()).queryByLabelText('Opener')).toBeNull();
     unmount();
     const month = `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}`;
-    window.localStorage.setItem('layers-analysis-spend', JSON.stringify({ [month]: { dollars: 5.2, chats: 300, models: {} } }));
+    window.localStorage.setItem('layers-analysis-spend', JSON.stringify({ [month]: { dollars: 10.2, chats: 300, models: {} } }));
     bridge.hasKey = true;
     window.layersSystem.getAnalysisKeyStatus = async () => ({ hasKey: true });
     const again = renderApp();

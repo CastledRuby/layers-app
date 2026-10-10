@@ -92,9 +92,20 @@ export function pruneQueue(queue, before) {
 // to it.
 const LIMIT_KEY = 'layers-analysis-limit';
 export const LIMITS = [2, 5, 10, 20, 0];
-export const DEFAULT_LIMIT = 5;
+// US$10 from 2026-10-10 (your answers: it rises as features earn it, and reply
+// ideas, openers, Practise and the week's read all draw on it). It was US$5,
+// and a US$2 or US$5 picked before then rises to US$10 once (RAISED_KEY), so
+// picking them again afterwards sticks.
+export const DEFAULT_LIMIT = 10;
+const RAISED_KEY = 'layers-analysis-limit-raised';
+function raiseOnce() {
+  if (window.localStorage.getItem(RAISED_KEY) !== null) return;
+  if (['2', '5'].includes(window.localStorage.getItem(LIMIT_KEY))) window.localStorage.setItem(LIMIT_KEY, '10');
+  window.localStorage.setItem(RAISED_KEY, '1');
+}
 export function readLimit() {
   try {
+    raiseOnce();
     const v = window.localStorage.getItem(LIMIT_KEY);
     const n = v === null ? DEFAULT_LIMIT : Number(v);
     return LIMITS.includes(n) ? n : DEFAULT_LIMIT;

@@ -58,7 +58,7 @@ function fakeBridge({ run } = {}) {
 }
 afterEach(() => {
   delete window.layersSystem;
-  ['layers-chat-progress', 'layers-analysis-queue', 'layers-analysis-spend', 'layers-analysis-limit'].forEach(k => window.localStorage.removeItem(k));
+  ['layers-chat-progress', 'layers-analysis-queue', 'layers-analysis-spend', 'layers-analysis-limit', 'layers-analysis-limit-raised'].forEach(k => window.localStorage.removeItem(k));
 });
 
 const seed = () => seedState({ profile: { name: 'Liam', focus: 'mix' }, people: [person('Amelie', { layer: 4 }), person('Chloe', { layer: 3 })] });
@@ -153,22 +153,22 @@ describe('Analyse all new', () => {
 
   it("stops before going past the monthly limit, set in Me, and when Claude can't be reached; the rest stay new", async () => {
     const month = `${new Date().getFullYear()}-${pad(new Date().getMonth() + 1)}`;
-    window.localStorage.setItem('layers-analysis-spend', JSON.stringify({ [month]: { dollars: 4.99, chats: 200, models: { 'claude-haiku-4-5': 200 } } }));
+    window.localStorage.setItem('layers-analysis-spend', JSON.stringify({ [month]: { dollars: 9.99, chats: 200, models: { 'claude-haiku-4-5': 200 } } }));
     const bridge = fakeBridge();
     seed();
     const { user } = renderApp();
     let card = await openAnalyse(user);
-    expect(card.textContent).toMatch(/more than is left of your US\$5 monthly limit \(about US\$4\.99 spent\), so it stops partway/);
+    expect(card.textContent).toMatch(/more than is left of your US\$10 monthly limit \(about US\$9\.99 spent\), so it stops partway/);
     await user.keyboard('a');
-    await waitFor(() => expect(within(screen.getByLabelText('Analyse all new')).getByRole('alert').textContent).toBe('Stopped at your US$5 monthly limit (Me → Chat analysis). 3 conversations are still new.'));
+    await waitFor(() => expect(within(screen.getByLabelText('Analyse all new')).getByRole('alert').textContent).toBe('Stopped at your US$10 monthly limit (Me → Chat analysis). 3 conversations are still new.'));
     expect(bridge.runAnalysis).not.toHaveBeenCalled();
 
     // A higher limit in Me.
     await user.click(nav('Me'));
     const limit = within(screen.getByLabelText('Chat analysis')).getByRole('group', { name: 'Monthly limit' });
-    expect(within(limit).getByRole('button', { name: 'US$5' }).getAttribute('aria-pressed')).toBe('true');
-    await user.click(within(limit).getByRole('button', { name: 'US$10' }));
-    expect(window.localStorage.getItem('layers-analysis-limit')).toBe('10');
+    expect(within(limit).getByRole('button', { name: 'US$10' }).getAttribute('aria-pressed')).toBe('true');
+    await user.click(within(limit).getByRole('button', { name: 'US$20' }));
+    expect(window.localStorage.getItem('layers-analysis-limit')).toBe('20');
 
     // Nothing comes back (the key, credit or connection): it stops there.
     bridge.runAnalysis.mockImplementation(async () => ({ error: "That API key isn't working. Check it in Me." }));
@@ -177,6 +177,20 @@ describe('Analyse all new', () => {
     await waitFor(() => expect(within(screen.getByLabelText('Analyse all new')).getByRole('alert').textContent).toBe("Stopped: That API key isn't working. Check it in Me. 3 conversations are still new."));
     expect(bridge.runAnalysis).toHaveBeenCalledTimes(1);
     expect(within(screen.getByLabelText('From your chats')).getByRole('button', { name: /Amelie.*4 new/ })).toBeTruthy();
+  });
+
+  it('a US$5 limit picked before the starting limit became US$10 rises with it, once', async () => {
+    window.localStorage.removeItem('layers-analysis-limit-raised');
+    window.localStorage.setItem('layers-analysis-limit', '5');
+    fakeBridge();
+    seed();
+    const { user } = renderApp();
+    await user.click(nav('Me'));
+    const limit = within(screen.getByLabelText('Chat analysis')).getByRole('group', { name: 'Monthly limit' });
+    expect(within(limit).getByRole('button', { name: 'US$10' }).getAttribute('aria-pressed')).toBe('true');
+    await user.click(within(limit).getByRole('button', { name: 'US$5' }));
+    expect(window.localStorage.getItem('layers-analysis-limit')).toBe('5');
+    expect(within(limit).getByRole('button', { name: 'US$5' }).getAttribute('aria-pressed')).toBe('true');
   });
 
   it("Sunday's week review sends you to it", async () => {

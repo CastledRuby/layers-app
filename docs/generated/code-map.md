@@ -4,7 +4,7 @@
 > Run `npm run docs:map` after changing anything under `src/`, `electron/*.cjs` or `package.json` scripts.
 > Hand-written explanations live in the other files under [`docs/`](../README.md).
 
-Package: `layers-web` v1.0.39 · `src/`: 91 files, 15610 lines, 110 components, 428 top-level functions, 214 constants.
+Package: `layers-web` v1.0.39 · `src/`: 91 files, 15621 lines, 110 components, 429 top-level functions, 215 constants.
 
 ## Source files
 
@@ -22,7 +22,7 @@ Package: `layers-web` v1.0.39 · `src/`: 91 files, 15610 lines, 110 components, 
 | [lib/analysis.js](../../src/lib/analysis.js) | 385 | ANALYSIS_MODELS, DEFAULT_ANALYSIS_MODEL, analysisModel, MAX_SCREENSHOTS, THEM, YOU, tokensFor, STAMP, chatSpeakers, detectPeople, … (+35) | `data/constants`, `lib/dates` |
 | [lib/backup.js](../../src/lib/backup.js) | 248 | BACKUP_VERSION, MAX_BACKUP_BYTES, createBackup, isObject, isText, isISODay, num, count, cleanHistory, cleanGoal, … (+9) | `lib/calendar`, `data/constants`, `data/seed`, `data/avatars`, `lib/util`, `lib/sync`, `lib/analysis` |
 | [lib/calendar.js](../../src/lib/calendar.js) | 459 | WEEKDAY_NAMES, DEFAULT_DURATION, EVENT_TEMPLATES, templateFor, DATE_KINDS, dateKind, NOTIFY_DEFAULTS, notifySettings, dayDate, addDays, … (+29) | `lib/dates` |
-| [lib/chatBatch.js](../../src/lib/chatBatch.js) | 106 | TINY, batchPlan, batchDollars, QUEUE_KEY, isText, cleanItem, readQueue, saveQueue, waiting, pruneQueue, … (+5) | `lib/analysis`, `lib/chatImport` |
+| [lib/chatBatch.js](../../src/lib/chatBatch.js) | 117 | TINY, batchPlan, batchDollars, QUEUE_KEY, isText, cleanItem, readQueue, saveQueue, waiting, pruneQueue, … (+7) | `lib/analysis`, `lib/chatImport` |
 | [lib/chatImport.js](../../src/lib/chatImport.js) | 482 | CONVERSATION_GAP_HOURS, MAX_TEXT, PROGRESS_KEY, STAMP, IOS_LINE, ANDROID_LINE, ch, MARKS, MARKED, ODD_SPACES, … (+44) | `lib/analysis` |
 | [lib/chatTrend.js](../../src/lib/chatTrend.js) | 50 | TREND_LINES, chatTrend, trendChange | `lib/dates` |
 | [lib/closeness.js](../../src/lib/closeness.js) | 64 | QUIZ, ANSWERS, REACHED, inLayer, share, nextQuestion, quizPlacement | — |
@@ -350,8 +350,9 @@ Package: `layers-web` v1.0.39 · `src/`: 91 files, 15610 lines, 110 components, 
 | `saveQueue` | [chatBatch.js:76](../../src/lib/chatBatch.js#L76) | ✓ | ✓ |
 | `waiting` | [chatBatch.js:80](../../src/lib/chatBatch.js#L80) | ✓ | ✓ |
 | `pruneQueue` | [chatBatch.js:85](../../src/lib/chatBatch.js#L85) | ✓ | ✓ |
-| `readLimit` | [chatBatch.js:96](../../src/lib/chatBatch.js#L96) | ✓ | ✓ |
-| `saveLimit` | [chatBatch.js:103](../../src/lib/chatBatch.js#L103) | ✓ | ✓ |
+| `raiseOnce` | [chatBatch.js:101](../../src/lib/chatBatch.js#L101) |  |  |
+| `readLimit` | [chatBatch.js:106](../../src/lib/chatBatch.js#L106) | ✓ | ✓ |
+| `saveLimit` | [chatBatch.js:114](../../src/lib/chatBatch.js#L114) | ✓ | ✓ |
 | `ch` | [chatImport.js:23](../../src/lib/chatImport.js#L23) |  |  |
 | `standIn` | [chatImport.js:35](../../src/lib/chatImport.js#L35) |  |  |
 | `stampOf` | [chatImport.js:52](../../src/lib/chatImport.js#L52) |  |  |
@@ -736,7 +737,8 @@ Package: `layers-web` v1.0.39 · `src/`: 91 files, 15610 lines, 110 components, 
 | `QUEUE_KEY` | [chatBatch.js:62](../../src/lib/chatBatch.js#L62) |
 | `LIMIT_KEY` | [chatBatch.js:93](../../src/lib/chatBatch.js#L93) |
 | `LIMITS` | [chatBatch.js:94](../../src/lib/chatBatch.js#L94) |
-| `DEFAULT_LIMIT` | [chatBatch.js:95](../../src/lib/chatBatch.js#L95) |
+| `DEFAULT_LIMIT` | [chatBatch.js:99](../../src/lib/chatBatch.js#L99) |
+| `RAISED_KEY` | [chatBatch.js:100](../../src/lib/chatBatch.js#L100) |
 | `CONVERSATION_GAP_HOURS` | [chatImport.js:12](../../src/lib/chatImport.js#L12) |
 | `MAX_TEXT` | [chatImport.js:14](../../src/lib/chatImport.js#L14) |
 | `PROGRESS_KEY` | [chatImport.js:15](../../src/lib/chatImport.js#L15) |

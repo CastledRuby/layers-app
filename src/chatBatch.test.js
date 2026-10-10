@@ -12,7 +12,7 @@ const chat = (key, title, messages) => ({ key, source: 'whatsapp', title, partic
 const amelie = { id: 'a', name: 'Amelie', layer: 4 };
 const chloe = { id: 'c', name: 'Chloe', layer: 3 };
 
-afterEach(() => { window.localStorage.removeItem('layers-analysis-queue'); window.localStorage.removeItem('layers-analysis-limit'); });
+afterEach(() => { ['layers-analysis-queue', 'layers-analysis-limit', 'layers-analysis-limit-raised'].forEach(k => window.localStorage.removeItem(k)); });
 
 describe('what Analyse all new sends', () => {
   const amelieChat = chat('whatsapp:amelie', 'Amelie', [
@@ -81,14 +81,28 @@ describe('the queue', () => {
 });
 
 describe('the monthly limit', () => {
-  it('is US$5 until changed, and only one of the choices', () => {
+  it('is US$10 until changed, and only one of the choices', () => {
     expect(readLimit()).toBe(DEFAULT_LIMIT);
-    expect(DEFAULT_LIMIT).toBe(5);
+    expect(DEFAULT_LIMIT).toBe(10);
     saveLimit(20);
     expect(readLimit()).toBe(20);
     saveLimit(0);
     expect(readLimit()).toBe(0);
     window.localStorage.setItem('layers-analysis-limit', '7');
+    expect(readLimit()).toBe(10);
+  });
+
+  it('raises a US$2 or US$5 picked before 2026-10-10 to US$10, once', () => {
+    window.localStorage.setItem('layers-analysis-limit', '5');
+    expect(readLimit()).toBe(10);
+    expect(window.localStorage.getItem('layers-analysis-limit')).toBe('10');
+    saveLimit(5);
     expect(readLimit()).toBe(5);
+    window.localStorage.removeItem('layers-analysis-limit-raised');
+    window.localStorage.setItem('layers-analysis-limit', '20');
+    expect(readLimit()).toBe(20);
+    window.localStorage.removeItem('layers-analysis-limit-raised');
+    window.localStorage.setItem('layers-analysis-limit', '2');
+    expect(readLimit()).toBe(10);
   });
 });

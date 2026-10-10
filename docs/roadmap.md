@@ -259,7 +259,7 @@ answers were read back (see [History](#history)):
      profile. Each profile already saves this (`history`). The six dimensions aren't
      saved by day yet, so they'd start being saved from then on.
    - **The starting limit**: US$10, now that reply ideas, the opener, Practise and the
-     big picture all draw on it.
+     big picture all draw on it. *(Built 2026-10-10: yours rose with it.)*
 2. **The phone**: the web app's OneDrive sign-in, once your Microsoft registration is
    done. Reminders stay on the laptop. Then the Apple account, the real iPhone app, and
    the Watch.
@@ -773,6 +773,13 @@ its own. Changes made while building are marked.
   box in the packaged app, with a temporary data folder as always.
 
 ## History
+
+### Finishing what's built, from your answers (not released yet)
+
+Step 1 of [the order from here](#the-order-from-here), with your choices of 2026-10-10:
+
+- **The monthly limit starts at US$10** (it was US$5). A US$2 or US$5 you'd picked rose
+  to US$10 once; picking either again in Me sticks.
 
 ### Fixes from the audit of 2026-10-10 (not released yet)
 

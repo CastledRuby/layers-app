@@ -218,8 +218,8 @@ describe('Analyse all new: the review queue', { timeout: 60000 }, () => {
 });
 
 describe('Analyse all new: the monthly limit and what it cost', { timeout: 60000 }, () => {
-  it('stops partway, before going past US$5: what was sent waits to be reviewed, the rest stay new, and Me counts it', async () => {
-    window.localStorage.setItem('layers-analysis-spend', JSON.stringify({ [month()]: { dollars: 4.97, chats: 200, models: { 'claude-haiku-4-5': 200 } } }));
+  it('stops partway, before going past US$10: what was sent waits to be reviewed, the rest stay new, and Me counts it', async () => {
+    window.localStorage.setItem('layers-analysis-spend', JSON.stringify({ [month()]: { dollars: 9.97, chats: 200, models: { 'claude-haiku-4-5': 200 } } }));
     const bridge = fakeBridge({ ...CHATS.amelieTwice, ...CHATS.chloe });
     seed();
     const { user } = renderApp();
@@ -227,16 +227,16 @@ describe('Analyse all new: the monthly limit and what it cost', { timeout: 60000
     expect(card().textContent).toMatch(/3 conversations with Amelie and Chloe/);
     expect(card().textContent).toMatch(/so it stops partway/);
     await user.keyboard('a');
-    await waitFor(() => expect(toasts()).toContain('Stopped at your US$5 monthly limit (Me → Chat analysis). 2 conversations are still new. 1 chat ready to review in Coach.'));
+    await waitFor(() => expect(toasts()).toContain('Stopped at your US$10 monthly limit (Me → Chat analysis). 2 conversations are still new. 1 chat ready to review in Coach.'));
     expect(bridge.runAnalysis).toHaveBeenCalledTimes(1);
-    expect(within(card()).getByRole('alert').textContent).toBe('Stopped at your US$5 monthly limit (Me → Chat analysis). 2 conversations are still new.');
+    expect(within(card()).getByRole('alert').textContent).toBe('Stopped at your US$10 monthly limit (Me → Chat analysis). 2 conversations are still new.');
     expect(within(card()).getByRole('button', { name: /Ready to review \(1\)/ })).toBeTruthy();
     const spend = JSON.parse(window.localStorage.getItem('layers-analysis-spend'))[month()];
     expect(spend.chats).toBe(201);
-    expect(spend.dollars).toBeLessThanOrEqual(5);
+    expect(spend.dollars).toBeLessThanOrEqual(10);
 
     await user.click(nav('Me'));
-    expect(screen.getByLabelText('What Claude has cost').textContent).toMatch(/This month: about US\$4\.99 for 201 chats \(Haiku 4\.5\)/);
+    expect(screen.getByLabelText('What Claude has cost').textContent).toMatch(/This month: about US\$9\.99 for 201 chats \(Haiku 4\.5\)/);
   });
 
   it('No limit sends everything, without a warning', async () => {
