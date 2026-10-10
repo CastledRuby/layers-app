@@ -181,10 +181,15 @@ installer refuses while any `Layers.exe` is open (it exited with 2).
 
 The same Layers, built for the web (`npm run build`, into `dist/`, relative paths) and
 published by GitHub Pages at https://castledruby.github.io/layers-app/ by
-`.github/workflows/pages.yml` with each published release (or by hand: Actions → Phone
-web app → Run workflow). Pages was turned on for the repository on 2026-10-10, set to
+`.github/workflows/pages.yml` with each release (or by hand: Actions → Phone web app →
+Run workflow, from `main`). Pages was turned on for the repository on 2026-10-10, set to
 deploy from GitHub Actions. On the iPhone: open it in Safari → Share → Add to Home
 Screen.
+
+- **It runs when a release pushes `main`**, not on the published release: the
+  `github-pages` environment only deploys from `main`, and a release-triggered run is at
+  its tag (`v1.0.39`'s deploy was refused that way and was run by hand from `main`). Only
+  releases push `main`.
 
 - **The page holds no data.** Yours lives in that browser's storage on the phone; the
   OneDrive sign-in that syncs it with the laptop comes once the Microsoft app

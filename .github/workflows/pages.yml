@@ -3,11 +3,16 @@
 # https://castledruby.github.io/layers-app/, to add to the iPhone's Home
 # Screen from Safari. Published with each release, or by hand. The page holds
 # no data: yours stays on the phone (and in the encrypted OneDrive sync file).
+#
+# On a push to main, not on the release itself: the github-pages environment
+# only deploys from main, and a release runs at its tag, so 1.0.39's deploy was
+# refused. npm run release pushes main just before publishing, and main is
+# only pushed for releases.
 name: Phone web app
 
 on:
-  release:
-    types: [published]
+  push:
+    branches: [main]
   workflow_dispatch:
 
 permissions:
