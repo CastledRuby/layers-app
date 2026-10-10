@@ -85,15 +85,29 @@ function alreadyInstalled(head) {
   return git('diff', '--quiet', stamp.commit, head, '--', ...APP_CODE).status === 0;
 }
 
-// Would this install take away app changes that main has and this branch
-// doesn't? True when the installed commit is on main but not in HEAD, so a
-// branch cut before it would put an older Layers back on this computer.
-function behindInstalled(head) {
+// The commit the installed app was built from, read from its own version
+// (1.0.38+local.abc1234 is that commit, a plain 1.0.38 its release tag), so an
+// install that never wrote the stamp still counts. Falls back to the stamp.
+function installedCommit() {
+  try {
+    const version = JSON.parse(readAsarFile(INSTALLED_ASAR, 'package.json')).version;
+    const local = /\+local\.([0-9a-f]{7,40})/.exec(version);
+    const commit = gitOut('rev-parse', '--verify', '--quiet', `${local ? local[1] : `v${version}`}^{commit}`);
+    if (commit) return { commit, version };
+  } catch { /* not installed, or unreadable */ }
   const stamp = readStamp();
-  if (!stamp || !stamp.commit || stamp.commit === head) return false;
-  const onMain = git('merge-base', '--is-ancestor', stamp.commit, 'main').status === 0;
-  const inHead = git('merge-base', '--is-ancestor', stamp.commit, head).status === 0;
-  return onMain && !inHead && git('diff', '--quiet', stamp.commit, head, '--', ...APP_CODE).status !== 0;
+  return stamp && stamp.commit ? { commit: stamp.commit, version: stamp.version } : null;
+}
+
+// Would this install take away app changes that main has and this branch
+// doesn't? Returns the installed version when its commit is on main but not
+// in HEAD, so a branch cut before it would put an older Layers back.
+function behindInstalled(head) {
+  const installed = installedCommit();
+  if (!installed || installed.commit === head) return null;
+  const onMain = git('merge-base', '--is-ancestor', installed.commit, 'main').status === 0;
+  const inHead = git('merge-base', '--is-ancestor', installed.commit, head).status === 0;
+  return onMain && !inHead && git('diff', '--quiet', installed.commit, head, '--', ...APP_CODE).status !== 0 ? installed.version : null;
 }
 
 function skipReason() {
@@ -179,8 +193,9 @@ async function main() {
   await takeLock();
   const head = gitOut('rev-parse', 'HEAD');
   if (ifChanged && alreadyInstalled(head)) { log(`Layers on this computer already has this code (${head.slice(0, 7)}).`); return; }
-  if (ifChanged && behindInstalled(head)) {
-    log(`Not installing: the Layers on this computer (${readStamp().version}) has app changes from main that this branch doesn't. Merge main into this branch and the next commit installs, or run npm run install:local to install this branch anyway.`);
+  const newer = ifChanged && behindInstalled(head);
+  if (newer) {
+    log(`Not installing: the Layers on this computer (${newer}) has app changes from main that this branch doesn't. Merge main into this branch and the next commit installs, or run npm run install:local to install this branch anyway.`);
     return;
   }
 

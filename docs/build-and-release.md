@@ -125,8 +125,9 @@ does too after `git merge` or `git pull`. To run it yourself: `npm run install:l
    `capacitor.config.json`) aren't part of the Windows app, so a commit that only
    changes those finishes in a second.
 
-   It also won't go backwards. If the installed commit is on `main` but not in this
-   branch, and the app differs, installing would put an older Layers back (a worktree
+   It also won't go backwards. If the installed commit (read from the installed app's
+   own version, so it counts even when an install didn't finish writing
+   `layers-installed.json`) is on `main` but not in this branch, and the app differs, installing would put an older Layers back (a worktree
    branch cut before newer work on `main`). It says so and installs nothing: merge
    `main` into the branch, and the next commit installs. `npm run install:local`
    installs the branch anyway.
