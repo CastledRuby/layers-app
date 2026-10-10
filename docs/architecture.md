@@ -71,7 +71,7 @@ feature is guarded by `hasUpdater` / `hasSystemBridge` checks in `LayersApp`.
 │   ├── setup.js              Vitest setup (jsdom helpers for the app tests)
 │   ├── app/                  App tests: the whole renderer in jsdom, driven like a person would
 │   └── e2e/                  End-to-end tests: Playwright drives the packaged Layers.exe
-├── public/                   Copied as-is into web builds (icon.svg, PWA manifest.json)
+├── public/                   Copied as-is into web builds (icon.svg, PWA manifest.json, the phone web app's sw.js and Home Screen icon)
 ├── index.html                Vite HTML entry
 ├── electron/
 │   ├── main.cjs              Main process
@@ -104,6 +104,7 @@ feature is guarded by `hasUpdater` / `hasSystemBridge` checks in `LayersApp`.
 ├── branding/                 Logo and icon drafts (README.md says which file is what)
 ├── ios/                      The iPhone app's Xcode project (Capacitor); its copy of the page is git-ignored
 ├── .github/workflows/ios.yml Builds the iPhone app for the simulator on GitHub after a push to main
+├── .github/workflows/pages.yml Publishes the phone web app on GitHub Pages with each release
 ├── docs/                     You are here
 ├── CLAUDE.md                 Short working rules for Claude Code sessions
 ├── vite.config.js            Normal multi-file web build → dist/, and the Vitest config

@@ -1,7 +1,7 @@
 # Roadmap
 
 Where Layers stands against [vision.md](vision.md), what was decided along the way, and
-what comes next. Last updated 2026-10-09, after 1.0.37 (anything since is at the top of
+what comes next. Last updated 2026-10-10, after 1.0.38 (anything since is at the top of
 [History](#history), marked not released yet). **What's next is
 [The next big changes](#the-next-big-changes-your-answers-2026-10-08)**, after
 [The plan from here](#the-plan-from-here-2026-10-07).
@@ -275,6 +275,12 @@ from the last three months (built 2026-10-10, see History).
 Each of the others comes back to you as a proposal before it's built.
 
 ### Proposal: the phone web app (2026-10-10)
+
+**Built 2026-10-10 (the web app itself)**: GitHub Pages is on for the repository, and
+each release now publishes the web app (offline copy, iPhone icon); see
+[build-and-release.md](build-and-release.md#the-phone-web-app-github-pages). The
+OneDrive sign-in comes after your Microsoft registration ("later", 2026-10-10), so for
+now the phone's data is its own.
 
 The last of the six. **Your answers:** sign in to OneDrive to sync (2026-10-09), no Claude
 on the phone at first, the passphrase remembered on the phone, and everything (not just
@@ -667,21 +673,21 @@ its own. Changes made while building are marked.
 
 ## History
 
-### Snapchat (after 1.0.37, not released yet)
+### Snapchat (1.0.38)
 
 - **Snapchat chats in Coach**: Settings → My Data → Chat History (and Friends), with
   Export JSON files on. Save the emailed zip in the Layers chats folder, and its chats show
   in "From your chats", named from your friends list. Snapchat only keeps saved and
   unopened chats.
 
-### The big picture (after 1.0.37, not released yet)
+### The big picture (1.0.38)
 
 - **Your week** gets **Claude's read**: how the week went, what went well, a pattern, one
   thing to try this week and who to reach out to. Asked by itself once a week when you
   open it (about US$0.02, within the monthly limit) and kept; earlier weeks have a
   button.
 
-### Practise (after 1.0.37, not released yet)
+### Practise (1.0.38)
 
 - **Coach → Practise** (4): pick a situation (just chatting, someone new, asking to hang
   out, a quiet chat, bad news, saying no, a misunderstanding) and a made-up person or one
@@ -690,7 +696,7 @@ its own. Changes made while building are marked.
 - **Practice scores** are a dashed line in Me's "Your chats over time"; a practice is
   never logged.
 
-### Know what to say: who to message today (after 1.0.37, not released yet)
+### Know what to say: who to message today (1.0.38)
 
 - **Today: Message … today**: one person and why (a birthday today or tomorrow, asking
   how something went, or it's been a while), worked out for free, and a line in the
@@ -698,7 +704,7 @@ its own. Changes made while building are marked.
   day (about half a cent; held to the monthly limit). O copies it, G logs that you
   messaged them, Z puts them off till tomorrow.
 
-### Know what to say: reply ideas (after 1.0.37, not released yet)
+### Know what to say: reply ideas (1.0.38)
 
 - **Coach → What to say** (3): paste their latest messages, or pick a chat, and Claude
   suggests three replies in your style (natural, playful, deeper) with a line on what
@@ -707,7 +713,7 @@ its own. Changes made while building are marked.
 - **Your style**: from your own messages in chats you've logged, and **How you text** in
   Me → Chat analysis.
 
-### iMessage (after 1.0.37, not released yet)
+### iMessage (1.0.38)
 
 - **iMessage chats in Coach**: back up your iPhone to this laptop (Apple Devices → Back
   up all of the data on your iPhone to this computer, Encrypt unticked → Back Up Now),

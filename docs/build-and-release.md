@@ -172,6 +172,28 @@ Electron's "Error" box) can't answer `--quit`, so it's stopped instead. And it o
 says "is installed and running" once the new Layers' page is running, not just its
 process.
 
+## The phone web app (GitHub Pages)
+
+The same Layers, built for the web (`npm run build`, into `dist/`, relative paths) and
+published by GitHub Pages at https://castledruby.github.io/layers-app/ by
+`.github/workflows/pages.yml` with each published release (or by hand: Actions → Phone
+web app → Run workflow). Pages was turned on for the repository on 2026-10-10, set to
+deploy from GitHub Actions. On the iPhone: open it in Safari → Share → Add to Home
+Screen.
+
+- **The page holds no data.** Yours lives in that browser's storage on the phone; the
+  OneDrive sign-in that syncs it with the laptop comes once the Microsoft app
+  registration is done ([roadmap](roadmap.md#proposal-the-phone-web-app-2026-10-10)).
+  Until then the phone's copy is separate.
+- **Offline**: `public/sw.js`, registered by `src/lib/offline.js` only at an https
+  address (never in Layers for Windows, the iPhone project, the dev server or tests),
+  keeps the app's files; the page itself is fetched fresh when online, so a release
+  shows the next time it opens.
+- **Icons**: `public/apple-touch-icon.png` (iPhones need a PNG; it's
+  `electron/icon.png`) and `icon.svg`, both in `public/manifest.json`.
+- **Claude** isn't on the phone at first (your choice): with no Windows bridge, those parts
+  say they're in the Windows app.
+
 ## The iPhone app (built on GitHub, no Apple account yet)
 
 Step 2 of [Layers on your phone](roadmap.md#proposal-layers-on-your-phone-2026-10-06):

@@ -1,0 +1,46 @@
+# The phone web app (docs/build-and-release.md, "The phone web app"): the same
+# Layers built for the web and published by GitHub Pages at
+# https://castledruby.github.io/layers-app/, to add to the iPhone's Home
+# Screen from Safari. Published with each release, or by hand. The page holds
+# no data: yours stays on the phone (and in the encrypted OneDrive sync file).
+name: Phone web app
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      # No install scripts: they'd fetch Electron, which the web app doesn't need.
+      - run: npm ci --ignore-scripts
+      - run: npm run build
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
