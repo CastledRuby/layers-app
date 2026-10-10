@@ -60,6 +60,8 @@ when Layers is closed:
      with** each of up to three people; the Sunday review has **Review my week**. Clicking
      the catch-up list or the review opens the week review (`layers://review`).
    - A birthday or key date coming up has **Plan something** (`layers://plan?p=<person>&d=<day>`), which opens planning with that person on that day.
+   - The evening's who to message has **Messaged** (`layers://messaged?p=…&d=…`: the
+     quick log for them, as G on Today) and **Not today** (`layers://nottoday`, as Z).
    - Every button and the toast body are `layers://` links.
 3. It replaces Layers' scheduled toasts (group `layers`) through Windows PowerShell and
    the WinRT `ToastNotificationManager`, so no native module is needed. One run happens
@@ -70,8 +72,8 @@ when Layers is closed:
    protocol (`build.protocols`), and `setupCalendar()` re-registers it if the app moved.
    It never does this for test runs or the portable build.
 2. If Layers is already running, the link reaches it through `second-instance`.
-   Otherwise it starts with the link, in the tray for Just tick it, Snooze and a rating
-   (`quietLink`), or with its window for everything else.
+   Otherwise it starts with the link, in the tray for Just tick it, Snooze, a rating and
+   Not today (`quietLink`), or with its window for everything else.
 3. Links wait in `pendingActions` until the page asks for them (`calendar-ready`), then
    go out as `calendar-action`.
 

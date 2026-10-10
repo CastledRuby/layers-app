@@ -44,6 +44,13 @@ describe('Windows toasts', () => {
     expect(toastXml({ kind: 'quiet', title: 'x', body: '', personId: 'p', day: '2026-10-06' })).toContain('arguments="layers://plan?d=2026-10-06&amp;p=p"');
   });
 
+  it("the evening's who to message offers Messaged and Not today, for that person, and opens the day", () => {
+    const xml = toastXml({ kind: 'nudge', title: 'Still time to message Sam?', body: 'x', personId: 's1', day: '2026-10-04' });
+    expect([...xml.matchAll(/content="([^"]+)"/g)].map(m => m[1])).toEqual(['Messaged', 'Not today']);
+    expect([...xml.matchAll(/arguments="([^"]+)"/g)].map(m => m[1])).toEqual(['layers://messaged?d=2026-10-04&amp;p=s1', 'layers://nottoday?d=2026-10-04&amp;p=s1']);
+    expect(xml).toContain('launch="layers://open?d=2026-10-04"');
+  });
+
   it('only schedules well-formed, future notifications', () => {
     const now = Date.now();
     const list = cleanList([

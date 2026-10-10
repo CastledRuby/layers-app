@@ -4,14 +4,14 @@
 > Run `npm run docs:map` after changing anything under `src/`, `electron/*.cjs` or `package.json` scripts.
 > Hand-written explanations live in the other files under [`docs/`](../README.md).
 
-Package: `layers-web` v1.0.39 · `src/`: 91 files, 15621 lines, 110 components, 429 top-level functions, 215 constants.
+Package: `layers-web` v1.0.39 · `src/`: 91 files, 15659 lines, 110 components, 430 top-level functions, 215 constants.
 
 ## Source files
 
 | File | Lines | Declares | Imports from |
 |---|---|---|---|
 | [main.jsx](../../src/main.jsx) | 20 | quick | — |
-| [App.jsx](../../src/App.jsx) | 1748 | sampleData, SAMPLE_PERSON_IDS, SAMPLE_GOAL_IDS, skillsCameWithSamples, allSkillsZero, listNames, unlinkMissingPeople, addNotes, applyLog, namesText, … (+3) | `components/BottomNav`, `components/ErrorBoundary`, `components/PageTransition`, `components/sheetLayer`, `data/constants`, `data/seed`, `lib/dates`, `lib/achievements`, `lib/progress`, `lib/backup`, `lib/calendar`, `lib/hooks`, `lib/chatBatch`, `lib/reminders`, `lib/analysis`, `lib/storage`, `lib/replies`, `lib/chatBatch`, `lib/util`, `modals/AddInfoModal`, `modals/AddPersonModal`, `modals/ConfirmDialog`, `modals/EditEntryModal`, `modals/EditPersonModal`, `modals/EditProfileModal`, `modals/EventSheet`, `modals/GoalModal`, `modals/KeyDateSheet`, `modals/LogInteractionModal`, `modals/PlanSheet`, `modals/PhotoFolderSheet`, `lib/sync`, `lib/syncFile`, `modals/SyncSheet`, `lib/ics`, `lib/summary`, `modals/QuickAddInterestModal`, `modals/ShortcutsModal`, `modals/StartOverSheet`, `modals/DaySheet`, `modals/JumpSheet`, `lib/sentence`, `modals/TemplatePickerModal`, `modals/ChatReviewSheet`, `modals/WeekReviewSheet`, `theme`, `views/CoachView`, `views/GoalsView`, `views/JournalView`, `views/MeView`, `views/OnboardingView`, `views/PeopleView`, `views/PersonProfile`, `components/ClosenessQuiz`, `views/TodayView` |
+| [App.jsx](../../src/App.jsx) | 1757 | sampleData, SAMPLE_PERSON_IDS, SAMPLE_GOAL_IDS, skillsCameWithSamples, allSkillsZero, listNames, unlinkMissingPeople, addNotes, applyLog, namesText, … (+3) | `components/BottomNav`, `components/ErrorBoundary`, `components/PageTransition`, `components/sheetLayer`, `data/constants`, `data/seed`, `lib/dates`, `lib/achievements`, `lib/progress`, `lib/backup`, `lib/calendar`, `lib/hooks`, `lib/chatBatch`, `lib/reminders`, `lib/analysis`, `lib/storage`, `lib/replies`, `lib/chatBatch`, `lib/util`, `modals/AddInfoModal`, `modals/AddPersonModal`, `modals/ConfirmDialog`, `modals/EditEntryModal`, `modals/EditPersonModal`, `modals/EditProfileModal`, `modals/EventSheet`, `modals/GoalModal`, `modals/KeyDateSheet`, `modals/LogInteractionModal`, `modals/PlanSheet`, `modals/PhotoFolderSheet`, `lib/sync`, `lib/syncFile`, `modals/SyncSheet`, `lib/ics`, `lib/summary`, `modals/QuickAddInterestModal`, `modals/ShortcutsModal`, `modals/StartOverSheet`, `modals/DaySheet`, `modals/JumpSheet`, `lib/sentence`, `modals/TemplatePickerModal`, `modals/ChatReviewSheet`, `modals/WeekReviewSheet`, `theme`, `views/CoachView`, `views/GoalsView`, `views/JournalView`, `views/MeView`, `views/OnboardingView`, `views/PeopleView`, `views/PersonProfile`, `components/ClosenessQuiz`, `views/TodayView` |
 | [theme.js](../../src/theme.js) | 356 | THEME_LIGHT, THEME_DARK, COLORS, cssVarBlock, EASE, CSS | `fonts` |
 | [data/avatars.js](../../src/data/avatars.js) | 203 | AVATAR_COLS, AVATAR_GROUPS, findAvatars, INITIAL_COLORS, INITIALS_GROUP, isInitials, PHOTO_SIZE, PHOTO_GROUP, PHOTO_SRC, isPhoto, … (+16) | — |
 | [data/constants.js](../../src/data/constants.js) | 349 | LAYERS, getLayer, DIM_ORDER, DIM_LABELS, DIM_COLORS, LAYER_BASE_DIMS, CATEGORIES, categoryMeta, TABS, SHORTCUTS, … (+29) | `theme` |
@@ -21,13 +21,13 @@ Package: `layers-web` v1.0.39 · `src/`: 91 files, 15621 lines, 110 components, 
 | [lib/activity.js](../../src/lib/activity.js) | 48 | ACTIVITY_WEEKS, activityLevel, activityGrid | `lib/dates` |
 | [lib/analysis.js](../../src/lib/analysis.js) | 385 | ANALYSIS_MODELS, DEFAULT_ANALYSIS_MODEL, analysisModel, MAX_SCREENSHOTS, THEM, YOU, tokensFor, STAMP, chatSpeakers, detectPeople, … (+35) | `data/constants`, `lib/dates` |
 | [lib/backup.js](../../src/lib/backup.js) | 248 | BACKUP_VERSION, MAX_BACKUP_BYTES, createBackup, isObject, isText, isISODay, num, count, cleanHistory, cleanGoal, … (+9) | `lib/calendar`, `data/constants`, `data/seed`, `data/avatars`, `lib/util`, `lib/sync`, `lib/analysis` |
-| [lib/calendar.js](../../src/lib/calendar.js) | 459 | WEEKDAY_NAMES, DEFAULT_DURATION, EVENT_TEMPLATES, templateFor, DATE_KINDS, dateKind, NOTIFY_DEFAULTS, notifySettings, dayDate, addDays, … (+29) | `lib/dates` |
+| [lib/calendar.js](../../src/lib/calendar.js) | 484 | WEEKDAY_NAMES, DEFAULT_DURATION, EVENT_TEMPLATES, templateFor, DATE_KINDS, dateKind, NOTIFY_DEFAULTS, notifySettings, dayDate, addDays, … (+30) | `lib/dates` |
 | [lib/chatBatch.js](../../src/lib/chatBatch.js) | 117 | TINY, batchPlan, batchDollars, QUEUE_KEY, isText, cleanItem, readQueue, saveQueue, waiting, pruneQueue, … (+7) | `lib/analysis`, `lib/chatImport` |
 | [lib/chatImport.js](../../src/lib/chatImport.js) | 482 | CONVERSATION_GAP_HOURS, MAX_TEXT, PROGRESS_KEY, STAMP, IOS_LINE, ANDROID_LINE, ch, MARKS, MARKED, ODD_SPACES, … (+44) | `lib/analysis` |
 | [lib/chatTrend.js](../../src/lib/chatTrend.js) | 50 | TREND_LINES, chatTrend, trendChange | `lib/dates` |
 | [lib/closeness.js](../../src/lib/closeness.js) | 64 | QUIZ, ANSWERS, REACHED, inLayer, share, nextQuestion, quizPlacement | — |
 | [lib/dates.js](../../src/lib/dates.js) | 314 | parseDaysAgo, startOfDay, WEEKDAY_SHORT, WEEKDAY_FULL, formatWeekdays, MONTH_NAMES, MONTH_WORDS, readDayMonth, dayMonthToDate, dateToRelativeLabel, … (+26) | `data/constants` |
-| [lib/hooks.js](../../src/lib/hooks.js) | 287 | useToday, useDailyBackup, WIDE_QUERY, useWide, useSlideAcross, useSystemDark, useDailyCheckIn, notify, SCHEDULE_DAYS, LATE_MINUTES, … (+2) | `lib/dates`, `lib/calendar`, `lib/storage`, `lib/text`, `lib/analysis`, `lib/chatBatch`, `lib/chatImport` |
+| [lib/hooks.js](../../src/lib/hooks.js) | 290 | useToday, useDailyBackup, WIDE_QUERY, useWide, useSlideAcross, useSystemDark, useDailyCheckIn, notify, SCHEDULE_DAYS, LATE_MINUTES, … (+2) | `lib/dates`, `lib/calendar`, `lib/storage`, `lib/text`, `lib/analysis`, `lib/chatBatch`, `lib/chatImport` |
 | [lib/ics.js](../../src/lib/ics.js) | 211 | lines, unescape, readTime, readDuration, parseCalendar, zoneOffset, toInstant, pad, isoOf, wallDay, … (+7) | — |
 | [lib/jump.js](../../src/lib/jump.js) | 140 | MAX_ROWS, PAGES, ACTIONS, VERBS, PERSON_ACTIONS, addDays, shortDate, matchScore, personRow, personActionRows, … (+3) | `data/constants`, `lib/calendar`, `lib/dates`, `lib/sentence` |
 | [lib/offline.js](../../src/lib/offline.js) | 12 | shouldCacheOffline, cacheOffline | — |
@@ -94,7 +94,7 @@ Package: `layers-web` v1.0.39 · `src/`: 91 files, 15621 lines, 110 components, 
 | [views/CoachView.jsx](../../src/views/CoachView.jsx) | 745 | Tones, ModelButtons, CoachView | `components/atoms`, `components/sheetLayer`, `lib/analysis`, `components/pickers`, `components/ChatExports`, `components/ChatBatch`, `components/ReplyIdeas`, `components/Practice`, `modals/ChatQueueSheet`, `lib/chatBatch`, `lib/chatImport`, `lib/dates`, `data/avatars`, `lib/photo`, `data/constants`, `data/scenarios`, `lib/text`, `theme` |
 | [views/GoalsView.jsx](../../src/views/GoalsView.jsx) | 72 | GoalsView | `components/atoms`, `components/rows`, `data/constants`, `theme` |
 | [views/JournalView.jsx](../../src/views/JournalView.jsx) | 183 | PERIODS, Chip, JournalView | `components/ActivityCalendar`, `data/constants`, `lib/dates`, `lib/text`, `theme` |
-| [views/MeView.jsx](../../src/views/MeView.jsx) | 419 | Toggle, Pick, syncedAgo, AnalysisKeyCard, CalendarsCard, MeView | `components/atoms`, `data/constants`, `lib/achievements`, `lib/calendar`, `lib/analysis`, `lib/chatBatch`, `lib/replies`, `components/ChatTrendChart`, `lib/chatTrend`, `lib/practice`, `lib/dates`, `lib/text`, `theme` |
+| [views/MeView.jsx](../../src/views/MeView.jsx) | 420 | Toggle, Pick, syncedAgo, AnalysisKeyCard, CalendarsCard, MeView | `components/atoms`, `data/constants`, `lib/achievements`, `lib/calendar`, `lib/analysis`, `lib/chatBatch`, `lib/replies`, `components/ChatTrendChart`, `lib/chatTrend`, `lib/practice`, `lib/dates`, `lib/text`, `theme` |
 | [views/OnboardingView.jsx](../../src/views/OnboardingView.jsx) | 301 | QUICK_NAMES, STEP_LABELS, KEYS_TO_KNOW, shortDate, listNames, Progress, Switch, OnboardingView | `components/atoms`, `components/ClosenessQuiz`, `components/AvatarPicker`, `modals/KeyDateSheet`, `components/sheetLayer`, `components/illustrations`, `data/constants`, `lib/calendar`, `lib/dates`, `lib/util`, `theme` |
 | [views/PeopleView.jsx](../../src/views/PeopleView.jsx) | 231 | PeopleView | `components/atoms`, `components/sheetLayer`, `components/illustrations`, `data/constants`, `lib/dates`, `lib/text`, `theme` |
 | [views/PersonProfile.jsx](../../src/views/PersonProfile.jsx) | 331 | shortDate, keyDatesInOrder, AdjustSlider, PrepareTipsModal, PersonProfile | `components/ActivityCalendar`, `components/ChatTrendChart`, `lib/chatTrend`, `components/Sheet`, `components/atoms`, `components/rows`, `data/constants`, `lib/dates`, `lib/progress`, `lib/calendar`, `lib/dates`, `lib/text`, `theme` |
@@ -311,37 +311,38 @@ Package: `layers-web` v1.0.39 · `src/`: 91 files, 15621 lines, 110 components, 
 | `validateBackup` | [backup.js:193](../../src/lib/backup.js#L193) | ✓ | ✓ |
 | `templateFor` | [calendar.js:42](../../src/lib/calendar.js#L42) | ✓ |  |
 | `dateKind` | [calendar.js:52](../../src/lib/calendar.js#L52) | ✓ |  |
-| `notifySettings` | [calendar.js:71](../../src/lib/calendar.js#L71) | ✓ |  |
-| `dayDate` | [calendar.js:76](../../src/lib/calendar.js#L76) |  |  |
-| `addDays` | [calendar.js:77](../../src/lib/calendar.js#L77) |  |  |
-| `weekdaysOf` | [calendar.js:78](../../src/lib/calendar.js#L78) |  |  |
-| `isDaily` | [calendar.js:79](../../src/lib/calendar.js#L79) | ✓ |  |
-| `occursOn` | [calendar.js:82](../../src/lib/calendar.js#L82) | ✓ | ✓ |
-| `isDoneOn` | [calendar.js:91](../../src/lib/calendar.js#L91) | ✓ | ✓ |
-| `isMissedOn` | [calendar.js:97](../../src/lib/calendar.js#L97) | ✓ |  |
-| `durationOf` | [calendar.js:101](../../src/lib/calendar.js#L101) | ✓ |  |
-| `alertOf` | [calendar.js:102](../../src/lib/calendar.js#L102) | ✓ |  |
-| `timed` | [calendar.js:103](../../src/lib/calendar.js#L103) |  |  |
-| `keyDateOn` | [calendar.js:107](../../src/lib/calendar.js#L107) | ✓ | ✓ |
-| `keyDateLabel` | [calendar.js:119](../../src/lib/calendar.js#L119) | ✓ |  |
-| `dayAgenda` | [calendar.js:128](../../src/lib/calendar.js#L128) | ✓ | ✓ |
-| `monthMarks` | [calendar.js:155](../../src/lib/calendar.js#L155) | ✓ | ✓ |
-| `recentPlans` | [calendar.js:170](../../src/lib/calendar.js#L170) | ✓ | ✓ |
-| `clashesOn` | [calendar.js:185](../../src/lib/calendar.js#L185) | ✓ | ✓ |
-| `needsAnswer` | [calendar.js:193](../../src/lib/calendar.js#L193) | ✓ | ✓ |
-| `planIdeas` | [calendar.js:204](../../src/lib/calendar.js#L204) | ✓ | ✓ |
-| `usualGap` | [calendar.js:223](../../src/lib/calendar.js#L223) | ✓ | ✓ |
-| `quietDay` | [calendar.js:233](../../src/lib/calendar.js#L233) | ✓ | ✓ |
-| `messageNudge` | [calendar.js:249](../../src/lib/calendar.js#L249) | ✓ | ✓ |
-| `weekSummary` | [calendar.js:276](../../src/lib/calendar.js#L276) | ✓ | ✓ |
-| `sinceText` | [calendar.js:295](../../src/lib/calendar.js#L295) |  |  |
-| `at` | [calendar.js:301](../../src/lib/calendar.js#L301) |  |  |
-| `clock` | [calendar.js:302](../../src/lib/calendar.js#L302) |  |  |
-| `names` | [calendar.js:306](../../src/lib/calendar.js#L306) |  |  |
-| `alertWhen` | [calendar.js:307](../../src/lib/calendar.js#L307) |  |  |
-| `plannedNotifications` | [calendar.js:327](../../src/lib/calendar.js#L327) | ✓ | ✓ |
-| `snoozeUntil` | [calendar.js:435](../../src/lib/calendar.js#L435) | ✓ | ✓ |
-| `parseActionUrl` | [calendar.js:445](../../src/lib/calendar.js#L445) | ✓ | ✓ |
+| `notifySettings` | [calendar.js:72](../../src/lib/calendar.js#L72) | ✓ |  |
+| `dayDate` | [calendar.js:77](../../src/lib/calendar.js#L77) |  |  |
+| `addDays` | [calendar.js:78](../../src/lib/calendar.js#L78) |  |  |
+| `weekdaysOf` | [calendar.js:79](../../src/lib/calendar.js#L79) |  |  |
+| `isDaily` | [calendar.js:80](../../src/lib/calendar.js#L80) | ✓ |  |
+| `occursOn` | [calendar.js:83](../../src/lib/calendar.js#L83) | ✓ | ✓ |
+| `isDoneOn` | [calendar.js:92](../../src/lib/calendar.js#L92) | ✓ | ✓ |
+| `isMissedOn` | [calendar.js:98](../../src/lib/calendar.js#L98) | ✓ |  |
+| `durationOf` | [calendar.js:102](../../src/lib/calendar.js#L102) | ✓ |  |
+| `alertOf` | [calendar.js:103](../../src/lib/calendar.js#L103) | ✓ |  |
+| `timed` | [calendar.js:104](../../src/lib/calendar.js#L104) |  |  |
+| `keyDateOn` | [calendar.js:108](../../src/lib/calendar.js#L108) | ✓ | ✓ |
+| `keyDateLabel` | [calendar.js:120](../../src/lib/calendar.js#L120) | ✓ |  |
+| `dayAgenda` | [calendar.js:129](../../src/lib/calendar.js#L129) | ✓ | ✓ |
+| `monthMarks` | [calendar.js:156](../../src/lib/calendar.js#L156) | ✓ | ✓ |
+| `recentPlans` | [calendar.js:171](../../src/lib/calendar.js#L171) | ✓ | ✓ |
+| `clashesOn` | [calendar.js:186](../../src/lib/calendar.js#L186) | ✓ | ✓ |
+| `needsAnswer` | [calendar.js:194](../../src/lib/calendar.js#L194) | ✓ | ✓ |
+| `planIdeas` | [calendar.js:205](../../src/lib/calendar.js#L205) | ✓ | ✓ |
+| `usualGap` | [calendar.js:224](../../src/lib/calendar.js#L224) | ✓ | ✓ |
+| `quietDay` | [calendar.js:234](../../src/lib/calendar.js#L234) | ✓ | ✓ |
+| `messageNudge` | [calendar.js:250](../../src/lib/calendar.js#L250) | ✓ | ✓ |
+| `dayNudge` | [calendar.js:280](../../src/lib/calendar.js#L280) | ✓ | ✓ |
+| `weekSummary` | [calendar.js:290](../../src/lib/calendar.js#L290) | ✓ | ✓ |
+| `sinceText` | [calendar.js:309](../../src/lib/calendar.js#L309) |  |  |
+| `at` | [calendar.js:315](../../src/lib/calendar.js#L315) |  |  |
+| `clock` | [calendar.js:316](../../src/lib/calendar.js#L316) |  |  |
+| `names` | [calendar.js:320](../../src/lib/calendar.js#L320) |  |  |
+| `alertWhen` | [calendar.js:321](../../src/lib/calendar.js#L321) |  |  |
+| `plannedNotifications` | [calendar.js:345](../../src/lib/calendar.js#L345) | ✓ | ✓ |
+| `snoozeUntil` | [calendar.js:458](../../src/lib/calendar.js#L458) | ✓ | ✓ |
+| `parseActionUrl` | [calendar.js:470](../../src/lib/calendar.js#L470) | ✓ | ✓ |
 | `batchPlan` | [chatBatch.js:19](../../src/lib/chatBatch.js#L19) | ✓ | ✓ |
 | `batchDollars` | [chatBatch.js:51](../../src/lib/chatBatch.js#L51) | ✓ | ✓ |
 | `isText` | [chatBatch.js:63](../../src/lib/chatBatch.js#L63) |  |  |
@@ -433,8 +434,8 @@ Package: `layers-web` v1.0.39 · `src/`: 91 files, 15621 lines, 110 components, 
 | `useSystemDark` | [hooks.js:92](../../src/lib/hooks.js#L92) | ✓ |  |
 | `useDailyCheckIn` | [hooks.js:110](../../src/lib/hooks.js#L110) | ✓ |  |
 | `notify` | [hooks.js:135](../../src/lib/hooks.js#L135) |  |  |
-| `useCalendarNotifications` | [hooks.js:153](../../src/lib/hooks.js#L153) | ✓ |  |
-| `useChatBatch` | [hooks.js:212](../../src/lib/hooks.js#L212) | ✓ |  |
+| `useCalendarNotifications` | [hooks.js:155](../../src/lib/hooks.js#L155) | ✓ |  |
+| `useChatBatch` | [hooks.js:215](../../src/lib/hooks.js#L215) | ✓ |  |
 | `lines` | [ics.js:13](../../src/lib/ics.js#L13) |  |  |
 | `unescape` | [ics.js:29](../../src/lib/ics.js#L29) |  |  |
 | `readTime` | [ics.js:33](../../src/lib/ics.js#L33) |  |  |
@@ -732,7 +733,7 @@ Package: `layers-web` v1.0.39 · `src/`: 91 files, 15621 lines, 110 components, 
 | `EVENT_TEMPLATES` | [calendar.js:32](../../src/lib/calendar.js#L32) |
 | `DATE_KINDS` | [calendar.js:45](../../src/lib/calendar.js#L45) |
 | `NOTIFY_DEFAULTS` | [calendar.js:56](../../src/lib/calendar.js#L56) |
-| `QUIET_DAYS` | [calendar.js:203](../../src/lib/calendar.js#L203) |
+| `QUIET_DAYS` | [calendar.js:204](../../src/lib/calendar.js#L204) |
 | `TINY` | [chatBatch.js:12](../../src/lib/chatBatch.js#L12) |
 | `QUEUE_KEY` | [chatBatch.js:62](../../src/lib/chatBatch.js#L62) |
 | `LIMIT_KEY` | [chatBatch.js:93](../../src/lib/chatBatch.js#L93) |
@@ -877,52 +878,52 @@ Package: `layers-web` v1.0.39 · `src/`: 91 files, 15621 lines, 110 components, 
 
 | Channel | Direction | Defined |
 |---|---|---|
-| `update-status` | main → renderer push | [main.cjs:143](../../electron/main.cjs#L143) |
-| `open-download-page` | invoke → handle | [main.cjs:169](../../electron/main.cjs#L169) |
-| `check-for-updates` | invoke → handle | [main.cjs:181](../../electron/main.cjs#L181) |
-| `quit-and-install` | send → on | [main.cjs:182](../../electron/main.cjs#L182) |
-| `check-for-updates` | invoke → handle | [main.cjs:206](../../electron/main.cjs#L206) |
-| `quit-and-install` | send → on | [main.cjs:217](../../electron/main.cjs#L217) |
-| `set-theme` | send → on | [main.cjs:252](../../electron/main.cjs#L252) |
-| `get-app-version` | invoke → handle | [main.cjs:391](../../electron/main.cjs#L391) |
-| `show-window` | send → on | [main.cjs:397](../../electron/main.cjs#L397) |
-| `get-auto-launch` | invoke → handle | [main.cjs:410](../../electron/main.cjs#L410) |
-| `set-auto-launch` | invoke → handle | [main.cjs:420](../../electron/main.cjs#L420) |
-| `get-shortcut-status` | invoke → handle | [main.cjs:437](../../electron/main.cjs#L437) |
-| `quick-add-show` | main → renderer push | [main.cjs:494](../../electron/main.cjs#L494) |
-| `quick-add` | send → on | [main.cjs:512](../../electron/main.cjs#L512) |
-| `quick-add` | main → renderer push | [main.cjs:531](../../electron/main.cjs#L531) |
-| `calendar-action` | main → renderer push | [main.cjs:553](../../electron/main.cjs#L553) |
-| `save-daily-backup` | invoke → handle | [main.cjs:561](../../electron/main.cjs#L561) |
-| `backups-info` | invoke → handle | [main.cjs:564](../../electron/main.cjs#L564) |
-| `open-backups-folder` | invoke → handle | [main.cjs:565](../../electron/main.cjs#L565) |
-| `find-faces` | invoke → handle | [main.cjs:576](../../electron/main.cjs#L576) |
-| `sync-info` | invoke → handle | [main.cjs:586](../../electron/main.cjs#L586) |
-| `sync-read` | invoke → handle | [main.cjs:587](../../electron/main.cjs#L587) |
-| `sync-write` | invoke → handle | [main.cjs:588](../../electron/main.cjs#L588) |
-| `sync-remove-copies` | invoke → handle | [main.cjs:589](../../electron/main.cjs#L589) |
-| `sync-set-aside` | invoke → handle | [main.cjs:590](../../electron/main.cjs#L590) |
-| `sync-passphrase-get` | invoke → handle | [main.cjs:591](../../electron/main.cjs#L591) |
-| `sync-passphrase-set` | invoke → handle | [main.cjs:592](../../electron/main.cjs#L592) |
-| `sync-passphrase-clear` | invoke → handle | [main.cjs:593](../../electron/main.cjs#L593) |
-| `sync-open-folder` | invoke → handle | [main.cjs:594](../../electron/main.cjs#L594) |
-| `feeds-list` | invoke → handle | [main.cjs:605](../../electron/main.cjs#L605) |
-| `feeds-add` | invoke → handle | [main.cjs:606](../../electron/main.cjs#L606) |
-| `feeds-remove` | invoke → handle | [main.cjs:613](../../electron/main.cjs#L613) |
-| `feeds-fetch` | invoke → handle | [main.cjs:614](../../electron/main.cjs#L614) |
-| `export-summary` | invoke → handle | [main.cjs:625](../../electron/main.cjs#L625) |
-| `analysis-key-status` | invoke → handle | [main.cjs:655](../../electron/main.cjs#L655) |
-| `analysis-key-set` | invoke → handle | [main.cjs:656](../../electron/main.cjs#L656) |
-| `analysis-key-clear` | invoke → handle | [main.cjs:662](../../electron/main.cjs#L662) |
-| `analysis-run` | invoke → handle | [main.cjs:663](../../electron/main.cjs#L663) |
-| `chats-info` | invoke → handle | [main.cjs:672](../../electron/main.cjs#L672) |
-| `chats-list` | invoke → handle | [main.cjs:673](../../electron/main.cjs#L673) |
-| `chats-read` | invoke → handle | [main.cjs:674](../../electron/main.cjs#L674) |
-| `chats-open-folder` | invoke → handle | [main.cjs:675](../../electron/main.cjs#L675) |
-| `chats-changed` | main → renderer push | [main.cjs:679](../../electron/main.cjs#L679) |
-| `imessage-read` | invoke → handle | [main.cjs:688](../../electron/main.cjs#L688) |
-| `schedule-notifications` | invoke → handle | [main.cjs:693](../../electron/main.cjs#L693) |
-| `calendar-ready` | invoke → handle | [main.cjs:694](../../electron/main.cjs#L694) |
+| `update-status` | main → renderer push | [main.cjs:144](../../electron/main.cjs#L144) |
+| `open-download-page` | invoke → handle | [main.cjs:170](../../electron/main.cjs#L170) |
+| `check-for-updates` | invoke → handle | [main.cjs:182](../../electron/main.cjs#L182) |
+| `quit-and-install` | send → on | [main.cjs:183](../../electron/main.cjs#L183) |
+| `check-for-updates` | invoke → handle | [main.cjs:207](../../electron/main.cjs#L207) |
+| `quit-and-install` | send → on | [main.cjs:218](../../electron/main.cjs#L218) |
+| `set-theme` | send → on | [main.cjs:253](../../electron/main.cjs#L253) |
+| `get-app-version` | invoke → handle | [main.cjs:392](../../electron/main.cjs#L392) |
+| `show-window` | send → on | [main.cjs:398](../../electron/main.cjs#L398) |
+| `get-auto-launch` | invoke → handle | [main.cjs:411](../../electron/main.cjs#L411) |
+| `set-auto-launch` | invoke → handle | [main.cjs:421](../../electron/main.cjs#L421) |
+| `get-shortcut-status` | invoke → handle | [main.cjs:438](../../electron/main.cjs#L438) |
+| `quick-add-show` | main → renderer push | [main.cjs:495](../../electron/main.cjs#L495) |
+| `quick-add` | send → on | [main.cjs:513](../../electron/main.cjs#L513) |
+| `quick-add` | main → renderer push | [main.cjs:532](../../electron/main.cjs#L532) |
+| `calendar-action` | main → renderer push | [main.cjs:554](../../electron/main.cjs#L554) |
+| `save-daily-backup` | invoke → handle | [main.cjs:562](../../electron/main.cjs#L562) |
+| `backups-info` | invoke → handle | [main.cjs:565](../../electron/main.cjs#L565) |
+| `open-backups-folder` | invoke → handle | [main.cjs:566](../../electron/main.cjs#L566) |
+| `find-faces` | invoke → handle | [main.cjs:577](../../electron/main.cjs#L577) |
+| `sync-info` | invoke → handle | [main.cjs:587](../../electron/main.cjs#L587) |
+| `sync-read` | invoke → handle | [main.cjs:588](../../electron/main.cjs#L588) |
+| `sync-write` | invoke → handle | [main.cjs:589](../../electron/main.cjs#L589) |
+| `sync-remove-copies` | invoke → handle | [main.cjs:590](../../electron/main.cjs#L590) |
+| `sync-set-aside` | invoke → handle | [main.cjs:591](../../electron/main.cjs#L591) |
+| `sync-passphrase-get` | invoke → handle | [main.cjs:592](../../electron/main.cjs#L592) |
+| `sync-passphrase-set` | invoke → handle | [main.cjs:593](../../electron/main.cjs#L593) |
+| `sync-passphrase-clear` | invoke → handle | [main.cjs:594](../../electron/main.cjs#L594) |
+| `sync-open-folder` | invoke → handle | [main.cjs:595](../../electron/main.cjs#L595) |
+| `feeds-list` | invoke → handle | [main.cjs:606](../../electron/main.cjs#L606) |
+| `feeds-add` | invoke → handle | [main.cjs:607](../../electron/main.cjs#L607) |
+| `feeds-remove` | invoke → handle | [main.cjs:614](../../electron/main.cjs#L614) |
+| `feeds-fetch` | invoke → handle | [main.cjs:615](../../electron/main.cjs#L615) |
+| `export-summary` | invoke → handle | [main.cjs:626](../../electron/main.cjs#L626) |
+| `analysis-key-status` | invoke → handle | [main.cjs:656](../../electron/main.cjs#L656) |
+| `analysis-key-set` | invoke → handle | [main.cjs:657](../../electron/main.cjs#L657) |
+| `analysis-key-clear` | invoke → handle | [main.cjs:663](../../electron/main.cjs#L663) |
+| `analysis-run` | invoke → handle | [main.cjs:664](../../electron/main.cjs#L664) |
+| `chats-info` | invoke → handle | [main.cjs:673](../../electron/main.cjs#L673) |
+| `chats-list` | invoke → handle | [main.cjs:674](../../electron/main.cjs#L674) |
+| `chats-read` | invoke → handle | [main.cjs:675](../../electron/main.cjs#L675) |
+| `chats-open-folder` | invoke → handle | [main.cjs:676](../../electron/main.cjs#L676) |
+| `chats-changed` | main → renderer push | [main.cjs:680](../../electron/main.cjs#L680) |
+| `imessage-read` | invoke → handle | [main.cjs:689](../../electron/main.cjs#L689) |
+| `schedule-notifications` | invoke → handle | [main.cjs:694](../../electron/main.cjs#L694) |
+| `calendar-ready` | invoke → handle | [main.cjs:695](../../electron/main.cjs#L695) |
 
 ### Preload bridges (what the renderer can call)
 

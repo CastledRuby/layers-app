@@ -15,7 +15,7 @@ import { backfillJournalDates, backfillPeopleDates, backfillSkillDates, formatAb
 import { achievementProgress, newlyUnlocked } from './lib/achievements.js';
 import { advanceLayer, advanceSkillGoals, bumpSkills, chartDay, computeOverall, dimBumps, dimsEqual, goalBumpFor, keepDimsInLayer, makePerson, migrateDimsToLayers, movePerson, placeOnLayers, raisedSkills } from './lib/progress.js';
 import { MAX_BACKUP_BYTES, createBackup, validateBackup } from './lib/backup.js';
-import { NOTIFY_DEFAULTS, isDoneOn, messageNudge, notifySettings, parseActionUrl, snoozeUntil, templateFor } from './lib/calendar.js';
+import { NOTIFY_DEFAULTS, dayNudge, isDoneOn, notifySettings, parseActionUrl, snoozeUntil, templateFor } from './lib/calendar.js';
 import { useCalendarNotifications, useChatBatch, useDailyBackup, useDailyCheckIn, useSlideAcross, useSystemDark, useToday, useWide } from './lib/hooks.js';
 import { waiting } from './lib/chatBatch.js';
 import { followUpEvent, markDone, markMissed } from './lib/reminders.js';
@@ -532,7 +532,10 @@ function LayersApp() {
   function handleOpenBackups() {
     Promise.resolve(window.layersSystem.openBackupsFolder()).then(r => { if (r && r.error) pushToast(`Couldn't open the backups folder: ${r.error}`); }).catch(() => {});
   }
-  useCalendarNotifications({ enabled: onboarded, state: { events, people, generalGoals, journal }, settings: notifySettings(profile), snoozes });
+  // Today's who to message, as saved on this laptop (see Know what to say below).
+  const [nudgeSaved, setNudgeSaved] = useState(() => getNudge(today));
+  const nudgeDay = nudgeSaved.day === today ? nudgeSaved : { day: today, skipped: [], done: null, opener: null };
+  useCalendarNotifications({ enabled: onboarded, state: { events, people, generalGoals, journal }, settings: notifySettings(profile), snoozes, nudge: nudgeDay });
 
   useEffect(() => {
     if (!hasUpdater) return;
@@ -711,12 +714,12 @@ function LayersApp() {
       else pushToast('Nothing worth sending: the tiny conversations are marked as seen');
     },
   });
-  // --- Know what to say: today's who to message (messageNudge), and Claude's
+  // --- Know what to say: today's who to message (dayNudge), and Claude's
   // opener for them, written when Layers first opens that day (decided
-  // 2026-10-10; Haiku, within the monthly limit). ---
-  const [nudgeSaved, setNudgeSaved] = useState(() => getNudge(today));
-  const nudgeDay = nudgeSaved.day === today ? nudgeSaved : { day: today, skipped: [], done: null, opener: null };
-  const nudge = onboarded && !nudgeDay.done ? messageNudge({ people, journal, events }, today, nudgeDay.skipped) : null;
+  // 2026-10-10; Haiku, within the monthly limit). Messaged, or logging a chat
+  // with them, is it done for the day. ---
+  const picked = onboarded ? dayNudge({ people, journal, events }, today, nudgeDay) : null;
+  const nudge = picked && !picked.done ? picked : null;
   const openerText = nudge && nudgeDay.opener && nudgeDay.opener.personId === nudge.person.id ? nudgeDay.opener.text : null;
   const [writingOpener, setWritingOpener] = useState(null); // the day:person it's being written for
   function changeNudge(change) {
@@ -1065,6 +1068,12 @@ function LayersApp() {
     else if (a.action === 'log' && ev) { switchTab('today'); setSelectedDay(day === today ? null : day); openLogFromEvent(ev, day); }
     else if (a.action === 'rate' && ev) handleRateEvent(ev, day, a.rating || 3);
     else if (a.action === 'review') { switchTab('today'); setWeekReview(a.day || today); }
+    else if ((a.action === 'messaged' || a.action === 'nottoday') && day === today && nudge && nudge.person.id === a.personId) {
+      // The evening nudge's buttons, while it's still today's person (G and Z on Today).
+      if (a.action === 'messaged') { switchTab('today'); setSelectedDay(null); handleNudgeMessaged(nudge.person); }
+      else handleNudgeSkip(nudge.person);
+    }
+    else if (a.action === 'nottoday') { /* already dealt with, or a day gone: nothing to do */ }
     else if (a.action === 'plan') {
       // A key date's "Plan something": with that person, on the day (or today, if it's passed).
       const on = day < today ? today : day;

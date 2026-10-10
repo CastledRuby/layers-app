@@ -150,9 +150,11 @@ function notify(title, body) {
 const SCHEDULE_DAYS = 14;
 const LATE_MINUTES = 15;
 
-export function useCalendarNotifications({ enabled, state, settings, snoozes }) {
-  const latest = useRef({ state, settings, snoozes });
-  useLayoutEffect(() => { latest.current = { state, settings, snoozes }; });
+// `nudge` is today's saved who to message ({ day, skipped, done }), so the
+// evening's goes once you've messaged them or put it off.
+export function useCalendarNotifications({ enabled, state, settings, snoozes, nudge = null }) {
+  const latest = useRef({ state, settings, snoozes, nudge });
+  useLayoutEffect(() => { latest.current = { state, settings, snoozes, nudge }; });
   const canSchedule = typeof window !== 'undefined' && !!(window.layersSystem && window.layersSystem.scheduleNotifications);
   const [hour, setHour] = useState(0);
   useEffect(() => {
@@ -162,19 +164,20 @@ export function useCalendarNotifications({ enabled, state, settings, snoozes }) 
 
   const lastSent = useRef(null);
   const settingsKey = JSON.stringify(settings);
+  const nudgeKey = JSON.stringify(nudge && { day: nudge.day, skipped: nudge.skipped, done: nudge.done });
   useEffect(() => {
     if (!canSchedule) return undefined;
     const timer = setTimeout(() => {
       const now = Date.now();
       const cur = latest.current;
-      const list = enabled ? plannedNotifications(cur.state, cur.settings, now, now + SCHEDULE_DAYS * 86400000, cur.snoozes) : [];
+      const list = enabled ? plannedNotifications(cur.state, cur.settings, now, now + SCHEDULE_DAYS * 86400000, cur.snoozes, cur.nudge) : [];
       const json = JSON.stringify(list);
       if (json === lastSent.current) return;
       lastSent.current = json;
       Promise.resolve(window.layersSystem.scheduleNotifications(list)).catch(() => { lastSent.current = null; });
     }, 1500);
     return () => clearTimeout(timer);
-  }, [canSchedule, enabled, state.events, state.people, state.generalGoals, settingsKey, snoozes, hour]);
+  }, [canSchedule, enabled, state.events, state.people, state.generalGoals, state.journal, settingsKey, snoozes, nudgeKey, hour]);
 
   useEffect(() => {
     if (canSchedule || !enabled || typeof Notification === 'undefined') return undefined;
@@ -186,7 +189,7 @@ export function useCalendarNotifications({ enabled, state, settings, snoozes }) 
       const now = Date.now();
       const cur = latest.current;
       const seen = getNotifiedReminders();
-      plannedNotifications(cur.state, cur.settings, now - LATE_MINUTES * 60000, now, cur.snoozes).forEach(n => {
+      plannedNotifications(cur.state, cur.settings, now - LATE_MINUTES * 60000, now, cur.snoozes, cur.nudge).forEach(n => {
         if (seen.has(n.tag)) return;
         try { notify(n.title, n.body); } catch { return; }
         addNotifiedReminder(n.tag);

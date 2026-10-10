@@ -60,6 +60,7 @@ export const NOTIFY_DEFAULTS = {
   morningTime: 8 * 60,
   eveningHeadsUp: true,
   eveningTime: 20 * 60,
+  eveningNudge: true, // the day's who to message, at eveningTime, if you haven't yet
   askAfter: true, // "How did it go?" when an event with people ends
   keyDateReminders: true, // birthdays and key dates: a week before, the evening before, the morning of
   catchUpWeekly: true, // a weekly list of who you haven't seen, at morningTime
@@ -257,7 +258,7 @@ export function messageNudge({ people = [], journal = [], events = [] }, day, sk
   for (const when of [day, tomorrow]) {
     for (const p of open) {
       const kd = (p.dates || []).find(d => keyDateOn(d, when));
-      if (kd) return { person: p, kind: 'date', text: `${keyDateLabel(p, kd)} is ${when === day ? 'today' : 'tomorrow'}` };
+      if (kd) return { person: p, kind: 'date', on: when, text: `${keyDateLabel(p, kd)} is ${when === day ? 'today' : 'tomorrow'}` };
     }
   }
   const from = toISODate(addDays(dayDate(day), -3));
@@ -269,6 +270,19 @@ export function messageNudge({ people = [], journal = [], events = [] }, day, sk
     .sort((a, b) => b.days / b.q.limit - a.days / a.q.limit)[0];
   if (quiet) return { person: quiet.p, kind: 'quiet', text: `It's been ${sinceText(quiet.days)} since you and ${quiet.p.name} talked` };
   return null;
+}
+
+// The day's who to message as it stood that morning: that day's logs are left
+// out of the pick, so logging a chat with them doesn't swap them for someone
+// else; it counts as messaging them, like Messaged. `saved` is that day's
+// { day, skipped, done } (storage.js getNudge), if any. messageNudge's
+// { person, kind, text } plus done, or null.
+export function dayNudge(state, day, saved = null) {
+  const s = saved && saved.day === day ? saved : null;
+  const journal = state.journal || [];
+  const pick = messageNudge({ ...state, journal: journal.filter(j => j.at !== day) }, day, s ? s.skipped || [] : []);
+  if (!pick) return null;
+  return { ...pick, done: !!(s && s.done) || journal.some(j => j.at === day && j.personId === pick.person.id) };
 }
 
 // One week, Monday to Sunday, around `day`: the weekly review. Daily
@@ -313,18 +327,22 @@ function alertWhen(alert) {
 
 // Every notification due between `from` and `to` (ms), oldest first:
 //   { tag, at, kind: 'alert' | 'after' | 'morning' | 'evening' | 'snooze' | 'date'
-//                   | 'catchup' | 'quiet' | 'review',
+//                   | 'catchup' | 'quiet' | 'review' | 'nudge',
 //     title, body, eventId?, personId?, day?, people? }
 // The weekly catch-up list (catchup, on catchUpDay at morningTime) carries up
 // to three `people` for its Plan buttons; "gone quiet" (quiet) is at noon on
 // quietDay(); the weekly review (review) is on Sundays at reviewTime.
+// The day's who to message (dayNudge) is a line in the morning summary, and
+// its own notification at eveningTime (nudge, decided 2026-10-10) unless
+// you've messaged them, logged a chat with them or put it off that day
+// (`nudge`, today's saved { day, skipped, done }).
 // A key date (kind 'date') reminds you a week before and on the morning (at
 // morningTime), and the evening before (at eveningTime); its day is the key
 // date's.
 // Windows schedules these ahead (electron/toasts.cjs), so they arrive with
 // Layers closed; elsewhere the app shows them while it runs (lib/hooks.js).
 // `snoozes` are [{ id, eventId, day, at }].
-export function plannedNotifications(state, settings, from, to, snoozes = []) {
+export function plannedNotifications(state, settings, from, to, snoozes = [], nudge = null) {
   const s = { ...NOTIFY_DEFAULTS, ...settings };
   const out = [];
   const firstDay = startOfDay(new Date(from - 24 * 3600 * 1000));
@@ -360,11 +378,16 @@ export function plannedNotifications(state, settings, from, to, snoozes = []) {
         out.push({ tag: `f:${it.ev.id}:${day}`, at: at(day, it.end), kind: 'after', eventId: it.ev.id, day, title: `How did it go with ${withWho(it.ev)}?`, body: `${it.ev.title}. Log it, or just tick it off.` });
       });
     }
-    // The morning's who to message (messageNudge), as things stand.
-    const nudge = messageNudge(state, day);
-    const lines = [...summaryLine(agenda), ...(nudge ? [`💬 ${nudge.text}`] : [])];
+    // The day's who to message, as things stand.
+    const pick = dayNudge(state, day, nudge);
+    const toMessage = pick && !pick.done ? pick : null;
+    const lines = [...summaryLine(agenda), ...(toMessage ? [`💬 ${toMessage.text}`] : [])];
     if (s.morningSummary && lines.length) {
       out.push({ tag: `m:${day}`, at: at(day, s.morningTime), kind: 'morning', day, title: `Today: ${lines.length === 1 ? '1 thing' : `${lines.length} things`}`, body: lines.join(' · ') });
+    }
+    // Not the evening before a key date: its own reminder comes then.
+    if (s.eveningNudge && toMessage && !(toMessage.kind === 'date' && toMessage.on !== day && s.keyDateReminders)) {
+      out.push({ tag: `n:${day}`, at: at(day, s.eveningTime), kind: 'nudge', personId: toMessage.person.id, day, title: `Still time to message ${toMessage.person.name}?`, body: `${toMessage.text}.` });
     }
     if (s.keyDateReminders) {
       (state.people || []).forEach(p => (p.dates || []).forEach(kd => {
@@ -442,12 +465,14 @@ export function snoozeUntil(minutes, now = new Date()) {
 //   layers://log?e=..&d=..                  open the quick log, filled in
 //   layers://snooze?e=..&d=..&m=10|60|tomorrow
 //   layers://open?d=..[&e=..]               show that day (and event)
+//   layers://messaged?p=<person id>&d=..    the evening nudge's Messaged
+//   layers://nottoday?p=..&d=..             and its Not today
 export function parseActionUrl(url) {
   try {
     const u = new URL(url);
     if (u.protocol !== 'layers:') return null;
     const action = (u.hostname || u.pathname.replace(/^\/+/, '')).replace(/\/+$/, '');
-    if (!['done', 'log', 'snooze', 'open', 'plan', 'rate', 'review'].includes(action)) return null;
+    if (!['done', 'log', 'snooze', 'open', 'plan', 'rate', 'review', 'messaged', 'nottoday'].includes(action)) return null;
     const p = u.searchParams;
     const day = p.get('d');
     const rating = Number(p.get('r'));

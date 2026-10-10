@@ -304,6 +304,7 @@ export function MeView({ people, journal, skills, profile, generalGoals = [], on
         <Toggle on={notify.eveningHeadsUp} onChange={(v) => onUpdateProfile({ eveningHeadsUp: v })} label="Evening heads-up" hint="Tomorrow's plans, the night before.">
           {[19 * 60, 20 * 60, 21 * 60].map(t => <Pick key={t} on={notify.eveningTime === t} onClick={() => onUpdateProfile({ eveningTime: t })}>{formatTime12(t)}</Pick>)}
         </Toggle>
+        <Toggle on={notify.eveningNudge} onChange={(v) => onUpdateProfile({ eveningNudge: v })} label="Who to message, in the evening" hint={`Today's person from Today, at ${formatTime12(notify.eveningTime)}, if you haven't messaged them or put it off.`} />
         <Toggle on={notify.askAfter} onChange={(v) => onUpdateProfile({ askAfter: v })} label="Ask how it went" hint="When a plan with someone ends: rate it right there (Casual to Deep), or Log it." />
         <Toggle on={notify.catchUpWeekly} onChange={(v) => onUpdateProfile({ catchUpWeekly: v })} label="Weekly catch-up list" hint={`Who you haven't seen in a while, with Plan buttons, at ${formatTime12(notify.morningTime)}.`}>
           {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((w, i) => <Pick key={w} on={notify.catchUpDay === i} onClick={() => onUpdateProfile({ catchUpDay: i })}>{w}</Pick>)}

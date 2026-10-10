@@ -29,6 +29,8 @@ const link = (action, params) => `layers://${action}?${new URLSearchParams(Objec
 // - The weekly catch-up list (catchup): Plan with each of up to three people;
 //   clicking it opens the week review, like the review itself (review).
 // - Summaries (morning, evening): clicking opens that day.
+// - The evening's who to message (nudge): Messaged (opens the quick log, as G
+//   does on Today) or Not today (from the tray, as Z).
 const RATINGS = [['Casual', 2], ['Good', 3], ['Personal', 4], ['Deep', 5]];
 
 function toastXml(n) {
@@ -47,6 +49,8 @@ function toastXml(n) {
     actions = n.people.slice(0, 3).map(p => button(`Plan with ${p.name}`, 'plan', { p: p.id })).join('');
   } else if (n.kind === 'review') {
     actions = button('Review my week', 'review');
+  } else if (n.kind === 'nudge' && n.personId) {
+    actions = button('Messaged', 'messaged', { p: n.personId }) + button('Not today', 'nottoday', { p: n.personId });
   }
   const launch = n.kind === 'catchup' || n.kind === 'review' ? link('review', { d: n.day }) : link('open', ids);
   return `<toast activationType="protocol" launch="${esc(launch)}"${scenario}>`

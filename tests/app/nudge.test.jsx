@@ -5,7 +5,7 @@
 // it, G (messaged) opens the quick log for them, Z puts them off till
 // tomorrow, and nothing is asked again that day. The main process (the key and
 // Claude) is stood in for.
-import { screen, waitFor, within } from '@testing-library/react';
+import { act, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { toISODate } from '../../src/lib/dates.js';
 import { logDetails, nav, person, queryDialog, relaunch, renderApp, seedState } from './harness.jsx';
@@ -86,5 +86,74 @@ describe('who to message today', () => {
     await new Promise(r => setTimeout(r, 50));
     expect(bridge.runAnalysis).not.toHaveBeenCalled();
     expect(within(card()).queryByLabelText('Opener')).toBeNull();
+  });
+});
+
+// The evening's who to message (decided 2026-10-10): a Windows notification at
+// the evening time, with Messaged and Not today, unless you've messaged them,
+// logged a chat with them or put it off. The evening time is 11:59 PM here, so
+// it's still to come whenever the tests run.
+describe('who to message, in the evening', () => {
+  const TODAY = toISODate(new Date());
+  function windowsBridge() {
+    const listeners = [];
+    const b = fakeBridge({ hasKey: false });
+    Object.assign(b, {
+      scheduleNotifications: vi.fn(() => Promise.resolve({ scheduled: 1 })),
+      calendarReady: () => Promise.resolve([]),
+      onCalendarAction: (cb) => { listeners.push(cb); return () => {}; },
+      press: (link) => act(async () => { listeners.forEach(cb => cb(link)); }),
+      handed: () => (b.scheduleNotifications.mock.calls.at(-1) || [[]])[0].filter(n => n.kind === 'nudge' && n.day === TODAY),
+    });
+    return b;
+  }
+  const seedEvening = (journal = []) => seedState({
+    profile: { name: 'Liam', focus: 'mix', eveningTime: 23 * 60 + 59 },
+    people: [sam],
+    journal: [{ id: 'j1', personId: sam.id, at: ago(35), type: 'talked', meaningfulness: 3, added: [], activeListening: [], summary: 'Coffee and his move' }, ...journal],
+  });
+
+  it('is handed to Windows for tonight, and goes when Not today is pressed in it', async () => {
+    const bridge = windowsBridge();
+    seedEvening();
+    renderApp();
+    await waitFor(() => expect(bridge.handed()).toHaveLength(1), { timeout: 4000 });
+    expect(bridge.handed()[0]).toMatchObject({ tag: `n:${TODAY}`, personId: sam.id, title: 'Still time to message Sam Lee?', body: "It's been 5 weeks since you and Sam Lee talked." });
+    await bridge.press(`layers://nottoday?p=${sam.id}&d=${TODAY}`);
+    expect(card()).toBeNull();
+    await waitFor(() => expect(bridge.handed()).toHaveLength(0), { timeout: 4000 });
+    expect(JSON.parse(window.localStorage.getItem('layers-nudge'))).toMatchObject({ day: TODAY, skipped: [sam.id] });
+  });
+
+  it('Messaged in it opens the quick log for them, as G does', async () => {
+    const bridge = windowsBridge();
+    seedEvening();
+    const { user } = renderApp();
+    await user.click(nav('Me'));
+    await bridge.press(`layers://messaged?p=${sam.id}&d=${TODAY}`);
+    expect(logDetails().getAttribute('aria-label') || logDetails().textContent).toMatch(/Messaged Sam Lee/);
+    expect(nav('Today').getAttribute('aria-current')).toBe('page');
+    await waitFor(() => expect(bridge.handed()).toHaveLength(0), { timeout: 4000 });
+  });
+
+  it("a chat logged with them today counts as messaging them: no card, and nothing in the evening", async () => {
+    const bridge = windowsBridge();
+    seedEvening([{ id: 'j2', personId: sam.id, at: TODAY, type: 'messaged', meaningfulness: 3, added: [], activeListening: [] }]);
+    const { user } = renderApp();
+    await user.click(nav('Today'));
+    expect(card()).toBeNull();
+    await waitFor(() => expect(bridge.scheduleNotifications).toHaveBeenCalled(), { timeout: 4000 });
+    expect(bridge.handed()).toHaveLength(0);
+  });
+
+  it('can be turned off in Me', async () => {
+    windowsBridge();
+    seedEvening();
+    const { user } = renderApp();
+    await user.click(nav('Me'));
+    const toggle = screen.getByRole('switch', { name: /Who to message, in the evening/ });
+    expect(toggle.getAttribute('aria-checked')).toBe('true');
+    await user.click(toggle);
+    expect(screen.getByRole('switch', { name: /Who to message, in the evening/ }).getAttribute('aria-checked')).toBe('false');
   });
 });

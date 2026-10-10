@@ -252,7 +252,8 @@ answers were read back (see [History](#history)):
 
 1. **Finishing what's built, from your answers** (small, each on its own):
    - **The evening nudge**: at 8:00 PM, only if you haven't logged a chat with them or
-     pressed Done. The morning summary and Today have it already.
+     pressed Done. The morning summary and Today have it already. *(Built 2026-10-10: its
+     own notification, with Messaged and Not today.)*
    - **Practice drills**: one tricky message, you reply, instant feedback, beside
      Practise's longer role-play.
    - **Closeness over time**: a chart of someone's layer and meter by day on their
@@ -780,6 +781,13 @@ Step 1 of [the order from here](#the-order-from-here), with your choices of 2026
 
 - **The monthly limit starts at US$10** (it was US$5). A US$2 or US$5 you'd picked rose
   to US$10 once; picking either again in Me sticks.
+- **Who to message, in the evening**: its own notification at 8:00 PM (Me's evening
+  time), "Still time to message Sam?", with **Messaged** (the quick log, as G) and **Not
+  today** (as Z). Not once you've messaged them, logged a chat with them or put it off,
+  and not the evening before their birthday (that reminder comes then). It can be turned
+  off in Me → Notifications.
+- **Logging a chat with the day's person counts as messaging them**: Today's card is
+  done, instead of moving on to someone else.
 
 ### Fixes from the audit of 2026-10-10 (not released yet)
 

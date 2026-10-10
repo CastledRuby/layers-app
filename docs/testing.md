@@ -207,9 +207,13 @@ interact.
 - `nudge.test.jsx` covers Today's who to message (Claude stood in for): who and why,
   the opener written once that day with names hidden and your style, O copying it, Z
   putting them off (kept after a restart, not asked again), G opening the quick log as
-  Messaged, and no opener without a key or past the monthly limit. `src/calendar.test.js`
-  covers `messageNudge` (a birthday first, then a follow-up, then the quietest; plans,
-  logs and put-offs left out) and its line in the morning summary.
+  Messaged, and no opener without a key or past the monthly limit. The evening's who to
+  message: handed to Windows, gone after Not today pressed in it, Messaged in it opening
+  the quick log, nothing after a chat logged with them, and its switch in Me.
+  `src/calendar.test.js` covers `messageNudge` (a birthday first, then a follow-up, then
+  the quietest; plans, logs and put-offs left out), `dayNudge`, its line in the morning
+  summary and the evening notification (not the evening before a key date);
+  `src/toasts.test.js` its Messaged and Not today buttons.
 - `replies.test.jsx` covers What to say (Claude stood in for): pasted messages with who
   it's with, the request with names hidden and your style (your own logged messages and
   How you text), the replies with names back, Q W E copying, what it cost counted, Reply

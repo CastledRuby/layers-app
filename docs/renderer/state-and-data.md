@@ -190,6 +190,7 @@ type Profile = {
   defaultAlert?: number | null;               // the reminder new plans start with (15)
   morningSummary?: boolean; morningTime?: number;   // on, 8:00 AM (minutes since midnight)
   eveningHeadsUp?: boolean; eveningTime?: number;   // on, 8:00 PM
+  eveningNudge?: boolean;                     // who to message, at eveningTime if you haven't yet; on
   askAfter?: boolean;                         // "How did it go?" when a plan with people ends; on
   keyDateReminders?: boolean;                 // birthdays and key dates; on
   catchUpWeekly?: boolean; catchUpDay?: number;     // the weekly catch-up list; on, Saturday (0=Sun…6=Sat)
@@ -502,7 +503,7 @@ phone later. It's unit-tested in `src/calendar.test.js`.
 
 ### Notifications
 
-`plannedNotifications(state, settings, from, to, snoozes)` lists every notification due
+`plannedNotifications(state, settings, from, to, snoozes, nudge)` lists every notification due
 in a time window, oldest first. Each has a `tag` (unique per plan and day), a time,
 `kind`, title, body, and the plan and day it's about:
 
@@ -510,8 +511,9 @@ in a time window, oldest first. Each has a `tag` (unique per plan and day), a ti
 |---|---|---|
 | `alert` | A plan's `alert` minutes before it (all-day: 9:00 AM) | The title; "In 15 minutes · 10:00 AM · with Priya" |
 | `after` | When a plan with people ends, unless it's done (`askAfter`) | "How did it go with Priya?" |
-| `morning` | `morningTime`, on days with something on (or someone to message) | "Today: 3 things", and each in a line, with who to message (`messageNudge`) as "💬 It's been 5 weeks since you and Sam talked" |
+| `morning` | `morningTime`, on days with something on (or someone to message) | "Today: 3 things", and each in a line, with who to message (`dayNudge`) as "💬 It's been 5 weeks since you and Sam talked" |
 | `evening` | `eveningTime`, the night before a day with something on | "Tomorrow: …" |
+| `nudge` | `eveningTime`, unless you've messaged the day's person, logged a chat with them or put them off (`nudge`, today's saved `layers-nudge`), or it's the evening before their key date (that has its own) | "Still time to message Sam?": "It's been 5 weeks since you and Sam talked." |
 | `snooze` | A snoozed reminder's time | The title, "Snoozed reminder" |
 | `catchup` | `catchUpDay` (Saturday) at `morningTime`, when anyone's due a catch-up (`planIdeas`) | "Catch up this week: 3 people", "Priya (3 weeks) · …", with up to three people for Plan buttons |
 | `quiet` | Noon on `quietDay()` for someone Personal or Close, unless something with them is planned or done in between | "It's been a while since you saw Priya": "11 days, longer than usual for you two" |
@@ -871,11 +873,15 @@ person you're about to talk to.
 ### Know what to say: who to message today
 
 Today's **Message … today** card (decided 2026-10-10), also a line in the morning
-summary. `messageNudge(state, day, skipped)` in [lib/calendar.js](../../src/lib/calendar.js)
-picks one person, for free: their key date today or tomorrow, else asking how something
-went (a saved detail with a day, `when`, in the last three days), else whoever has gone
-quietest past their usual gap (`quietDay`). Not anyone with a plan that day, already
-logged that day, or put off today.
+summary and its own notification in the evening. `messageNudge(state, day, skipped)` in
+[lib/calendar.js](../../src/lib/calendar.js) picks one person, for free: their key date
+today or tomorrow, else asking how something went (a saved detail with a day, `when`, in
+the last three days), else whoever has gone quietest past their usual gap (`quietDay`).
+Not anyone with a plan that day, already logged that day, or put off today.
+
+`dayNudge(state, day, saved)` is the day's pick as it stood that morning: that day's logs
+are left out of the pick, so logging a chat with them doesn't swap them for someone else.
+It counts as messaging them (`done`), like Messaged, for the card and the evening.
 
 - **Claude's opener**: when Layers first opens that day (with a key, and within the
   monthly limit, since nobody pressed anything), `LayersApp` asks Haiku for one opener
@@ -886,6 +892,10 @@ logged that day, or put off today.
 - **The card**: **Copy opener** (O), **Messaged** (G: the quick log opens for them as
   Messaged, and the card's done for the day), **Not today** (Z: the next person, if
   there is one).
+- **The evening** (decided 2026-10-10): at the evening time (8:00 PM, Me →
+  Notifications → Who to message, in the evening), "Still time to message Sam?", with
+  **Messaged** (the quick log, as G) and **Not today** (as Z, from the tray). It goes
+  once you've messaged them, logged a chat with them or put them off.
 - **Where it's kept**: `layers-nudge` in localStorage (`getNudge` / `setNudge` in
   `lib/storage.js`): today's `{ day, skipped, done, opener }`, on this laptop only. A new
   day starts fresh, and an opener isn't asked for twice.

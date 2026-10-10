@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { clashesOn, dayAgenda, keyDateOn, messageNudge, monthMarks, needsAnswer, occursOn, parseActionUrl, planIdeas, plannedNotifications, quietDay, recentPlans, snoozeUntil, usualGap, weekSummary } from './lib/calendar.js';
+import { clashesOn, dayAgenda, dayNudge, keyDateOn, messageNudge, monthMarks, needsAnswer, occursOn, parseActionUrl, planIdeas, plannedNotifications, quietDay, recentPlans, snoozeUntil, usualGap, weekSummary } from './lib/calendar.js';
 
 // Sunday 4 October 2026.
 const DAY = '2026-10-04';
@@ -77,7 +77,7 @@ describe('plannedNotifications', () => {
   });
 
   it('reminds of birthdays a week before, the evening before and on the morning', () => {
-    const quiet = { morningSummary: false, eveningHeadsUp: false, askAfter: false, reminderNotifications: false, weeklyReview: false };
+    const quiet = { morningSummary: false, eveningHeadsUp: false, askAfter: false, reminderNotifications: false, weeklyReview: false, eveningNudge: false };
     const weekBefore = '2026-09-28';
     const list = plannedNotifications({ people: [priya] }, quiet, local(weekBefore, 0), local('2026-10-05', 23, 59));
     expect(list.map(n => [n.tag, new Date(n.at).getDate(), new Date(n.at).getHours(), n.title])).toEqual([
@@ -120,6 +120,8 @@ describe('notification actions', () => {
     expect(parseActionUrl('layers://plan?p=p&d=2026-10-05')).toMatchObject({ action: 'plan', personId: 'p', day: '2026-10-05' });
     expect(parseActionUrl('layers://rate?e=c&d=2026-10-04&r=4')).toMatchObject({ action: 'rate', eventId: 'c', rating: 4 });
     expect(parseActionUrl('layers://rate?e=c&r=9').rating).toBeNull();
+    expect(parseActionUrl('layers://messaged?p=s&d=2026-10-04')).toMatchObject({ action: 'messaged', personId: 's', day: '2026-10-04' });
+    expect(parseActionUrl('layers://nottoday?p=s&d=2026-10-04')).toMatchObject({ action: 'nottoday', personId: 's' });
     expect(parseActionUrl('layers://review?d=2026-10-04')).toMatchObject({ action: 'review', day: '2026-10-04' });
     expect(parseActionUrl('layers://snooze?e=c&d=2026-10-04&m=tomorrow').minutes).toBe('tomorrow');
     expect(parseActionUrl('layers://format-disk')).toBeNull();
@@ -152,7 +154,7 @@ describe('planning helpers', () => {
 });
 
 describe('keeping in touch', () => {
-  const off = { morningSummary: false, eveningHeadsUp: false, askAfter: false, reminderNotifications: false, keyDateReminders: false, weeklyReview: false, quietNudges: false, catchUpWeekly: false };
+  const off = { morningSummary: false, eveningHeadsUp: false, askAfter: false, reminderNotifications: false, keyDateReminders: false, weeklyReview: false, quietNudges: false, catchUpWeekly: false, eveningNudge: false };
   const log = (personId, at) => ({ id: `${personId}-${at}`, personId, at, type: 'talked', meaningfulness: 3 });
 
   it('usualGap is the middle gap between logged days; quietDay is half as long again', () => {
@@ -217,5 +219,33 @@ describe('messageNudge: who to message today', () => {
   it("is a line in the morning summary", () => {
     const list = plannedNotifications({ people: [sam], journal, events: [] }, { weeklyReview: false, quietNudges: false, catchUpWeekly: false }, local(DAY, 0), local(DAY, 23, 59));
     expect(list.find(n => n.kind === 'morning')).toMatchObject({ title: 'Today: 1 thing', body: "💬 It's been 5 weeks since you and Sam talked" });
+  });
+
+  it("dayNudge keeps the morning's person after a log with them, and counts it as messaging them", () => {
+    expect(dayNudge({ people: [ana, sam], journal }, DAY)).toMatchObject({ person: { id: 'a' }, done: false });
+    expect(dayNudge({ people: [ana, sam], journal: [...journal, log('a', DAY)] }, DAY)).toMatchObject({ person: { id: 'a' }, done: true });
+    expect(dayNudge({ people: [ana, sam], journal: [...journal, log('s', DAY)] }, DAY)).toMatchObject({ person: { id: 'a' }, done: false });
+    expect(dayNudge({ people: [ana, sam], journal }, DAY, { day: DAY, skipped: ['a'], done: null })).toMatchObject({ person: { id: 's' }, done: false });
+    expect(dayNudge({ people: [ana, sam], journal }, DAY, { day: DAY, skipped: [], done: 'a' })).toMatchObject({ person: { id: 'a' }, done: true });
+    expect(dayNudge({ people: [ana, sam], journal }, DAY, { day: '2026-10-03', skipped: ['a'], done: 'a' })).toMatchObject({ person: { id: 'a' }, done: false }); // yesterday's
+  });
+
+  it("is its own notification in the evening, with Messaged and Not today, until you've messaged them or put it off", () => {
+    const only = { morningSummary: false, eveningHeadsUp: false, weeklyReview: false, quietNudges: false, catchUpWeekly: false };
+    const evening = (state, nudge, settings = only) => plannedNotifications(state, settings, local(DAY, 0), local(DAY, 23, 59), [], nudge).filter(n => n.kind === 'nudge');
+    const list = evening({ people: [sam], journal, events: [] });
+    expect(list).toHaveLength(1);
+    expect(list[0]).toMatchObject({ tag: `n:${DAY}`, personId: 's', day: DAY, title: 'Still time to message Sam?', body: "It's been 5 weeks since you and Sam talked." });
+    expect(new Date(list[0].at).getHours()).toBe(20);
+    expect(new Date(evening({ people: [sam], journal }, null, { ...only, eveningTime: 21 * 60 })[0].at).getHours()).toBe(21);
+    expect(evening({ people: [sam], journal: [...journal, log('s', DAY)] })).toEqual([]);
+    expect(evening({ people: [sam], journal }, { day: DAY, skipped: [], done: 's' })).toEqual([]);
+    expect(evening({ people: [sam], journal }, { day: DAY, skipped: ['s'], done: null })).toEqual([]);
+    expect(evening({ people: [sam], journal }, null, { ...only, eveningNudge: false })).toEqual([]);
+    // The evening before a birthday, its own reminder says so; on the day, this does.
+    expect(evening({ people: [priya], journal: [] })).toEqual([]);
+    expect(evening({ people: [priya], journal: [] }, null, { ...only, keyDateReminders: false })[0]).toMatchObject({ body: "Priya's birthday is tomorrow." });
+    const onTheDay = plannedNotifications({ people: [priya], journal: [] }, only, local('2026-10-05', 0), local('2026-10-05', 23, 59)).filter(n => n.kind === 'nudge');
+    expect(onTheDay[0]).toMatchObject({ title: 'Still time to message Priya?', body: "Priya's birthday is today." });
   });
 });
