@@ -4,7 +4,7 @@
 > Run `npm run docs:map` after changing anything under `src/`, `electron/*.cjs` or `package.json` scripts.
 > Hand-written explanations live in the other files under [`docs/`](../README.md).
 
-Package: `layers-web` v1.0.37 · `src/`: 85 files, 14479 lines, 108 components, 379 top-level functions, 193 constants.
+Package: `layers-web` v1.0.37 · `src/`: 85 files, 14543 lines, 108 components, 382 top-level functions, 196 constants.
 
 ## Source files
 
@@ -22,8 +22,8 @@ Package: `layers-web` v1.0.37 · `src/`: 85 files, 14479 lines, 108 components, 
 | [lib/analysis.js](../../src/lib/analysis.js) | 358 | ANALYSIS_MODELS, DEFAULT_ANALYSIS_MODEL, analysisModel, MAX_SCREENSHOTS, THEM, YOU, tokensFor, STAMP, chatSpeakers, detectPeople, … (+33) | `data/constants`, `lib/dates` |
 | [lib/backup.js](../../src/lib/backup.js) | 248 | BACKUP_VERSION, MAX_BACKUP_BYTES, createBackup, isObject, isText, isISODay, num, count, cleanHistory, cleanGoal, … (+9) | `lib/calendar`, `data/constants`, `data/seed`, `data/avatars`, `lib/util`, `lib/sync`, `lib/analysis` |
 | [lib/calendar.js](../../src/lib/calendar.js) | 425 | WEEKDAY_NAMES, DEFAULT_DURATION, EVENT_TEMPLATES, templateFor, DATE_KINDS, dateKind, NOTIFY_DEFAULTS, notifySettings, dayDate, addDays, … (+28) | `lib/dates` |
-| [lib/chatBatch.js](../../src/lib/chatBatch.js) | 104 | TINY, batchPlan, batchDollars, QUEUE_KEY, isText, cleanItem, readQueue, saveQueue, waiting, pruneQueue, … (+5) | `lib/analysis`, `lib/chatImport` |
-| [lib/chatImport.js](../../src/lib/chatImport.js) | 334 | CONVERSATION_GAP_HOURS, MAX_TEXT, PROGRESS_KEY, STAMP, IOS_LINE, ANDROID_LINE, ch, MARKS, MARKED, ODD_SPACES, … (+29) | `lib/analysis` |
+| [lib/chatBatch.js](../../src/lib/chatBatch.js) | 106 | TINY, batchPlan, batchDollars, QUEUE_KEY, isText, cleanItem, readQueue, saveQueue, waiting, pruneQueue, … (+5) | `lib/analysis`, `lib/chatImport` |
+| [lib/chatImport.js](../../src/lib/chatImport.js) | 396 | CONVERSATION_GAP_HOURS, MAX_TEXT, PROGRESS_KEY, STAMP, IOS_LINE, ANDROID_LINE, ch, MARKS, MARKED, ODD_SPACES, … (+35) | `lib/analysis` |
 | [lib/chatTrend.js](../../src/lib/chatTrend.js) | 50 | TREND_LINES, chatTrend, trendChange | `lib/dates` |
 | [lib/closeness.js](../../src/lib/closeness.js) | 64 | QUIZ, ANSWERS, REACHED, inLayer, share, nextQuestion, quizPlacement | — |
 | [lib/dates.js](../../src/lib/dates.js) | 314 | parseDaysAgo, startOfDay, WEEKDAY_SHORT, WEEKDAY_FULL, formatWeekdays, MONTH_NAMES, MONTH_WORDS, readDayMonth, dayMonthToDate, dateToRelativeLabel, … (+26) | `data/constants` |
@@ -331,41 +331,44 @@ Package: `layers-web` v1.0.37 · `src/`: 85 files, 14479 lines, 108 components, 
 | `plannedNotifications` | [calendar.js:295](../../src/lib/calendar.js#L295) | ✓ | ✓ |
 | `snoozeUntil` | [calendar.js:401](../../src/lib/calendar.js#L401) | ✓ | ✓ |
 | `parseActionUrl` | [calendar.js:411](../../src/lib/calendar.js#L411) | ✓ | ✓ |
-| `batchPlan` | [chatBatch.js:18](../../src/lib/chatBatch.js#L18) | ✓ | ✓ |
-| `batchDollars` | [chatBatch.js:49](../../src/lib/chatBatch.js#L49) | ✓ | ✓ |
-| `isText` | [chatBatch.js:61](../../src/lib/chatBatch.js#L61) |  |  |
-| `cleanItem` | [chatBatch.js:62](../../src/lib/chatBatch.js#L62) |  |  |
-| `readQueue` | [chatBatch.js:68](../../src/lib/chatBatch.js#L68) | ✓ | ✓ |
-| `saveQueue` | [chatBatch.js:74](../../src/lib/chatBatch.js#L74) | ✓ | ✓ |
-| `waiting` | [chatBatch.js:78](../../src/lib/chatBatch.js#L78) | ✓ | ✓ |
-| `pruneQueue` | [chatBatch.js:83](../../src/lib/chatBatch.js#L83) | ✓ | ✓ |
-| `readLimit` | [chatBatch.js:94](../../src/lib/chatBatch.js#L94) | ✓ | ✓ |
-| `saveLimit` | [chatBatch.js:101](../../src/lib/chatBatch.js#L101) | ✓ | ✓ |
+| `batchPlan` | [chatBatch.js:19](../../src/lib/chatBatch.js#L19) | ✓ | ✓ |
+| `batchDollars` | [chatBatch.js:51](../../src/lib/chatBatch.js#L51) | ✓ | ✓ |
+| `isText` | [chatBatch.js:63](../../src/lib/chatBatch.js#L63) |  |  |
+| `cleanItem` | [chatBatch.js:64](../../src/lib/chatBatch.js#L64) |  |  |
+| `readQueue` | [chatBatch.js:70](../../src/lib/chatBatch.js#L70) | ✓ | ✓ |
+| `saveQueue` | [chatBatch.js:76](../../src/lib/chatBatch.js#L76) | ✓ | ✓ |
+| `waiting` | [chatBatch.js:80](../../src/lib/chatBatch.js#L80) | ✓ | ✓ |
+| `pruneQueue` | [chatBatch.js:85](../../src/lib/chatBatch.js#L85) | ✓ | ✓ |
+| `readLimit` | [chatBatch.js:96](../../src/lib/chatBatch.js#L96) | ✓ | ✓ |
+| `saveLimit` | [chatBatch.js:103](../../src/lib/chatBatch.js#L103) | ✓ | ✓ |
 | `ch` | [chatImport.js:23](../../src/lib/chatImport.js#L23) |  |  |
 | `standIn` | [chatImport.js:35](../../src/lib/chatImport.js#L35) |  |  |
 | `stampOf` | [chatImport.js:52](../../src/lib/chatImport.js#L52) |  |  |
 | `writesDayFirst` | [chatImport.js:65](../../src/lib/chatImport.js#L65) |  |  |
 | `guessDayFirst` | [chatImport.js:73](../../src/lib/chatImport.js#L73) |  |  |
 | `parseWhatsApp` | [chatImport.js:96](../../src/lib/chatImport.js#L96) | ✓ | ✓ |
-| `fixMetaText` | [chatImport.js:126](../../src/lib/chatImport.js#L126) | ✓ | ✓ |
-| `instagramText` | [chatImport.js:133](../../src/lib/chatImport.js#L133) |  |  |
-| `parseInstagram` | [chatImport.js:147](../../src/lib/chatImport.js#L147) | ✓ | ✓ |
-| `chatsFromExport` | [chatImport.js:173](../../src/lib/chatImport.js#L173) | ✓ | ✓ |
-| `mergeChats` | [chatImport.js:196](../../src/lib/chatImport.js#L196) | ✓ | ✓ |
-| `ownerOf` | [chatImport.js:212](../../src/lib/chatImport.js#L212) | ✓ | ✓ |
-| `everywhereName` | [chatImport.js:224](../../src/lib/chatImport.js#L224) | ✓ | ✓ |
-| `chatPeople` | [chatImport.js:232](../../src/lib/chatImport.js#L232) | ✓ | ✓ |
-| `splitConversations` | [chatImport.js:243](../../src/lib/chatImport.js#L243) | ✓ | ✓ |
-| `pad` | [chatImport.js:253](../../src/lib/chatImport.js#L253) |  |  |
-| `isoMinute` | [chatImport.js:254](../../src/lib/chatImport.js#L254) |  |  |
-| `isoDayOf` | [chatImport.js:255](../../src/lib/chatImport.js#L255) | ✓ |  |
-| `conversationText` | [chatImport.js:260](../../src/lib/chatImport.js#L260) | ✓ | ✓ |
-| `clock` | [chatImport.js:270](../../src/lib/chatImport.js#L270) |  |  |
-| `conversationLabel` | [chatImport.js:272](../../src/lib/chatImport.js#L272) | ✓ | ✓ |
-| `chatRows` | [chatImport.js:289](../../src/lib/chatImport.js#L289) | ✓ |  |
-| `readChatProgress` | [chatImport.js:303](../../src/lib/chatImport.js#L303) | ✓ |  |
-| `saveChatProgress` | [chatImport.js:306](../../src/lib/chatImport.js#L306) | ✓ |  |
-| `cache` | [chatImport.js:315](../../src/lib/chatImport.js#L315) |  |  |
+| `fixMetaText` | [chatImport.js:127](../../src/lib/chatImport.js#L127) | ✓ | ✓ |
+| `sharedNote` | [chatImport.js:156](../../src/lib/chatImport.js#L156) |  |  |
+| `callNote` | [chatImport.js:166](../../src/lib/chatImport.js#L166) |  |  |
+| `instagramMessage` | [chatImport.js:175](../../src/lib/chatImport.js#L175) |  |  |
+| `instagramReactions` | [chatImport.js:193](../../src/lib/chatImport.js#L193) |  |  |
+| `parseInstagram` | [chatImport.js:202](../../src/lib/chatImport.js#L202) | ✓ | ✓ |
+| `chatsFromExport` | [chatImport.js:232](../../src/lib/chatImport.js#L232) | ✓ | ✓ |
+| `mergeChats` | [chatImport.js:255](../../src/lib/chatImport.js#L255) | ✓ | ✓ |
+| `ownerOf` | [chatImport.js:271](../../src/lib/chatImport.js#L271) | ✓ | ✓ |
+| `everywhereName` | [chatImport.js:283](../../src/lib/chatImport.js#L283) | ✓ | ✓ |
+| `chatPeople` | [chatImport.js:291](../../src/lib/chatImport.js#L291) | ✓ | ✓ |
+| `splitConversations` | [chatImport.js:302](../../src/lib/chatImport.js#L302) | ✓ | ✓ |
+| `pad` | [chatImport.js:312](../../src/lib/chatImport.js#L312) |  |  |
+| `isoMinute` | [chatImport.js:313](../../src/lib/chatImport.js#L313) |  |  |
+| `isoDayOf` | [chatImport.js:314](../../src/lib/chatImport.js#L314) | ✓ |  |
+| `conversationText` | [chatImport.js:320](../../src/lib/chatImport.js#L320) | ✓ | ✓ |
+| `clock` | [chatImport.js:332](../../src/lib/chatImport.js#L332) |  |  |
+| `conversationLabel` | [chatImport.js:334](../../src/lib/chatImport.js#L334) | ✓ | ✓ |
+| `chatRows` | [chatImport.js:351](../../src/lib/chatImport.js#L351) | ✓ |  |
+| `readChatProgress` | [chatImport.js:365](../../src/lib/chatImport.js#L365) | ✓ |  |
+| `saveChatProgress` | [chatImport.js:368](../../src/lib/chatImport.js#L368) | ✓ |  |
+| `cache` | [chatImport.js:377](../../src/lib/chatImport.js#L377) |  |  |
 | `chatTrend` | [chatTrend.js:19](../../src/lib/chatTrend.js#L19) | ✓ | ✓ |
 | `trendChange` | [chatTrend.js:44](../../src/lib/chatTrend.js#L44) | ✓ | ✓ |
 | `inLayer` | [closeness.js:36](../../src/lib/closeness.js#L36) |  |  |
@@ -675,11 +678,11 @@ Package: `layers-web` v1.0.37 · `src/`: 85 files, 14479 lines, 108 components, 
 | `DATE_KINDS` | [calendar.js:45](../../src/lib/calendar.js#L45) |
 | `NOTIFY_DEFAULTS` | [calendar.js:56](../../src/lib/calendar.js#L56) |
 | `QUIET_DAYS` | [calendar.js:203](../../src/lib/calendar.js#L203) |
-| `TINY` | [chatBatch.js:11](../../src/lib/chatBatch.js#L11) |
-| `QUEUE_KEY` | [chatBatch.js:60](../../src/lib/chatBatch.js#L60) |
-| `LIMIT_KEY` | [chatBatch.js:91](../../src/lib/chatBatch.js#L91) |
-| `LIMITS` | [chatBatch.js:92](../../src/lib/chatBatch.js#L92) |
-| `DEFAULT_LIMIT` | [chatBatch.js:93](../../src/lib/chatBatch.js#L93) |
+| `TINY` | [chatBatch.js:12](../../src/lib/chatBatch.js#L12) |
+| `QUEUE_KEY` | [chatBatch.js:62](../../src/lib/chatBatch.js#L62) |
+| `LIMIT_KEY` | [chatBatch.js:93](../../src/lib/chatBatch.js#L93) |
+| `LIMITS` | [chatBatch.js:94](../../src/lib/chatBatch.js#L94) |
+| `DEFAULT_LIMIT` | [chatBatch.js:95](../../src/lib/chatBatch.js#L95) |
 | `CONVERSATION_GAP_HOURS` | [chatImport.js:12](../../src/lib/chatImport.js#L12) |
 | `MAX_TEXT` | [chatImport.js:14](../../src/lib/chatImport.js#L14) |
 | `PROGRESS_KEY` | [chatImport.js:15](../../src/lib/chatImport.js#L15) |
@@ -690,10 +693,13 @@ Package: `layers-web` v1.0.37 · `src/`: 85 files, 14479 lines, 108 components, 
 | `MARKED` | [chatImport.js:29](../../src/lib/chatImport.js#L29) |
 | `ODD_SPACES` | [chatImport.js:30](../../src/lib/chatImport.js#L30) |
 | `SYSTEM` | [chatImport.js:31](../../src/lib/chatImport.js#L31) |
-| `GENERIC_NAME` | [chatImport.js:172](../../src/lib/chatImport.js#L172) |
-| `DAYS` | [chatImport.js:268](../../src/lib/chatImport.js#L268) |
-| `MONTHS` | [chatImport.js:269](../../src/lib/chatImport.js#L269) |
-| `NEW_DAYS` | [chatImport.js:288](../../src/lib/chatImport.js#L288) |
+| `IG_NOTICES` | [chatImport.js:138](../../src/lib/chatImport.js#L138) |
+| `IG_ATTACHMENT` | [chatImport.js:150](../../src/lib/chatImport.js#L150) |
+| `IG_SHARED` | [chatImport.js:151](../../src/lib/chatImport.js#L151) |
+| `GENERIC_NAME` | [chatImport.js:231](../../src/lib/chatImport.js#L231) |
+| `DAYS` | [chatImport.js:330](../../src/lib/chatImport.js#L330) |
+| `MONTHS` | [chatImport.js:331](../../src/lib/chatImport.js#L331) |
+| `NEW_DAYS` | [chatImport.js:350](../../src/lib/chatImport.js#L350) |
 | `TREND_LINES` | [chatTrend.js:9](../../src/lib/chatTrend.js#L9) |
 | `QUIZ` | [closeness.js:11](../../src/lib/closeness.js#L11) |
 | `ANSWERS` | [closeness.js:26](../../src/lib/closeness.js#L26) |

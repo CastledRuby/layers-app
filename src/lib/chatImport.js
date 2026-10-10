@@ -88,9 +88,9 @@ function guessDayFirst(parsed, near) {
   return null;
 }
 
-// A WhatsApp export's text, as messages in order: [{ at (ms), sender, text }].
-// System notices are left out and attachments become "(photo)" and the
-// like; a message over several lines stays one message. \`near\`: when the
+// A WhatsApp export's text, as messages in order: [{ at (ms), sender, text,
+// note? }]. System notices are left out and attachments become "(photo)" and
+// the like (marked as a note: no words of anyone's); a message over several lines stays one message. \`near\`: when the
 // export was made (its file's time), to tell which way round its dates are
 // when they could be either; then \`dayFirst\`, then this computer's way.
 export function parseWhatsApp(text, { dayFirst, near } = {}) {
@@ -116,7 +116,8 @@ export function parseWhatsApp(text, { dayFirst, near } = {}) {
     : (parsed.length ? guessDayFirst(parsed, near) : null) ?? dayFirst ?? writesDayFirst();
   return parsed.map(p => {
     const sub = standIn(p.text, p.marked);
-    return sub === '' ? null : { at: stampOf(p.stamp, order), sender: p.sender, text: sub ?? p.text.trim() };
+    if (sub === '') return null;
+    return { at: stampOf(p.stamp, order), sender: p.sender, text: sub ?? p.text.trim(), ...(sub ? { note: true } : {}) };
   }).filter(m => m && m.text && m.sender);
 }
 
@@ -130,20 +131,74 @@ export function fixMetaText(s) {
   try { return new TextDecoder('utf-8', { fatal: true }).decode(Uint8Array.from(codes)); } catch { return s; }
 }
 
-function instagramText(msg) {
-  const content = fixMetaText(msg.content || '');
-  if (/^(liked a message|reacted .+ to (your|a) message|.+ sent an attachment\.)$/i.test(content)) return '';
-  if (msg.photos) return content || '(photo)';
-  if (msg.videos) return content || '(video)';
-  if (msg.audio_files) return '(voice message)';
-  if (msg.sticker) return '(sticker)';
-  if (msg.share) return content ? `${content} (shared a post)` : '(shared a post)';
-  if (typeof msg.call_duration === 'number') return '(call)';
-  return content;
+// What Instagram writes that isn't the conversation, left out: likes,
+// reactions sent on their own (the ones on a message are kept with it), a
+// call starting (the call itself is kept), and changes to the chat's theme,
+// nicknames or group.
+const IG_NOTICES = [
+  /^liked a message$/i,
+  /^reacted .+ to (your|a|their|his|her) (message|story)$/i,
+  /^.{1,60} started (an audio call|a video chat)$/i,
+  /^.{1,60} changed the (theme|chat colou?r|emoji|quick reaction)\b/i,
+  /^.{1,60} (set|changed|cleared) (your|their|his|her|the|my) nickname\b/i,
+  /^.{1,60} ((named|renamed) the group|changed the group (name|photo)|left the group)\b/i,
+  /^.{1,60} (added|removed) .+ (to|from) the group\b/i,
+  /^.{1,60} (unsent|pinned) a message\b/i,
+  /^.{1,60} turned (on|off) (vanish mode|disappearing messages)\b/i,
+];
+// What Instagram writes for a shared reel, post or photo, with no words of yours.
+const IG_ATTACHMENT = /^.{1,60} sent an attachment\.$/i;
+const IG_SHARED = [[/giphy\.com|\.gif(\?|$)/i, 'GIF'], [/instagram\.com\/reels?\//i, 'reel'], [/instagram\.com\/stories\//i, 'story'], [/instagram\.com\/(p|tv)\//i, 'post']];
+
+// A shared reel or post as Claude reads it: what it was and the first line
+// of its caption, without hashtags or the link ("(shared a reel: "my
+// biggest flex")").
+function sharedNote(share) {
+  const link = String(share.link || '');
+  const hit = IG_SHARED.find(([re]) => re.test(link));
+  const kind = hit ? hit[1] : link && !/instagram\.com/i.test(link) ? 'link' : 'post';
+  if (kind === 'GIF') return '(GIF)';
+  const caption = (fixMetaText(share.share_text || '').split('\n').map(s => s.replace(/#[^\s#]+/g, '').replace(/\s+/g, ' ').trim()).find(Boolean)) || '';
+  const short = caption.length > 80 ? `${caption.slice(0, 79).trimEnd()}…` : caption;
+  return `(shared a ${kind}${short ? `: "${short}"` : ''})`;
+}
+
+function callNote(msg, content) {
+  const what = /video/i.test(content) ? 'video call' : 'audio call';
+  if (/missed/i.test(content) || !msg.call_duration) return `(missed ${what})`;
+  const min = Math.round(msg.call_duration / 60);
+  return `(${what}, ${min < 1 ? 'under a minute' : `${min} min`})`;
+}
+
+// One Instagram message as { text, note (it has no words of anyone's, such
+// as "(photo)" or a shared reel) }, or null to leave it out.
+function instagramMessage(msg) {
+  const raw = fixMetaText(msg.content || '').trim();
+  if (IG_NOTICES.some(re => re.test(raw))) return null;
+  if (typeof msg.call_duration === 'number') return { text: callNote(msg, raw), note: true };
+  const words = IG_ATTACHMENT.test(raw) || (msg.share && raw === msg.share.link) ? '' : raw;
+  const extra = [];
+  if (msg.share) extra.push(sharedNote(msg.share));
+  if (msg.photos) extra.push(msg.photos.length > 1 ? `(${msg.photos.length} photos)` : '(photo)');
+  if (msg.videos) extra.push('(video)');
+  if (msg.gifs) extra.push('(GIF)');
+  if (msg.audio_files) extra.push('(voice message)');
+  if (msg.sticker) extra.push('(sticker)');
+  if (!words && !extra.length && raw) extra.push('(attachment)'); // gone from Instagram since
+  const text = [words, ...extra].filter(Boolean).join(' ');
+  return text ? { text, note: !words } : null;
+}
+
+// Who reacted to a message, and how: [{ by, emoji }].
+function instagramReactions(msg) {
+  return (Array.isArray(msg.reactions) ? msg.reactions : [])
+    .map(r => ({ by: fixMetaText(r && r.actor), emoji: fixMetaText(r && r.reaction) }))
+    .filter(r => r.by && r.emoji);
 }
 
 // Instagram's messages files ({ path, text }), as chats: [{ id, title,
-// participants, messages }], each chat's messages in order.
+// participants, messages: [{ at, sender, text, note?, reactions? }] }], each
+// chat's messages in order. Chats with Meta AI are left out.
 export function parseInstagram(files = []) {
   const threads = new Map();
   files.forEach(({ path, text }) => {
@@ -155,12 +210,16 @@ export function parseInstagram(files = []) {
     t.title = fixMetaText(data.title || '') || t.title;
     (data.participants || []).forEach(p => { const n = fixMetaText(p && p.name); if (n && !t.participants.includes(n)) t.participants.push(n); });
     (data.messages || []).forEach(msg => {
-      const textOf = msg && typeof msg.timestamp_ms === 'number' ? instagramText(msg) : '';
-      if (textOf) t.messages.push({ at: msg.timestamp_ms, sender: fixMetaText(msg.sender_name), text: textOf });
+      const said = msg && typeof msg.timestamp_ms === 'number' ? instagramMessage(msg) : null;
+      if (!said) return;
+      const reactions = instagramReactions(msg);
+      t.messages.push({ at: msg.timestamp_ms, sender: fixMetaText(msg.sender_name), text: said.text, ...(said.note ? { note: true } : {}), ...(reactions.length ? { reactions } : {}) });
     });
     threads.set(m[1], t);
   });
-  return [...threads.values()].map(t => ({ ...t, messages: t.messages.sort((a, b) => a.at - b.at) })).filter(t => t.messages.length);
+  return [...threads.values()]
+    .filter(t => !/^aichat_/i.test(t.id) && !t.participants.includes('Meta AI'))
+    .map(t => ({ ...t, messages: t.messages.sort((a, b) => a.at - b.at) })).filter(t => t.messages.length);
 }
 
 // --- Chats ---------------------------------------------------------------------
@@ -176,7 +235,7 @@ export function chatsFromExport(file, read, { dayFirst } = {}) {
     const messages = parseWhatsApp((read.files[0] || {}).text, { dayFirst, near: file.modified });
     if (!messages.length) return [];
     const participants = [...new Set(messages.map(m => m.sender))];
-    const named = read.title || String(file.name).replace(/\.(zip|txt)$/i, '');
+    const named = read.title || String(file.name).split('/').pop().replace(/\.(zip|txt)$/i, ''); // a file in a folder of yours too
     // Saved as "chat.txt" (or the zip's own "_chat.txt"), it's known by who's
     // in it instead, so two chats saved under that name never join up.
     if (GENERIC_NAME.test(named)) {
@@ -254,11 +313,14 @@ const pad = (n) => String(n).padStart(2, '0');
 const isoMinute = (ms) => { const d = new Date(ms); return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`; };
 export const isoDayOf = (ms) => isoMinute(ms).slice(0, 10);
 
-// One conversation as text for analysis: "[2026-10-06 21:41] Amelie: hi",
-// your messages under your name in Layers and theirs under theirs (so both
-// are hidden before it's sent). A very long one keeps its end.
+// One conversation as text for analysis: "[2026-10-06 21:41] Amelie: hi
+// (Liam reacted 😂)", your messages under your name in Layers and theirs
+// under theirs (so both are hidden before it's sent). A very long one keeps
+// its end.
 export function conversationText(conv, { owner, yourName = '', nameFor = (n) => n } = {}) {
-  const lines = conv.messages.map(m => `[${isoMinute(m.at)}] ${m.sender === owner ? (yourName || 'Me') : nameFor(m.sender)}: ${m.text.replace(/\s*\n\s*/g, ' / ')}`);
+  const who = (n) => (n === owner ? (yourName || 'Me') : nameFor(n));
+  const reacted = (m) => (m.reactions && m.reactions.length ? ` (${m.reactions.map(r => `${who(r.by)} reacted ${r.emoji}`).join(', ')})` : '');
+  const lines = conv.messages.map(m => `[${isoMinute(m.at)}] ${who(m.sender)}: ${m.text.replace(/\s*\n\s*/g, ' / ')}${reacted(m)}`);
   let total = 0;
   let from = lines.length;
   while (from > 0 && total + lines[from - 1].length + 1 <= MAX_TEXT) { from -= 1; total += lines[from].length + 1; }

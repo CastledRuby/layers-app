@@ -111,7 +111,12 @@ describe('chats from your exports', () => {
     const t = at(0, 10, 0).getTime();
     fakeBridge({
       'instagram-liam.zip': { kind: 'instagram', files: [
-        insta('amelie_1', 'Amelie', ['Amelie', 'liam.c'], [{ sender_name: 'liam.c', timestamp_ms: t + 1000, content: 'haha yes' }, { sender_name: 'Amelie', timestamp_ms: t, content: 'did you see this' }]),
+        insta('amelie_1', 'Amelie', ['Amelie', 'liam.c'], [
+          { sender_name: 'liam.c', timestamp_ms: t + 1000, content: 'haha yes', reactions: [{ reaction: '😂', actor: 'Amelie' }] },
+          { sender_name: 'Amelie', timestamp_ms: t + 500, content: 'Liked a message' },
+          { sender_name: 'Amelie', timestamp_ms: t, content: 'did you see this' },
+          { sender_name: 'Amelie', timestamp_ms: t - 1000, content: 'Amelie sent an attachment.', share: { link: 'https://www.instagram.com/reel/abc/', share_text: 'dog on a skateboard #dogs', original_content_owner: 'dogs' } },
+        ]),
         insta('jess_2', 'Jess', ['Jess', 'liam.c'], [{ sender_name: 'Jess', timestamp_ms: t, content: 'hey' }]),
       ] },
       // An unzipped download (a folder) is read the same way.
@@ -129,8 +134,9 @@ describe('chats from your exports', () => {
     await user.click(within(card).getByRole('button', { name: /Show chats with people not in Layers \(1\)/ }));
     expect(within(card).getByRole('button', { name: /Jess.*Instagram/ })).toBeTruthy();
     await user.click(within(card).getByRole('button', { name: /Amelie.*Instagram.*1 new/ }));
-    await user.click(within(card).getByRole('button', { name: /2 messages/ }));
-    expect(screen.getByLabelText('The chat').value).toMatch(/\] Amelie: did you see this\n\[.*\] Liam: haha yes$/);
+    await user.click(within(card).getByRole('button', { name: /3 messages/ }));
+    // The reel she shared, what she said, and her reaction: not the like, or the link.
+    expect(screen.getByLabelText('The chat').value).toMatch(/^\[.*\] Amelie: \(shared a reel: "dog on a skateboard"\)\n\[.*\] Amelie: did you see this\n\[.*\] Liam: haha yes \(Amelie reacted 😂\)$/);
   });
 
   it("lists chats with new conversations in the week review, and opens one in Coach", async () => {

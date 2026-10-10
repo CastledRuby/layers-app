@@ -75,7 +75,7 @@ describe('Analyse all new', () => {
     const { user } = renderApp();
     const card = await openAnalyse(user);
     expect(card.textContent).toMatch(/3 conversations with Amelie and Chloe \(a day with someone each\), about US\$0\.0\d with Haiku 4\.5/);
-    expect(card.textContent).toMatch(/1 tiny one \(under 4 messages, or only one side talking\) is marked as seen without sending/);
+    expect(card.textContent).toMatch(/1 tiny one \(under 4 written messages, or only one side writing\) is marked as seen without sending/);
 
     await user.keyboard('a');
     await waitFor(() => expect(toasts()).toContain('3 chats ready to review in Coach'));

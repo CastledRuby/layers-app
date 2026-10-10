@@ -67,7 +67,7 @@ export function ChatExports({ state, people, yourName, progress, folder = 'Docum
               <>
                 {shown.length === 0 && <p className="text-xs" style={{ color: COLORS.inkSoft }}>Nothing new since you last analysed this chat. Export it again after you've talked.</p>}
                 {shown.slice(0, showEarlier ? 30 : 10).map(conv => {
-                  const opener = conv.messages.find(m => m.sender !== owner) || conv.messages[0];
+                  const opener = conv.messages.find(m => m.sender !== owner && !m.note) || conv.messages.find(m => m.sender !== owner) || conv.messages[0];
                   return (
                     <button key={conv.start} type="button" onClick={() => onPick(chat, conv, owner)} className="w-full text-left rounded-lg px-2.5 py-2 mt-1" style={{ background: COLORS.paper }}>
                       <span className="text-xs font-semibold block" style={{ color: COLORS.ink }}>{conversationLabel(conv)}</span>

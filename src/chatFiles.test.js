@@ -104,43 +104,57 @@ describe('the Layers chats folder', () => {
     expect(readExport(dir, 'missing.zip').error).toMatch(/isn't in the Layers chats folder/);
   });
 
-  it('reads an unzipped Instagram download, however deep its messages are', () => {
+  it('finds exports in folders of your own, and Instagram downloads unzipped however deep', () => {
     const dir = folder({ 'WhatsApp Chat with Ava.txt': CHAT });
-    const put = (rel, text) => { const file = path.join(dir, ...rel.split('/')); fs.mkdirSync(path.dirname(file), { recursive: true }); fs.writeFileSync(file, text); };
-    // Windows' Extract All puts it in a folder of the same name.
+    const put = (rel, data) => { const file = path.join(dir, ...rel.split('/')); fs.mkdirSync(path.dirname(file), { recursive: true }); fs.writeFileSync(file, data); };
+    // Windows' Extract All puts a download in a folder of the same name.
     const inbox = 'instagram-liam-2026-10-09/instagram-liam-2026-10-09/your_instagram_activity/messages/inbox';
     put(`${inbox}/chloe_9/message_1.json`, INSTA);
     put(`${inbox}/chloe_9/message_2.json`, INSTA);
     put(`${inbox}/chloe_9/photos/1.jpg`, 'x');
     put(`${inbox}/max_4/message_1.json`, INSTA);
-    put('instagram-liam-2026-10-09/media/posts/202601/1.jpg', 'x');
-    put('just-messages/messages/inbox/zoe_2/message_1.json', INSTA); // only its messages folder
+    put('instagram-liam-2026-10-09/media/posts/202601/notes.txt', 'not looked through');
+    put('messages/inbox/zoe_2/message_1.json', INSTA); // only its messages folder
+    put('Instagram/part 1/your_instagram_activity/messages/inbox/amy_3/message_1.json', INSTA); // a download in two parts
+    put('Instagram/part 2/your_instagram_activity/messages/inbox/amy_3/message_2.json', INSTA);
+    put('Instagram/older/instagram-liam-2026-09.zip', zip({ 'your_instagram_activity/messages/inbox/chloe_9/message_1.json': INSTA }));
+    put('Mia (Oli’s Sister)/chat.txt', CHAT);
+    put('Mia (Oli’s Sister)/chat.md', CHAT);
     put('instagram-html/messages/inbox/a_1/message_1.html', '<html>');
     put('holiday/photos/1.jpg', 'x');
+    put('a/b/c/d/e/f/g/too deep.txt', CHAT);
     const t = Date.now() / 1000;
     fs.utimesSync(path.join(dir, 'WhatsApp Chat with Ava.txt'), t - 60, t - 60);
     fs.utimesSync(path.join(dir, ...`${inbox}/max_4/message_1.json`.split('/')), t + 60, t + 60);
 
     const listed = listExports(dir);
     expect(listed.map(f => [f.name, f.kind]).sort()).toEqual([
+      ['Instagram/older/instagram-liam-2026-09.zip', 'instagram'],
+      ['Instagram/part 1', 'instagram'],
+      ['Instagram/part 2', 'instagram'],
+      ['Mia (Oli’s Sister)/chat.txt', 'whatsapp'],
       ['WhatsApp Chat with Ava.txt', 'whatsapp'],
       ['instagram-html', 'instagram-html'],
-      ['instagram-liam-2026-10-09', 'instagram'],
-      ['just-messages', 'instagram'],
+      ['instagram-liam-2026-10-09/instagram-liam-2026-10-09', 'instagram'],
+      ['messages', 'instagram'],
     ]);
-    const download = listed.find(f => f.name === 'instagram-liam-2026-10-09');
+    const download = listed.find(f => f.name === 'instagram-liam-2026-10-09/instagram-liam-2026-10-09');
     expect(listed[0]).toBe(download); // as new as its newest messages file
     expect(download.size).toBe(3 * INSTA.length);
+    expect(listed.find(f => f.name === 'WhatsApp Chat with Ava.txt').title).toBe('Ava');
 
-    const read = readExport(dir, 'instagram-liam-2026-10-09');
+    const read = readExport(dir, 'instagram-liam-2026-10-09/instagram-liam-2026-10-09');
     expect(read.kind).toBe('instagram');
     expect(read.files.map(f => f.path).sort()).toEqual(['messages/inbox/chloe_9/message_1.json', 'messages/inbox/chloe_9/message_2.json', 'messages/inbox/max_4/message_1.json']);
     expect(read.files.every(f => f.text === INSTA)).toBe(true);
-    expect(readExport(dir, 'just-messages').files).toEqual([{ path: 'messages/inbox/zoe_2/message_1.json', text: INSTA }]);
+    expect(readExport(dir, 'messages').files).toEqual([{ path: 'messages/inbox/zoe_2/message_1.json', text: INSTA }]);
+    expect(readExport(dir, 'Instagram/part 2').files).toEqual([{ path: 'messages/inbox/amy_3/message_2.json', text: INSTA }]);
+    expect(readExport(dir, 'Instagram/older/instagram-liam-2026-09.zip')).toMatchObject({ kind: 'instagram', files: [{ text: INSTA }] });
+    expect(readExport(dir, 'Mia (Oli’s Sister)/chat.txt')).toEqual({ kind: 'whatsapp', title: null, files: [{ path: 'chat.txt', text: CHAT }] });
     expect(readExport(dir, 'instagram-html').error).toMatch(/choosing JSON/);
-    expect(readExport(dir, 'holiday').error).toMatch(/doesn't have an Instagram download's messages/);
-    expect(readExport(dir, '..').error).toMatch(/isn't in the Layers chats folder/);
-    expect(readExport(dir, `instagram-liam-2026-10-09${path.sep}instagram-liam-2026-10-09`).error).toMatch(/isn't in the Layers chats folder/);
+    for (const name of ['holiday', '..', 'instagram-liam-2026-10-09', '../outside.txt', 'Mia (Oli’s Sister)/chat.md', 'a/b/c/d/e/f/g/too deep.txt']) {
+      expect(readExport(dir, name).error).toMatch(/isn't in the Layers chats folder/);
+    }
   });
 
   it('notices a new export arriving', async () => {
