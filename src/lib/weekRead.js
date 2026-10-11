@@ -53,6 +53,7 @@ export function weekReadRequest({ from, to, people = [], journal = [], quiet = [
     content: [{ type: 'text', text: [`The week ${from} to ${to}. What the user logged:`, ...logs.map(line), ...(quietLines.length ? ['', 'Not seen in a while (nothing planned with them):', ...quietLines] : [])].join('\n') }],
     schema: WEEK_SCHEMA,
     model: analysisModel(model).id,
+    deep: true,
   };
   return { request, who };
 }

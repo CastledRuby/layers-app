@@ -84,6 +84,16 @@ describe('asking Claude', () => {
     expect(other.create.mock.calls[0][0].model).toBe('claude-haiku-4-5');
   });
 
+  it('runs a deep request on the thinking models at high effort; never on Haiku, nor a quick request', async () => {
+    const sent = async (extra) => { const c = claude(reply('{}')); await runAnalysis({ ...request, ...extra }, { client: c.client }); return c.create.mock.calls[0][0].output_config; };
+    expect(await sent({ model: 'claude-opus-5-5', deep: true })).toEqual({ format: { type: 'json_schema', schema: request.schema }, effort: 'high' });
+    expect(await sent({ model: 'claude-sonnet-5-5', deep: true })).toMatchObject({ effort: 'high' });
+    expect(await sent({ model: 'claude-fable-5-1', deep: true })).toMatchObject({ effort: 'high' });
+    expect(await sent({ model: 'claude-haiku-4-5', deep: true })).not.toHaveProperty('effort');
+    expect(await sent({ model: 'claude-opus-5-5' })).not.toHaveProperty('effort');
+    expect(await sent({ model: 'claude-opus-5-5', deep: 'yes' })).not.toHaveProperty('effort');
+  });
+
   it("refuses requests Layers doesn't make, or with no key", async () => {
     const { client, create } = claude(reply('{}'));
     expect(await runAnalysis({ ...request, content: [{ type: 'tool_use' }] }, { client })).toMatchObject({ error: expect.any(String) });

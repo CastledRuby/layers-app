@@ -732,7 +732,10 @@ will be sent.
   once you leave.
 - **Which model** (`ANALYSIS_MODELS`): **Claude Haiku 4.5**, the cheapest, unless you
   pick another with the card's **Model** buttons: Sonnet 5.5, Opus 5.5 or Fable 5.1, which
-  think first (slower, and more). `LayersApp` keeps the choice only while Layers is open,
+  think first (slower, and more). A whole chat's analysis, practice feedback and the
+  week's read are `deep` requests: those three models run them at high effort (Opus 5.5
+  would otherwise be medium; decided 2026-10-11), while quick ones (a practice turn, reply
+  ideas, a drill) keep each model's own. `LayersApp` keeps the choice only while Layers is open,
   so it's Haiku again each start. On a result, **The same chat with another model** sends
   that chat to another one in a click; each model's answer is kept for that chat, so going
   back to one shows it again without asking again, and the chat is logged only once.

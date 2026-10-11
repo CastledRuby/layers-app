@@ -4,7 +4,7 @@
 > Run `npm run docs:map` after changing anything under `src/`, `electron/*.cjs` or `package.json` scripts.
 > Hand-written explanations live in the other files under [`docs/`](../README.md).
 
-Package: `layers-web` v1.0.39 · `src/`: 94 files, 16098 lines, 114 components, 444 top-level functions, 224 constants.
+Package: `layers-web` v1.0.39 · `src/`: 94 files, 16100 lines, 114 components, 444 top-level functions, 224 constants.
 
 ## Source files
 
@@ -19,7 +19,7 @@ Package: `layers-web` v1.0.39 · `src/`: 94 files, 16098 lines, 114 components, 
 | [data/seed.js](../../src/data/seed.js) | 176 | INITIAL_PEOPLE, INITIAL_GENERAL_GOALS, INITIAL_JOURNAL, INITIAL_SKILLS, EMPTY_SKILLS | — |
 | [lib/achievements.js](../../src/lib/achievements.js) | 37 | achievementProgress, newlyUnlocked, progressText | `data/constants` |
 | [lib/activity.js](../../src/lib/activity.js) | 48 | ACTIVITY_WEEKS, activityLevel, activityGrid | `lib/dates` |
-| [lib/analysis.js](../../src/lib/analysis.js) | 385 | ANALYSIS_MODELS, DEFAULT_ANALYSIS_MODEL, analysisModel, MAX_SCREENSHOTS, THEM, YOU, tokensFor, STAMP, chatSpeakers, detectPeople, … (+35) | `data/constants`, `lib/dates` |
+| [lib/analysis.js](../../src/lib/analysis.js) | 386 | ANALYSIS_MODELS, DEFAULT_ANALYSIS_MODEL, analysisModel, MAX_SCREENSHOTS, THEM, YOU, tokensFor, STAMP, chatSpeakers, detectPeople, … (+35) | `data/constants`, `lib/dates` |
 | [lib/backup.js](../../src/lib/backup.js) | 258 | BACKUP_VERSION, MAX_BACKUP_BYTES, createBackup, isObject, isText, isISODay, num, count, cleanHistory, cleanGoal, … (+9) | `lib/calendar`, `data/constants`, `data/seed`, `data/avatars`, `lib/util`, `lib/sync`, `lib/analysis` |
 | [lib/calendar.js](../../src/lib/calendar.js) | 484 | WEEKDAY_NAMES, DEFAULT_DURATION, EVENT_TEMPLATES, templateFor, DATE_KINDS, dateKind, NOTIFY_DEFAULTS, notifySettings, dayDate, addDays, … (+30) | `lib/dates` |
 | [lib/chatBatch.js](../../src/lib/chatBatch.js) | 117 | TINY, batchPlan, batchDollars, QUEUE_KEY, isText, cleanItem, readQueue, saveQueue, waiting, pruneQueue, … (+7) | `lib/analysis`, `lib/chatImport` |
@@ -45,7 +45,7 @@ Package: `layers-web` v1.0.39 · `src/`: 94 files, 16098 lines, 114 components, 
 | [lib/text.js](../../src/lib/text.js) | 171 | summaryFor, updateStatusText, homeGoalTitle, generateSuggestions, getCheckInSuggestions, checkInReminder, HOOKS, buildPotentialHooks, focusSuggestion | `data/constants`, `lib/dates` |
 | [lib/tips.js](../../src/lib/tips.js) | 47 | SOON_DAYS, addDays, datesAround, planTips | `data/constants`, `lib/calendar`, `lib/dates`, `lib/text` |
 | [lib/util.js](../../src/lib/util.js) | 9 | clamp, uidCounter, uid | — |
-| [lib/weekRead.js](../../src/lib/weekRead.js) | 78 | str, obj, DAYS, MAX_LOGS, WEEK_SCHEMA, weekReadRequest, weekReadResult, KEY, readWeekReads, saveWeekRead | `data/constants`, `lib/analysis`, `lib/replies`, `lib/dates` |
+| [lib/weekRead.js](../../src/lib/weekRead.js) | 79 | str, obj, DAYS, MAX_LOGS, WEEK_SCHEMA, weekReadRequest, weekReadResult, KEY, readWeekReads, saveWeekRead | `data/constants`, `lib/analysis`, `lib/replies`, `lib/dates` |
 | [components/ActivityCalendar.jsx](../../src/components/ActivityCalendar.jsx) | 51 | CELL, GAP, shade, ActivityCalendar | `lib/activity`, `lib/dates`, `theme` |
 | [components/atoms.jsx](../../src/components/atoms.jsx) | 167 | CircularProgress, ProgressBar, LabeledBar, Avatar, LayerBadge, ChatBubble, Timeline, ConvStateBadge, KEY_ICONS, keyContent, … (+2) | `data/constants`, `data/avatars`, `lib/dates`, `lib/util`, `theme` |
 | [components/avatarKeys.js](../../src/components/avatarKeys.js) | 135 | PICKER_GROUPS, EMOJI_FROM, useAvatarPicker | `data/avatars`, `lib/photo` |
@@ -289,17 +289,17 @@ Package: `layers-web` v1.0.39 · `src/`: 94 files, 16098 lines, 114 components, 
 | `hideNames` | [analysis.js:210](../../src/lib/analysis.js#L210) | ✓ | ✓ |
 | `restoreNames` | [analysis.js:231](../../src/lib/analysis.js#L231) | ✓ | ✓ |
 | `analysisRequest` | [analysis.js:247](../../src/lib/analysis.js#L247) | ✓ | ✓ |
-| `analysisResult` | [analysis.js:270](../../src/lib/analysis.js#L270) | ✓ | ✓ |
-| `analysisToKeep` | [analysis.js:324](../../src/lib/analysis.js#L324) | ✓ | ✓ |
-| `analysisDollars` | [analysis.js:340](../../src/lib/analysis.js#L340) | ✓ |  |
-| `dollarsText` | [analysis.js:344](../../src/lib/analysis.js#L344) | ✓ | ✓ |
-| `analysisCost` | [analysis.js:346](../../src/lib/analysis.js#L346) | ✓ | ✓ |
-| `monthOf` | [analysis.js:357](../../src/lib/analysis.js#L357) |  |  |
-| `readSpend` | [analysis.js:358](../../src/lib/analysis.js#L358) | ✓ |  |
-| `addSpend` | [analysis.js:362](../../src/lib/analysis.js#L362) | ✓ | ✓ |
-| `recordSpend` | [analysis.js:368](../../src/lib/analysis.js#L368) | ✓ |  |
-| `spendSummary` | [analysis.js:374](../../src/lib/analysis.js#L374) | ✓ | ✓ |
-| `typicalCost` | [analysis.js:382](../../src/lib/analysis.js#L382) | ✓ | ✓ |
+| `analysisResult` | [analysis.js:271](../../src/lib/analysis.js#L271) | ✓ | ✓ |
+| `analysisToKeep` | [analysis.js:325](../../src/lib/analysis.js#L325) | ✓ | ✓ |
+| `analysisDollars` | [analysis.js:341](../../src/lib/analysis.js#L341) | ✓ |  |
+| `dollarsText` | [analysis.js:345](../../src/lib/analysis.js#L345) | ✓ | ✓ |
+| `analysisCost` | [analysis.js:347](../../src/lib/analysis.js#L347) | ✓ | ✓ |
+| `monthOf` | [analysis.js:358](../../src/lib/analysis.js#L358) |  |  |
+| `readSpend` | [analysis.js:359](../../src/lib/analysis.js#L359) | ✓ |  |
+| `addSpend` | [analysis.js:363](../../src/lib/analysis.js#L363) | ✓ | ✓ |
+| `recordSpend` | [analysis.js:369](../../src/lib/analysis.js#L369) | ✓ |  |
+| `spendSummary` | [analysis.js:375](../../src/lib/analysis.js#L375) | ✓ | ✓ |
+| `typicalCost` | [analysis.js:383](../../src/lib/analysis.js#L383) | ✓ | ✓ |
 | `createBackup` | [backup.js:20](../../src/lib/backup.js#L20) | ✓ | ✓ |
 | `isObject` | [backup.js:24](../../src/lib/backup.js#L24) |  |  |
 | `isText` | [backup.js:25](../../src/lib/backup.js#L25) |  |  |
@@ -601,9 +601,9 @@ Package: `layers-web` v1.0.39 · `src/`: 94 files, 16098 lines, 114 components, 
 | `str` | [weekRead.js:13](../../src/lib/weekRead.js#L13) |  |  |
 | `obj` | [weekRead.js:14](../../src/lib/weekRead.js#L14) |  |  |
 | `weekReadRequest` | [weekRead.js:23](../../src/lib/weekRead.js#L23) | ✓ | ✓ |
-| `weekReadResult` | [weekRead.js:60](../../src/lib/weekRead.js#L60) | ✓ | ✓ |
-| `readWeekReads` | [weekRead.js:69](../../src/lib/weekRead.js#L69) | ✓ | ✓ |
-| `saveWeekRead` | [weekRead.js:72](../../src/lib/weekRead.js#L72) | ✓ | ✓ |
+| `weekReadResult` | [weekRead.js:61](../../src/lib/weekRead.js#L61) | ✓ | ✓ |
+| `readWeekReads` | [weekRead.js:70](../../src/lib/weekRead.js#L70) | ✓ | ✓ |
+| `saveWeekRead` | [weekRead.js:73](../../src/lib/weekRead.js#L73) | ✓ | ✓ |
 | `shade` | [ActivityCalendar.jsx:13](../../src/components/ActivityCalendar.jsx#L13) |  |  |
 | `keyContent` | [atoms.jsx:140](../../src/components/atoms.jsx#L140) |  |  |
 | `useAvatarPicker` | [avatarKeys.js:26](../../src/components/avatarKeys.js#L26) | ✓ |  |
@@ -747,8 +747,8 @@ Package: `layers-web` v1.0.39 · `src/`: 94 files, 16098 lines, 114 components, 
 | `STAMP` | [analysis.js:37](../../src/lib/analysis.js#L37) |
 | `ANALYSIS_SCHEMA` | [analysis.js:136](../../src/lib/analysis.js#L136) |
 | `WEEKDAYS` | [analysis.js:142](../../src/lib/analysis.js#L142) |
-| `KEPT_CHAT` | [analysis.js:323](../../src/lib/analysis.js#L323) |
-| `SPEND_KEY` | [analysis.js:356](../../src/lib/analysis.js#L356) |
+| `KEPT_CHAT` | [analysis.js:324](../../src/lib/analysis.js#L324) |
+| `SPEND_KEY` | [analysis.js:357](../../src/lib/analysis.js#L357) |
 | `BACKUP_VERSION` | [backup.js:15](../../src/lib/backup.js#L15) |
 | `MAX_BACKUP_BYTES` | [backup.js:17](../../src/lib/backup.js#L17) |
 | `GRADES` | [backup.js:111](../../src/lib/backup.js#L111) |
@@ -848,7 +848,7 @@ Package: `layers-web` v1.0.39 · `src/`: 94 files, 16098 lines, 114 components, 
 | `DAYS` | [weekRead.js:15](../../src/lib/weekRead.js#L15) |
 | `MAX_LOGS` | [weekRead.js:16](../../src/lib/weekRead.js#L16) |
 | `WEEK_SCHEMA` | [weekRead.js:18](../../src/lib/weekRead.js#L18) |
-| `KEY` | [weekRead.js:68](../../src/lib/weekRead.js#L68) |
+| `KEY` | [weekRead.js:69](../../src/lib/weekRead.js#L69) |
 | `CELL` | [ActivityCalendar.jsx:11](../../src/components/ActivityCalendar.jsx#L11) |
 | `GAP` | [ActivityCalendar.jsx:12](../../src/components/ActivityCalendar.jsx#L12) |
 | `KEY_ICONS` | [atoms.jsx:139](../../src/components/atoms.jsx#L139) |

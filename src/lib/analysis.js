@@ -258,6 +258,7 @@ export function analysisRequest({ people, person, yourName, text, images = [], m
     content,
     schema: analysisSchema(tokensFor(group.length)),
     model: analysisModel(model).id,
+    deep: true, // high effort on the thinking models (electron/analysis.cjs)
   };
 }
 

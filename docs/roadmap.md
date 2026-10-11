@@ -276,8 +276,16 @@ answers were read back (see [History](#history)):
 ## Drafted next (2026-10-11): repeats, Claude's analysis, and using Layers
 
 Asked for on 2026-10-11 alongside repeating on certain days (built, see
-[History](#history)). Nothing here is built until you pick it. Sizes: small (an hour or
-two), medium (half a day), large (a day or more).
+[History](#history)). Sizes: small (an hour or two), medium (half a day), large (a day or
+more).
+
+**Picked 2026-10-11**: repeats 1, 2 and 4 (not an end and a pause); all four for Claude's
+analysis; all four for using Layers. Each is marked as it's built.
+
+- **Built: a deeper read** (analysis 4). Sonnet 5.5, Opus 5.5 and Fable 5.1 already think
+  before answering by default, so the lever is effort: a whole chat's analysis, practice
+  feedback and the week's read now run them at high effort (Opus 5.5 was at its default,
+  medium).
 
 ### Repeating plans
 

@@ -13,6 +13,12 @@ const Client = Anthropic.Anthropic || Anthropic.default || Anthropic;
 // anything else gets the first, Claude Haiku 4.5, the cheapest.
 const MODELS = ['claude-haiku-4-5', 'claude-sonnet-5-5', 'claude-opus-5-5', 'claude-fable-5-1'];
 const MODEL = MODELS[0];
+// A deep request (the page's `deep`: a whole chat's analysis, practice
+// feedback, the week's read) runs the thinking models at high effort, for a
+// sharper read (decided 2026-10-11). They think anyway; effort is how much.
+// Opus 5.5 would be medium without it. Haiku doesn't take effort, and quick
+// requests (a practice turn, reply ideas) keep each model's own.
+const DEEP_EFFORT = { 'claude-sonnet-5-5': 'high', 'claude-opus-5-5': 'high', 'claude-fable-5-1': 'high' };
 const MAX_IMAGES = 6;
 const MAX_IMAGE_CHARS = 6 * 1024 * 1024; // base64, after the page shrinks them
 const MAX_TEXT_CHARS = 60000;
@@ -85,7 +91,7 @@ function errorText(e, { images = false } = {}) {
   return "Couldn't analyse that chat.";
 }
 
-// Asks Claude for the analysis: { system, content, schema, model? } from the
+// Asks Claude for the analysis: { system, content, schema, model?, deep? } from the
 // page. Resolves to { result, usage: { input, output }, model } or { error },
 // with usage and model too when Claude answered but it couldn't be used
 // (that's still charged, so Me's spending counts it).
@@ -103,7 +109,7 @@ async function runAnalysis(request, { apiKey, client = null } = {}) {
       max_tokens: 16000,
       system: request.system,
       messages: [{ role: 'user', content }],
-      output_config: { format: { type: 'json_schema', schema: request.schema } },
+      output_config: { format: { type: 'json_schema', schema: request.schema }, ...(request.deep === true && DEEP_EFFORT[model] ? { effort: DEEP_EFFORT[model] } : {}) },
     });
     const used = response.usage || {};
     const usage = { input: used.input_tokens || 0, output: used.output_tokens || 0 };
