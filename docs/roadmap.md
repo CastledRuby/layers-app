@@ -273,6 +273,53 @@ answers were read back (see [History](#history)):
 - **More chats**: in-person notes first (no export needed), then Messenger or Discord
   from their data downloads.
 
+## Drafted next (2026-10-11): repeats, Claude's analysis, and using Layers
+
+Asked for on 2026-10-11 alongside repeating on certain days (built, see
+[History](#history)). Nothing here is built until you pick it. Sizes: small (an hour or
+two), medium (half a day), large (a day or more).
+
+### Repeating plans
+
+1. **Every 2, 3 or 4 weeks** (medium): "fortnightly football" in the plan sheet and typed
+   ("every other tue"). Plans gain an `interval`; everything that lists a day's plans
+   learns it.
+2. **Monthly** (medium): on the same date (the 15th) or a weekday of the month (the first
+   Friday, the last Sunday), as Google Calendar does. The calendar feed already reads
+   these; your own plans can't make them yet.
+3. **An end, and a pause** (medium): until a date or for so many times (a ten-week
+   course), and **Pause** for a while (holidays) without deleting it; reminders stop
+   too.
+4. **A different time on different days** (medium): Tue 6 pm and Thu 7 pm as one plan,
+   instead of two.
+
+### Claude's analysis
+
+1. **Knows what Layers knows** (medium): the request also carries their saved details,
+   your last "try next time" with them, and your goals with them, all names hidden as
+   now. Feedback can then say whether you did what you meant to, build on what you know,
+   and stop re-finding details you've already saved.
+2. **Points at the moment** (medium): each piece of feedback quotes the line it's about
+   (a question you missed, a follow-up that landed), shown highlighted in the chat.
+3. **The numbers first** (small–medium): worked out on this laptop before Claude sees
+   anything: who texted more, reply times, questions each way, double texts. Claude gets
+   them as facts, so the reciprocity and balance scores rest on numbers, and you see them
+   in a small "The numbers" panel. Free.
+4. **A deeper read on Sonnet and Opus** (small): they think before answering (adaptive
+   thinking) for sharper feedback; Haiku stays quick and cheap. A few cents more on those
+   two only.
+
+### Using Layers
+
+1. **Type a plan in the plan sheet** (small): a "Type it" box at the top of Plan something
+   ("gym tue thu fri 7am") that fills every step, the same reading as Ctrl+K.
+2. **Keys for where you are** (small–medium): ? shows the keys for the screen or sheet
+   you're on first, then the rest; a slim hint bar in long sheets.
+3. **Move plans by dragging** (large): drag a plan to another day in the month, and a
+   week view with times to drag along.
+4. **Me in sections** (medium): Me has grown long; tabs (You, Notifications, Claude,
+   Your data) and a filter box to find a setting.
+
 ## The plan from here (2026-10-07)
 
 You asked to do everything that doesn't need the US$99 Apple Developer account, and to
