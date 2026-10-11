@@ -4,7 +4,7 @@
 import { describe, expect, it } from 'vitest';
 import { CATEGORIES } from './data/constants.js';
 import { MODELS } from '../electron/analysis.cjs';
-import { addSpend, ANALYSIS_MODELS, ANALYSIS_SCHEMA, analysisCost, analysisRequest, analysisResult, analysisSchema, analysisSystem, analysisToKeep, chatSpeakers, DEFAULT_ANALYSIS_MODEL, detectPeople, dollarsText, hideNames, otherSpeakers, restoreNames, spendSummary, typicalCost } from './lib/analysis.js';
+import { addSpend, ANALYSIS_MODELS, ANALYSIS_SCHEMA, analysisContext, analysisCost, analysisRequest, analysisResult, analysisSchema, analysisSystem, analysisToKeep, chatSpeakers, DEFAULT_ANALYSIS_MODEL, detectPeople, dollarsText, hideNames, otherSpeakers, restoreNames, spendSummary, typicalCost } from './lib/analysis.js';
 
 const priya = { id: 'p1', name: 'Priya Shah', layer: 2 };
 const amelie = { id: 'a', name: 'Amelie', layer: 4, interests: [{ text: 'Reading' }] };
@@ -59,7 +59,7 @@ describe('names', () => {
     expect(otherSpeakers(chat, [priya], 'Sam')).toEqual(['Jess Moore', 'Tom']);
     const sent = analysisRequest({ person: priya, yourName: 'Sam', text: chat, today: TODAY }).content[0].text;
     expect(sent).not.toMatch(/Jess|Moore|Tom|Priya|Sam/);
-    expect(sent).toMatch(/^Also in this chat, and not who it's about: \[someone 1\], \[someone 2\]\./);
+    expect(sent).toMatch(/(^|\n)Also in this chat, and not who it's about: \[someone 1\], \[someone 2\]\./);
     expect(sent).toMatch(/\[someone 1\]: yep!\n.*\[someone 2\]: me too, \[them\]/);
     expect(restoreNames({ a: '[someone 1] backed [them] up', b: ['[someone 2]', '[someone 3]'] }, 'Priya Shah', ['Jess Moore', 'Tom'])).toEqual({ a: 'Jess Moore backed Priya up', b: ['Tom', 'someone'] });
   });
@@ -95,7 +95,7 @@ describe('the request', () => {
 
   it('for a group: each person tagged with their layer, and saying whose each detail is', () => {
     const req = analysisRequest({ people: [amelie, chloe], yourName: 'Liam', text: 'Amelie: hi\nChloe: hey', today: TODAY });
-    expect(req.content.at(-1).text).toBe('The chat:\n\n[them 1]: hi\n[them 2]: hey');
+    expect(req.content.at(-1).text.endsWith('\n\nThe chat:\n\n[them 1]: hi\n[them 2]: hey')).toBe(true);
     expect(req.system).toMatch(/\[them 1\], in Layer 4.*\[them 2\], in Layer 3/s);
     expect(req.schema.properties.transcript.items.properties.who.enum).toEqual(['you', 'them 1', 'them 2']);
     expect(req.schema.properties.extractedInfo.items.properties.about.enum).toEqual(['them 1', 'them 2']);
@@ -279,5 +279,49 @@ describe('the answer', () => {
     expect(analysisCost({ input: 9000, output: 4000 })).toBe('about US$0.03');
     expect(analysisCost({ input: 1000, output: 500 })).toBe('under US$0.01');
     expect(analysisCost()).toBe('under US$0.01');
+  });
+});
+
+describe('what Layers knows, the numbers and the moments (2026-10-11)', () => {
+  const sam = { id: 's', name: 'Sam Lee', layer: 3, interests: [{ text: 'Rock climbing with Sam Lee', at: '2026-09-01' }, { text: 'Old', archived: true }], goals: [{ title: 'Plan a climbing day', progress: 40 }, { title: 'Done one', progress: 100 }] };
+  const tip = (at, text) => ({ id: at, personId: 's', at, analysis: { grading: { overall: 60 }, review: { tryNextTime: text } } });
+  const journal = [tip('2026-09-20', 'Ask a follow-up before sharing your own.'), tip('2026-09-28', 'Name the feeling when they share news.'), { id: 'x', personId: 'o', at: '2026-10-01', analysis: { review: { tryNextTime: 'Not theirs' } } }];
+  const chat = '[2026-10-06 20:00] Sam Lee: got the job!!\n[2026-10-06 20:04] Liam: no way! how are you feeling?\n[2026-10-06 20:05] Liam: so proud\n[2026-10-06 20:20] Sam Lee: nervous haha\n[2026-10-06 20:21] Liam: that makes sense';
+
+  it('gathers their details, open goals and the last tip with them', () => {
+    expect(analysisContext([sam], journal)).toEqual([{ details: ['Rock climbing with Sam Lee'], goals: ['Plan a climbing day'], lastTip: { text: 'Name the feeling when they share news.', at: '2026-09-28' } }]);
+    expect(analysisContext([{ id: 'n', name: 'New' }], journal)).toEqual([{ details: [], goals: [], lastTip: null }]);
+  });
+
+  it('sends them before the chat, with the numbers, names hidden', () => {
+    const text = analysisRequest({ person: sam, yourName: 'Liam', text: chat, today: TODAY, journal }).content[0].text;
+    expect(text).toMatch(/^WHAT LAYERS ALREADY KNOWS\nWhat \[them\] has told the user before/);
+    expect(text).toContain('- Rock climbing with [them]');
+    expect(text).toContain("The user's goals with [them]: Plan a climbing day.");
+    expect(text).toContain(`LAST TIME'S TIP for the user with [them] (2026-09-28): "Name the feeling when they share news."`);
+    expect(text).toContain('THE NUMBERS, counted exactly from the chat');
+    expect(text).toContain('[you] sent 3 messages (11 words, 1 with a question; at most 2 in a row); [them] sent 2 messages (5 words, 0 with a question; at most 1 in a row).');
+    expect(text).toContain('[you] usually answered within 4 min, [them] within 15 min.');
+    expect(text).toContain('[them] started, and [you] sent the last message.');
+    expect(text).not.toMatch(/Sam|Liam/);
+    expect(analysisRequest({ person: priya, yourName: 'Sam', text: 'Priya: hi', today: TODAY }).content[0].text).toBe('The chat:\n\n[them]: hi');
+  });
+
+  it('asks for moments and whether the tip was followed, with no more either-or fields', () => {
+    const schema = analysisSchema(['them']);
+    expect(schema.properties.moments.items.properties.kind.enum).toEqual(['good', 'missed']);
+    expect(schema.required).toEqual(expect.arrayContaining(['moments', 'tipFollowed']));
+    expect(JSON.stringify(schema).match(/"anyOf"/g)).toHaveLength(6);
+  });
+
+  it('keeps good and missed moments (quotes tidied), the tip check only with a tip, and the numbers', () => {
+    const raw = { moments: [{ quote: '"how are you feeling?"', kind: 'good', note: 'Asked about [them].' }, { quote: 'x', kind: 'meh', note: '' }, { quote: ' ', kind: 'missed', note: '' }], tipFollowed: 'You named the feeling.' };
+    const lastTip = { text: 'Name the feeling.', at: '2026-09-28' };
+    const r = analysisResult(raw, [sam], { today: TODAY, numbers: { you: {}, them: {} }, lastTip });
+    expect(r.moments).toEqual([{ quote: 'how are you feeling?', kind: 'good', note: 'Asked about Sam.' }]);
+    expect(r).toMatchObject({ tipFollowed: 'You named the feeling.', lastTip, numbers: { you: {}, them: {} } });
+    expect(analysisResult(raw, [sam], { today: TODAY })).toMatchObject({ tipFollowed: '', lastTip: null, numbers: null });
+    expect(analysisToKeep(r, { chat }).review).toMatchObject({ moments: r.moments, lastTip, tipFollowed: 'You named the feeling.' });
+    expect(analysisToKeep(analysisResult({}, [sam], { today: TODAY }), { chat }).review).not.toHaveProperty('moments');
   });
 });

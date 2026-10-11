@@ -707,7 +707,7 @@ function LayersApp() {
   // you use the rest of Layers; its answers wait in Coach to be reviewed. ---
   const chatBatch = useChatBatch({
     analyse: analysisBridge ? (request) => analysisBridge.runAnalysis(request) : null,
-    people, yourName: profile.name,
+    people, yourName: profile.name, journal,
     onDone: ({ answered, failed, note }) => {
       const ready = answered ? `${answered} ${answered === 1 ? 'chat' : 'chats'} ready to review in Coach` : '';
       if (note) pushToast(ready ? `${note} ${ready}.` : note);
@@ -1751,7 +1751,7 @@ function LayersApp() {
             })()}
             {reviewEntryId && journal.some(j => j.id === reviewEntryId && j.analysis) && (() => {
               const entry = journal.find(j => j.id === reviewEntryId);
-              return <ChatReviewSheet entry={entry} person={people.find(p => p.id === entry.personId)} onClose={() => setReviewEntryId(null)} />;
+              return <ChatReviewSheet entry={entry} person={people.find(p => p.id === entry.personId)} yourName={profile.name} onClose={() => setReviewEntryId(null)} />;
             })()}
             {confirmState && (
               <ConfirmDialog title={confirmState.title} message={confirmState.message} confirmLabel={confirmState.confirmLabel} danger={confirmState.danger} hideCancel={confirmState.hideCancel} onConfirm={confirmState.onConfirm} altLabel={confirmState.altLabel} onAlt={confirmState.onAlt} onCancel={confirmState.onCancel} />

@@ -138,6 +138,15 @@ describe('validateBackup repairs or skips damaged records', () => {
     expect(j3).not.toHaveProperty('analysis');
     expect(j4.analysis.chat.length).toBe(20040);
   });
+  it("keeps a review's moments and last time's tip, tidied (from 2026-10-11)", () => {
+    const review = { wentWell: [], opportunity: '', tryNextTime: '', next: {},
+      moments: [{ quote: 'how are you feeling?', kind: 'good', note: 'Asked' }, { quote: 'x', kind: 'odd' }, { kind: 'missed' }],
+      lastTip: { text: 'Name the feeling.', at: 'yesterday' }, tipFollowed: 'You did.' };
+    const { data } = validateBackup({ version: 1, people: [person()], journal: [{ id: 'j1', personId: 'p1', type: 'messaged', analysis: { grading: { overall: 70 }, review } }] });
+    expect(data.journal[0].analysis.review).toMatchObject({ moments: [{ quote: 'how are you feeling?', kind: 'good', note: 'Asked' }], lastTip: { text: 'Name the feeling.', at: null }, tipFollowed: 'You did.' });
+    const without = validateBackup({ version: 1, people: [person()], journal: [{ id: 'j1', personId: 'p1', type: 'messaged', analysis: { grading: { overall: 70 }, review: { ...review, tipFollowed: '' } } }] });
+    expect(without.data.journal[0].analysis.review).not.toHaveProperty('lastTip');
+  });
   it('skips goals without a title and saved details without text', () => {
     const result = validateBackup({ version: 1, people: [person({ goals: [{ id: 'g1', title: 'Hang out', progress: 140 }, { id: 'g2' }], interests: [{ text: 'Chess' }, { emoji: '⭐' }] })] });
     const [p] = result.data.people;

@@ -286,6 +286,11 @@ analysis; all four for using Layers. Each is marked as it's built.
   before answering by default, so the lever is effort: a whole chat's analysis, practice
   feedback and the week's read now run them at high effort (Opus 5.5 was at its default,
   medium).
+- **Built: knows what Layers knows, points at the moment, and the numbers first**
+  (analysis 1–3). Each chat goes with their saved details, your goals with them and last
+  time's tip (names hidden), and the numbers counted on this laptop; Claude says whether
+  you followed the tip and quotes the moments that mattered, marked on the chat (green
+  where it landed, amber where something was missed). The Journal's review keeps them.
 
 ### Repeating plans
 

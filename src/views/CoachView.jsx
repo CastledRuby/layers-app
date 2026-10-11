@@ -9,9 +9,11 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Check, ImagePlus, Plus, X } from 'lucide-react';
-import { Avatar, ChatBubble, ConvStateBadge, Kbd, LabeledBar, LayerBadge } from '../components/atoms.jsx';
+import { Avatar, ConvStateBadge, Kbd, LabeledBar, LayerBadge } from '../components/atoms.jsx';
 import { hasOpenSheet, isTyping } from '../components/sheetLayer.js';
-import { ANALYSIS_MODELS, analysisCost, analysisModel, analysisRequest, analysisResult, analysisToKeep, DEFAULT_ANALYSIS_MODEL, detectPeople, MAX_SCREENSHOTS, otherSpeakers, recordSpend, typicalCost } from '../lib/analysis.js';
+import { ANALYSIS_MODELS, analysisCost, analysisModel, analysisRequest, analysisResult, analysisToKeep, DEFAULT_ANALYSIS_MODEL, detectPeople, lastTipFor, MAX_SCREENSHOTS, otherSpeakers, recordSpend, typicalCost } from '../lib/analysis.js';
+import { chatNumbers } from '../lib/chatNumbers.js';
+import { ChatNumbers, MarkedTranscript, TipCheck } from '../components/AnalysisExtras.jsx';
 import { DateDropdown } from '../components/pickers.jsx';
 import { ChatExports } from '../components/ChatExports.jsx';
 import { ChatBatchCard } from '../components/ChatBatch.jsx';
@@ -219,12 +221,12 @@ export function CoachView({ people, journal, initialPersonId, initialTab, onOpen
     setOwnError(null);
     setAskingModel(withModel);
     setStep('asking');
-    const answer = await Promise.resolve(onAnalyse(analysisRequest({ people: chat.people, yourName, text: chat.text, images: chat.images, model: withModel }))).catch(() => null);
+    const answer = await Promise.resolve(onAnalyse(analysisRequest({ people: chat.people, yourName, text: chat.text, images: chat.images, model: withModel, journal }))).catch(() => null);
     if (answer && answer.usage) recordSpend(answer.usage, answer.model || withModel); // charged, whatever happens next
     if (ticket !== ownTicket.current) return false;
     if (!answer || answer.error) { setOwnError((answer && answer.error) || "Couldn't analyse that chat."); setStep(backTo); return false; }
     const used = analysisModel(answer.model || withModel).id;
-    const result = analysisResult(answer.result, chat.people, { others: otherSpeakers(chat.text, chat.people, yourName) });
+    const result = analysisResult(answer.result, chat.people, { others: otherSpeakers(chat.text, chat.people, yourName), numbers: chat.text ? chatNumbers(chat.text, { yourName }) : null, lastTip: lastTipFor(chat.people, journal) });
     if (chat.source) result.log.date = chat.source.day; // the export's own times
     setOwnChat(chat);
     setOwnResults({ ...results, [used]: { result, cost: analysisCost(answer.usage, used) } });
@@ -323,7 +325,7 @@ export function CoachView({ people, journal, initialPersonId, initialTab, onOpen
 
   return (
     <div className="px-5 pt-6 pb-4">
-      {reviewing && chatBatch && chatBatch.waiting.length > 0 && <ChatQueueSheet items={chatBatch.waiting} people={people} onLog={chatBatch.onLog} onSkip={chatBatch.onSkip} onRemind={chatBatch.onRemind} onClose={() => setReviewing(false)} />}
+      {reviewing && chatBatch && chatBatch.waiting.length > 0 && <ChatQueueSheet items={chatBatch.waiting} people={people} yourName={yourName} onLog={chatBatch.onLog} onSkip={chatBatch.onSkip} onRemind={chatBatch.onRemind} onClose={() => setReviewing(false)} />}
       <p className="font-display" style={{ fontSize: 24, color: COLORS.ink }}>Conversation Coach</p>
       <p className="text-sm mt-1" style={{ color: COLORS.inkSoft }}>Noticing, responding and adapting, not scripts.</p>
 
@@ -592,8 +594,9 @@ export function CoachView({ people, journal, initialPersonId, initialTab, onOpen
 
               <p className="text-sm font-semibold mb-2" style={{ color: COLORS.ink }}>Reconstructed conversation</p>
               <div className="rounded-2xl p-3.5 mb-4" style={{ background: COLORS.paper, border: `1px solid ${COLORS.line}` }}>
-                {scenario.transcript.map((m, i) => (<ChatBubble key={i} who={m.who} text={m.text} name={m.name} />))}
+                <MarkedTranscript transcript={scenario.transcript} moments={scenario.moments || []} />
               </div>
+              <ChatNumbers numbers={scenario.numbers} theirName={scenario.personIds && scenario.personIds.length > 1 ? 'Them' : ((people.find(p => scenario.personIds && p.id === scenario.personIds[0]) || {}).name || 'Them').trim().split(/\s+/)[0]} />
 
               <p className="text-sm font-semibold mb-2" style={{ color: COLORS.ink }}>Conversation state</p>
               <div className="mb-4"><ConvStateBadge stateKey={scenario.conversationState} /></div>
@@ -619,6 +622,7 @@ export function CoachView({ people, journal, initialPersonId, initialTab, onOpen
                 {typeof scenario.grading.goalImpact === 'number' && <p className="text-xs mt-3" style={{ color: COLORS.inkSoft }}>Goal progress: <span style={{ color: COLORS.good, fontWeight: 700 }}>+{scenario.grading.goalImpact}%</span></p>}
               </div>
 
+              <TipCheck lastTip={scenario.lastTip} tipFollowed={scenario.tipFollowed} />
               <div className="rounded-2xl p-4 mb-3" style={{ background: COLORS.paperRaised, border: `1px solid ${COLORS.line}` }}>
                 <p className="text-sm font-semibold mb-1.5" style={{ color: COLORS.ink }}>What went well</p>
                 {scenario.wentWell.map((w, i) => (<p key={i} className="text-xs mb-0.5" style={{ color: COLORS.good }}>✓ {w}</p>))}

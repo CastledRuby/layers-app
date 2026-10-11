@@ -376,6 +376,12 @@ button[style*="background: var(--c-accent)"]:not(:disabled):hover { box-shadow: 
 .sheet-overlay { backdrop-filter: blur(2px); -webkit-backdrop-filter: blur(2px); }
 .toast { box-shadow: 0 10px 26px -6px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,.08); }
 
+/* A moment Claude pointed at in a chat (AnalysisExtras.jsx): a soft band
+   behind the line, green where it landed, amber where something was missed. */
+.moment { border-radius: 14px; padding: 6px 8px 2px; margin: 0 -8px 6px; }
+.moment--good { background: color-mix(in srgb, ${COLORS.good} 9%, transparent); }
+.moment--missed { background: color-mix(in srgb, ${COLORS.warn} 11%, transparent); }
+
 /* A phone's notch and home bar (0 everywhere else). */
 .nav-bar { padding-bottom: calc(12px + env(safe-area-inset-bottom)); }
 .sheet-footer { padding-bottom: calc(22px + env(safe-area-inset-bottom)); }

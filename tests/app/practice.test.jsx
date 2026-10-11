@@ -57,7 +57,8 @@ describe('Practise', () => {
     expect(within(feedback).getByText('72%')).toBeTruthy();
     expect(within(feedback).getByText(/You let Maya be upset without fixing it/)).toBeTruthy();
     const sent = bridge.runAnalysis.mock.calls.at(-1)[0];
-    expect(sent.content.at(-1).text).toBe("The chat:\n\n[them]: didnt get the job\n[you]: oh no [someone], im so sorry\n[them]: yeah. kinda gutted\n[you]: that sucks. want to talk about it?\n[them]: thanks, that helps");
+    expect(sent.content.at(-1).text).toContain("THE NUMBERS, counted exactly from the chat");
+    expect(sent.content.at(-1).text.split('\n\nThe chat:\n\n')[1]).toBe("[them]: didnt get the job\n[you]: oh no [someone], im so sorry\n[them]: yeah. kinda gutted\n[you]: that sucks. want to talk about it?\n[them]: thanks, that helps");
     expect(JSON.parse(window.localStorage.getItem('layers-practice'))).toEqual([expect.objectContaining({ situation: 'bad-news', grading: expect.objectContaining({ overall: 72 }) })]);
     expect(savedState().journal).toEqual([]);
 

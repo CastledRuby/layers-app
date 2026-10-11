@@ -22,7 +22,7 @@ import { COLORS } from '../theme.js';
 // items: what's waiting (lib/chatBatch.js, waiting). onLog(items, leaveOut)
 // logs them ({ [item id]: [detail indexes] } left unsaved), onSkip(item),
 // onRemind(item).
-export function ChatQueueSheet({ items, people, onLog, onSkip, onRemind, onClose }) {
+export function ChatQueueSheet({ items, people, yourName = '', onLog, onSkip, onRemind, onClose }) {
   const [index, setIndex] = useState(0);
   const [leaveOut, setLeaveOut] = useState({});
   const [full, setFull] = useState(false);
@@ -130,7 +130,7 @@ export function ChatQueueSheet({ items, people, onLog, onSkip, onRemind, onClose
         </div>
         {r && <p className="text-xs mt-3" style={{ color: COLORS.inkSoft }}>Read by {analysisModel(item.model).name}. Logging keeps this review and the chat with the log; skipping logs nothing.</p>}
       </Sheet>
-      {full && r && <ChatReviewSheet entry={{ at: item.day, analysis: analysisToKeep(r, { model: item.model, chat: item.chat }) }} person={who[0]} onClose={() => setFull(false)} />}
+      {full && r && <ChatReviewSheet entry={{ at: item.day, analysis: analysisToKeep(r, { model: item.model, chat: item.chat }) }} person={who[0]} yourName={yourName} onClose={() => setFull(false)} />}
     </>
   );
 }

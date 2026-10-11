@@ -155,6 +155,49 @@ describe('chat analysis with Claude', () => {
     expect(screen.queryByRole('button', { name: /^Chat review: Priya Shah/ })).toBeNull();
   });
 
+  it('sends what Layers knows and the numbers first, and shows the moments, the numbers and last time\'s tip (2026-10-11)', async () => {
+    const answer = { ...ANSWER,
+      transcript: [{ who: 'them', text: 'I got the job!!' }, { who: 'you', text: 'No way [them], congrats! how do you feel?' }, { who: 'them', text: 'nervous tbh' }, { who: 'you', text: 'haha same' }],
+      moments: [{ quote: 'how do you feel?', kind: 'good', note: 'You asked about [them], not the job.' }, { quote: 'haha same', kind: 'missed', note: 'Her nerves were a bid to talk more.' }],
+      tipFollowed: 'Yes: you named the feeling when [them] shared news.' };
+    const bridge = fakeBridge({ hasKey: true, answer: { result: answer, usage: { input: 9000, output: 4000 } } });
+    const priya = person('Priya Shah', { layer: 2, interests: [{ id: 'i1', emoji: '⭐', text: 'Applying for library jobs', at: '2026-09-01', temporary: false, archived: false }] });
+    seedState({ profile: { name: 'Sam', focus: 'mix' }, people: [priya], journal: [{ id: 'j1', personId: priya.id, at: '2026-09-28', type: 'messaged', meaningfulness: 3, added: [], activeListening: [], analysis: { grading: { overall: 60 }, conversationState: 'engaged', review: { wentWell: [], opportunity: '', tryNextTime: 'Name the feeling when Priya shares news.', next: {} } } }] });
+    const { user } = renderApp();
+    await openAnalyse(user, 'Priya');
+    const own = () => screen.getByLabelText('Your own chat');
+    await user.click(within(own()).getByLabelText('The chat'));
+    await user.paste('[2026-10-10 18:00] Priya: I got the job!!\n[2026-10-10 18:02] Sam: No way Priya, congrats! how do you feel?\n[2026-10-10 18:10] Priya: nervous tbh\n[2026-10-10 18:11] Sam: haha same');
+    await user.click(within(own()).getByRole('button', { name: 'Analyse with Claude' }));
+    await screen.findByText('Reconstructed conversation');
+
+    const text = bridge.runAnalysis.mock.calls[0][0].content[0].text;
+    expect(text).toMatch(/^WHAT LAYERS ALREADY KNOWS\n/);
+    expect(text).toContain('- Applying for library jobs');
+    expect(text).toContain(`LAST TIME'S TIP for the user with [them] (2026-09-28): "Name the feeling when [them] shares news."`);
+    expect(text).toContain('THE NUMBERS, counted exactly from the chat');
+    expect(text).not.toMatch(/Priya|Sam/);
+
+    const numbers = screen.getByLabelText('The numbers');
+    expect(numbers.textContent).toMatch(/Priya/);
+    expect(numbers.textContent).toMatch(/Usually answered in2 min8 min/);
+    expect(numbers.textContent).toMatch(/Priya started; you sent the last message/);
+    expect(screen.getByLabelText('Landed').textContent).toBe('✓ You asked about Priya, not the job.');
+    expect(screen.getByLabelText('Missed').textContent).toBe('↺ Her nerves were a bid to talk more.');
+    const tip = screen.getByLabelText("Last time's tip");
+    expect(tip.textContent).toContain('Name the feeling when Priya shares news.');
+    expect(tip.textContent).toContain('Yes: you named the feeling when Priya shared news.');
+
+    // Logged, the review keeps them, and the numbers are counted again from the kept chat.
+    await user.click(within(screen.getByLabelText('Log it')).getByRole('button', { name: 'Log this chat' }));
+    await user.click(nav('Journal'));
+    await user.click(screen.getAllByRole('button', { name: /^Chat review: Priya Shah/ })[0]);
+    const sheet = dialog('Chat review: Priya Shah');
+    expect(within(sheet).getByLabelText('Moments').textContent).toContain('“haha same”');
+    expect(within(sheet).getByLabelText("Last time's tip").textContent).toContain('Yes: you named the feeling');
+    expect(within(sheet).getByLabelText('The numbers').textContent).toMatch(/Priya started; you sent the last message/);
+  });
+
   it("on a laptop it's for pasting: no screenshots", async () => {
     fakeBridge({ hasKey: true });
     seedState({ people: [person('Priya Shah')] });

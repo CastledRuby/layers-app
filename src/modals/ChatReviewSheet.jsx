@@ -2,12 +2,17 @@
 // when it was logged (scores, state, what went well, what to try, what to
 // say next) and the chat itself. Kept on the entry (lib/analysis.js,
 // analysisToKeep); older analysed logs have only the scores and state.
+// Since 2026-10-11 it also shows last time's tip and whether you followed it,
+// the moments Claude pointed at, and the numbers, counted again from the
+// kept chat (lib/chatNumbers.js).
 
 import { useState } from 'react';
 import { Sheet } from '../components/Sheet.jsx';
 import { ConvStateBadge, LabeledBar } from '../components/atoms.jsx';
 import { DIM_COLORS } from '../data/constants.js';
+import { ChatNumbers, MomentList, TipCheck } from '../components/AnalysisExtras.jsx';
 import { analysisModel } from '../lib/analysis.js';
+import { chatNumbers } from '../lib/chatNumbers.js';
 import { formatCalendarDate, parseISODay } from '../lib/dates.js';
 import { COLORS } from '../theme.js';
 
@@ -22,7 +27,7 @@ function Section({ title, children }) {
   );
 }
 
-export function ChatReviewSheet({ entry, person, onClose }) {
+export function ChatReviewSheet({ entry, person, yourName = '', onClose }) {
   const [showChat, setShowChat] = useState(false);
   const a = entry.analysis;
   const g = a.grading;
@@ -46,9 +51,11 @@ export function ChatReviewSheet({ entry, person, onClose }) {
       </div>
       {r && (
         <>
+          <div className="mt-3"><TipCheck lastTip={r.lastTip} tipFollowed={r.tipFollowed} /></div>
           {r.recommendation && <p className="text-xs rounded-xl p-3 mt-3" style={{ background: COLORS.layer4Tint, color: COLORS.ink }}>{r.recommendation}</p>}
           {r.wentWell.length > 0 && <Section title="What went well">{r.wentWell.map((w, i) => <p key={i} className="text-xs mb-0.5" style={{ color: COLORS.good }}>✓ {w}</p>)}</Section>}
           {r.opportunity && <Section title="Opportunity"><p className="text-xs" style={{ color: COLORS.inkSoft }}>{r.opportunity}</p></Section>}
+          {r.moments && r.moments.length > 0 && <Section title="Moments"><MomentList moments={r.moments} /></Section>}
           {r.tryNextTime && <Section title="Try next time"><p className="text-xs" style={{ color: COLORS.inkSoft }}>{r.tryNextTime}</p></Section>}
           {r.encourager && (
             <Section title="Encourager use">
@@ -72,6 +79,7 @@ export function ChatReviewSheet({ entry, person, onClose }) {
           )}
         </>
       )}
+      {a.chat && <div className="mt-4"><ChatNumbers numbers={chatNumbers(a.chat, { yourName })} theirName={person ? person.name.trim().split(/\s+/)[0] : 'Them'} /></div>}
       {a.chat && (
         <Section title="The chat">
           <button type="button" onClick={() => setShowChat(v => !v)} aria-expanded={showChat} className="text-xs font-semibold" style={{ color: COLORS.accent }}>{showChat ? 'Hide the chat' : 'Show the chat'}</button>

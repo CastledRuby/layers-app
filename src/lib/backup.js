@@ -127,6 +127,9 @@ function cleanAnalysis(a) {
       wentWell: (Array.isArray(r.wentWell) ? r.wentWell : []).filter(s => typeof s === 'string'),
       opportunity: text(r.opportunity),
       tryNextTime: text(r.tryNextTime),
+      // From 2026-10-11: the moments Claude pointed at, and last time's tip with whether it was followed.
+      ...(Array.isArray(r.moments) ? { moments: r.moments.filter(m => isObject(m) && isText(m.quote) && ['good', 'missed'].includes(m.kind)).slice(0, 4).map(m => ({ quote: m.quote, kind: m.kind, note: text(m.note) })) } : {}),
+      ...(isObject(r.lastTip) && isText(r.lastTip.text) && isText(r.tipFollowed) ? { lastTip: { text: r.lastTip.text, at: isISODay(r.lastTip.at) ? r.lastTip.at : null }, tipFollowed: r.tipFollowed } : {}),
       encourager: isObject(r.encourager) && typeof r.encourager.line === 'string' ? { type: r.encourager.type === 'good' ? 'good' : 'improve', line: r.encourager.line, why: text(r.encourager.why) } : null,
       emotionalCues: (Array.isArray(r.emotionalCues) ? r.emotionalCues : []).filter(c => isObject(c) && typeof c.text === 'string').map(c => ({ emoji: text(c.emoji), text: c.text })),
       recommendation: typeof r.recommendation === 'string' ? r.recommendation : null,

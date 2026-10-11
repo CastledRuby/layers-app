@@ -682,6 +682,22 @@ will be sent.
   close you are, plus today's date (so "Yesterday 9:41 pm" can be dated) and whether
   this computer writes dates day first. Screenshots go as they are, so a name in one is
   seen; Claude is told to use only the tags.
+- **Before the chat** (decided 2026-10-11), two things worked out here:
+  - **What Layers already knows** (`analysisContext`): each person's saved details (the
+    newest 15, not archived), goals still open, and **last time's tip** (the "try next
+    time" of their newest analysed log), names hidden as the chat is. Claude is told not
+    to find the saved details again, to notice when you build on them, and to say in
+    `tipFollowed` whether you did what the tip said.
+  - **The numbers** (`chatNumbers` in [lib/chatNumbers.js](../../src/lib/chatNumbers.js),
+    free): each side's messages, words, messages with a question, most in a row, and the
+    usual time to answer the other (from the chat's times, under a day), and who started
+    and who sent the last message; four messages at least. Claude gets them as facts
+    (`numbersFacts`) to anchor reciprocity and balance.
+- **Moments**: Claude also quotes two to four lines that mattered most, each `good` (it
+  landed) or `missed` (a bid passed over), with a note. Coach marks them on the
+  reconstructed chat (`MarkedTranscript` in `components/AnalysisExtras.jsx`, placed by
+  `placeMoments`), with **The numbers** under it and **Last time's tip** above what went
+  well.
 - **What Claude is asked** (`analysisSystem`): what to look for before scoring (depth,
   and whether openings were met; listening: follow-ups, coming back to details, naming
   feelings, shift responses and missed bids; reciprocity: who asks, shares and starts
@@ -722,7 +738,8 @@ will be sent.
   **Log this chat**
   keeps, on the Journal entry (`analysisToKeep`), the scores and state, which model read
   it, Claude's review (what went well, the opportunity, try next time, encourager use,
-  emotional cues, the recommendation and what to say next) and the chat itself: as you
+  emotional cues, the recommendation, what to say next, and from 2026-10-11 the moments
+  and last time's tip with whether it was followed) and the chat itself: as you
   gave it, with real names, or for screenshots Claude's reading of them; only its last
   20,000 characters (`KEPT_CHAT`). So it's in your backups, and in the sync file if sync
   is on. The Journal's **Review** button opens it (`ChatReviewSheet`), and the Journal's

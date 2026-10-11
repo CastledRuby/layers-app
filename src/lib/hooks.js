@@ -7,7 +7,8 @@ import { toISODate } from './dates.js';
 import { plannedNotifications } from './calendar.js';
 import { addNotifiedReminder, getLastNotifiedDate, getNotifiedReminders, setLastNotifiedDate } from './storage.js';
 import { checkInReminder } from './text.js';
-import { analysisDollars, analysisModel, analysisRequest, analysisResult, otherSpeakers, recordSpend, spendSummary } from './analysis.js';
+import { analysisDollars, analysisModel, analysisRequest, analysisResult, lastTipFor, otherSpeakers, recordSpend, spendSummary } from './analysis.js';
+import { chatNumbers } from './chatNumbers.js';
 import { batchDollars, pruneQueue, readLimit, readQueue, saveQueue } from './chatBatch.js';
 import { readChatProgress, saveChatProgress } from './chatImport.js';
 
@@ -212,9 +213,9 @@ export function useCalendarNotifications({ enabled, state, settings, snoozes, nu
 // onDone({ answered, failed, note }) when a run ends.
 // Returns { running: { done, total, model } | null, note, queue, setQueue,
 // progress, saveProgress(key, change), start(items, model), stop() }.
-export function useChatBatch({ analyse, people, yourName, onDone }) {
-  const latest = useRef({ analyse, people, yourName, onDone });
-  useLayoutEffect(() => { latest.current = { analyse, people, yourName, onDone }; });
+export function useChatBatch({ analyse, people, yourName, journal = [], onDone }) {
+  const latest = useRef({ analyse, people, yourName, journal, onDone });
+  useLayoutEffect(() => { latest.current = { analyse, people, yourName, journal, onDone }; });
   // What was dealt with in an earlier session is gone; Undo can't reach it.
   const [queue, setQueue] = useState(() => pruneQueue(readQueue(), Number.POSITIVE_INFINITY));
   const [progress, setProgress] = useState(() => readChatProgress());
@@ -249,11 +250,11 @@ export function useChatBatch({ analyse, people, yourName, onDone }) {
       if (!item.tiny) {
         const limit = readLimit();
         if (limit && spendSummary().thisMonth.dollars + batchDollars([item], model) > limit) { stopped = `Stopped at your US$${limit} monthly limit (Me → Chat analysis).`; break; }
-        const { analyse: send, people: everyone, yourName: you } = latest.current;
+        const { analyse: send, people: everyone, yourName: you, journal: logs = [] } = latest.current;
         const group = item.ids.map(id => everyone.find(p => p.id === id)).filter(Boolean);
         if (group.length) {
           sending.current.add(item.id);
-          const answer = await Promise.resolve(send(analysisRequest({ people: group, yourName: you, text: item.text, model }))).catch(() => null);
+          const answer = await Promise.resolve(send(analysisRequest({ people: group, yourName: you, text: item.text, model, journal: logs }))).catch(() => null);
           sending.current.delete(item.id);
           if (answer && answer.usage) recordSpend(answer.usage, answer.model || model);
           const used = analysisModel((answer && answer.model) || model).id;
@@ -261,7 +262,7 @@ export function useChatBatch({ analyse, people, yourName, onDone }) {
           if (!answer || (answer.error && !answer.usage)) { stopped = `Stopped: ${(answer && answer.error) || "Couldn't reach Claude."}`; break; }
           if (answer.error) { add({ ...base, error: answer.error }); failed += 1; }
           else {
-            const result = analysisResult(answer.result, group, { others: otherSpeakers(item.text, group, you) });
+            const result = analysisResult(answer.result, group, { others: otherSpeakers(item.text, group, you), numbers: chatNumbers(item.text, { yourName: you }), lastTip: lastTipFor(group, logs) });
             result.log.date = item.day; // the export's own times
             add({ ...base, result, cost: analysisDollars(answer.usage, used) });
             answered += 1;

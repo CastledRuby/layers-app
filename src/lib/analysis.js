@@ -7,6 +7,7 @@
 
 import { AL_ITEMS, CATEGORIES, CONV_STATES, DIM_ORDER, LAYERS } from '../data/constants.js';
 import { parseISODay, toISODate } from './dates.js';
+import { chatNumbers, numbersFacts } from './chatNumbers.js';
 
 // The models you can try it with, cheapest first. Haiku 4.5 is the cheapest
 // Claude and the one used unless you pick another (each time Layers starts,
@@ -118,6 +119,8 @@ export function analysisSchema(tokens = ['them']) {
     wentWell: list(str),
     opportunity: str,
     tryNextTime: str,
+    tipFollowed: str,
+    moments: list(obj({ quote: str, kind: { type: 'string', enum: ['good', 'missed'] }, note: str })),
     encourager: orNull(obj({ type: { type: 'string', enum: ['good', 'improve'] }, line: str, why: str })),
     emotionalCues: list(obj({ emoji: str, text: str })),
     grading: obj({ overall: int, depth: int, activeListening: int, reciprocity: int, naturalness: int }),
@@ -156,6 +159,8 @@ export function analysisSystem({ layers = [1], today = new Date(), dayFirst = wr
 
     `THE CHAT. One conversation between [you] and ${group ? `a group: ${them}` : them}. Real names have been swapped for these tags. Refer to people only by their tags and to the user as "you", even if a screenshot shows a name. In pasted text, a line starting with a tag (perhaps after a timestamp) is that person's message. In screenshots, bubbles on the right are usually the user's. If it's unclear who sent something, decide from the context. Today is ${WEEKDAYS[today.getDay()]} ${toISODate(today)}${dayFirst ? '; dates in the chat are probably written day first (31/12)' : ''}.`,
 
+    'BEFORE THE CHAT the message may give WHAT LAYERS ALREADY KNOWS (details saved before this chat, the user\'s goals with them, and LAST TIME\'S TIP) and THE NUMBERS (counted exactly from the chat). Use them: build on what is known, judge the tip, and let the numbers anchor reciprocity and balance.',
+
     `WHAT TO LOOK FOR. Read the whole chat and work through these before scoring, pointing at specific messages in what you write:
 1. Depth: is it logistics and small talk, opinions and plans, or feelings, worries and hopes? When someone opened up, did the other meet it (share back, ask more) or move past it?
 2. Listening: does the user answer what was actually said? Look for follow-up questions about their words, coming back to details, naming a feeling ("that sounds stressful"), clarifying. Watch for shift responses (turning to themselves too soon: "same, I…") and missed bids (a question, news or feeling the user skipped).
@@ -176,6 +181,8 @@ log, for the user's journal, on Layers' own scales:
 transcript: the chat as you read it, in order, with who sent each message. Leave out what you can't read rather than guess.
 conversationState: how ${group ? 'the others seem' : 'they seem'} overall, especially toward the end: ${Object.entries(CONV_STATES).map(([k, v]) => `${k} (${v.desc})`).join('; ')}.
 wentWell: two to four specific things the user did well, each pointing at a moment. opportunity: the single most useful thing they missed or could do better, and where. tryNextTime: one concrete habit to practise, in one or two sentences.
+tipFollowed: if the message gives LAST TIME'S TIP, one sentence on whether the user did it in this chat (and where), or that it didn't come up; otherwise empty.
+moments: two to four moments that matter most, each a quote copied word for word from one message (up to 15 words), kind good (it landed: a great follow-up, sharing back, a warm reply) or missed (a question skipped, a bid passed over, a closer), and a one-line note on why.
 encourager: short replies that invite more ("no way!", "wait what happened?", "then what?") versus ones that close a topic ("nice", "lol", "ok"). Quote the user's most telling one: good if it invited more, improve if it closed things down; null if there were none.
 emotionalCues: up to three things ${group ? 'the others' : 'they'} may be feeling, each with one emoji and the evidence ("lots of exclamation marks about the job"). Possibilities, not facts; never diagnose.
 recommendation: one sentence when the best move is to let it rest (it ended naturally, they're winding down, or the user sent the last messages without a reply); otherwise null.
@@ -244,14 +251,47 @@ export function restoreNames(value, names, others = []) {
 // people: who it's with (or `person`, one); images: [{ mediaType, data }]
 // (base64, already shrunk); text: pasted, names hidden; model: one of
 // ANALYSIS_MODELS (the cheapest otherwise).
-export function analysisRequest({ people, person, yourName, text, images = [], model = DEFAULT_ANALYSIS_MODEL, today = new Date(), dayFirst }) {
+// What Layers already knows (decided 2026-10-11), for each person in the
+// chat: saved details, goals still open, and the last tip Claude gave you
+// with them ({ text, at }, from their newest analysed log). Sent with the
+// chat, names hidden, so the feedback builds on it and says whether you did it.
+export function analysisContext(group = [], journal = [], { max = 15 } = {}) {
+  return group.map(p => {
+    const details = ['important', 'plans', 'interests', 'preferences', 'experiences']
+      .flatMap(k => (p[k] || []).filter(it => it && !it.archived && typeof it.text === 'string' && it.text.trim()))
+      .sort((a, b) => String(b.at || '').localeCompare(String(a.at || ''))).map(it => it.text.trim()).slice(0, max);
+    const goals = (p.goals || []).filter(g => g && typeof g.title === 'string' && (g.progress || 0) < 100).map(g => g.title).slice(0, 5);
+    const tipped = journal.filter(j => j && j.personId === p.id && j.analysis && j.analysis.review && typeof j.analysis.review.tryNextTime === 'string' && j.analysis.review.tryNextTime.trim())
+      .sort((a, b) => String(b.at || '').localeCompare(String(a.at || '')))[0];
+    return { details, goals, lastTip: tipped ? { text: tipped.analysis.review.tryNextTime.trim(), at: tipped.at || null } : null };
+  });
+}
+
+// The last tip with anyone in the chat, for the result (analysisResult).
+export const lastTipFor = (group = [], journal = []) => analysisContext(group, journal).map(c => c.lastTip).find(Boolean) || null;
+
+// journal: for what Layers already knows about them (analysisContext).
+export function analysisRequest({ people, person, yourName, text, images = [], model = DEFAULT_ANALYSIS_MODEL, today = new Date(), dayFirst, journal = [] }) {
   const group = people || (person ? [person] : []);
   const pasted = String(text || '').trim();
   const others = otherSpeakers(pasted, group, yourName);
+  const hide = (t) => hideNames(t, { names: group.map(namesOf), yourName, others });
   const alsoIn = others.length ? `Also in this chat, and not who it's about: ${others.map((_, i) => `[someone ${i + 1}]`).join(', ')}.\n\n` : '';
+  const tokens = tokensFor(group.length);
+  const known = analysisContext(group, journal).map((c, i) => [
+    c.details.length ? `What [${tokens[i]}] has told the user before (saved already, so don't list these in extractedInfo again; notice when the user builds on them):\n${c.details.map(d => `- ${hide(d)}`).join('\n')}` : '',
+    c.goals.length ? `The user's goals with [${tokens[i]}]: ${c.goals.map(hide).join('; ')}.` : '',
+    c.lastTip ? `LAST TIME'S TIP for the user with [${tokens[i]}]${c.lastTip.at ? ` (${c.lastTip.at})` : ''}: "${hide(c.lastTip.text)}"` : '',
+  ].filter(Boolean).join('\n')).filter(Boolean);
+  const numbers = pasted ? chatNumbers(pasted, { yourName }) : null;
+  const before = [
+    known.length ? `WHAT LAYERS ALREADY KNOWS\n${known.join('\n\n')}` : '',
+    numbers ? `THE NUMBERS, counted exactly from the chat (use them for reciprocity and balance, and don't contradict them): ${numbersFacts(numbers, { group: group.length > 1 })}` : '',
+  ].filter(Boolean).join('\n\n');
+  const chat = pasted ? `${alsoIn}The chat:\n\n${hide(pasted)}` : `The chat is in the ${images.length === 1 ? 'screenshot' : 'screenshots'} above.`;
   const content = [
     ...images.slice(0, MAX_SCREENSHOTS).map(im => ({ type: 'image', source: { type: 'base64', media_type: im.mediaType, data: im.data } })),
-    { type: 'text', text: pasted ? `${alsoIn}The chat:\n\n${hideNames(pasted, { names: group.map(namesOf), yourName, others })}` : `The chat is in the ${images.length === 1 ? 'screenshot' : 'screenshots'} above.` },
+    { type: 'text', text: before ? `${before}\n\n${chat}` : chat },
   ];
   return {
     system: analysisSystem({ layers: group.map(p => p.layer), today, ...(dayFirst === undefined ? {} : { dayFirst }) }),
@@ -268,7 +308,9 @@ export function analysisRequest({ people, person, yourName, text, images = [], m
 // activeListening, summary, date } (date: the chat's day from its times, or
 // null). Details already on their profile are left out.
 // `others`: the names hidden as [someone 1]… (otherSpeakers of the chat sent).
-export function analysisResult(raw, people, { today = new Date(), others = [] } = {}) {
+// `numbers` (lib/chatNumbers.js) and `lastTip` (analysisContext) are worked
+// out here, not by Claude, and shown with it.
+export function analysisResult(raw, people, { today = new Date(), others = [], numbers = null, lastTip = null } = {}) {
   const group = Array.isArray(people) ? people : [people];
   const names = group.map(p => p.name);
   const tokens = tokensFor(group.length);
@@ -298,6 +340,11 @@ export function analysisResult(raw, people, { today = new Date(), others = [] } 
     wentWell: listOf(r.wentWell).filter(x => typeof x === 'string'),
     opportunity: typeof r.opportunity === 'string' ? r.opportunity : '',
     tryNextTime: typeof r.tryNextTime === 'string' ? r.tryNextTime : '',
+    lastTip: lastTip || null,
+    tipFollowed: lastTip && typeof r.tipFollowed === 'string' ? r.tipFollowed.trim() : '',
+    moments: listOf(r.moments).filter(m => m && typeof m.quote === 'string' && m.quote.trim() && ['good', 'missed'].includes(m.kind))
+      .slice(0, 4).map(m => ({ quote: m.quote.trim().replace(/^["“]|["”]$/g, ''), kind: m.kind, note: typeof m.note === 'string' ? m.note.trim() : '' })),
+    numbers: numbers || null,
     encourager: r.encourager && typeof r.encourager.line === 'string' ? { type: r.encourager.type === 'good' ? 'good' : 'improve', line: r.encourager.line, why: String(r.encourager.why || '') } : null,
     emotionalCues: listOf(r.emotionalCues).filter(x => x && typeof x.text === 'string').slice(0, 3),
     extractedInfo: listOf(r.extractedInfo)
@@ -331,6 +378,8 @@ export function analysisToKeep(result, { model, chat = '' } = {}) {
     ...(model ? { model } : {}),
     review: {
       wentWell: result.wentWell, opportunity: result.opportunity, tryNextTime: result.tryNextTime,
+      ...(result.moments && result.moments.length ? { moments: result.moments } : {}),
+      ...(result.lastTip && result.tipFollowed ? { lastTip: result.lastTip, tipFollowed: result.tipFollowed } : {}),
       encourager: result.encourager, emotionalCues: result.emotionalCues, recommendation: result.recommendation, next: result.next,
     },
     chat: text.length > KEPT_CHAT ? `(Earlier messages left out.)\n${text.slice(-KEPT_CHAT)}` : text,
