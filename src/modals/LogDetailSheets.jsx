@@ -8,7 +8,8 @@ import { Check, X } from 'lucide-react';
 import { Sheet } from '../components/Sheet.jsx';
 import { isPlusKey, isTabbedToButton, isTyping } from '../components/sheetLayer.js';
 import { KeyedField, Kbd } from '../components/atoms.jsx';
-import { AL_ITEMS, CATEGORIES, categoryMeta, DIM_COLORS, DIM_ORDER, DIM_QUESTIONS, INFO_TEMPLATES, NOTE_TEMPLATE_CATEGORY, NOTE_TEMPLATES, REFLECTION_TEMPLATES } from '../data/constants.js';
+import { AL_ITEMS, CATEGORIES, categoryMeta, DIM_COLORS, DIM_LABELS, DIM_ORDER, INFO_TEMPLATES, NOTE_TEMPLATE_CATEGORY, NOTE_TEMPLATES, REFLECTION_TEMPLATES } from '../data/constants.js';
+import { followUps, rateRows } from '../lib/logQuestions.js';
 import { COLORS } from '../theme.js';
 
 function DoneButton({ onClick }) {
@@ -49,80 +50,172 @@ function CheckRow({ checked, onClick, label, hint }) {
   );
 }
 
-// "How did each part go?": a 1-5 rating per dimension. Typing a number rates
-// the highlighted row and moves down; Backspace steps back up and clears that
-// row; the arrows move the highlight. Skipped rows use "How meaningful".
-export function RateSheet({ ratings, setRatings, cursor, setCursor, onClose }) {
-  function rate(index, value) {
-    setRatings(r => ({ ...r, [DIM_ORDER[index]]: value }));
-    setCursor(index + 1);
+// Whose part this is, in a log with several people (decided 2026-10-12):
+// their tabs, ticked once theirs is done (doneFor), and ← → to switch.
+// Nothing with one person.
+export function PersonTabs({ people, at, onPick, doneFor }) {
+  if (people.length < 2) return null;
+  return (
+    <div className="flex items-center gap-1.5 flex-wrap mb-3">
+      <div role="tablist" aria-label="Who" className="flex items-center gap-1.5 flex-wrap">
+        {people.map((p, i) => (
+          <button key={p.id} type="button" role="tab" aria-selected={i === at} onClick={() => onPick(i)} className={`chip${i === at ? ' chip--on' : ''}`}>
+            {doneFor && doneFor(p) && <Check size={12} color={COLORS.accent} strokeWidth={3} />}{p.name}
+          </button>
+        ))}
+      </div>
+      <span className="keys-hint flex items-center gap-1 text-xs ml-auto" style={{ color: COLORS.inkSoft }}><Kbd>←</Kbd><Kbd>→</Kbd></span>
+    </div>
+  );
+}
+// ← → moved to the person before or after; true when it did.
+function switchPerson(e, count, at, pick) {
+  if (count < 2 || isTyping() || (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight')) return false;
+  e.preventDefault();
+  pick(Math.max(0, Math.min(count - 1, at + (e.key === 'ArrowRight' ? 1 : -1))));
+  return true;
+}
+
+// What's asked in "How did each part go?" for one person: their six parts
+// (lib/logQuestions.js), then a yes or no for each thing worth asking after.
+function rateRowsFor(person, day) {
+  return [
+    ...rateRows(person).map(r => ({ kind: 'part', key: r.dim, ...r })),
+    ...followUps(person, day).map(f => ({ kind: 'ask', key: f.id, ...f })),
+  ];
+}
+
+// "How did each part go?": a 1-5 rating per part, asked for each person in
+// their own words, then "Did you ask about…?" for what's saved about them.
+// Typing a number rates the highlighted row and moves down, Y or N answers
+// a question, Backspace steps back up and clears that row, ↑ ↓ move the
+// highlight. With several people, each has their own: the last row of one
+// moves on to the next, and ← → or their tabs switch. Skipped parts use
+// "How meaningful". at: { who, row }, kept by the log so it carries on
+// where it was.
+export function RateSheet({ people, day, ratingsBy, setRating, answersBy, setAnswer, at, setAt, onClose }) {
+  const rowsBy = people.map(p => rateRowsFor(p, day));
+  const who = Math.min(at.who, people.length - 1);
+  const person = people[who];
+  const rows = rowsBy[who];
+  const row = Math.min(at.row, rows.length);
+  const ratings = ratingsBy[person.id] || {};
+  const answers = answersBy[person.id] || {};
+  const valueOf = (r, id = person.id) => (r.kind === 'part' ? (ratingsBy[id] || {})[r.key] : (answersBy[id] || {})[r.key]);
+  const firstOpen = (i) => { const open = rowsBy[i].findIndex(r => valueOf(r, people[i].id) === undefined); return open < 0 ? 0 : open; };
+
+  function advance(index) {
+    if (index + 1 < rows.length) setAt({ who, row: index + 1 });
+    else if (who + 1 < people.length) setAt({ who: who + 1, row: 0 });
+    else setAt({ who, row: rows.length });
+  }
+  function rate(index, value) { setRating(person.id, rows[index].key, value); advance(index); }
+  function answer(index, yes) { setAnswer(person.id, rows[index], yes); advance(index); }
+  function clear(i, index) {
+    const r = rowsBy[i][index];
+    if (r.kind === 'part') setRating(people[i].id, r.key, undefined);
+    else setAnswer(people[i].id, r, undefined);
   }
   function stepBack() {
-    const prev = Math.max(cursor - 1, 0);
-    setCursor(prev);
-    setRatings(r => { const next = { ...r }; delete next[DIM_ORDER[prev]]; return next; });
+    if (row > 0) { setAt({ who, row: row - 1 }); clear(who, row - 1); return; }
+    if (who > 0) { const last = rowsBy[who - 1].length - 1; setAt({ who: who - 1, row: last }); clear(who - 1, last); }
   }
+  const pick = (i) => setAt({ who: i, row: firstOpen(i) });
   function onKey(e) {
     if (e.ctrlKey || e.metaKey || e.altKey) return;
     if (enterCloses(e, onClose)) return;
-    if (/^[1-5]$/.test(e.key) && cursor < DIM_ORDER.length) { e.preventDefault(); rate(cursor, Number(e.key)); return; }
+    if (switchPerson(e, people.length, who, pick)) return;
+    const current = rows[row];
+    const letter = e.key.toLowerCase();
+    if (/^[1-5]$/.test(e.key) && current && current.kind === 'part') { e.preventDefault(); rate(row, Number(e.key)); return; }
+    if ((letter === 'y' || letter === 'n') && current && current.kind === 'ask') { e.preventDefault(); answer(row, letter === 'y'); return; }
     if (e.key === 'Backspace') { e.preventDefault(); stepBack(); return; }
-    if (e.key === 'ArrowDown') { e.preventDefault(); setCursor(c => Math.min(c + 1, DIM_ORDER.length - 1)); return; }
-    if (e.key === 'ArrowUp') { e.preventDefault(); setCursor(c => Math.max(Math.min(c, DIM_ORDER.length) - 1, 0)); }
+    if (e.key === 'ArrowDown') { e.preventDefault(); setAt({ who, row: Math.min(row + 1, rows.length - 1) }); return; }
+    if (e.key === 'ArrowUp') { e.preventDefault(); setAt({ who, row: Math.max(Math.min(row, rows.length) - 1, 0) }); }
   }
   // Keep the highlighted row in view as typing moves it down the list.
   useEffect(() => {
-    const row = document.getElementById(`rate-row-${Math.min(cursor, DIM_ORDER.length - 1)}`);
-    if (row && row.scrollIntoView) row.scrollIntoView({ block: 'nearest' });
-  }, [cursor]);
+    const el = document.getElementById(`rate-row-${Math.min(row, rows.length - 1)}`);
+    if (el && el.scrollIntoView) el.scrollIntoView({ block: 'nearest' });
+  }, [row, who, rows.length]);
 
   const rated = DIM_ORDER.filter(k => ratings[k]).length;
+  const hasAsk = rows.some(r => r.kind === 'ask');
+  const tag = (text, color) => <span className="font-semibold rounded-full px-1.5" style={{ fontSize: 10, color, border: `1px solid ${color}` }}>{text}</span>;
   return (
     <Sheet title="How did each part go?" onClose={onClose} onKey={onKey} footer={<DoneButton onClick={onClose} />}>
+      <PersonTabs people={people} at={who} onPick={pick} doneFor={p => DIM_ORDER.every(k => (ratingsBy[p.id] || {})[k])} />
       <p className="keys-hint text-xs mb-1 flex items-center gap-1.5 flex-wrap" style={{ color: COLORS.inkSoft }}>
-        Type <Kbd>1</Kbd>–<Kbd>5</Kbd> for each, top to bottom. <Kbd>⌫</Kbd> goes back.
+        Type <Kbd>1</Kbd>–<Kbd>5</Kbd> for each, top to bottom{hasAsk ? <>, <Kbd>Y</Kbd> or <Kbd>N</Kbd> for a question</> : null}. <Kbd>⌫</Kbd> goes back.
       </p>
-      <p className="text-xs mb-3" style={{ color: COLORS.inkSoft }}>Any you skip use "How meaningful".</p>
-      <div role="group" aria-label="How did each part go?">
-        {DIM_ORDER.map((k, i) => {
-          const active = cursor === i;
+      <p className="text-xs mb-3" style={{ color: COLORS.inkSoft }}>Any you skip use "How meaningful"{people.length > 1 ? ` with ${person.name}` : ''}.</p>
+      <div key={person.id} role="group" aria-label={people.length > 1 ? `How did each part go with ${person.name}?` : 'How did each part go?'} className={people.length > 1 ? 'fade-anim' : ''}>
+        {rows.map((r, i) => {
+          const active = row === i;
+          const color = r.kind === 'part' ? DIM_COLORS[r.key] : COLORS.accent;
+          const value = r.kind === 'part' ? ratings[r.key] : answers[r.key];
           return (
-            <div key={k} id={`rate-row-${i}`} onClick={() => setCursor(i)} className="rate-row flex items-center justify-between gap-2 rounded-xl px-3 py-2 mb-1" style={{ background: active ? COLORS.accentSoft : 'transparent', boxShadow: active ? `inset 3px 0 0 ${COLORS.accent}` : 'none', cursor: 'pointer' }}>
-              <span className="text-sm" style={{ color: COLORS.ink, fontWeight: active ? 700 : 500 }}>{DIM_QUESTIONS[k]}</span>
-              <div role="radiogroup" aria-label={DIM_QUESTIONS[k]} className="flex items-center gap-1 shrink-0">
-                {[1, 2, 3, 4, 5].map(n => {
-                  const on = ratings[k] === n;
-                  // The scale fills up to the rating, so each row shows where it sat at a glance.
-                  const filled = ratings[k] >= n;
-                  return (
-                    <button key={n} type="button" role="radio" aria-checked={on} aria-label={String(n)} onClick={(e) => { e.stopPropagation(); rate(i, n); }} className={on ? 'pop' : ''}
-                      style={{ width: 26, height: 26, borderRadius: '50%', fontSize: 11, fontWeight: 700, background: on ? DIM_COLORS[k] : filled ? `color-mix(in srgb, ${DIM_COLORS[k]} 28%, transparent)` : COLORS.paperRaised, color: on ? '#fff' : COLORS.ink, border: `1.5px solid ${filled ? DIM_COLORS[k] : COLORS.line}` }}>{n}</button>
-                  );
-                })}
+            <div key={r.key} id={`rate-row-${i}`} onClick={() => setAt({ who, row: i })} className="rate-row flex items-center justify-between gap-2 rounded-xl px-3 py-2 mb-1" style={{ background: active ? COLORS.accentSoft : 'transparent', boxShadow: active ? `inset 3px 0 0 ${COLORS.accent}` : 'none', cursor: 'pointer' }}>
+              <div className="min-w-0">
+                <p className="flex items-center gap-1.5 flex-wrap mb-0.5">
+                  <span className="font-bold" style={{ fontSize: 10, color, letterSpacing: '0.06em', textTransform: 'uppercase' }}>{r.kind === 'part' ? DIM_LABELS[r.key] : 'Follow-up'}</span>
+                  {r.goal && tag(`Your goal: ${r.goal}`, COLORS.accent)}
+                  {r.weakest && tag('Weakest', COLORS.inkSoft)}
+                </p>
+                <span className="text-sm" style={{ color: COLORS.ink, fontWeight: active ? 700 : 500 }}>{r.question}</span>
               </div>
+              {r.kind === 'part' ? (
+                <div role="radiogroup" aria-label={r.question} className="flex items-center gap-1 shrink-0">
+                  {[1, 2, 3, 4, 5].map(n => {
+                    const on = value === n;
+                    // The scale fills up to the rating, so each row shows where it sat at a glance.
+                    const filled = value >= n;
+                    return (
+                      <button key={n} type="button" role="radio" aria-checked={on} aria-label={String(n)} onClick={(e) => { e.stopPropagation(); rate(i, n); }} className={on ? 'pop' : ''}
+                        style={{ width: 26, height: 26, borderRadius: '50%', fontSize: 11, fontWeight: 700, background: on ? color : filled ? `color-mix(in srgb, ${color} 28%, transparent)` : COLORS.paperRaised, color: on ? '#fff' : COLORS.ink, border: `1.5px solid ${filled ? color : COLORS.line}` }}>{n}</button>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div role="radiogroup" aria-label={r.question} className="flex items-center gap-1 shrink-0">
+                  {[['Yes', true, 'Y'], ['No', false, 'N']].map(([label, yes, k]) => (
+                    <button key={label} type="button" role="radio" aria-checked={value === yes} onClick={(e) => { e.stopPropagation(); answer(i, yes); }} className={`chip${value === yes ? ' chip--on pop' : ''}`} style={{ padding: active ? '4px 5px 4px 10px' : '4px 10px' }}>
+                      {label}{active && <Kbd>{k}</Kbd>}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
           );
         })}
       </div>
-      <p className="text-xs mt-2 text-right" style={{ color: rated === DIM_ORDER.length ? COLORS.good : COLORS.inkSoft, fontWeight: 600 }}>{rated} of {DIM_ORDER.length} rated</p>
+      <p className="text-xs mt-2 text-right" style={{ color: rated === DIM_ORDER.length ? COLORS.good : COLORS.inkSoft, fontWeight: 600 }}>{rated} of {DIM_ORDER.length} rated{people.length > 1 ? ` for ${person.name}` : ''}</p>
     </Sheet>
   );
 }
 
-// "Did you practise active listening?" Number keys tick the items.
-export function ListeningSheet({ al, toggle, onClose }) {
+// "Did you practise active listening?" Number keys tick the items. With
+// several people, each has their own ticks (← → or the tabs switch).
+export function ListeningSheet({ people, alBy, toggle, onClose }) {
+  const [who, setWho] = useState(0);
+  const person = people[Math.min(who, people.length - 1)];
+  const al = alBy[person.id] || [];
   function onKey(e) {
     if (e.ctrlKey || e.metaKey || e.altKey) return;
     if (enterCloses(e, onClose)) return;
+    if (switchPerson(e, people.length, who, setWho)) return;
     const i = Number(e.key) - 1;
-    if (i >= 0 && i < AL_ITEMS.length) { e.preventDefault(); toggle(AL_ITEMS[i].key); }
+    if (i >= 0 && i < AL_ITEMS.length) { e.preventDefault(); toggle(person.id, AL_ITEMS[i].key); }
   }
   return (
     <Sheet title="Did you practise active listening?" onClose={onClose} onKey={onKey} footer={<DoneButton onClick={onClose} />}>
-      <p className="text-xs mb-2" style={{ color: COLORS.inkSoft }}>Tick what you did. Each one builds that skill.</p>
-      {AL_ITEMS.map((item, i) => (
-        <CheckRow key={item.key} checked={al.includes(item.key)} onClick={() => toggle(item.key)} label={item.label} hint={String(i + 1)} />
-      ))}
+      <PersonTabs people={people} at={who} onPick={setWho} doneFor={p => (alBy[p.id] || []).length > 0} />
+      <p className="text-xs mb-2" style={{ color: COLORS.inkSoft }}>{people.length > 1 ? `Tick what you did with ${person.name}.` : 'Tick what you did.'} Each one builds that skill.</p>
+      <div key={person.id} className={people.length > 1 ? 'fade-anim' : ''}>
+        {AL_ITEMS.map((item, i) => (
+          <CheckRow key={item.key} checked={al.includes(item.key)} onClick={() => toggle(person.id, item.key)} label={item.label} hint={String(i + 1)} />
+        ))}
+      </div>
     </Sheet>
   );
 }
@@ -130,9 +223,14 @@ export function ListeningSheet({ al, toggle, onClose }) {
 // "Something new about <name>?": saved to their profile in the category picked.
 // Mostly tapping: each category offers common things to add (interests use the
 // topic lists), and typing is there for anything else. Number keys 1-5 pick
-// the category.
-export function NewInfoSheet({ personName, items, setItems, category, setCategory, text, setText, onClose }) {
+// the category. With several people, each has their own (← → or the tabs
+// switch); itemsBy: { [personId]: [{ category, text, emoji? }] }.
+export function NewInfoSheet({ people, itemsBy, setItemsFor, category, setCategory, text, setText, onClose }) {
   const [group, setGroup] = useState(null); // an interest topic group, opened to show its items
+  const [who, setWho] = useState(0);
+  const person = people[Math.min(who, people.length - 1)];
+  const items = itemsBy[person.id] || [];
+  const setItems = (fn) => setItemsFor(person.id, fn);
   const textRef = useRef(null);
   const has = (cat, t) => items.some(n => n.category === cat && n.text === t);
   function toggle(cat, t, emoji) {
@@ -145,17 +243,21 @@ export function NewInfoSheet({ personName, items, setItems, category, setCategor
     setText('');
     return true;
   }
+  // Anything typed but not added yet stays with the person it was typed for.
+  function moveTo(i) { add(); setWho(i); }
   function onKey(e) {
     if (e.ctrlKey || e.metaKey || e.altKey) return;
     if (enterCloses(e, onClose)) return;
+    if (switchPerson(e, people.length, who, moveTo)) return;
     if (!isTyping() && !e.ctrlKey && !e.metaKey && !e.altKey && (e.key === 'n' || e.key === 'N')) { e.preventDefault(); if (textRef.current) textRef.current.focus(); return; }
     const i = Number(e.key) - 1;
     if (!isTyping() && i >= 0 && i < CATEGORIES.length) { e.preventDefault(); setCategory(CATEGORIES[i].key); }
   }
   const openGroup = INTEREST_GROUPS.find(g => g.key === group);
   return (
-    <Sheet title={`Something new about ${personName}?`} onClose={onClose} onKey={onKey} footer={<DoneButton onClick={() => { add(); onClose(); }} />}>
-      <p className="text-xs mb-3" style={{ color: COLORS.inkSoft }}>Tap what's new. It's added to their profile when you save the log.</p>
+    <Sheet title={`Something new about ${person.name}?`} onClose={onClose} onKey={onKey} footer={<DoneButton onClick={() => { add(); onClose(); }} />}>
+      <PersonTabs people={people} at={who} onPick={moveTo} doneFor={p => (itemsBy[p.id] || []).length > 0} />
+      <p className="text-xs mb-3" style={{ color: COLORS.inkSoft }}>Tap what's new. It's added to {people.length > 1 ? `${person.name}'s` : 'their'} profile when you save the log.</p>
       <div className="flex flex-wrap gap-1.5 mb-4">
         {CATEGORIES.map((c, i) => (
           <button key={c.key} type="button" onClick={() => setCategory(c.key)} aria-pressed={category === c.key} className={`chip${category === c.key ? ' chip--on' : ''}`}>{c.emoji} {c.label}<Kbd>{i + 1}</Kbd></button>

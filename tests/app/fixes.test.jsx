@@ -33,8 +33,12 @@ async function addTopic(user, category, item) {
   await user.click(within(dialog(category)).getByRole('button', { name: item }));
 }
 
+// meaningfulness: one person's, or { name: rating } for each in a group
+// log, where nobody is rated for you.
 async function saveLog(user, details, { meaningfulness, practised = [] } = {}) {
-  if (meaningfulness) await user.click(within(details).getByRole('button', { name: String(meaningfulness) }));
+  if (typeof meaningfulness === 'object') {
+    for (const [name, n] of Object.entries(meaningfulness)) await user.click(within(within(details).getByRole('group', { name: `How meaningful was it with ${name}?` })).getByRole('button', { name: String(n) }));
+  } else if (meaningfulness) await user.click(within(details).getByRole('button', { name: String(meaningfulness) }));
   if (practised.length) {
     await openExtra(user, 'Active listening');
     for (const label of practised) await user.click(screen.getByRole('checkbox', { name: label }));
@@ -237,7 +241,7 @@ describe('#13 Add detail while logging', () => {
     const { user } = renderApp();
     const details = await startLog(user, { names: ['Morgan', 'Riley'] });
     await addTopic(user, 'Fun', 'Played video games');
-    await saveLog(user, details);
+    await saveLog(user, details, { meaningfulness: { Morgan: 3, Riley: 3 } });
     expect(savedPerson('Morgan').interests).toEqual([]);
     expect(savedState().journal.map(j => j.summary)).toEqual(['Played video games', 'Played video games']);
   });
@@ -258,7 +262,7 @@ describe('#15 and #17 levelling up', () => {
     seedState({ people: [person('Morgan', { overall: 99 }), person('Riley', { overall: 99 })] });
     const { user } = renderApp();
     const details = await startLog(user, { names: ['Morgan', 'Riley'] });
-    await saveLog(user, details, { meaningfulness: 5 });
+    await saveLog(user, details, { meaningfulness: { Morgan: 5, Riley: 5 } });
     expect(toasts().filter(t => t.includes('moved up to Layer 2'))).toEqual([
       '🎉 Morgan moved up to Layer 2: Exploratory!',
       '🎉 Riley moved up to Layer 2: Exploratory!',

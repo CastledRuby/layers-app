@@ -5,6 +5,12 @@
 // was and a note. Everything else is optional and opens in its own small
 // sheet (LogDetailSheets.jsx), one thing at a time. Every step can be driven
 // from the keyboard; the keys are shown next to what they do.
+//
+// With several people, nothing assumes it went the same with each (decided
+// 2026-10-12): each has their own "How meaningful" (rated in turn, nobody
+// filled in for you), their own ratings, active listening and something
+// new, asked in their own words (lib/logQuestions.js). The date, what you
+// did, the note and how it felt are shared.
 
 import { useRef, useState } from 'react';
 import { Calendar, Check, Ear, Gauge, MessageCircle, MessageSquareText, PenLine, Plus, Sparkles, Target, X } from 'lucide-react';
@@ -15,7 +21,8 @@ import { DateDropdown } from '../components/pickers.jsx';
 import { PeopleGrid } from '../components/PersonPick.jsx';
 import { usePeopleKeys } from '../components/peopleKeys.js';
 import { activityTemplatesFor, categoryMeta, DIM_ORDER, getLayer, ML_LABELS, NOTE_TEMPLATE_CATEGORY, TYPE_META, TYPE_ORDER } from '../data/constants.js';
-import { parseISODay } from '../lib/dates.js';
+import { parseISODay, toISODate } from '../lib/dates.js';
+import { followUps } from '../lib/logQuestions.js';
 import { GoalsSheet, ListeningSheet, NewInfoSheet, RateSheet, ReflectionSheet } from './LogDetailSheets.jsx';
 import { QuickGoalSheet } from './QuickGoalSheet.jsx';
 import { TemplatePickerModal } from './TemplatePickerModal.jsx';
@@ -52,6 +59,30 @@ function Scale({ value, onChange, label, size = 'md' }) {
   );
 }
 
+// "How meaningful was it?" with several people: a row each, empty until
+// you rate it. Typing 1-5 rates the highlighted row and moves down; ↑ ↓
+// move; clicking a row highlights it.
+function MeaningRows({ people, valueOf, at, onRate, onPick }) {
+  return (
+    <div role="group" aria-label="How meaningful was it with each person?">
+      {people.map((p, i) => {
+        const value = valueOf(p.id);
+        const active = i === at;
+        return (
+          <div key={p.id} onClick={(e) => { if (!e.target.closest('button')) onPick(i); }} className="rate-row flex items-center gap-2.5 rounded-xl px-2.5 py-2 mb-1" style={{ background: active ? COLORS.accentSoft : 'transparent', boxShadow: active ? `inset 3px 0 0 ${COLORS.accent}` : 'none', cursor: 'pointer' }}>
+            <Avatar person={p} size={28} ringColor={getLayer(p.layer).color} />
+            <div className="min-w-0" style={{ width: 92 }}>
+              <p className="text-sm font-semibold truncate" style={{ color: COLORS.ink }}>{p.name}</p>
+              <p key={value || 0} className="text-xs truncate fade-anim" style={{ color: value ? COLORS.accent : COLORS.inkSoft, fontWeight: value ? 600 : 400 }}>{value ? ML_LABELS[value - 1] : 'Not rated yet'}</p>
+            </div>
+            <div className="flex-1 min-w-0"><Scale size="sm" value={value} onChange={(n) => onRate(i, n)} label={`How meaningful was it with ${p.name}?`} /></div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 // prefill (logging a plan from the calendar, or a log typed in Ctrl+K):
 // { personIds, type, note, day, goalIds, meaningfulness } opens straight on
 // the details, filled in; goalIds, when given, are the only goals ticked.
@@ -65,8 +96,13 @@ export function LogInteractionModal({ people, defaultPersonId, prefill, onClose,
   const [dir, setDir] = useState(null); // 'in' | 'back': the slide for the step just shown
   const [type, setType] = useState(prefill ? prefill.type || 'other' : null);
   const [personIds, setPersonIds] = useState(() => prefill ? (prefill.personIds || []).filter(id => people.some(p => p.id === id)) : startPerson ? [startPerson] : []);
-  const [meaningfulness, setMeaningfulness] = useState(() => (prefill && prefill.meaningfulness) || 3);
-  const [al, setAl] = useState([]);
+  // How meaningful it was with each person: { [personId]: 1-5 }. One person
+  // starts at 3; with several, each starts unrated unless the log was typed
+  // with a rating (Ctrl+K), which is theirs.
+  const [meaning, setMeaning] = useState(() => (prefill && prefill.meaningfulness ? Object.fromEntries((prefill.personIds || []).map(id => [id, prefill.meaningfulness])) : {}));
+  const [meanAt, setMeanAt] = useState(0); // the row typing a number rates, with several people
+  const [needRating, setNeedRating] = useState(false); // Save was pressed with someone unrated
+  const [alBy, setAlBy] = useState({}); // { [personId]: active listening keys }
   const [quickNote, setQuickNote] = useState(prefill && prefill.note ? prefill.note : '');
   const [quickNoteTags, setQuickNoteTags] = useState([]);
   const [noteTemplatesOpen, setNoteTemplatesOpen] = useState(false);
@@ -75,13 +111,15 @@ export function LogInteractionModal({ people, defaultPersonId, prefill, onClose,
   // "More details": which of their sheets is open (null = none), and what's in them.
   const [extra, setExtra] = useState(null); // 'rate' | 'listening' | 'new' | 'goals' | 'reflect'
   const [newGoal, setNewGoal] = useState(false); // QuickGoalSheet, over Goals moved
-  const [newInfo, setNewInfo] = useState([]); // [{ category, text }]
+  const [newInfoBy, setNewInfoBy] = useState({}); // { [personId]: [{ category, text }] }
   const [newInfoCat, setNewInfoCat] = useState('interests');
   const [newInfoText, setNewInfoText] = useState('');
-  // A 1-5 rating per dimension (keys of DIM_ORDER), and the row that typing
-  // a number fills next (DIM_ORDER.length = past the last row).
-  const [ratings, setRatings] = useState({});
-  const [ratingCursor, setRatingCursor] = useState(0);
+  // Each person's 1-5 rating per dimension ({ [personId]: { depth: 4 } }),
+  // their "Did you ask about…?" answers ({ [personId]: { [detailId]: true } })
+  // and the row typing fills next in Rate each part ({ who, row }).
+  const [ratingsBy, setRatingsBy] = useState({});
+  const [answersBy, setAnswersBy] = useState({});
+  const [rateAt, setRateAt] = useState({ who: 0, row: 0 });
   const [untickedGoals, setUntickedGoals] = useState(() => {
     if (!prefill || !prefill.goalIds) return [];
     return people.filter(p => (prefill.personIds || []).includes(p.id)).flatMap(p => p.goals.filter(g => g.progress < 100).map(g => g.id)).filter(id => !prefill.goalIds.includes(id));
@@ -112,28 +150,72 @@ export function LogInteractionModal({ people, defaultPersonId, prefill, onClose,
     ? quickNoteTags.filter(t => NOTE_TEMPLATE_CATEGORY[t.cat]).map(t => ({ category: NOTE_TEMPLATE_CATEGORY[t.cat], text: t.text, emoji: t.emoji }))
     : [];
   const loggedPerson = personIds.length === 1 ? loggedPeople[0] : null;
+  const several = loggedPeople.length > 1;
+  const day = toISODate(logDate);
   // Every active goal of the people in this log moves unless you untick it.
   const goalsInLog = loggedPeople.flatMap(p => p.goals.filter(g => g.progress < 100).map(g => ({ id: g.id, title: g.title, personName: p.name })));
+
+  const meaningOf = (id) => meaning[id] || (several ? null : 3);
+  const unrated = loggedPeople.filter(p => !meaningOf(p.id));
+  function rateMeaning(i, n) {
+    const p = loggedPeople[i];
+    if (!p) return;
+    setMeaning(m => ({ ...m, [p.id]: n }));
+    setMeanAt(i + 1);
+  }
+  function setRating(id, dim, value) {
+    setRatingsBy(all => { const mine = { ...(all[id] || {}) }; if (value === undefined) delete mine[dim]; else mine[dim] = value; return { ...all, [id]: mine }; });
+  }
+  // A "Did you ask about…?" answer. Yes is remembering something they
+  // mentioned, so it ticks that in their active listening too.
+  function setAnswer(id, row, yes) {
+    setAnswersBy(all => { const mine = { ...(all[id] || {}) }; if (yes === undefined) delete mine[row.key]; else mine[row.key] = yes; return { ...all, [id]: mine }; });
+    if (yes === true) setAlBy(all => ((all[id] || []).includes('remembered') ? all : { ...all, [id]: [...(all[id] || []), 'remembered'] }));
+  }
+  function toggleAl(id, key) { setAlBy(all => { const mine = all[id] || []; return { ...all, [id]: mine.includes(key) ? mine.filter(k => k !== key) : [...mine, key] }; }); }
+  function setNewInfoFor(id, fn) { setNewInfoBy(all => ({ ...all, [id]: typeof fn === 'function' ? fn(all[id] || []) : fn })); }
+
   function handleSave() {
     if (!canSave) return;
+    // Nobody is rated for you: Save goes to the first one still to rate.
+    if (unrated.length) { setMeanAt(loggedPeople.indexOf(unrated[0])); setNeedRating(true); return; }
     const combined = [...quickNoteTags.map(t => t.text), quickNote.trim()].filter(Boolean).join(', ');
-    const notes = [...profileNotes, ...(loggedPerson ? newInfo.map(n => ({ ...n, emoji: n.emoji || categoryMeta(n.category).emoji })) : [])];
     const reflectionText = [...reflectionTags, reflection.trim()].filter(Boolean).join('. ');
+    // Each person's own part of the log (App.jsx applyLog).
+    const each = Object.fromEntries(loggedPeople.map(p => {
+      const answers = answersBy[p.id] || {};
+      const askedAbout = followUps(p, day).filter(f => answers[f.id] === true).map(f => f.text);
+      return [p.id, {
+        meaningfulness: meaningOf(p.id),
+        ratings: ratingsBy[p.id] || {},
+        activeListening: alBy[p.id] || [],
+        notes: [...(loggedPerson ? profileNotes : []), ...(newInfoBy[p.id] || []).map(n => ({ ...n, emoji: n.emoji || categoryMeta(n.category).emoji }))],
+        ...(askedAbout.length ? { askedAbout } : {}),
+      }];
+    }));
     onSubmit({
-      personIds, type, meaningfulness, notes, activeListening: al, summary: combined || undefined, pickedDate: logDate,
-      ratings,
+      personIds, type, each, summary: combined || undefined, pickedDate: logDate,
       goalIds: untickedGoals.length > 0 ? goalsInLog.map(g => g.id).filter(id => !untickedGoals.includes(id)) : undefined,
       reflection: reflectionText || undefined,
     });
   }
 
   // The optional extras, each with its own sheet and key. What's filled in
-  // shows on its chip, so the quick log says what's been added at a glance.
-  const rated = DIM_ORDER.filter(k => ratings[k]).length;
+  // shows on its chip, so the quick log says what's been added at a glance;
+  // with several people, whose ("Sam ✓, Ana 2 of 6").
+  const ratedOf = (p) => DIM_ORDER.filter(k => (ratingsBy[p.id] || {})[k]).length;
+  const rateSummary = several
+    ? loggedPeople.filter(ratedOf).map(p => (ratedOf(p) === DIM_ORDER.length ? `${p.name} ✓` : `${p.name} ${ratedOf(p)} of ${DIM_ORDER.length}`)).join(', ')
+    : loggedPerson && ratedOf(loggedPerson) ? `${ratedOf(loggedPerson)} of ${DIM_ORDER.length}` : '';
+  const alOf = (p) => (alBy[p.id] || []).length;
+  const alSummary = several
+    ? loggedPeople.filter(alOf).map(p => `${p.name} ${alOf(p)}`).join(', ')
+    : loggedPerson && alOf(loggedPerson) ? `${alOf(loggedPerson)} ticked` : '';
+  const newCount = loggedPeople.reduce((n, p) => n + (newInfoBy[p.id] || []).length, 0);
   const extras = [
-    { key: 'rate', letter: 'R', Icon: Gauge, label: 'Rate each part', summary: rated ? `${rated} of ${DIM_ORDER.length}` : null },
-    { key: 'listening', letter: 'L', Icon: Ear, label: 'Active listening', summary: al.length ? `${al.length} ticked` : null },
-    loggedPerson && { key: 'new', letter: 'I', Icon: Sparkles, label: 'Something new', summary: newInfo.length ? `${newInfo.length} added` : null },
+    { key: 'rate', letter: 'R', Icon: Gauge, label: 'Rate each part', summary: rateSummary || null },
+    { key: 'listening', letter: 'L', Icon: Ear, label: 'Active listening', summary: alSummary || null },
+    loggedPeople.length > 0 && { key: 'new', letter: 'I', Icon: Sparkles, label: 'Something new', summary: newCount ? `${newCount} added` : null },
     (goalsInLog.length > 0 || (onCreateGoal && loggedPeople.length > 0)) && { key: 'goals', letter: 'G', Icon: Target, label: goalsInLog.length ? 'Goals moved' : 'Add a goal', summary: untickedGoals.length ? `${goalsInLog.length - untickedGoals.length} of ${goalsInLog.length}` : null },
     { key: 'reflect', letter: 'F', Icon: PenLine, label: 'How it felt', summary: reflectionTags.length ? `${reflectionTags.length} picked${reflection.trim() ? ', written' : ''}` : reflection.trim() ? 'written' : null },
   ].filter(Boolean);
@@ -142,8 +224,10 @@ export function LogInteractionModal({ people, defaultPersonId, prefill, onClose,
   //   every step  Backspace goes back
   //   kind        1 Interaction, 2 Plan something, 3 Analyse a chat    type  1-6 the types
   //   who         1-9 or typing a name picks people (peopleKeys.js), Enter confirms
-  //   details     1-5 how meaningful, N the note, D Add detail, R/L/I/G/F
-  //               the extras, Enter (or Ctrl+Enter, even in the note) saves
+  //   details     1-5 how meaningful (with several people, the highlighted
+  //               row, then the next; ↑ ↓ move), N the note, D Add detail,
+  //               R/L/I/G/F the extras, Enter (or Ctrl+Enter, even in the
+  //               note) saves
   // Enter on a button reached with Tab presses that button instead.
   function handleKey(e) {
     if (e.metaKey || e.altKey) return;
@@ -168,7 +252,9 @@ export function LogInteractionModal({ people, defaultPersonId, prefill, onClose,
     } else if (step === 'who') {
       if (key === 'Enter' && personIds.length > 0) act(() => go('details'));
     } else if (step === 'details') {
-      if (num && num <= 5) act(() => setMeaningfulness(num));
+      if (num && num <= 5) act(() => (several ? rateMeaning(Math.min(meanAt, loggedPeople.length - 1), num) : setMeaning(m => ({ ...m, [personIds[0]]: num }))));
+      else if (several && key === 'ArrowDown') act(() => setMeanAt(i => Math.min(i + 1, loggedPeople.length - 1)));
+      else if (several && key === 'ArrowUp') act(() => setMeanAt(i => Math.max(Math.min(i, loggedPeople.length) - 1, 0)));
       else if (key === 'Enter') act(handleSave);
       else if (letter === 'd') act(() => setNoteTemplatesOpen(true));
       else if (letter === 'n') act(() => noteRef.current && noteRef.current.focus());
@@ -256,9 +342,18 @@ export function LogInteractionModal({ people, defaultPersonId, prefill, onClose,
               </div>
             </div>
 
-            <SectionLabel extra={<span className="keys-hint flex items-center gap-1 text-xs" style={{ color: COLORS.inkSoft }}><Kbd>1</Kbd>–<Kbd>5</Kbd></span>}>How meaningful was it?</SectionLabel>
-            <Scale value={meaningfulness} onChange={setMeaningfulness} label="How meaningful was it?" />
-            <p key={meaningfulness} className="text-xs font-semibold text-center mt-2 mb-6 fade-anim" style={{ color: COLORS.accent }}>{ML_LABELS[meaningfulness - 1]}</p>
+            <SectionLabel extra={<span className="keys-hint flex items-center gap-1 text-xs" style={{ color: COLORS.inkSoft }}><Kbd>1</Kbd>–<Kbd>5</Kbd>{several && <> <Kbd>↑</Kbd><Kbd>↓</Kbd></>}</span>}>{several ? 'How meaningful was it with each?' : 'How meaningful was it?'}</SectionLabel>
+            {several ? (
+              <div className="mb-6">
+                <MeaningRows people={loggedPeople} valueOf={meaningOf} at={meanAt} onRate={rateMeaning} onPick={setMeanAt} />
+                {needRating && unrated.length > 0 && <p role="status" className="text-xs font-semibold mt-1.5" style={{ color: COLORS.alert }}>How did it go with {namesText(unrated.map(p => p.name))}? Type 1–5 to rate {unrated.length > 1 ? 'each' : 'them'} before saving.</p>}
+              </div>
+            ) : (
+              <>
+                <Scale value={meaningOf(personIds[0])} onChange={(n) => setMeaning(m => ({ ...m, [personIds[0]]: n }))} label="How meaningful was it?" />
+                <p key={meaningOf(personIds[0])} className="text-xs font-semibold text-center mt-2 mb-6 fade-anim" style={{ color: COLORS.accent }}>{ML_LABELS[meaningOf(personIds[0]) - 1]}</p>
+              </>
+            )}
 
             <SectionLabel extra={
               <button type="button" onClick={() => setNoteTemplatesOpen(true)} className="chip" style={{ padding: '4px 6px 4px 10px' }}><Plus size={13} color={COLORS.accent} />Add detail<Kbd>D</Kbd></button>
@@ -295,9 +390,9 @@ export function LogInteractionModal({ people, defaultPersonId, prefill, onClose,
               </div>
             </div>
 
-            {extra === 'rate' && <RateSheet ratings={ratings} setRatings={setRatings} cursor={ratingCursor} setCursor={setRatingCursor} onClose={() => setExtra(null)} />}
-            {extra === 'listening' && <ListeningSheet al={al} toggle={(k) => toggleIn(setAl, k)} onClose={() => setExtra(null)} />}
-            {extra === 'new' && loggedPerson && <NewInfoSheet personName={loggedPerson.name} items={newInfo} setItems={setNewInfo} category={newInfoCat} setCategory={setNewInfoCat} text={newInfoText} setText={setNewInfoText} onClose={() => setExtra(null)} />}
+            {extra === 'rate' && <RateSheet people={loggedPeople} day={day} ratingsBy={ratingsBy} setRating={setRating} answersBy={answersBy} setAnswer={setAnswer} at={rateAt} setAt={setRateAt} onClose={() => setExtra(null)} />}
+            {extra === 'listening' && <ListeningSheet people={loggedPeople} alBy={alBy} toggle={toggleAl} onClose={() => setExtra(null)} />}
+            {extra === 'new' && loggedPeople.length > 0 && <NewInfoSheet people={loggedPeople} itemsBy={newInfoBy} setItemsFor={setNewInfoFor} category={newInfoCat} setCategory={setNewInfoCat} text={newInfoText} setText={setNewInfoText} onClose={() => setExtra(null)} />}
             {extra === 'goals' && <GoalsSheet goals={goalsInLog} unticked={untickedGoals} toggle={(id) => toggleIn(setUntickedGoals, id)} showNames={personIds.length > 1} onNewGoal={onCreateGoal ? () => setNewGoal(true) : undefined} onClose={() => setExtra(null)} />}
             {extra === 'goals' && newGoal && (
               <QuickGoalSheet people={people} forIds={personIds} onClose={() => setNewGoal(false)}

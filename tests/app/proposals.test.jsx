@@ -29,7 +29,7 @@ describe('P1 progressive "More details" when logging', () => {
     for (const chip of ['Rate each part', 'Active listening', 'Something new', 'How it felt']) {
       expect(within(details).getByRole('button', { name: new RegExp(chip) })).toBeTruthy();
     }
-    expect(screen.queryByRole('radiogroup', { name: 'How deep did it go?' })).toBeNull();
+    expect(screen.queryByRole('radiogroup', { name: 'How far past small talk did you get with Morgan?' })).toBeNull();
     expect(screen.queryByLabelText('Reflection')).toBeNull();
     expect(screen.queryByRole('checkbox', { name: 'Asked follow-up questions' })).toBeNull();
   });
@@ -45,7 +45,9 @@ describe('P1 progressive "More details" when logging', () => {
     await user.type(within(newInfo).getByLabelText('Something new'), 'Running a marathon in May{Enter}');
     await done(user, 'Something new about Morgan?');
     await openExtra(user, 'Rate each part');
-    await user.keyboard('5'); // the first row, depth
+    // Their goal "Learn more" is about listening, so that part is asked first.
+    expect(screen.getByText('Your goal: Learn more')).toBeTruthy();
+    await user.keyboard('5'); // the first row, listening
     await user.keyboard('{Enter}'); // Done
     await openExtra(user, 'Goals moved');
     await user.click(screen.getByRole('checkbox', { name: /Spend time together/ }));
@@ -61,12 +63,12 @@ describe('P1 progressive "More details" when logging', () => {
 
     const morgan = savedPerson('Morgan');
     expect(morgan.plans.map(p => p.text)).toEqual(['Running a marathon in May']);
-    expect(morgan.dims.depth - before.dims.depth).toBe(Math.round(5 * 2.2)); // grows by its rating, not "How meaningful"
+    expect(morgan.dims.listening - before.dims.listening).toBe(Math.round(5 * 2.2)); // grows by its rating, not "How meaningful"
     expect(morgan.goals.find(g => g.id === 'g1').progress).toBeGreaterThan(10);
     expect(morgan.goals.find(g => g.id === 'g2').progress).toBe(10); // unticked: didn't move
-    expect(morgan.lastChange.why).toContain('You rated it: Depth 5');
+    expect(morgan.lastChange.why).toContain('You rated it: Listening / connection 5');
     const entry = savedState().journal[0];
-    expect(entry).toMatchObject({ reflection: 'Felt easy today', ratings: { depth: 5 }, added: ['Running a marathon in May'], goalIds: ['g1'] }); // the goal it moved, not the unticked one
+    expect(entry).toMatchObject({ reflection: 'Felt easy today', ratings: { listening: 5 }, added: ['Running a marathon in May'], goalIds: ['g1'] }); // the goal it moved, not the unticked one
   });
 
   it('shows the reflection in the journal, and finds it by search', async () => {
@@ -389,7 +391,8 @@ describe('follow-up fixes from the 1.0.28 docs review', () => {
 });
 
 describe('Rating the six dimensions while logging', () => {
-  const rows = () => ['How deep did it go?', 'How much trust was there?', 'How reciprocal was it?', 'How engaged were you both?', 'How much of an experience did you share?', 'How well did you listen to each other?'];
+  // Morgan is new (Layer 1), so the parts are asked as they are there.
+  const rows = () => ['How far past small talk did you get with Morgan?', 'How at ease did Morgan seem with you?', 'How much did Morgan ask about you too?', 'How engaged was Morgan?', 'How much did you and Morgan do together, beyond talking?', 'How well did you listen to Morgan?'];
   const picked = (question) => {
     const checked = within(screen.getByRole('radiogroup', { name: question })).queryAllByRole('radio').find(r => r.getAttribute('aria-checked') === 'true');
     return checked ? Number(checked.textContent) : null;
@@ -413,10 +416,10 @@ describe('Rating the six dimensions while logging', () => {
     await user.keyboard('{Backspace}');
     expect(rows().slice(0, 3).map(picked)).toEqual([4, null, null]);
     await user.keyboard('2');
-    expect(picked('How much trust was there?')).toBe(2);
+    expect(picked('How at ease did Morgan seem with you?')).toBe(2);
     await user.keyboard('{ArrowUp}{ArrowUp}5');
-    expect(picked('How deep did it go?')).toBe(5);
-    expect(picked('How much trust was there?')).toBe(2);
+    expect(picked('How far past small talk did you get with Morgan?')).toBe(5);
+    expect(picked('How at ease did Morgan seem with you?')).toBe(2);
   });
 
   it('clicking works too, and the next row is highlighted', async () => {
@@ -424,10 +427,10 @@ describe('Rating the six dimensions while logging', () => {
     const { user } = renderApp();
     await startLog(user, ['Morgan']);
     await openExtra(user, 'Rate each part');
-    await user.click(within(screen.getByRole('radiogroup', { name: 'How reciprocal was it?' })).getByRole('radio', { name: '3' }));
-    expect(picked('How reciprocal was it?')).toBe(3);
+    await user.click(within(screen.getByRole('radiogroup', { name: 'How much did Morgan ask about you too?' })).getByRole('radio', { name: '3' }));
+    expect(picked('How much did Morgan ask about you too?')).toBe(3);
     await user.keyboard('1');
-    expect(picked('How engaged were you both?')).toBe(1);
+    expect(picked('How engaged was Morgan?')).toBe(1);
   });
 
   it('saves the ratings, shows them in the journal, and moves a goal by its dimension', async () => {

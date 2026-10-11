@@ -74,6 +74,13 @@ describe('plannedNotifications', () => {
     expect(list[1]).toMatchObject({ title: 'Coffee with Priya', body: 'In 15 minutes · 10:00 AM · with Priya', eventId: 'c', day: DAY });
     expect(list[0].body).toBe('10:00 AM Coffee with Priya');
     expect(list[4]).toMatchObject({ title: 'Tomorrow: 1 thing', body: "🎂 Priya's birthday" });
+    expect(list[2]).not.toHaveProperty('group');
+  });
+
+  it("says when a plan to ask about had several people, so one rating isn't everyone's", () => {
+    const sam = { ...priya, id: 'sam', name: 'Sam' };
+    const both = plannedNotifications({ ...state, people: [priya, sam], events: [{ ...coffee, personIds: [priya.id, 'sam'] }] }, { weeklyReview: false }, ...window);
+    expect(both.find(n => n.kind === 'after')).toMatchObject({ group: true, title: 'How did it go with Priya and Sam?' });
   });
 
   it('reminds of birthdays a week before, the evening before and on the morning', () => {

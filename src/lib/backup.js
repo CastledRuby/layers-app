@@ -152,6 +152,11 @@ function cleanEntry(j, personIds, skipped) {
   // Optional text fields are rendered as-is, so anything but a string is dropped.
   ['summary', 'reflection'].forEach(k => { if (k in entry && typeof entry[k] !== 'string') delete entry[k]; });
   if ('standouts' in entry) entry.standouts = (Array.isArray(entry.standouts) ? entry.standouts : []).filter(s => typeof s === 'string');
+  // What you asked them about (a log's "Did you ask about…?" yeses): text only.
+  if ('askedAbout' in entry) {
+    entry.askedAbout = (Array.isArray(entry.askedAbout) ? entry.askedAbout : []).filter(isText);
+    if (!entry.askedAbout.length) delete entry.askedAbout;
+  }
   // Per-dimension ratings: whole numbers 1-5 for known dimensions only.
   if ('ratings' in entry) {
     const r = isObject(entry.ratings) ? entry.ratings : {};

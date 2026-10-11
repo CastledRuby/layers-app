@@ -102,6 +102,16 @@ describe('the request', () => {
     expect(ANALYSIS_SCHEMA.properties.extractedInfo.items.properties).not.toHaveProperty('about');
   });
 
+  it("for a group: asks for each person's own rating of how it went (2026-10-12), and only for a group", () => {
+    const req = analysisRequest({ people: [amelie, chloe], yourName: 'Liam', text: 'Amelie: hi\nChloe: hey', today: TODAY });
+    const each = req.schema.properties.log.properties.each;
+    expect(each.items.properties.about.enum).toEqual(['them 1', 'them 2']);
+    expect(Object.keys(each.items.properties)).toEqual(['about', 'meaningfulness', 'ratings']);
+    expect(req.system).toContain("People in a group rarely get the same");
+    expect(ANALYSIS_SCHEMA.properties.log.properties).not.toHaveProperty('each');
+    expect(analysisSystem({ layers: [3], today: TODAY })).not.toContain('- each:');
+  });
+
   it("tells Claude what to look for and how to score, today's date for the chat's times, and the log's own scales", () => {
     const system = analysisSystem({ layers: [3], today: TODAY, dayFirst: true });
     ['follow-up questions', 'shift responses', 'missed bids', 'who asks, who shares', 'match their energy', 'getting longer or shorter', '50 is an ordinary, fine chat',
@@ -181,6 +191,24 @@ describe('the answer', () => {
     expect(r.transcript).toEqual([{ who: 'them', name: 'Chloe', text: 'hi' }, { who: 'them', name: 'Amelie', text: 'hey Chloe' }, { who: 'you', text: 'yo' }]);
     expect(r.extractedInfo).toEqual([{ category: 'plans', text: 'Chloe is moving', temporary: false, personId: 'c', name: 'Chloe' }]);
     expect(r.log.personIds).toEqual(['a', 'c']);
+  });
+
+  it("in a group, keeps each person's own rating, only for tags in the chat, the first for each, made safe", () => {
+    const r = analysisResult({
+      ...answer,
+      log: { ...answer.log, each: [
+        { about: 'them 2', meaningfulness: 2, ratings: { depth: 1, trust: 9, reciprocity: 0, interaction: 2, sharedExperiences: 1, listening: 2 } },
+        { about: 'them 1', meaningfulness: 5, ratings: { depth: 5, trust: 4, reciprocity: 4, interaction: 5, sharedExperiences: 2, listening: 4 } },
+        { about: 'them 2', meaningfulness: 4, ratings: {} },
+        { about: 'them 7', meaningfulness: 3, ratings: {} },
+      ] },
+    }, [amelie, chloe], { today: TODAY });
+    expect(r.log.each).toEqual({
+      a: { meaningfulness: 5, ratings: { depth: 5, trust: 4, reciprocity: 4, interaction: 5, sharedExperiences: 2, listening: 4 } },
+      c: { meaningfulness: 2, ratings: { depth: 1, trust: 5, interaction: 2, sharedExperiences: 1, listening: 2 } },
+    });
+    // One person's chat has no each.
+    expect(analysisResult({ ...answer, log: { ...answer.log, each: [{ about: 'them', meaningfulness: 1, ratings: {} }] } }, amelie, { today: TODAY }).log).not.toHaveProperty('each');
   });
 
   it("only takes the chat's day when it's a real day, not in the future, and within the year", () => {

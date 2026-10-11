@@ -24,6 +24,12 @@ afterEach(() => { delete window.layersSystem; ['layers-week-reads', 'layers-anal
 const amelie = person('Amelie', { layer: 4 });
 const seed = () => seedState({ profile: { name: 'Liam', focus: 'mix' }, people: [amelie], journal: [{ id: 'j1', personId: amelie.id, at: toISODate(new Date()), type: 'messaged', meaningfulness: 4, added: [], activeListening: [], summary: 'Her interview' }] });
 const read = () => within(dialog('Your week')).queryByLabelText("Claude's read of your week");
+// W reviews this week, except on a Monday, when it's the week just ended:
+// then → steps to this one.
+async function openThisWeek(user) {
+  await user.keyboard('w');
+  if (new Date().getDay() === 1) await user.keyboard('{ArrowRight}');
+}
 
 describe("Claude's read of your week", () => {
   it('reads this week by itself, once, with names hidden and put back, and keeps it', async () => {
@@ -31,7 +37,7 @@ describe("Claude's read of your week", () => {
     seed();
     const { user } = renderApp();
     await user.click(nav('Today'));
-    await user.keyboard('w');
+    await openThisWeek(user);
     expect(await within(await screen.findByLabelText("Claude's read of your week")).findByText('A warm week, mostly with Amelie')).toBeTruthy();
     expect(within(read()).getByText(/You asked more than you shared/)).toBeTruthy();
     const sent = bridge.runAnalysis.mock.calls[0][0];
@@ -39,7 +45,7 @@ describe("Claude's read of your week", () => {
     expect(JSON.stringify(sent)).not.toMatch(/Amelie|Liam/);
 
     await user.keyboard('{Escape}');
-    await user.keyboard('w');
+    await openThisWeek(user);
     expect(await within(read()).findByText('A warm week, mostly with Amelie')).toBeTruthy();
     expect(bridge.runAnalysis).toHaveBeenCalledTimes(1);
 

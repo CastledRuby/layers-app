@@ -855,6 +855,30 @@ its own. Changes made while building are marked.
 
 ## History
 
+### Each person in a group log on their own (not released yet)
+
+Asked for on 2026-10-12: a log with several people assumed it went the same with each.
+Your picks: each person in turn, nobody rated for you, and questions specific to each
+(their name and layer, what you know about them, their goals first, group chats too).
+
+- **How meaningful, for each**: a row per person, empty until you rate it (type 4, 2,
+  then Enter; ↑ ↓ move). Save with anyone unrated goes to them and says who's left. One
+  person still starts at 3.
+- **Rate each part, in their own words**: each person's own six questions, with their
+  name and what the part means at their layer ("How far past small talk did you get with
+  Sam?" for someone new, "How much did you and Ana talk about what really matters?" for
+  someone close). Parts a goal with them is about come first ("Your goal: …"), and their
+  weakest part is marked. With several people it goes person by person (← → switch).
+- **Did you ask about…?** For what's saved about them worth asking after (something
+  important lately, a plan that's just been), a yes or no. A yes ticks Remembered for
+  that person and shows on their Journal entry ("Asked about: …").
+- **Active listening and Something new** are each person's own (Something new now works
+  in group logs too). The date, what you did, the note, goals and how it felt are shared.
+- **Group chats**: Claude rates how it went with each person in the chat, shown a line
+  each and saved to each.
+- **The "How did it go?" notification** for a plan with several people offers Log it and
+  Just tick it instead of one rating for everyone.
+
 ### Repeat on certain days (not released yet)
 
 - **Repeat → On certain days** (it was "Every week", with S M T W T F S, so Tuesday and

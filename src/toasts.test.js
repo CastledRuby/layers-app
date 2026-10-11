@@ -25,6 +25,12 @@ describe('Windows toasts', () => {
       ['Deep', 'layers://rate?e=e1&amp;d=2026-10-04&amp;r=5'],
       ['Log it…', 'layers://log?e=e1&amp;d=2026-10-04'],
     ]);
+    // With several people one rating would be everyone's: Log it rates each.
+    const group = toastXml({ kind: 'after', group: true, title: 'How did it go?', body: '', eventId: 'e1', day: '2026-10-04' });
+    expect([...group.matchAll(/content="([^"]+)" activationType="protocol" arguments="([^"]+)"/g)].map(m => [m[1], m[2]])).toEqual([
+      ['Log it…', 'layers://log?e=e1&amp;d=2026-10-04'],
+      ['Just tick it', 'layers://done?e=e1&amp;d=2026-10-04'],
+    ]);
     const morning = toastXml({ kind: 'morning', title: 'Today: 2 things', body: 'x', day: '2026-10-04' });
     expect(morning).not.toContain('<actions>');
     expect(morning).toContain('launch="layers://open?d=2026-10-04"');

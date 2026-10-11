@@ -91,6 +91,7 @@ export const SHORTCUTS = [
   { keys: ['Ctrl', 'Z'], desc: 'Undo what you just did, while its message shows (a delete, tick, log or saved plan)', where: ['everywhere'] },
   { keys: ['Ctrl', 'Y'], desc: 'Redo what you just undid, while "Undone" shows (Ctrl+Shift+Z too)', where: ['everywhere'] },
   { keys: ['N'], desc: 'In a log (and editing one), the note: type in it; Esc or Tab leaves it. Other text boxes show their letter the same way', where: ['log'] },
+  { keys: ['1–5', '↑', '↓'], or: true, desc: 'A log with several people: how meaningful it was with each, top to bottom. In Rate each part, Active listening and Something new, ← → switch person, and Y or N answers "Did you ask about…?"', where: ['log'] },
   { keys: ['O', 'L', 'P', 'R', 'W'], or: true, desc: 'Ctrl+K, on a person after → or Tab: Open them, Log, Plan, Prepare to talk, or Where are you now', where: ['jump'] },
   { keys: ['Esc'], desc: 'Close the open sheet/dialog, or leave the search box or a text box you’re typing in (Tab too)', where: ['everywhere'] },
   { keys: ['?'], desc: 'Show this shortcuts list', where: ['everywhere'] },
@@ -210,20 +211,11 @@ export const REFLECTION_TEMPLATES = {
   next: ['Ask more questions', 'Listen more, talk less', 'Share more about me', 'Follow up on what they said', 'Plan something together', 'Check in sooner', 'Keep it lighter'],
 };
 
-// The log's More details rates each dimension 1-5 with these questions
-// (keyboard: type a number per row). A rating drives that dimension's growth
-// instead of the overall "How meaningful" score (lib/progress.js dimBumps).
-// "How meaningful was it?", 1 to 5.
+// "How meaningful was it?", 1 to 5. The log's More details also rates each
+// dimension 1-5, with questions written for each person (lib/logQuestions.js);
+// a rating drives that dimension's growth instead of "How meaningful"
+// (lib/progress.js dimBumps).
 export const ML_LABELS = ['Very brief', 'Casual', 'Good conversation', 'Personal', 'Deep conversation'];
-
-export const DIM_QUESTIONS = {
-  depth: 'How deep did it go?',
-  trust: 'How much trust was there?',
-  reciprocity: 'How reciprocal was it?',
-  interaction: 'How engaged were you both?',
-  sharedExperiences: 'How much of an experience did you share?',
-  listening: 'How well did you listen to each other?',
-};
 
 // Relationship goals that are about one dimension move with that
 // dimension's rating when it's given (otherwise with "How meaningful").

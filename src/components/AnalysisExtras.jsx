@@ -1,15 +1,37 @@
 // What an analysis shows since 2026-10-11 (lib/analysis.js): the chat with
 // Claude's moments marked on the lines they quote (good ones ✓, missed ones
 // ↺), "The numbers" counted on this laptop (lib/chatNumbers.js), and last
-// time's tip with whether you followed it. Each shows nothing when there's
-// nothing to show (the sample chats, or analyses from before).
+// time's tip with whether you followed it, and a group chat's log for each
+// person. Each shows nothing when there's nothing to show (the sample
+// chats, or analyses from before).
 
 import { ChatBubble } from './atoms.jsx';
+import { DIM_LABELS, DIM_ORDER, ML_LABELS } from '../data/constants.js';
 import { minutesText, placeMoments } from '../lib/chatNumbers.js';
 import { formatCalendarDate, parseISODay } from '../lib/dates.js';
 import { COLORS } from '../theme.js';
 
 const card = { background: COLORS.paperRaised, border: `1px solid ${COLORS.line}` };
+
+// A group chat's log, how it went with each person (log.each, decided
+// 2026-10-12): "Sam: Personal (4 of 5) · Depth 4 · Trust 3".
+export function EachLog({ each, nameOf }) {
+  const ids = Object.keys(each || {});
+  if (!ids.length) return null;
+  return (
+    <div className="mt-2" aria-label="How it went with each">
+      {ids.map(id => {
+        const e = each[id];
+        const parts = DIM_ORDER.filter(k => e.ratings[k]).map(k => `${DIM_LABELS[k]} ${e.ratings[k]}`);
+        return (
+          <p key={id} className="text-xs mt-1" style={{ color: COLORS.ink }}>
+            <span className="font-semibold">{nameOf(id)}</span>: {ML_LABELS[e.meaningfulness - 1]} ({e.meaningfulness} of 5){parts.length ? ` · ${parts.join(' · ')}` : ''}
+          </p>
+        );
+      })}
+    </div>
+  );
+}
 
 function MomentNote({ m, align = 'left' }) {
   const good = m.kind === 'good';

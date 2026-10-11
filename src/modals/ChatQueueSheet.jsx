@@ -16,6 +16,7 @@ import { analysisModel, analysisToKeep } from '../lib/analysis.js';
 import { sourceLabel } from '../lib/chatImport.js';
 import { formatCalendarDate, parseISODay } from '../lib/dates.js';
 import { ChatReviewSheet } from './ChatReviewSheet.jsx';
+import { EachLog } from '../components/AnalysisExtras.jsx';
 import { COLORS } from '../theme.js';
 
 
@@ -93,8 +94,9 @@ export function ChatQueueSheet({ items, people, yourName = '', onLog, onSkip, on
                 <ConvStateBadge stateKey={r.conversationState} />
                 <span className="font-display" style={{ fontSize: 22, color: COLORS.accent }} aria-label={`Overall ${r.grading.overall}%`}>{r.grading.overall}%</span>
               </div>
-              <p className="text-xs mt-2.5" style={{ color: COLORS.ink }}>📱 Messaged · {ML_LABELS[m - 1]} ({m} of 5)</p>
-              {DIM_ORDER.some(k => r.log.ratings[k]) && <p className="text-xs mt-1" style={{ color: COLORS.ink }}>{DIM_ORDER.filter(k => r.log.ratings[k]).map(k => `${DIM_LABELS[k]} ${r.log.ratings[k]}`).join(' · ')}</p>}
+              <p className="text-xs mt-2.5" style={{ color: COLORS.ink }}>📱 Messaged{r.log.each ? '' : ` · ${ML_LABELS[m - 1]} (${m} of 5)`}</p>
+              <EachLog each={r.log.each} nameOf={(id) => (people.find(p => p.id === id) || { name: 'them' }).name} />
+              {!r.log.each && DIM_ORDER.some(k => r.log.ratings[k]) && <p className="text-xs mt-1" style={{ color: COLORS.ink }}>{DIM_ORDER.filter(k => r.log.ratings[k]).map(k => `${DIM_LABELS[k]} ${r.log.ratings[k]}`).join(' · ')}</p>}
               {r.log.summary && <p className="text-xs mt-1.5 italic" style={{ color: COLORS.inkSoft }}>Note: {r.log.summary}</p>}
               {r.tryNextTime && <p className="text-xs mt-2" style={{ color: COLORS.inkSoft }}><span className="font-semibold" style={{ color: COLORS.ink }}>Try next time:</span> {r.tryNextTime}</p>}
             </div>

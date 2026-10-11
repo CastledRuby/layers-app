@@ -107,8 +107,27 @@ function addNotes(person, notes, at) {
 // the next people and skills, the skills it raised, its Journal entries, who
 // moved up a layer and the names logged. handleLogSubmit applies one; the
 // chat queue's Log all (Analyse all new) applies several in turn.
-function applyLog({ people, skills }, { personIds, type, meaningfulness, notes, activeListening, summary, pickedDate, ratings = {}, goalIds, reflection, analysis }) {
-  const rated = DIM_ORDER.filter(k => ratings[k]);
+//
+// Each person has their own part of it (decided 2026-10-12): `each`, when
+// given, is { [personId]: { meaningfulness, ratings, activeListening,
+// notes, askedAbout } }, and anything it leaves out is the log's shared
+// value. So in a log with several people, how it went with one doesn't
+// move another.
+function applyLog({ people, skills }, input) {
+  const { personIds, type, summary, pickedDate, goalIds, reflection, analysis } = input;
+  const partOf = (id) => {
+    const own = (input.each && input.each[id]) || {};
+    return {
+      meaningfulness: own.meaningfulness || input.meaningfulness || 3,
+      ratings: own.ratings || input.ratings || {},
+      activeListening: own.activeListening || input.activeListening || [],
+      notes: own.notes || input.notes || [],
+      askedAbout: own.askedAbout || [],
+    };
+  };
+  const parts = Object.fromEntries(personIds.map(id => [id, partOf(id)]));
+  // Your skills grow by what you did with anyone in it.
+  const activeListening = [...new Set(personIds.flatMap(id => parts[id].activeListening))];
   const pd = pickedDate || new Date();
   const chartAt = toISODate(pd); // the journal entry's day, and "last mentioned" for any notes
   const loggedNames = personIds.map(id => (people.find(p => p.id === id) || {}).name).filter(Boolean);
@@ -117,7 +136,7 @@ function applyLog({ people, skills }, { personIds, type, meaningfulness, notes, 
     activeListening: activeListening.length,
     followUp: activeListening.includes('followup') ? 2 : 0,
     reciprocity: activeListening.includes('paraphrase') || activeListening.length >= 2 ? 1 : 0,
-    selfDisclosure: notes.length > 0 ? 1 : 0,
+    selfDisclosure: personIds.some(id => parts[id].notes.length > 0) ? 1 : 0,
   });
   const raised = raisedSkills(skills, nextSkills);
   // Worked out from the current people in one pass, so every level-up is
@@ -126,7 +145,9 @@ function applyLog({ people, skills }, { personIds, type, meaningfulness, notes, 
   // person's level-up was announced.)
   const nextPeople = people.map(p => {
     if (!personIds.includes(p.id)) return p;
-    const bumps = dimBumps({ meaningfulness, ratings, activeListening, type });
+    const { meaningfulness, ratings, activeListening: practised, notes } = parts[p.id];
+    const rated = DIM_ORDER.filter(k => ratings[k]);
+    const bumps = dimBumps({ meaningfulness, ratings, activeListening: practised, type });
     const grown = Object.fromEntries(DIM_ORDER.map(k => [k, clamp(p.dims[k] + bumps[k], 0, 100)]));
     // Layer progress moves more slowly than before, and only for
     // interactions you rated 4 or 5 — a brief/low-meaningfulness chat
@@ -149,7 +170,8 @@ function applyLog({ people, skills }, { personIds, type, meaningfulness, notes, 
     if (leveledUp) why.push(`Reached Layer ${newLayer}: ${getLayer(newLayer).name}`);
     if (type === 'activity' || type === 'hangout') why.push('Shared an experience together');
     if (newInterest) why.push('Discovered a shared interest');
-    if (activeListening.length >= 2) why.push('Good reciprocal conversation');
+    if (practised.length >= 2) why.push('Good reciprocal conversation');
+    if (parts[p.id].askedAbout.length) why.push('Followed up on something they mentioned');
     if (meaningfulness >= 4) why.push('Personal experience discussed');
     if (rated.length) why.push(`You rated it: ${rated.map(k => `${DIM_LABELS[k]} ${ratings[k]}`).join(', ')}`);
     if (why.length === 0) why.push('Logged a new interaction');
@@ -162,7 +184,11 @@ function applyLog({ people, skills }, { personIds, type, meaningfulness, notes, 
     const before = people.find(x => x.id === p.id);
     return [p.id, p.goals.filter(g => { const was = before.goals.find(x => x.id === g.id); return was && g.progress > was.progress; }).map(g => g.id)];
   }));
-  const entries = personIds.map(personId => ({ id: uid(), personId, at: chartAt, type, meaningfulness, added: notes.map(n => n.text), activeListening, ...(summary ? { summary } : {}), ...(moved[personId] && moved[personId].length ? { goalIds: moved[personId] } : {}), ...(rated.length ? { ratings: Object.fromEntries(rated.map(k => [k, ratings[k]])) } : {}), ...(reflection ? { reflection } : {}), ...(analysis ? { analysis } : {}) }));
+  const entries = personIds.map(personId => {
+    const { meaningfulness, ratings, activeListening: practised, notes, askedAbout } = parts[personId];
+    const rated = DIM_ORDER.filter(k => ratings[k]);
+    return { id: uid(), personId, at: chartAt, type, meaningfulness, added: notes.map(n => n.text), activeListening: practised, ...(summary ? { summary } : {}), ...(moved[personId] && moved[personId].length ? { goalIds: moved[personId] } : {}), ...(rated.length ? { ratings: Object.fromEntries(rated.map(k => [k, ratings[k]])) } : {}), ...(askedAbout.length ? { askedAbout } : {}), ...(reflection ? { reflection } : {}), ...(analysis ? { analysis } : {}) };
+  });
   return { people: nextPeople, skills: nextSkills, raised, entries, levelUps, names: loggedNames };
 }
 
@@ -803,7 +829,7 @@ function LayersApp() {
       const r = item.result;
       const personIds = r.log.personIds.filter(id => state.people.some(p => p.id === id));
       if (!personIds.length) return;
-      const done = applyLog(state, { personIds, type: 'messaged', meaningfulness: r.log.meaningfulness, notes: [], activeListening: r.log.activeListening, summary: r.log.summary || undefined, pickedDate: parseISODay(item.day), ratings: r.log.ratings, analysis: analysisToKeep(r, { model: item.model, chat: item.chat }) });
+      const done = applyLog(state, { personIds, type: 'messaged', meaningfulness: r.log.meaningfulness, notes: [], activeListening: r.log.activeListening, summary: r.log.summary || undefined, pickedDate: parseISODay(item.day), ratings: r.log.ratings, each: r.log.each, analysis: analysisToKeep(r, { model: item.model, chat: item.chat }) });
       const keep = r.extractedInfo.filter((_, i) => !(leaveOut[item.id] || []).includes(i)).map(it => ({ ...it, personId: it.personId || personIds[0] }));
       details += keep.length;
       state = { people: addDetails(done.people, keep, item.day), skills: done.skills };
@@ -984,10 +1010,11 @@ function LayersApp() {
   // { copyOf, day } to plan one again.
   function openPlan(prefill = {}) { setLogOpen(false); setEventView(null); setWeekReview(null); setPlanState(prefill); }
 
-  // From the log sheet. Its optional More details add: `ratings` (a 1-5
-  // rating per dimension, each driving that dimension's growth), `goalIds`
-  // (only these goals move; undefined means all of each person's active
-  // goals) and a `reflection`.
+  // From the log sheet: `each` holds each person's own part (applyLog),
+  // with `ratings` (a 1-5 rating per dimension, each driving that
+  // dimension's growth). Its optional More details also add `goalIds` (only
+  // these goals move; undefined means all of each person's active goals)
+  // and a `reflection`.
   function handleLogSubmit(input) {
     const snap = snapshot();
     const done = applyLog({ people, skills }, input);
@@ -1695,7 +1722,7 @@ function LayersApp() {
                           onMovePlan={handleMovePlan} drill={todayDrill} onAnalyse={analysisBridge ? (request) => analysisBridge.runAnalysis(request) : undefined} onDrillDone={(next) => { setDrills(next); setDrillDoneHere(today); }} onDrillMore={() => openCoach(null, 'practise')} />}
                         {activeTab === 'people' && <PeopleView people={people} journal={journal} onOpenPerson={openPerson} onAddPerson={() => setAddPersonOpen(true)} onAddPhotos={() => setPhotoFolderOpen(true)} />}
                         {activeTab === 'coach' && <div className="page-col"><CoachView people={people} journal={journal} initialPersonId={coachInit.personId} initialTab={coachInit.tab} onOpenLog={openLog} onApproveInfo={handleApproveInfo} onApproveInfoAll={handleApproveInfoAll} onRemindAbout={handleRemindFollowUp} onLogFromAnalysis={handleLogFromAnalysis} onOpenPerson={openPerson}
-                          onLogChat={(l) => handleLogSubmit({ personIds: l.personIds.filter(id => people.some(p => p.id === id)), type: 'messaged', meaningfulness: l.meaningfulness, notes: [], activeListening: l.activeListening, summary: l.summary || undefined, pickedDate: l.date, ratings: l.ratings, analysis: l.analysis })}
+                          onLogChat={(l) => handleLogSubmit({ personIds: l.personIds.filter(id => people.some(p => p.id === id)), type: 'messaged', meaningfulness: l.meaningfulness, notes: [], activeListening: l.activeListening, summary: l.summary || undefined, pickedDate: l.date, ratings: l.ratings, each: l.each, analysis: l.analysis })}
                           analysisReady={!analysisBridge ? 'none' : hasAnalysisKey ? 'ready' : 'no-key'} onAnalyse={(request) => analysisBridge.runAnalysis(request)} onOpenMe={() => openMe('claude')} yourName={profile.name}
                           model={analysisModelId} onModel={setAnalysisModelId} chatExports={chatsBridge} initialChatKey={coachInit.chatKey || null} style={profile.style || ''} onDrillDone={setDrills}
                           chatBatch={analysisBridge && chatsBridge ? { ...chatBatch, waiting: waiting(chatBatch.queue, journal), onLog: handleLogQueued, onSkip: handleSkipQueued, onRemind: handleRemindQueued } : null} /></div>}

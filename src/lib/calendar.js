@@ -430,7 +430,7 @@ export function plannedNotifications(state, settings, from, to, snoozes = [], nu
     if (s.askAfter) {
       agenda.timed.forEach(it => {
         if (it.done || it.missed || !it.people.length) return;
-        out.push({ tag: `f:${it.ev.id}:${day}`, at: at(day, it.end), kind: 'after', eventId: it.ev.id, day, title: `How did it go with ${withWho(it.ev)}?`, body: `${it.ev.title}. Log it, or just tick it off.` });
+        out.push({ tag: `f:${it.ev.id}:${day}`, at: at(day, it.end), kind: 'after', eventId: it.ev.id, day, ...(it.people.length > 1 ? { group: true } : {}), title: `How did it go with ${withWho(it.ev)}?`, body: `${it.ev.title}. Log it, or just tick it off.` });
       });
     }
     // The day's who to message, as things stand.

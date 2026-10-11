@@ -23,7 +23,9 @@ const link = (action, params) => `layers://${action}?${new URLSearchParams(Objec
 //   or Done; those wait for "How did it go?". It uses the reminder scenario,
 //   so it stays on screen.
 // - "How did it go?" (after): rate it (Casual, Good, Personal, Deep: a quick
-//   log, without opening Layers), or Log it for the full log.
+//   log, without opening Layers), or Log it for the full log. With several
+//   people (group), one rating would be everyone's, so it's Log it (each
+//   rated on their own) or Just tick it.
 // - A birthday or key date coming up (date), or someone close gone quiet
 //   (quiet): Plan something, with them.
 // - The weekly catch-up list (catchup): Plan with each of up to three people;
@@ -42,7 +44,9 @@ function toastXml(n) {
     scenario = ' scenario="reminder"';
     actions = button('10 min', 'snooze', { m: '10' }) + button('1 hour', 'snooze', { m: '60' }) + button('Tomorrow', 'snooze', { m: 'tomorrow' });
   } else if (n.kind === 'after' && n.eventId) {
-    actions = RATINGS.map(([label, r]) => button(label, 'rate', { r: String(r) })).join('') + button('Log it…', 'log');
+    actions = n.group
+      ? button('Log it…', 'log') + button('Just tick it', 'done')
+      : RATINGS.map(([label, r]) => button(label, 'rate', { r: String(r) })).join('') + button('Log it…', 'log');
   } else if ((n.kind === 'date' || n.kind === 'quiet') && n.personId) {
     actions = button('Plan something', 'plan', { p: n.personId });
   } else if (n.kind === 'catchup' && Array.isArray(n.people)) {

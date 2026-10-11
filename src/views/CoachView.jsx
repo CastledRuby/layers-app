@@ -13,7 +13,7 @@ import { Avatar, ConvStateBadge, Kbd, LabeledBar, LayerBadge } from '../componen
 import { hasOpenSheet, isTyping } from '../components/sheetLayer.js';
 import { ANALYSIS_MODELS, analysisCost, analysisModel, analysisRequest, analysisResult, analysisToKeep, DEFAULT_ANALYSIS_MODEL, detectPeople, lastTipFor, MAX_SCREENSHOTS, otherSpeakers, recordSpend, typicalCost } from '../lib/analysis.js';
 import { chatNumbers } from '../lib/chatNumbers.js';
-import { ChatNumbers, MarkedTranscript, TipCheck } from '../components/AnalysisExtras.jsx';
+import { ChatNumbers, EachLog, MarkedTranscript, TipCheck } from '../components/AnalysisExtras.jsx';
 import { DateDropdown } from '../components/pickers.jsx';
 import { ChatExports } from '../components/ChatExports.jsx';
 import { ChatBatchCard } from '../components/ChatBatch.jsx';
@@ -717,12 +717,13 @@ export function CoachView({ people, journal, initialPersonId, initialTab, onOpen
               {scenario.own ? (
                 <div className="rounded-2xl p-4 mt-5" style={{ background: COLORS.paperRaised, border: `1px solid ${COLORS.line}` }} aria-label="Log it">
                   <p className="text-sm font-semibold" style={{ color: COLORS.ink }}>Log it</p>
-                  <p className="text-xs mt-1" style={{ color: COLORS.inkSoft }}>📱 Messaged {scenario.log.personIds.map(nameOf).join(', ')} · {ML_LABELS[scenario.log.meaningfulness - 1]} ({scenario.log.meaningfulness} of 5)</p>
+                  <p className="text-xs mt-1" style={{ color: COLORS.inkSoft }}>📱 Messaged {scenario.log.personIds.map(nameOf).join(', ')}{scenario.log.each ? '' : ` · ${ML_LABELS[scenario.log.meaningfulness - 1]} (${scenario.log.meaningfulness} of 5)`}</p>
                   <div className="flex items-center gap-2 flex-wrap mt-2.5">
                     <DateDropdown key={`${scenarioKey}:${scenario.log.date}`} compact value={ownLogDate} onChange={setOwnLogDate} maxDate={new Date()} />
                     <span className="text-xs" style={{ color: COLORS.inkSoft }}>{ownChat && ownChat.source ? "the conversation's day" : scenario.log.date ? "from the chat's times" : 'no times in the chat, so today'}</span>
                   </div>
-                  {DIM_ORDER.some(k => scenario.log.ratings[k]) && <p className="text-xs mt-2.5" style={{ color: COLORS.ink }}>{DIM_ORDER.filter(k => scenario.log.ratings[k]).map(k => `${DIM_LABELS[k]} ${scenario.log.ratings[k]}`).join(' · ')}</p>}
+                  <EachLog each={scenario.log.each} nameOf={nameOf} />
+                  {!scenario.log.each && DIM_ORDER.some(k => scenario.log.ratings[k]) && <p className="text-xs mt-2.5" style={{ color: COLORS.ink }}>{DIM_ORDER.filter(k => scenario.log.ratings[k]).map(k => `${DIM_LABELS[k]} ${scenario.log.ratings[k]}`).join(' · ')}</p>}
                   {scenario.log.activeListening.length > 0 && <p className="text-xs mt-1.5" style={{ color: COLORS.good }}>✓ {scenario.log.activeListening.map(k => AL_ITEMS.find(a => a.key === k).label).join(' · ')}</p>}
                   {scenario.log.summary && <p className="text-xs mt-1.5 italic" style={{ color: COLORS.inkSoft }}>Note: {scenario.log.summary}</p>}
                   <p className="text-xs mt-2" style={{ color: COLORS.inkSoft }}>The log keeps this review and the chat, to read again from the Journal.</p>

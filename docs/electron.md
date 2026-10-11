@@ -56,6 +56,9 @@ when Layers is closed:
    - "How did it go?" (when a plan with people ends) is rated right there: **Casual**,
      **Good**, **Personal** or **Deep** (`layers://rate?…&r=2` to `5`), a quick log made
      without opening Layers that ticks the plan off; or **Log it…** for the full log.
+     A plan with several people (`group`, since 2026-10-12) has only **Log it…** and
+     **Just tick it** (`layers://done`): one rating would be everyone's, and the log
+     rates each person on their own.
    - Someone close gone quiet has **Plan something**; the weekly catch-up list has **Plan
      with** each of up to three people; the Sunday review has **Review my week**. Clicking
      the catch-up list or the review opens the week review (`layers://review`).

@@ -110,9 +110,21 @@ const tones = obj({ text: str, natural: str, playful: str, deeper: str });
 // none: each either-or (orNull) field makes the format Claude compiles much
 // bigger, and one more made it "too complex for compilation" (2026-10-09), so
 // keep them to the few there are.
+// In a group chat, log.each rates how it went with each of the others on
+// their own (decided 2026-10-12), so one person's warm reply isn't
+// everyone's.
 export function analysisSchema(tokens = ['them']) {
   const info = { category: { type: 'string', enum: CATEGORIES.map(c => c.key) }, text: str, temporary: { type: 'boolean' }, when: str };
   if (tokens.length > 1) info.about = { type: 'string', enum: tokens };
+  const ratings = obj(Object.fromEntries(DIM_ORDER.map(k => [k, int])));
+  const log = {
+    meaningfulness: int,
+    ratings,
+    activeListening: list({ type: 'string', enum: AL_ITEMS.map(a => a.key) }),
+    summary: str,
+    chatDate: str,
+  };
+  if (tokens.length > 1) log.each = list(obj({ about: { type: 'string', enum: tokens }, meaningfulness: int, ratings }));
   return obj({
     transcript: list(obj({ who: { type: 'string', enum: ['you', ...tokens] }, text: str })),
     conversationState: { type: 'string', enum: Object.keys(CONV_STATES) },
@@ -127,13 +139,7 @@ export function analysisSchema(tokens = ['them']) {
     recommendation: orNull(str),
     extractedInfo: list(obj(info)),
     next: obj({ continueTopic: orNull(tones), shareYourself: orNull(tones), changeTopic: orNull(tones), dontMessage: orNull(tones) }),
-    log: obj({
-      meaningfulness: int,
-      ratings: obj(Object.fromEntries(DIM_ORDER.map(k => [k, int]))),
-      activeListening: list({ type: 'string', enum: AL_ITEMS.map(a => a.key) }),
-      summary: str,
-      chatDate: str,
-    }),
+    log: obj(log),
   });
 }
 export const ANALYSIS_SCHEMA = analysisSchema();
@@ -174,7 +180,7 @@ log, for the user's journal, on Layers' own scales:
 - meaningfulness 1-5: 1 very brief, 2 casual, 3 good conversation, 4 personal, 5 deep conversation.
 - ratings, each 1-5 (1 barely, 3 some, 5 a lot): depth (how deep it went), trust (openness and trust shown, such as sharing something personal or asking for help), reciprocity (how evenly you both gave and asked), interaction (how engaged you both were), sharedExperiences (how much was done or lived together: plans made, a moment or activity shared, inside jokes; a plain chat is usually 1 or 2), listening (how well you listened to each other).
 - activeListening: only what the user clearly did: followup (asked follow-up questions about what they said), paraphrase (paraphrased, clarified or reflected back), listened (let them finish a story without cutting in or redirecting), remembered (brought up something they'd mentioned before this chat).
-- summary: what the chat was about, under 12 words, as a journal note (e.g. "Her new job and nerves about Monday").
+${group ? `- each: one for every one of the others (about: their tag), with their own meaningfulness and ratings on the same scales, for the user's part of the chat with that person: how deep it went with them, how much they opened up, how evenly the two of them gave and asked, how engaged they were, what the two of them shared, how well the user listened to them. People in a group rarely get the same: someone who barely spoke is low, someone the user really talked with is higher. The shared meaningfulness and ratings above are for the chat as a whole.\n` : ''}- summary: what the chat was about, under 12 words, as a journal note (e.g. "Her new job and nerves about Monday").
 - chatDate: the day of the last message as YYYY-MM-DD, if the chat shows dates or times (count "Yesterday", weekday names and times, worked out from today); empty if it doesn't.`,
 
     `WHAT TO WRITE.
@@ -304,9 +310,10 @@ export function analysisRequest({ people, person, yourName, text, images = [], m
 
 // The answer, checked and made safe to show: a "scenario" like the samples,
 // with each saved detail's person (personId), and `log`, a log on Layers'
-// own scales ready to save: { personIds, meaningfulness, ratings,
+// own scales ready to save: { personIds, meaningfulness, ratings, each?,
 // activeListening, summary, date } (date: the chat's day from its times, or
-// null). Details already on their profile are left out.
+// null; each: a group chat's rating for each person). Details already on
+// their profile are left out.
 // `others`: the names hidden as [someone 1]… (otherSpeakers of the chat sent).
 // `numbers` (lib/chatNumbers.js) and `lastTip` (analysisContext) are worked
 // out here, not by Claude, and shown with it.
@@ -324,6 +331,14 @@ export function analysisResult(raw, people, { today = new Date(), others = [], n
   const known = (p, category, text) => listOf(p[category]).some(it => it && String(it.text || '').trim().toLowerCase() === text.trim().toLowerCase());
   const lg = r.log || {};
   const ratingsIn = lg.ratings || {};
+  const ratingsOf = (x) => Object.fromEntries(DIM_ORDER.filter(k => Number((x || {})[k]) >= 1).map(k => [k, clamp(x[k], 1, 5)]));
+  // A group chat's own rating for each person ({ [personId]: { meaningfulness,
+  // ratings } }), only for tags that are in it, the first answer for each.
+  const each = {};
+  if (group.length > 1) listOf(lg.each).forEach(x => {
+    const i = x && tokens.indexOf(x.about);
+    if (i >= 0 && group[i] && !each[group[i].id]) each[group[i].id] = { meaningfulness: clamp(x.meaningfulness || lg.meaningfulness || 3, 1, 5), ratings: ratingsOf(x.ratings) };
+  });
   const day = typeof lg.chatDate === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(lg.chatDate) ? parseISODay(lg.chatDate) : null;
   const yearAgo = new Date(today.getFullYear() - 1, today.getMonth(), today.getDate());
   // A detail's day (an interview on Thursday), within a year either way.
@@ -355,7 +370,8 @@ export function analysisResult(raw, people, { today = new Date(), others = [], n
     log: {
       personIds: group.map(p => p.id),
       meaningfulness: clamp(lg.meaningfulness || 3, 1, 5),
-      ratings: Object.fromEntries(DIM_ORDER.filter(k => Number(ratingsIn[k]) >= 1).map(k => [k, clamp(ratingsIn[k], 1, 5)])),
+      ratings: ratingsOf(ratingsIn),
+      ...(Object.keys(each).length ? { each } : {}),
       activeListening: [...new Set(listOf(lg.activeListening))].filter(k => AL_ITEMS.some(a => a.key === k)),
       summary: typeof lg.summary === 'string' ? lg.summary.trim().slice(0, 120) : '',
       date: day && day <= today && day >= yearAgo ? toISODate(day) : null,

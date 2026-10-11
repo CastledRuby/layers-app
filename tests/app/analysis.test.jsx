@@ -349,12 +349,16 @@ describe('chat analysis with Claude', () => {
     expect(savedPerson('Chloe').experiences).toEqual([]);
   });
 
-  it('a group chat: everyone in it, tagged apart, each detail to its person, one log with all of them', async () => {
+  it('a group chat: everyone in it, tagged apart, each detail to its person, one log with all of them, each rated on their own', async () => {
     const bridge = fakeBridge({ hasKey: true });
     bridge.runAnalysis = vi.fn(async () => ({ result: {
       ...ANSWER,
       transcript: [{ who: 'them 1', text: 'hi both' }, { who: 'them 2', text: 'hey [them 1]' }, { who: 'you', text: 'yo' }],
       extractedInfo: [{ about: 'them 2', category: 'plans', text: '[them 2] is moving to Wellington', temporary: false }],
+      log: { ...ANSWER.log, each: [
+        { about: 'them 1', meaningfulness: 5, ratings: { depth: 5, trust: 4, reciprocity: 4, interaction: 5, sharedExperiences: 2, listening: 4 } },
+        { about: 'them 2', meaningfulness: 2, ratings: { depth: 1, trust: 2, reciprocity: 2, interaction: 2, sharedExperiences: 1, listening: 3 } },
+      ] },
     }, usage: { input: 1, output: 1 }, model: 'claude-haiku-4-5' }));
     seedState({ profile: { name: 'Liam', focus: 'mix' }, people: [person('Amelie', { layer: 4 }), person('Chloe', { layer: 3 }), person('Zoe')] });
     const { user } = renderApp();
@@ -376,9 +380,15 @@ describe('chat analysis with Claude', () => {
     expect(screen.getByText(/About Chloe · Category: Plans/)).toBeTruthy();
     await user.click(screen.getByRole('button', { name: 'Save' }));
     expect(savedPerson('Chloe').plans[0].text).toBe('Chloe is moving to Wellington');
-    expect(within(screen.getByLabelText('Log it')).getByText(/Messaged Amelie, Chloe/)).toBeTruthy();
+    expect(sent.schema.properties.log.properties.each.items.properties.about.enum).toEqual(['them 1', 'them 2']);
+    const logIt = within(screen.getByLabelText('Log it'));
+    expect(logIt.getByText(/Messaged Amelie, Chloe$/)).toBeTruthy();
+    expect(logIt.getByLabelText('How it went with each').textContent).toMatch(/Amelie: Deep conversation \(5 of 5\) · Depth 5.*Chloe: Casual \(2 of 5\) · Depth 1/);
     await user.click(screen.getByRole('button', { name: 'Log this chat' }));
     expect(savedState().journal.map(j => j.personId).sort()).toEqual([savedPerson('Amelie').id, savedPerson('Chloe').id].sort());
+    const entry = (name) => savedState().journal.find(j => j.personId === savedPerson(name).id);
+    expect(entry('Amelie')).toMatchObject({ meaningfulness: 5, ratings: { depth: 5, interaction: 5 } });
+    expect(entry('Chloe')).toMatchObject({ meaningfulness: 2, ratings: { depth: 1, interaction: 2 } });
   });
 
   it('"What are you logging?" has Analyse a chat, 3, which opens Coach\'s Analyse', async () => {

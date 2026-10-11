@@ -158,6 +158,7 @@ type JournalEntry = {
   summary?: string;                           // the note
   reflection?: string;                        // "How did it feel?" (the log's More details, or Edit entry)
   ratings?: { [dimension]: 1|2|3|4|5 };       // "How did each part go?" (More details); only rated dimensions
+  askedAbout?: string[];                      // "Did you ask about …?" yeses (2026-10-12): saved details you followed up on
   goalIds?: string[];                         // the goals this log moved (logs from 2026-10-06 on); the Journal's goal filter
   standouts?: string[];                       // older 1.0.28 builds' "What stood out?" picks; shown, no longer written
   analysis?: { grading: object; conversationState: string; model?: string; review?: object; chat?: string }; // from Coach → Analyse: since 2026-10-07 your own chat's review and the chat itself (its last 20,000 characters)
@@ -282,13 +283,22 @@ The helpers are in [`lib/progress.js`](../../src/lib/progress.js) and unit-teste
 
 **Logging an interaction** (`handleLogSubmit`, which applies `applyLog`: the next people,
 skills and Journal entries worked out without setting anything, so the chat queue's
-Log all can apply several in turn). The log sheet always sends the people,
-type, meaningfulness, profile notes, active-listening ticks, the note (`summary`) and the
-picked date. Its optional **More details** section can add three more inputs:
+Log all can apply several in turn). The log sheet always sends the people, type, the
+note (`summary`), the picked date and `each`: each person's own part of it (decided
+2026-10-12), `{ [personId]: { meaningfulness, ratings, activeListening, notes,
+askedAbout? } }`, so in a log with several people how it went with one doesn't move
+another. Anything `each` leaves out is the log's shared value (`meaningfulness`,
+`ratings`, `activeListening`, `notes`), which is what the other callers send (Ctrl+K, a
+notification's rating, an analysed chat for one person). Your skills grow by what you
+practised with anyone in it. Its optional **More details** section can add:
 
-- `ratings`: "How did each part go?", a 1–5 rating for any of the six dimensions
-  (`DIM_QUESTIONS` holds the questions). With More details open, typing a number rates
-  the highlighted row and moves down; Backspace steps back and clears; the arrows move.
+- `ratings` (in `each`): "How did each part go?", a 1–5 rating for any of the six
+  dimensions, asked in each person's own words (`lib/logQuestions.js`). With More
+  details open, typing a number rates the highlighted row and moves down; Backspace
+  steps back and clears; the arrows move.
+- `askedAbout` (in `each`): the things saved about them you said you asked about ("Did
+  you ask Sam about …?"), kept on their Journal entry (text only, checked like a
+  backup) and shown there as "Asked about: …".
 - `goalIds`: the goals left ticked under "Goals this moved". `undefined` means every
   active goal of each person in the log, and the sheet sends `undefined` unless you
   untick one. A logged reminder that's linked to a goal sends just that goal.
@@ -320,10 +330,11 @@ Then:
    first for a message or call). It goes in the log's note only, never on the profile.
    (Until 2026-10-07 it offered interest topics, `NOTE_TEMPLATES`, which were filed on
    the profile.) What you learned about someone is More details' "Something new about
-   …?", saved into the category you picked (one-person logs only). A topic that's already saved
+   …?", saved into the category you picked, for each person on their own. A topic that's already saved
    (same text, ignoring case) gets its `at` refreshed and leaves the archive, rather than
    being added twice (`addNotes` in `App.jsx`).
-6. A journal entry is prepended, with `ratings` and `reflection` when they're given.
+6. A journal entry is prepended for each person, with their own meaningfulness, active
+   listening and notes, and `ratings`, `askedAbout` and `reflection` when they're given.
    Global skills get small bumps (`bumpSkills`), and skill goals whose skill went up move
    with it ([below](#skill-goals-move-with-skills)).
 
@@ -729,7 +740,10 @@ will be sent.
   and **Log this chat** saves it through `handleLogSubmit` like any log: type Messaged,
   everyone in the chat, how meaningful (1–5), the six "Rate each part" ratings (so each
   dimension moves by its rating), the active-listening behaviours you clearly showed,
-  and a short note. It's dated from the chat's timestamps when it has them (the last
+  and a short note. In a group chat Claude also rates how it went with each person on
+  their own (`log.each`: about, meaningfulness, ratings; decided 2026-10-12), the card
+  shows them a line each ("Chloe: Casual (2 of 5) · Depth 1 …"), and each person's
+  entry and progress take their own. It's dated from the chat's timestamps when it has them (the last
   message's day; not in the future or more than a year back), otherwise today, and the
   date can be changed. The entry keeps `analysis` (grading, state, model). The sample
   chats still log the old way (`handleLogFromAnalysis`, type `analysed`).
@@ -1096,7 +1110,7 @@ own saved data gets the same check at startup ([Loading saved data](#loading-sav
 | A journal entry for a person who isn't in the backup; a goal without a title; a saved detail without text; an event without a title or valid date | Skipped and counted |
 | An event with people who aren't in the backup | Repaired: those people are taken off it |
 | Missing lists, out-of-range numbers, unknown types | Repaired: lists become empty, numbers are clamped (layer 1–4, dimensions and progress 0–100, meaningfulness 1–5), unknown interaction types become `other` |
-| A journal entry's `summary` or `reflection` that isn't text, or `standouts` that isn't a list of strings | Repaired: a bad `summary` or `reflection` is dropped, because it's shown as it is, and `standouts` keeps only its strings |
+| A journal entry's `summary` or `reflection` that isn't text, or `standouts` or `askedAbout` that isn't a list of strings | Repaired: a bad `summary` or `reflection` is dropped, because it's shown as it is; `standouts` keeps only its strings, and `askedAbout` its non-empty ones (dropped when none are left) |
 | Optional fields that aren't what they should be: a rating that isn't 1–5 for a known dimension, an analysis without scores (`cleanAnalysis`), an avatar that isn't initials or a photo (`cleanAvatar`), a key date or a detail's `when` that isn't a real day, a plan's bad `duration`, `alert` or done day | That field (or list item) is dropped |
 | `achievements` missing or not an object | Read as `null`, so the app works them out again from the data, quietly ([Achievements](#achievements)) |
 | An unknown achievement key, or a date that isn't `YYYY-MM-DD` | That entry is dropped |

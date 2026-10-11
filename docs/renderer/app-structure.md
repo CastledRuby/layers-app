@@ -209,15 +209,25 @@ The *details* step is the **quick log**. Its title says what's being logged ("Ta
 Ana", "Hung out with Sam and Alex"), and it asks only for the date (a small chip), how
 meaningful it was (1–5) and an optional note, with "+ Add detail" for what you did together.
 
+**With several people, nothing assumes it went the same with each** (decided
+2026-10-12). "How meaningful was it with each?" has a row per person, empty until you
+rate it: typing 1–5 rates the highlighted row and moves down (↑ ↓ move), and Save with
+anyone unrated goes to them and says who's left. One person still starts at 3. Rate each
+part, Active listening and Something new are each person's own too: their sheet has a
+tab per person (← → switch), and their chips say whose ("Rate each part · Sam ✓, Ana 2
+of 6"). The date, what you did, the note, Goals moved and How it felt are shared. The log
+sends `each` (each person's `meaningfulness`, `ratings`, `activeListening`, `notes` and
+`askedAbout`), and `applyLog` moves each person by their own.
+
 Everything else sits under **More details** as a row of chips. Each chip opens its own
 small sheet over the quick log ([`LogDetailSheets.jsx`](../../src/modals/LogDetailSheets.jsx)),
 so only one thing is asked at a time:
 
 | Chip | Key | Sheet | Shown |
 |---|---|---|---|
-| Rate each part | R | "How did each part go?": a 1–5 scale for each dimension. Type a number per row, top to bottom, or click. Backspace steps back; the arrows move. | always |
-| Active listening | L | "Did you practise active listening?": the four practices, ticked with 1–4 | always |
-| Something new | I | "Something new about …?": tap suggestions for the category (1–5 picks it): topic lists for interests, `INFO_TEMPLATES` for the rest. Typing is optional. Saved to the profile. | one-person logs |
+| Rate each part | R | "How did each part go?": a 1–5 scale for each dimension, asked in that person's own words ([`lib/logQuestions.js`](../../src/lib/logQuestions.js)): their first name, and what the part means at their layer ("How far past small talk did you get with Sam?" at Layer 1, "How much did you and Sam talk about what really matters?" at Layer 4). Parts a goal with them is about come first, marked "Your goal: …", and their weakest part is marked. Then "Did you ask Sam about …?" (yes or no, Y or N) for what's saved about them worth asking after (`followUps`: important things from the last 30 days or with a day within two weeks, and plans whose day was in the last two weeks; the newest two). A yes ticks Remembered in their active listening and is kept on their entry (`askedAbout`). Type a number per row, top to bottom, or click; Backspace steps back; ↑ ↓ move. With several people, the last row of one moves on to the next. | always |
+| Active listening | L | "Did you practise active listening?": the four practices, ticked with 1–4 (each person's own) | always |
+| Something new | I | "Something new about …?": tap suggestions for the category (1–5 picks it): topic lists for interests, `INFO_TEMPLATES` for the rest. Typing is optional. Saved to that person's profile. | when someone's picked |
 | Goals moved (or Add a goal) | G | "Goals this moved": every active goal is ticked; untick the ones it didn't help. **+ New goal** (`+`) starts one with them in `QuickGoalSheet`, and it comes back ticked. | when someone's picked |
 | How it felt | F | "How did it feel?": tap phrases for how it went and what to try next time (`REFLECTION_TEMPLATES`), plus optional typing. The saved reflection is the phrases, then the text. | always |
 

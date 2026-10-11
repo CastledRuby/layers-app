@@ -164,6 +164,7 @@ export function JournalView({ today, people, generalGoals = [], journal, goalFil
                     {entry.reflection && (<p className="text-xs mt-1.5 italic" style={{ color: COLORS.inkSoft }}>“{entry.reflection}”</p>)}
                     {entry.added && entry.added.length > 0 && (<p className="text-xs mt-1" style={{ color: COLORS.inkSoft }}>Added: {entry.added.join(', ')}</p>)}
                     {ratings.length > 0 && (<p className="text-xs mt-1" style={{ color: COLORS.inkSoft }}>Rated: {ratings.join(' · ')}</p>)}
+                    {entry.askedAbout && entry.askedAbout.length > 0 && (<p className="text-xs mt-1" style={{ color: COLORS.inkSoft }}>Asked about: {entry.askedAbout.join(', ')}</p>)}
                     {moved.length > 0 && (<p className="text-xs mt-1 flex items-center gap-1" style={{ color: COLORS.inkSoft }}><Target size={11} className="shrink-0" /> Moved: {moved.join(', ')}</p>)}
                     {stoodOut.length > 0 && (<p className="text-xs mt-1" style={{ color: COLORS.inkSoft }}>Stood out: {stoodOut.join(', ')}</p>)}
                     {entry.activeListening && entry.activeListening.length > 0 && (<p className="text-xs mt-1 flex items-center gap-1" style={{ color: l.deep }}><Check size={11} /> Practised active listening</p>)}
