@@ -1,9 +1,13 @@
-// Me tab: skills, achievements, appearance, updates and data.
+// Me tab: skills, achievements, appearance, updates and data. Since
+// 2026-10-11 in sections (ME_TABS): You, Calendar, Claude, App and Your data,
+// 1-5 to switch (`tab` is LayersApp's, so other screens can open one), and
+// Find a setting (F) across them all.
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Download, Upload } from 'lucide-react';
 import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
-import { LabeledBar } from '../components/atoms.jsx';
+import { Kbd, KeyedField, LabeledBar } from '../components/atoms.jsx';
+import { hasOpenSheet, isTyping } from '../components/sheetLayer.js';
 import { ACHIEVEMENTS, FOCUS_LABELS, FOCUS_SKILL_KEY, SKILL_ORDER, SKILL_TIPS } from '../data/constants.js';
 import { achievementProgress, progressText } from '../lib/achievements.js';
 import { notifySettings } from '../lib/calendar.js';
@@ -156,7 +160,9 @@ function CalendarsCard({ calendars, onAdd, onRemove, onRefresh }) {
   );
 }
 
-export function MeView({ people, journal, skills, profile, generalGoals = [], onUpdateProfile, onEditProfile, achievements, onAddSample, onRemoveSample, hasSamplePeople, canAddSample, onStartOver, onExport, onImportClick, backupInfo, onOpenBackups, hasUpdater, updateStatus, onCheckForUpdates, onInstallUpdate, onOpenDownloadPage, shortcutStatus, themeMode, onSetTheme, hasSystemBridge, autoLaunch, onToggleAutoLaunch, onOpenShortcuts, appVersion, sync = null, onSyncTurnOn, onSyncNow, onSyncOff, onOpenSyncFolder, calendars = null, onAddCalendar, onRemoveCalendar, onRefreshCalendars, analysisKey = null, onSaveAnalysisKey, onRemoveAnalysisKey }) {
+const ME_TABS = [['you', 'You'], ['calendar', 'Calendar'], ['claude', 'Claude'], ['app', 'App'], ['data', 'Your data']];
+
+export function MeView({ tab = 'you', onTab = () => {}, people, journal, skills, profile, generalGoals = [], onUpdateProfile, onEditProfile, achievements, onAddSample, onRemoveSample, hasSamplePeople, canAddSample, onStartOver, onExport, onImportClick, backupInfo, onOpenBackups, hasUpdater, updateStatus, onCheckForUpdates, onInstallUpdate, onOpenDownloadPage, shortcutStatus, themeMode, onSetTheme, hasSystemBridge, autoLaunch, onToggleAutoLaunch, onOpenShortcuts, appVersion, sync = null, onSyncTurnOn, onSyncNow, onSyncOff, onOpenSyncFolder, calendars = null, onAddCalendar, onRemoveCalendar, onRefreshCalendars, analysisKey = null, onSaveAnalysisKey, onRemoveAnalysisKey }) {
   const [practice] = useState(() => practiceTrend(readPractice())); // Practise's scores, read when Me opens
   const [chartSkill, setChartSkill] = useState(FOCUS_SKILL_KEY);
 
@@ -181,6 +187,260 @@ export function MeView({ people, journal, skills, profile, generalGoals = [], on
     ];
   }, [people, journal, generalGoals]);
   const notify = notifySettings(profile);
+  const [find, setFind] = useState('');
+  const findRef = useRef(null);
+  // 1-5 switch sections and F finds a setting (not while typing or in a sheet).
+  const keys = useRef(null);
+  useEffect(() => {
+    function onKey(e) {
+      if (e.ctrlKey || e.metaKey || e.altKey || isTyping() || hasOpenSheet() || !keys.current) return;
+      const { list, pick } = keys.current;
+      const n = /^[1-9]$/.test(e.key) ? Number(e.key) : null;
+      if (n && n <= list.length) { e.preventDefault(); pick(list[n - 1][0]); }
+      else if ((e.key === 'f' || e.key === 'F') && findRef.current) { e.preventDefault(); findRef.current.focus(); }
+    }
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
+
+  // Me in sections (decided 2026-10-11): tabs (1-5), and Find a setting (F)
+  // across all of them. Each section: { id, tab, title, words, node }.
+  const sections = [
+    { id: 'skills', tab: 'you', title: 'Your social skills', words: 'skills strength focus challenge glance goals', node: (
+      <div key="skills">
+        <div className="grid grid-cols-2 gap-y-4 mb-7">
+          {glance.map(([n, label]) => (
+            <div key={label}>
+              <p className="font-display" style={{ fontSize: 26, color: COLORS.ink }}>{n}</p>
+              <p className="text-xs mt-0.5" style={{ color: COLORS.inkSoft }}>{label}</p>
+            </div>
+          ))}
+        </div>
+
+        <p className="font-display" style={{ fontSize: 24, color: COLORS.ink }}>Your social skills</p>
+        <p className="text-sm mt-1" style={{ color: COLORS.inkSoft }}>Your own development, tracked privately.</p>
+
+        <div className="mt-5 space-y-3.5">
+          {SKILL_ORDER.map(k => (<LabeledBar key={k} label={skills[k].label} percent={skills[k].current} color={COLORS.accent} size="lg" />))}
+        </div>
+
+        {tracked ? (
+          <div className="grid grid-cols-1 gap-2.5 mt-6">
+            <div className="rounded-2xl p-3.5" style={{ background: COLORS.accentSoft }}>
+              <p className="text-xs font-semibold" style={{ color: COLORS.accent }}>Your biggest strength</p>
+              <p className="text-sm mt-1" style={{ color: COLORS.ink }}>{SKILL_TIPS[strengthKey].emoji} {skills[strengthKey].label}</p>
+            </div>
+            <div className="rounded-2xl p-3.5" style={{ background: COLORS.layer3Tint }}>
+              <p className="text-xs font-semibold" style={{ color: COLORS.layer3Deep }}>Current focus</p>
+              <p className="text-sm mt-1" style={{ color: COLORS.ink }}>{SKILL_TIPS[focusKey].emoji} {skills[focusKey].label}</p>
+              <p className="text-xs mt-1.5" style={{ color: COLORS.inkSoft }}>{SKILL_TIPS[focusKey].focus}</p>
+            </div>
+            <div className="rounded-2xl p-3.5" style={{ background: COLORS.paperRaised, border: `1px solid ${COLORS.line}` }}>
+              <p className="text-xs font-semibold" style={{ color: COLORS.ink }}>Current challenge</p>
+              <p className="text-xs mt-1.5" style={{ color: COLORS.inkSoft }}>{SKILL_TIPS[focusKey].challenge}</p>
+            </div>
+          </div>
+        ) : (
+          <div className="rounded-2xl p-3.5 mt-6" style={{ background: COLORS.accentSoft }}>
+            <p className="text-xs font-semibold" style={{ color: COLORS.accent }}>Getting started</p>
+            <p className="text-xs mt-1.5" style={{ color: COLORS.ink }}>Your skills start at 0% and grow as you log conversations. When you log one, tick what you practised, like asking follow-up questions, and your strengths and next focus will show up here.</p>
+          </div>
+        )}
+      </div>
+    ) },
+    { id: 'chats', tab: 'you', title: 'Your chats over time', words: 'chats trend practice analysed scores', node: (
+      <div key="chats">
+        {(() => {
+          const points = chatTrend(journal);
+          return (points.length > 0 || practice.length > 0) && (
+            <div className="mt-7">
+              <p className="font-display mb-3" style={{ fontSize: 18, color: COLORS.ink }}>Your chats over time</p>
+              <ChatTrendChart points={points} practice={practice} label="Skills from analysed chats" />
+            </div>
+          );
+        })()}
+      </div>
+    ) },
+    { id: 'history', tab: 'you', title: 'Progress history', words: 'progress history chart skills', node: <div key="history">
+        <div className="mt-7">
+          <p className="font-display" style={{ fontSize: 18, color: COLORS.ink }}>Progress history</p>
+          <div className="flex items-center gap-2 mt-3 overflow-x-auto no-scrollbar pb-1">
+            {SKILL_ORDER.map(k => (
+              <button key={k} onClick={() => setChartSkill(k)} className="text-xs font-semibold rounded-full px-3 py-1.5 shrink-0" style={{ background: chartSkill === k ? COLORS.accent : COLORS.paperRaised, color: chartSkill === k ? COLORS.onAccent : COLORS.inkSoft, border: `1px solid ${chartSkill === k ? COLORS.accent : COLORS.line}` }}>{skills[k].label}</button>
+            ))}
+          </div>
+          <div className="mt-3" style={{ width: '100%', height: 170 }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={chartData} margin={{ top: 8, right: 14, left: 0, bottom: 0 }}>
+                <CartesianGrid stroke={COLORS.line} strokeDasharray="3 3" vertical={false} />
+                <XAxis dataKey="date" tick={{ fontSize: 10, fill: COLORS.inkSoft }} axisLine={{ stroke: COLORS.line }} tickLine={false} interval={0} padding={{ left: 18, right: 18 }} />
+                <YAxis domain={[0, 100]} tick={{ fontSize: 10, fill: COLORS.inkSoft }} axisLine={false} tickLine={false} width={30} />
+                <Tooltip formatter={(v) => [`${v}%`, skills[chartSkill].label]} contentStyle={{ borderRadius: 12, border: `1px solid ${COLORS.line}`, fontSize: 12 }} />
+                <Line type="monotone" dataKey="value" stroke={COLORS.accent} strokeWidth={2.5} dot={{ r: 3, fill: COLORS.accent }} activeDot={{ r: 5 }} />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+    </div> },
+    { id: 'achievements', tab: 'you', title: 'Achievements', words: 'achievements badges unlocked', node: <div key="achievements">
+        <div className="mt-7">
+          <p className="font-display" style={{ fontSize: 18, color: COLORS.ink }}>Achievements</p>
+          <div className="grid grid-cols-2 gap-2.5 mt-3">
+            {ACHIEVEMENTS.map(a => {
+              const unlockedOn = achievements[a.key] ? parseISODay(achievements[a.key]) : null;
+              const isUnlocked = !!unlockedOn;
+              return (
+                <div key={a.key} className="rounded-2xl p-3.5" style={{ background: isUnlocked ? COLORS.accentSoft : COLORS.paperRaised, border: `1px solid ${isUnlocked ? COLORS.accentSoft : COLORS.line}`, opacity: isUnlocked ? 1 : 0.55 }}>
+                  <span style={{ fontSize: 22 }}>{a.emoji}</span>
+                  <p className="text-xs font-semibold mt-1.5" style={{ color: COLORS.ink }}>{a.title}</p>
+                  <p className="text-xs mt-1" style={{ color: COLORS.inkSoft }}>{a.desc}</p>
+                  {isUnlocked
+                    ? <p className="text-xs mt-1 font-medium" style={{ color: COLORS.accent }}>Unlocked {formatAbsoluteDate(unlockedOn)}</p>
+                    : <p className="text-xs mt-1 font-medium" style={{ color: COLORS.inkSoft }}>Locked · {progressText(progress[a.key])}</p>}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+    </div> },
+    { id: 'notifications', tab: 'calendar', title: 'Notifications', words: 'notifications reminders morning summary evening heads-up who to message nudge birthdays key dates catch-up quiet sunday review check-in', node: <div key="notifications">
+        <div className="mt-4 rounded-2xl p-4" style={{ background: COLORS.paperRaised, border: `1px solid ${COLORS.line}` }}>
+          <p className="text-sm font-semibold" style={{ color: COLORS.ink }}>Notifications</p>
+          <p className="text-xs mt-1.5" style={{ color: COLORS.inkSoft }}>{hasSystemBridge ? 'Windows delivers these on time, even when Layers is closed. Their buttons snooze a reminder, rate or log a plan, and plan something.' : 'Small desktop nudges while Layers is open.'}</p>
+          <Toggle on={notify.reminderNotifications} onChange={(v) => onUpdateProfile({ reminderNotifications: v })} label="Reminders before plans" hint="Each plan has its own; this is the one new plans start with.">
+            {[[null, 'None'], [0, 'At the time'], [5, '5 min'], [15, '15 min'], [30, '30 min'], [60, '1 hour']].map(([v, l]) => <Pick key={l} on={notify.defaultAlert === v} onClick={() => onUpdateProfile({ defaultAlert: v })}>{l}</Pick>)}
+          </Toggle>
+          <Toggle on={notify.keyDateReminders} onChange={(v) => onUpdateProfile({ keyDateReminders: v })} label="Birthdays and key dates" hint="A week before, the evening before, and on the morning, with a button to plan something." />
+          <Toggle on={notify.morningSummary} onChange={(v) => onUpdateProfile({ morningSummary: v })} label="Morning summary" hint="Your day's plans and key dates, each morning there's something on.">
+            {[7 * 60, 8 * 60, 9 * 60].map(t => <Pick key={t} on={notify.morningTime === t} onClick={() => onUpdateProfile({ morningTime: t })}>{formatTime12(t)}</Pick>)}
+          </Toggle>
+          <Toggle on={notify.eveningHeadsUp} onChange={(v) => onUpdateProfile({ eveningHeadsUp: v })} label="Evening heads-up" hint="Tomorrow's plans, the night before.">
+            {[19 * 60, 20 * 60, 21 * 60].map(t => <Pick key={t} on={notify.eveningTime === t} onClick={() => onUpdateProfile({ eveningTime: t })}>{formatTime12(t)}</Pick>)}
+          </Toggle>
+          <Toggle on={notify.eveningNudge} onChange={(v) => onUpdateProfile({ eveningNudge: v })} label="Who to message, in the evening" hint={`Today's person from Today, at ${formatTime12(notify.eveningTime)}, if you haven't messaged them or put it off.`} />
+          <Toggle on={notify.askAfter} onChange={(v) => onUpdateProfile({ askAfter: v })} label="Ask how it went" hint="When a plan with someone ends: rate it right there (Casual to Deep), or Log it." />
+          <Toggle on={notify.catchUpWeekly} onChange={(v) => onUpdateProfile({ catchUpWeekly: v })} label="Weekly catch-up list" hint={`Who you haven't seen in a while, with Plan buttons, at ${formatTime12(notify.morningTime)}.`}>
+            {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((w, i) => <Pick key={w} on={notify.catchUpDay === i} onClick={() => onUpdateProfile({ catchUpDay: i })}>{w}</Pick>)}
+          </Toggle>
+          <Toggle on={notify.quietNudges} onChange={(v) => onUpdateProfile({ quietNudges: v })} label="When someone close goes quiet" hint="Personal and Close people, once it's been longer than usual." />
+          <Toggle on={notify.weeklyReview} onChange={(v) => onUpdateProfile({ weeklyReview: v })} label="Sunday review" hint={`Your week, then next week planned in one go, Sundays at ${formatTime12(notify.reviewTime)}.`} />
+          <Toggle on={!profile || profile.checkInNotifications !== false} onChange={(v) => onUpdateProfile({ checkInNotifications: v })} label="Daily check-in nudge" hint="When you haven't logged with someone for two weeks." />
+        </div>
+    </div> },
+    { id: 'calendars', tab: 'calendar', title: 'Your Google Calendar', words: 'google calendar ical timetable feed', node: calendars ? <div key="calendars"><CalendarsCard calendars={calendars} onAdd={onAddCalendar} onRemove={onRemoveCalendar} onRefresh={onRefreshCalendars} /></div> : null },
+    { id: 'claude', tab: 'claude', title: 'Chat analysis (Claude)', words: 'claude api key anthropic how you text style monthly limit cost spend model', node: analysisKey ? <div key="claude"><AnalysisKeyCard analysisKey={analysisKey} onSave={onSaveAnalysisKey} onRemove={onRemoveAnalysisKey} style={profile.style || ''} onSaveStyle={(value) => onUpdateProfile({ style: value })} /></div> : null },
+    { id: 'appearance', tab: 'app', title: 'Appearance', words: 'appearance theme dark light match windows', node: <div key="appearance">
+        <div className="mt-7 rounded-2xl p-4" style={{ background: COLORS.paperRaised, border: `1px solid ${COLORS.line}` }}>
+          <p className="text-sm font-semibold" style={{ color: COLORS.ink }}>Appearance</p>
+          <p className="text-xs mt-1.5" style={{ color: COLORS.inkSoft }}>Match Windows switches between light and dark when Windows does.</p>
+          <div className="flex items-center gap-2 mt-3 flex-wrap">
+            {[['system', 'Match Windows'], ['light', 'Light'], ['dark', 'Dark']].map(([t, label]) => (
+              <button key={t} type="button" onClick={() => onSetTheme(t)} aria-pressed={themeMode === t} className="text-xs font-semibold rounded-full px-3 py-1.5" style={{ background: themeMode === t ? COLORS.accent : COLORS.paperRaised, color: themeMode === t ? COLORS.onAccent : COLORS.inkSoft, border: `1px solid ${themeMode === t ? COLORS.accent : COLORS.line}` }}>{label}</button>
+            ))}
+          </div>
+        </div>
+    </div> },
+    { id: 'startup', tab: 'app', title: 'Startup', words: 'startup launch at login tray quick-add ctrl+shift+l', node: hasSystemBridge ? <div key="startup">
+          <div className="mt-4 rounded-2xl p-4" style={{ background: COLORS.paperRaised, border: `1px solid ${COLORS.line}` }}>
+            <p className="text-sm font-semibold" style={{ color: COLORS.ink }}>Startup</p>
+            <p className="text-xs mt-1.5" style={{ color: COLORS.inkSoft }}>Launch Layers automatically when you log in, so it's already running in the tray.</p>
+            <button onClick={onToggleAutoLaunch} aria-pressed={autoLaunch} className="flex items-center gap-2 mt-3 text-xs font-semibold rounded-full px-3 py-2" style={{ background: autoLaunch ? COLORS.accentSoft : COLORS.paperRaised, color: autoLaunch ? COLORS.accent : COLORS.inkSoft, border: `1px solid ${autoLaunch ? COLORS.accent : COLORS.line}` }}>
+              <span style={{ width: 14, height: 14, borderRadius: '50%', border: `1.5px solid currentColor`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{autoLaunch && <span style={{ width: 7, height: 7, borderRadius: '50%', background: 'currentColor' }} />}</span>
+              {autoLaunch ? 'Launching at login' : 'Launch at login'}
+            </button>
+            {shortcutStatus && shortcutStatus.registered === false && (
+              <p className="text-xs mt-2.5 font-medium" style={{ color: COLORS.alert }}>Another app is already using Ctrl+Shift+L, so the quick-add box won't open. Close that app or change its shortcut, then restart Layers.</p>
+            )}
+            {shortcutStatus && shortcutStatus.open && shortcutStatus.open.registered === false && (
+              <p className="text-xs mt-2.5 font-medium" style={{ color: COLORS.alert }}>Another app is already using Ctrl+Alt+L, so it won't bring Layers forward. Close that app or change its shortcut, then restart Layers.</p>
+            )}
+            <p className="text-xs mt-2.5" style={{ color: COLORS.inkSoft }}>From anywhere in Windows: <span style={{ fontWeight: 600, color: COLORS.ink }}>Ctrl+Shift+L</span> opens the quick-add box (type a plan or a log, like "coffee w Priya fri 10am"), and <span style={{ fontWeight: 600, color: COLORS.ink }}>Ctrl+Alt+L</span> brings Layers to the front, or sends it back when it's already there. In-app, press <span style={{ fontWeight: 600, color: COLORS.ink }}>Ctrl+K</span> to jump to anything, <span style={{ fontWeight: 600, color: COLORS.ink }}>N</span> to quick-log an interaction, and <span style={{ fontWeight: 600, color: COLORS.ink }}>Esc</span> to close any open dialog.</p>
+          </div>
+    </div> : null },
+    { id: 'updates', tab: 'app', title: 'App updates', words: 'updates version install', node: hasUpdater ? <div key="updates">
+          <div className="mt-7 rounded-2xl p-4" style={{ background: COLORS.paperRaised, border: `1px solid ${COLORS.line}` }}>
+            <div className="flex items-center justify-between">
+              <p className="text-sm font-semibold" style={{ color: COLORS.ink }}>App updates</p>
+              {appVersion && <span className="text-xs font-semibold rounded-full px-2 py-0.5" style={{ background: COLORS.accentSoft, color: COLORS.accent, fontFamily: 'monospace' }}>v{appVersion}</span>}
+            </div>
+            <p className="text-xs mt-1.5" style={{ color: COLORS.inkSoft }}>{updateStatusText(updateStatus)}</p>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 12, flexWrap: 'wrap' }}>
+              {updateStatus && updateStatus.state === 'ready' ? (
+                <button onClick={onInstallUpdate} className="text-xs font-semibold rounded-full px-3 py-2" style={{ background: COLORS.accent, color: COLORS.onAccent }}>Restart &amp; install</button>
+              ) : updateStatus && updateStatus.state === 'available-portable' ? (
+                <button onClick={onOpenDownloadPage} className="text-xs font-semibold rounded-full px-3 py-2" style={{ background: COLORS.accent, color: COLORS.onAccent }}>Open download page</button>
+              ) : (
+                <button onClick={onCheckForUpdates} disabled={!!(updateStatus && (updateStatus.state === 'checking' || updateStatus.state === 'downloading'))} className="text-xs font-semibold rounded-full px-3 py-2" style={{ background: COLORS.accentSoft, color: COLORS.accent }}>Check for updates</button>
+              )}
+            </div>
+          </div>
+    </div> : null },
+    { id: 'shortcuts', tab: 'app', title: 'Keyboard shortcuts', words: 'keyboard shortcuts keys', node: <div key="shortcuts">
+        <div className="mt-7 rounded-2xl p-4 flex items-center justify-between" style={{ background: COLORS.paperRaised, border: `1px solid ${COLORS.line}` }}>
+          <div>
+            <p className="text-sm font-semibold" style={{ color: COLORS.ink }}>Keyboard shortcuts</p>
+            <p className="text-xs mt-1" style={{ color: COLORS.inkSoft }}>Navigate Layers faster on Windows. Press <span style={{ fontFamily: 'monospace', fontWeight: 700 }}>?</span> anytime to see this list.</p>
+          </div>
+          <button onClick={onOpenShortcuts} className="text-xs font-semibold rounded-full px-3 py-2 shrink-0" style={{ background: COLORS.accentSoft, color: COLORS.accent }}>View</button>
+        </div>
+    </div> },
+    { id: 'backup', tab: 'data', title: 'Backup', words: 'backup export import file automatic folder', node: <div key="backup">
+        <div className="mt-4 rounded-2xl p-4" style={{ background: COLORS.paperRaised, border: `1px solid ${COLORS.line}` }}>
+          <p className="text-sm font-semibold" style={{ color: COLORS.ink }}>Backup</p>
+          <p className="text-xs mt-1.5" style={{ color: COLORS.inkSoft }}>Save a copy of everything to a file, or bring one back in. Handy before switching devices or reinstalling.</p>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 12, flexWrap: 'wrap' }}>
+            <button onClick={onExport} className="flex items-center gap-1.5 text-xs font-semibold rounded-full px-3 py-2" style={{ background: COLORS.accentSoft, color: COLORS.accent }}><Download size={13} /> Export data</button>
+            <button onClick={onImportClick} className="flex items-center gap-1.5 text-xs font-semibold rounded-full px-3 py-2" style={{ background: COLORS.paperRaised, color: COLORS.ink, border: `1px solid ${COLORS.line}` }}><Upload size={13} /> Import data</button>
+          </div>
+          {backupInfo && (
+            <div className="flex items-center justify-between gap-3 mt-4 pt-3" style={{ borderTop: `1px solid ${COLORS.line}` }}>
+              <div>
+                <p className="text-xs font-semibold" style={{ color: COLORS.ink }}>Automatic backups</p>
+                <p className="text-xs mt-0.5" style={{ color: COLORS.inkSoft }}>One a day, the last 14 kept, in {backupInfo.dir.split(/[\\/]/).slice(-2).join('\\')}. {backupInfo.latest ? `Latest: ${formatCalendarDate(parseISODay(backupInfo.latest))}.` : 'The first one is saved shortly.'}</p>
+              </div>
+              <button type="button" onClick={onOpenBackups} className="text-xs font-semibold rounded-full px-3 py-2 shrink-0" style={{ background: COLORS.accentSoft, color: COLORS.accent }}>Open folder</button>
+            </div>
+          )}
+        </div>
+    </div> },
+    { id: 'sync', tab: 'data', title: 'Sync through OneDrive', words: 'sync onedrive passphrase other computers phone', node: sync ? <div key="sync">
+          <div className="mt-4 rounded-2xl p-4" style={{ background: COLORS.paperRaised, border: `1px solid ${COLORS.line}` }} aria-label="Sync">
+            <p className="text-sm font-semibold" style={{ color: COLORS.ink }}>Sync through OneDrive</p>
+            <p className="text-xs mt-1.5" style={{ color: sync.on && sync.error ? COLORS.alert : COLORS.inkSoft }} role="status">
+              {!sync.on ? 'Keep your other computers (and, later, your phone) the same, through one encrypted file in OneDrive that only your passphrase opens.'
+                : sync.error ? sync.error
+                  : `On. ${sync.lastSynced ? `Last synced ${syncedAgo(sync.lastSynced)}` : 'Syncing shortly'}${sync.dir ? `, in ${sync.dir.split(/[\\/]/).slice(-2).join('\\')}` : ''}.`}
+            </p>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 12, flexWrap: 'wrap' }}>
+              {!sync.on ? (
+                <button type="button" onClick={onSyncTurnOn} className="text-xs font-semibold rounded-full px-3 py-2" style={{ background: COLORS.accent, color: COLORS.onAccent }}>Turn on sync</button>
+              ) : (
+                <>
+                  <button type="button" onClick={onSyncNow} className="text-xs font-semibold rounded-full px-3 py-2" style={{ background: COLORS.accentSoft, color: COLORS.accent }}>Sync now</button>
+                  <button type="button" onClick={onOpenSyncFolder} className="text-xs font-semibold rounded-full px-3 py-2" style={{ background: COLORS.paperRaised, color: COLORS.ink, border: `1px solid ${COLORS.line}` }}>Open folder</button>
+                  <button type="button" onClick={onSyncOff} className="text-xs font-semibold rounded-full px-3 py-2" style={{ background: COLORS.paperRaised, color: COLORS.inkSoft, border: `1px solid ${COLORS.line}` }}>Turn off</button>
+                </>
+              )}
+            </div>
+          </div>
+    </div> : null },
+    { id: 'privacy', tab: 'data', title: 'Privacy', words: 'privacy sample people delete start over data', node: <div key="privacy">
+        <div className="mt-4 rounded-2xl p-4" style={{ background: COLORS.paperRaised, border: `1px solid ${COLORS.line}` }}>
+          <p className="text-sm font-semibold" style={{ color: COLORS.ink }}>Privacy</p>
+          <p className="text-xs mt-1.5" style={{ color: COLORS.inkSoft }}>Layers is a private personal-development tool. Everything is saved on this device{sync && sync.on ? ', and in an encrypted copy in your OneDrive that only your passphrase opens' : ' only'}. A chat is only analysed when you press Analyse (and then sent to Claude), and anything found in it waits for your approval before it's saved. Logging an analysed chat keeps the chat and Claude's review with the log, so they're in your backups too.</p>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 12, flexWrap: 'wrap' }}>
+            {hasSamplePeople && <button onClick={onRemoveSample} className="text-xs font-semibold rounded-full px-3 py-2" style={{ background: COLORS.accentSoft, color: COLORS.accent }}>Remove sample people</button>}
+            {canAddSample && <button onClick={onAddSample} className="text-xs font-semibold rounded-full px-3 py-2" style={{ background: COLORS.accentSoft, color: COLORS.accent }}>Add sample people</button>}
+            <button onClick={onStartOver} className="text-xs font-semibold rounded-full px-3 py-2" style={{ background: COLORS.layer4Tint, color: COLORS.layer4Deep }}>Delete my data and start over</button>
+          </div>
+        </div>
+    </div> },
+  ].filter(s => s.node);
+  const tabs = ME_TABS.filter(([k]) => sections.some(s => s.tab === k));
+  const shown = tabs.some(([k]) => k === tab) ? tab : 'you';
+  useEffect(() => { keys.current = { list: tabs, pick: (k) => { setFind(''); onTab(k); } }; });
+  const q = find.trim().toLowerCase();
+  const found = q ? sections.filter(s => `${s.title} ${s.words}`.toLowerCase().includes(q)) : null;
 
   return (
     <div className="fade-anim px-5 pt-6 pb-6">
@@ -192,226 +452,26 @@ export function MeView({ people, journal, skills, profile, generalGoals = [], on
         <button onClick={onEditProfile} className="text-xs font-semibold rounded-full px-3 py-1.5 shrink-0 mt-1" style={{ background: COLORS.accentSoft, color: COLORS.accent }}>Edit</button>
       </div>
 
-      <div className="grid grid-cols-2 gap-y-4 mb-7">
-        {glance.map(([n, label]) => (
-          <div key={label}>
-            <p className="font-display" style={{ fontSize: 26, color: COLORS.ink }}>{n}</p>
-            <p className="text-xs mt-0.5" style={{ color: COLORS.inkSoft }}>{label}</p>
-          </div>
+      <div className="flex items-center gap-1.5 flex-wrap mb-3" role="tablist" aria-label="Me">
+        {tabs.map(([k, label], i) => (
+          <button key={k} type="button" role="tab" aria-selected={!q && shown === k} onClick={() => { setFind(''); onTab(k); }} className="flex items-center gap-1.5 text-xs font-semibold rounded-full pl-3 pr-1.5 py-1" style={{ background: !q && shown === k ? COLORS.accent : COLORS.paperRaised, color: !q && shown === k ? COLORS.onAccent : COLORS.inkSoft, border: `1px solid ${!q && shown === k ? COLORS.accent : COLORS.line}` }}>{label}<Kbd onAccent={!q && shown === k}>{i + 1}</Kbd></button>
         ))}
       </div>
+      <KeyedField letter="F" ref={findRef} value={find} onChange={e => setFind(e.target.value)} aria-label="Find a setting" placeholder="Find a setting: dark, reminders, backup…"
+        wrapClassName="mb-5" className="w-full text-sm rounded-xl px-3 py-2" style={{ border: `1px solid ${COLORS.line}` }} />
 
-      <p className="font-display" style={{ fontSize: 24, color: COLORS.ink }}>Your social skills</p>
-      <p className="text-sm mt-1" style={{ color: COLORS.inkSoft }}>Your own development, tracked privately.</p>
-
-      <div className="mt-5 space-y-3.5">
-        {SKILL_ORDER.map(k => (<LabeledBar key={k} label={skills[k].label} percent={skills[k].current} color={COLORS.accent} size="lg" />))}
-      </div>
-
-      {tracked ? (
-        <div className="grid grid-cols-1 gap-2.5 mt-6">
-          <div className="rounded-2xl p-3.5" style={{ background: COLORS.accentSoft }}>
-            <p className="text-xs font-semibold" style={{ color: COLORS.accent }}>Your biggest strength</p>
-            <p className="text-sm mt-1" style={{ color: COLORS.ink }}>{SKILL_TIPS[strengthKey].emoji} {skills[strengthKey].label}</p>
+      {found ? (
+        found.length ? found.map(s => (
+          <div key={s.id} className="mb-4" role="group" aria-label={`${s.title}, in ${(ME_TABS.find(([k]) => k === s.tab) || [])[1]}`}>
+            <p className="text-xs font-semibold mb-1" style={{ color: COLORS.inkSoft }}>In {(ME_TABS.find(([k]) => k === s.tab) || [])[1]}</p>
+            {s.node}
           </div>
-          <div className="rounded-2xl p-3.5" style={{ background: COLORS.layer3Tint }}>
-            <p className="text-xs font-semibold" style={{ color: COLORS.layer3Deep }}>Current focus</p>
-            <p className="text-sm mt-1" style={{ color: COLORS.ink }}>{SKILL_TIPS[focusKey].emoji} {skills[focusKey].label}</p>
-            <p className="text-xs mt-1.5" style={{ color: COLORS.inkSoft }}>{SKILL_TIPS[focusKey].focus}</p>
-          </div>
-          <div className="rounded-2xl p-3.5" style={{ background: COLORS.paperRaised, border: `1px solid ${COLORS.line}` }}>
-            <p className="text-xs font-semibold" style={{ color: COLORS.ink }}>Current challenge</p>
-            <p className="text-xs mt-1.5" style={{ color: COLORS.inkSoft }}>{SKILL_TIPS[focusKey].challenge}</p>
-          </div>
-        </div>
+        )) : <p className="text-sm" style={{ color: COLORS.inkSoft }}>Nothing in Me matches “{find.trim()}”.</p>
       ) : (
-        <div className="rounded-2xl p-3.5 mt-6" style={{ background: COLORS.accentSoft }}>
-          <p className="text-xs font-semibold" style={{ color: COLORS.accent }}>Getting started</p>
-          <p className="text-xs mt-1.5" style={{ color: COLORS.ink }}>Your skills start at 0% and grow as you log conversations. When you log one, tick what you practised, like asking follow-up questions, and your strengths and next focus will show up here.</p>
+        <div key={shown} className="step-in" role="tabpanel" aria-label={(tabs.find(([k]) => k === shown) || [])[1]}>
+          {sections.filter(s => s.tab === shown).map(s => s.node)}
         </div>
       )}
-
-      {(() => {
-        const points = chatTrend(journal);
-        return (points.length > 0 || practice.length > 0) && (
-          <div className="mt-7">
-            <p className="font-display mb-3" style={{ fontSize: 18, color: COLORS.ink }}>Your chats over time</p>
-            <ChatTrendChart points={points} practice={practice} label="Skills from analysed chats" />
-          </div>
-        );
-      })()}
-
-      <div className="mt-7">
-        <p className="font-display" style={{ fontSize: 18, color: COLORS.ink }}>Progress history</p>
-        <div className="flex items-center gap-2 mt-3 overflow-x-auto no-scrollbar pb-1">
-          {SKILL_ORDER.map(k => (
-            <button key={k} onClick={() => setChartSkill(k)} className="text-xs font-semibold rounded-full px-3 py-1.5 shrink-0" style={{ background: chartSkill === k ? COLORS.accent : COLORS.paperRaised, color: chartSkill === k ? COLORS.onAccent : COLORS.inkSoft, border: `1px solid ${chartSkill === k ? COLORS.accent : COLORS.line}` }}>{skills[k].label}</button>
-          ))}
-        </div>
-        <div className="mt-3" style={{ width: '100%', height: 170 }}>
-          <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={chartData} margin={{ top: 8, right: 14, left: 0, bottom: 0 }}>
-              <CartesianGrid stroke={COLORS.line} strokeDasharray="3 3" vertical={false} />
-              <XAxis dataKey="date" tick={{ fontSize: 10, fill: COLORS.inkSoft }} axisLine={{ stroke: COLORS.line }} tickLine={false} interval={0} padding={{ left: 18, right: 18 }} />
-              <YAxis domain={[0, 100]} tick={{ fontSize: 10, fill: COLORS.inkSoft }} axisLine={false} tickLine={false} width={30} />
-              <Tooltip formatter={(v) => [`${v}%`, skills[chartSkill].label]} contentStyle={{ borderRadius: 12, border: `1px solid ${COLORS.line}`, fontSize: 12 }} />
-              <Line type="monotone" dataKey="value" stroke={COLORS.accent} strokeWidth={2.5} dot={{ r: 3, fill: COLORS.accent }} activeDot={{ r: 5 }} />
-            </LineChart>
-          </ResponsiveContainer>
-        </div>
-      </div>
-
-      <div className="mt-7">
-        <p className="font-display" style={{ fontSize: 18, color: COLORS.ink }}>Achievements</p>
-        <div className="grid grid-cols-2 gap-2.5 mt-3">
-          {ACHIEVEMENTS.map(a => {
-            const unlockedOn = achievements[a.key] ? parseISODay(achievements[a.key]) : null;
-            const isUnlocked = !!unlockedOn;
-            return (
-              <div key={a.key} className="rounded-2xl p-3.5" style={{ background: isUnlocked ? COLORS.accentSoft : COLORS.paperRaised, border: `1px solid ${isUnlocked ? COLORS.accentSoft : COLORS.line}`, opacity: isUnlocked ? 1 : 0.55 }}>
-                <span style={{ fontSize: 22 }}>{a.emoji}</span>
-                <p className="text-xs font-semibold mt-1.5" style={{ color: COLORS.ink }}>{a.title}</p>
-                <p className="text-xs mt-1" style={{ color: COLORS.inkSoft }}>{a.desc}</p>
-                {isUnlocked
-                  ? <p className="text-xs mt-1 font-medium" style={{ color: COLORS.accent }}>Unlocked {formatAbsoluteDate(unlockedOn)}</p>
-                  : <p className="text-xs mt-1 font-medium" style={{ color: COLORS.inkSoft }}>Locked · {progressText(progress[a.key])}</p>}
-              </div>
-            );
-          })}
-        </div>
-      </div>
-
-      <div className="mt-7 rounded-2xl p-4" style={{ background: COLORS.paperRaised, border: `1px solid ${COLORS.line}` }}>
-        <p className="text-sm font-semibold" style={{ color: COLORS.ink }}>Appearance</p>
-        <p className="text-xs mt-1.5" style={{ color: COLORS.inkSoft }}>Match Windows switches between light and dark when Windows does.</p>
-        <div className="flex items-center gap-2 mt-3 flex-wrap">
-          {[['system', 'Match Windows'], ['light', 'Light'], ['dark', 'Dark']].map(([t, label]) => (
-            <button key={t} type="button" onClick={() => onSetTheme(t)} aria-pressed={themeMode === t} className="text-xs font-semibold rounded-full px-3 py-1.5" style={{ background: themeMode === t ? COLORS.accent : COLORS.paperRaised, color: themeMode === t ? COLORS.onAccent : COLORS.inkSoft, border: `1px solid ${themeMode === t ? COLORS.accent : COLORS.line}` }}>{label}</button>
-          ))}
-        </div>
-      </div>
-
-      <div className="mt-4 rounded-2xl p-4" style={{ background: COLORS.paperRaised, border: `1px solid ${COLORS.line}` }}>
-        <p className="text-sm font-semibold" style={{ color: COLORS.ink }}>Notifications</p>
-        <p className="text-xs mt-1.5" style={{ color: COLORS.inkSoft }}>{hasSystemBridge ? 'Windows delivers these on time, even when Layers is closed. Their buttons snooze a reminder, rate or log a plan, and plan something.' : 'Small desktop nudges while Layers is open.'}</p>
-        <Toggle on={notify.reminderNotifications} onChange={(v) => onUpdateProfile({ reminderNotifications: v })} label="Reminders before plans" hint="Each plan has its own; this is the one new plans start with.">
-          {[[null, 'None'], [0, 'At the time'], [5, '5 min'], [15, '15 min'], [30, '30 min'], [60, '1 hour']].map(([v, l]) => <Pick key={l} on={notify.defaultAlert === v} onClick={() => onUpdateProfile({ defaultAlert: v })}>{l}</Pick>)}
-        </Toggle>
-        <Toggle on={notify.keyDateReminders} onChange={(v) => onUpdateProfile({ keyDateReminders: v })} label="Birthdays and key dates" hint="A week before, the evening before, and on the morning, with a button to plan something." />
-        <Toggle on={notify.morningSummary} onChange={(v) => onUpdateProfile({ morningSummary: v })} label="Morning summary" hint="Your day's plans and key dates, each morning there's something on.">
-          {[7 * 60, 8 * 60, 9 * 60].map(t => <Pick key={t} on={notify.morningTime === t} onClick={() => onUpdateProfile({ morningTime: t })}>{formatTime12(t)}</Pick>)}
-        </Toggle>
-        <Toggle on={notify.eveningHeadsUp} onChange={(v) => onUpdateProfile({ eveningHeadsUp: v })} label="Evening heads-up" hint="Tomorrow's plans, the night before.">
-          {[19 * 60, 20 * 60, 21 * 60].map(t => <Pick key={t} on={notify.eveningTime === t} onClick={() => onUpdateProfile({ eveningTime: t })}>{formatTime12(t)}</Pick>)}
-        </Toggle>
-        <Toggle on={notify.eveningNudge} onChange={(v) => onUpdateProfile({ eveningNudge: v })} label="Who to message, in the evening" hint={`Today's person from Today, at ${formatTime12(notify.eveningTime)}, if you haven't messaged them or put it off.`} />
-        <Toggle on={notify.askAfter} onChange={(v) => onUpdateProfile({ askAfter: v })} label="Ask how it went" hint="When a plan with someone ends: rate it right there (Casual to Deep), or Log it." />
-        <Toggle on={notify.catchUpWeekly} onChange={(v) => onUpdateProfile({ catchUpWeekly: v })} label="Weekly catch-up list" hint={`Who you haven't seen in a while, with Plan buttons, at ${formatTime12(notify.morningTime)}.`}>
-          {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((w, i) => <Pick key={w} on={notify.catchUpDay === i} onClick={() => onUpdateProfile({ catchUpDay: i })}>{w}</Pick>)}
-        </Toggle>
-        <Toggle on={notify.quietNudges} onChange={(v) => onUpdateProfile({ quietNudges: v })} label="When someone close goes quiet" hint="Personal and Close people, once it's been longer than usual." />
-        <Toggle on={notify.weeklyReview} onChange={(v) => onUpdateProfile({ weeklyReview: v })} label="Sunday review" hint={`Your week, then next week planned in one go, Sundays at ${formatTime12(notify.reviewTime)}.`} />
-        <Toggle on={!profile || profile.checkInNotifications !== false} onChange={(v) => onUpdateProfile({ checkInNotifications: v })} label="Daily check-in nudge" hint="When you haven't logged with someone for two weeks." />
-      </div>
-
-      {hasSystemBridge && (
-        <div className="mt-4 rounded-2xl p-4" style={{ background: COLORS.paperRaised, border: `1px solid ${COLORS.line}` }}>
-          <p className="text-sm font-semibold" style={{ color: COLORS.ink }}>Startup</p>
-          <p className="text-xs mt-1.5" style={{ color: COLORS.inkSoft }}>Launch Layers automatically when you log in, so it's already running in the tray.</p>
-          <button onClick={onToggleAutoLaunch} aria-pressed={autoLaunch} className="flex items-center gap-2 mt-3 text-xs font-semibold rounded-full px-3 py-2" style={{ background: autoLaunch ? COLORS.accentSoft : COLORS.paperRaised, color: autoLaunch ? COLORS.accent : COLORS.inkSoft, border: `1px solid ${autoLaunch ? COLORS.accent : COLORS.line}` }}>
-            <span style={{ width: 14, height: 14, borderRadius: '50%', border: `1.5px solid currentColor`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{autoLaunch && <span style={{ width: 7, height: 7, borderRadius: '50%', background: 'currentColor' }} />}</span>
-            {autoLaunch ? 'Launching at login' : 'Launch at login'}
-          </button>
-          {shortcutStatus && shortcutStatus.registered === false && (
-            <p className="text-xs mt-2.5 font-medium" style={{ color: COLORS.alert }}>Another app is already using Ctrl+Shift+L, so the quick-add box won't open. Close that app or change its shortcut, then restart Layers.</p>
-          )}
-          {shortcutStatus && shortcutStatus.open && shortcutStatus.open.registered === false && (
-            <p className="text-xs mt-2.5 font-medium" style={{ color: COLORS.alert }}>Another app is already using Ctrl+Alt+L, so it won't bring Layers forward. Close that app or change its shortcut, then restart Layers.</p>
-          )}
-          <p className="text-xs mt-2.5" style={{ color: COLORS.inkSoft }}>From anywhere in Windows: <span style={{ fontWeight: 600, color: COLORS.ink }}>Ctrl+Shift+L</span> opens the quick-add box (type a plan or a log, like "coffee w Priya fri 10am"), and <span style={{ fontWeight: 600, color: COLORS.ink }}>Ctrl+Alt+L</span> brings Layers to the front, or sends it back when it's already there. In-app, press <span style={{ fontWeight: 600, color: COLORS.ink }}>Ctrl+K</span> to jump to anything, <span style={{ fontWeight: 600, color: COLORS.ink }}>N</span> to quick-log an interaction, and <span style={{ fontWeight: 600, color: COLORS.ink }}>Esc</span> to close any open dialog.</p>
-        </div>
-      )}
-
-      {hasUpdater && (
-        <div className="mt-7 rounded-2xl p-4" style={{ background: COLORS.paperRaised, border: `1px solid ${COLORS.line}` }}>
-          <div className="flex items-center justify-between">
-            <p className="text-sm font-semibold" style={{ color: COLORS.ink }}>App updates</p>
-            {appVersion && <span className="text-xs font-semibold rounded-full px-2 py-0.5" style={{ background: COLORS.accentSoft, color: COLORS.accent, fontFamily: 'monospace' }}>v{appVersion}</span>}
-          </div>
-          <p className="text-xs mt-1.5" style={{ color: COLORS.inkSoft }}>{updateStatusText(updateStatus)}</p>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 12, flexWrap: 'wrap' }}>
-            {updateStatus && updateStatus.state === 'ready' ? (
-              <button onClick={onInstallUpdate} className="text-xs font-semibold rounded-full px-3 py-2" style={{ background: COLORS.accent, color: COLORS.onAccent }}>Restart &amp; install</button>
-            ) : updateStatus && updateStatus.state === 'available-portable' ? (
-              <button onClick={onOpenDownloadPage} className="text-xs font-semibold rounded-full px-3 py-2" style={{ background: COLORS.accent, color: COLORS.onAccent }}>Open download page</button>
-            ) : (
-              <button onClick={onCheckForUpdates} disabled={!!(updateStatus && (updateStatus.state === 'checking' || updateStatus.state === 'downloading'))} className="text-xs font-semibold rounded-full px-3 py-2" style={{ background: COLORS.accentSoft, color: COLORS.accent }}>Check for updates</button>
-            )}
-          </div>
-        </div>
-      )}
-
-      <div className="mt-7 rounded-2xl p-4 flex items-center justify-between" style={{ background: COLORS.paperRaised, border: `1px solid ${COLORS.line}` }}>
-        <div>
-          <p className="text-sm font-semibold" style={{ color: COLORS.ink }}>Keyboard shortcuts</p>
-          <p className="text-xs mt-1" style={{ color: COLORS.inkSoft }}>Navigate Layers faster on Windows. Press <span style={{ fontFamily: 'monospace', fontWeight: 700 }}>?</span> anytime to see this list.</p>
-        </div>
-        <button onClick={onOpenShortcuts} className="text-xs font-semibold rounded-full px-3 py-2 shrink-0" style={{ background: COLORS.accentSoft, color: COLORS.accent }}>View</button>
-      </div>
-
-      <div className="mt-4 rounded-2xl p-4" style={{ background: COLORS.paperRaised, border: `1px solid ${COLORS.line}` }}>
-        <p className="text-sm font-semibold" style={{ color: COLORS.ink }}>Backup</p>
-        <p className="text-xs mt-1.5" style={{ color: COLORS.inkSoft }}>Save a copy of everything to a file, or bring one back in. Handy before switching devices or reinstalling.</p>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 12, flexWrap: 'wrap' }}>
-          <button onClick={onExport} className="flex items-center gap-1.5 text-xs font-semibold rounded-full px-3 py-2" style={{ background: COLORS.accentSoft, color: COLORS.accent }}><Download size={13} /> Export data</button>
-          <button onClick={onImportClick} className="flex items-center gap-1.5 text-xs font-semibold rounded-full px-3 py-2" style={{ background: COLORS.paperRaised, color: COLORS.ink, border: `1px solid ${COLORS.line}` }}><Upload size={13} /> Import data</button>
-        </div>
-        {backupInfo && (
-          <div className="flex items-center justify-between gap-3 mt-4 pt-3" style={{ borderTop: `1px solid ${COLORS.line}` }}>
-            <div>
-              <p className="text-xs font-semibold" style={{ color: COLORS.ink }}>Automatic backups</p>
-              <p className="text-xs mt-0.5" style={{ color: COLORS.inkSoft }}>One a day, the last 14 kept, in {backupInfo.dir.split(/[\\/]/).slice(-2).join('\\')}. {backupInfo.latest ? `Latest: ${formatCalendarDate(parseISODay(backupInfo.latest))}.` : 'The first one is saved shortly.'}</p>
-            </div>
-            <button type="button" onClick={onOpenBackups} className="text-xs font-semibold rounded-full px-3 py-2 shrink-0" style={{ background: COLORS.accentSoft, color: COLORS.accent }}>Open folder</button>
-          </div>
-        )}
-      </div>
-
-      {analysisKey && <AnalysisKeyCard analysisKey={analysisKey} onSave={onSaveAnalysisKey} onRemove={onRemoveAnalysisKey} style={profile.style || ''} onSaveStyle={(value) => onUpdateProfile({ style: value })} />}
-
-      {calendars && <CalendarsCard calendars={calendars} onAdd={onAddCalendar} onRemove={onRemoveCalendar} onRefresh={onRefreshCalendars} />}
-
-      {sync && (
-        <div className="mt-4 rounded-2xl p-4" style={{ background: COLORS.paperRaised, border: `1px solid ${COLORS.line}` }} aria-label="Sync">
-          <p className="text-sm font-semibold" style={{ color: COLORS.ink }}>Sync through OneDrive</p>
-          <p className="text-xs mt-1.5" style={{ color: sync.on && sync.error ? COLORS.alert : COLORS.inkSoft }} role="status">
-            {!sync.on ? 'Keep your other computers (and, later, your phone) the same, through one encrypted file in OneDrive that only your passphrase opens.'
-              : sync.error ? sync.error
-                : `On. ${sync.lastSynced ? `Last synced ${syncedAgo(sync.lastSynced)}` : 'Syncing shortly'}${sync.dir ? `, in ${sync.dir.split(/[\\/]/).slice(-2).join('\\')}` : ''}.`}
-          </p>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 12, flexWrap: 'wrap' }}>
-            {!sync.on ? (
-              <button type="button" onClick={onSyncTurnOn} className="text-xs font-semibold rounded-full px-3 py-2" style={{ background: COLORS.accent, color: COLORS.onAccent }}>Turn on sync</button>
-            ) : (
-              <>
-                <button type="button" onClick={onSyncNow} className="text-xs font-semibold rounded-full px-3 py-2" style={{ background: COLORS.accentSoft, color: COLORS.accent }}>Sync now</button>
-                <button type="button" onClick={onOpenSyncFolder} className="text-xs font-semibold rounded-full px-3 py-2" style={{ background: COLORS.paperRaised, color: COLORS.ink, border: `1px solid ${COLORS.line}` }}>Open folder</button>
-                <button type="button" onClick={onSyncOff} className="text-xs font-semibold rounded-full px-3 py-2" style={{ background: COLORS.paperRaised, color: COLORS.inkSoft, border: `1px solid ${COLORS.line}` }}>Turn off</button>
-              </>
-            )}
-          </div>
-        </div>
-      )}
-
-      <div className="mt-4 rounded-2xl p-4" style={{ background: COLORS.paperRaised, border: `1px solid ${COLORS.line}` }}>
-        <p className="text-sm font-semibold" style={{ color: COLORS.ink }}>Privacy</p>
-        <p className="text-xs mt-1.5" style={{ color: COLORS.inkSoft }}>Layers is a private personal-development tool. Everything is saved on this device{sync && sync.on ? ', and in an encrypted copy in your OneDrive that only your passphrase opens' : ' only'}. A chat is only analysed when you press Analyse (and then sent to Claude), and anything found in it waits for your approval before it's saved. Logging an analysed chat keeps the chat and Claude's review with the log, so they're in your backups too.</p>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 12, flexWrap: 'wrap' }}>
-          {hasSamplePeople && <button onClick={onRemoveSample} className="text-xs font-semibold rounded-full px-3 py-2" style={{ background: COLORS.accentSoft, color: COLORS.accent }}>Remove sample people</button>}
-          {canAddSample && <button onClick={onAddSample} className="text-xs font-semibold rounded-full px-3 py-2" style={{ background: COLORS.accentSoft, color: COLORS.accent }}>Add sample people</button>}
-          <button onClick={onStartOver} className="text-xs font-semibold rounded-full px-3 py-2" style={{ background: COLORS.layer4Tint, color: COLORS.layer4Deep }}>Delete my data and start over</button>
-        </div>
-      </div>
 
       <p className="text-xs text-center mt-6" style={{ color: COLORS.inkSoft }}>Good social skills are about noticing, responding and adapting, not forcing a particular outcome.</p>
     </div>

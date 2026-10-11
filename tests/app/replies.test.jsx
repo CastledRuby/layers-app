@@ -6,7 +6,7 @@
 // The main process (the key and Claude) is stood in for.
 import { screen, waitFor, within } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { nav, person, renderApp, savedState, seedState } from './harness.jsx';
+import { nav, person, renderApp, savedState, seedState, openMe } from './harness.jsx';
 
 const DAY = 24 * 3600 * 1000;
 const pad = (n) => String(n).padStart(2, '0');
@@ -88,7 +88,7 @@ describe('What to say', () => {
     fakeBridge();
     seedState({ profile: { name: 'Liam', focus: 'mix' } });
     const { user } = renderApp();
-    await user.click(nav('Me'));
+    await openMe(user, 'Claude');
     const field = within(screen.getByLabelText('Chat analysis')).getByLabelText('How you text');
     await user.type(field, '  short and   lowercase {Enter}');
     expect(savedState().profile.style).toBe('short and lowercase');

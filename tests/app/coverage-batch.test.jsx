@@ -9,7 +9,7 @@
 import { screen, waitFor, within } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { toISODate } from '../../src/lib/dates.js';
-import { dialog, nav, person, queryDialog, relaunch, renderApp, savedPerson, savedState, seedState, toasts } from './harness.jsx';
+import { dialog, nav, person, queryDialog, relaunch, renderApp, savedPerson, savedState, seedState, toasts, openMe } from './harness.jsx';
 
 const DAY = 24 * 3600 * 1000;
 const at = (daysAgo, h, m = 0) => { const d = new Date(Date.now() - daysAgo * DAY); d.setHours(h, m, 0, 0); return d; };
@@ -235,7 +235,7 @@ describe('Analyse all new: the monthly limit and what it cost', { timeout: 60000
     expect(spend.chats).toBe(201);
     expect(spend.dollars).toBeLessThanOrEqual(10);
 
-    await user.click(nav('Me'));
+    await openMe(user, 'Claude');
     expect(screen.getByLabelText('What Claude has cost').textContent).toMatch(/This month: about US\$9\.99 for 201 chats \(Haiku 4\.5\)/);
   });
 
@@ -250,7 +250,7 @@ describe('Analyse all new: the monthly limit and what it cost', { timeout: 60000
     await user.keyboard('a');
     await waitFor(() => expect(toasts()).toContain('3 chats ready to review in Coach'));
     expect(bridge.runAnalysis).toHaveBeenCalledTimes(3);
-    await user.click(nav('Me'));
+    await openMe(user, 'Claude');
     const limit = within(screen.getByLabelText('Chat analysis')).getByRole('group', { name: 'Monthly limit' });
     expect(within(limit).getByRole('button', { name: 'No limit' }).getAttribute('aria-pressed')).toBe('true');
     expect(limit.textContent).toMatch(/It sends everything new, whatever it costs\./);
@@ -270,7 +270,7 @@ describe('Analyse all new: the monthly limit and what it cost', { timeout: 60000
     fakeBridge({});
     seed();
     const { user } = renderApp();
-    await user.click(nav('Me'));
+    await openMe(user, 'Claude');
     const spent = screen.getByLabelText('What Claude has cost').textContent;
     expect(spent).toMatch(/This month: about US\$0\.25 for 3 chats \(2 with Haiku 4\.5, 1 with Sonnet 5\.5\)/);
     expect(spent).toMatch(/Last month: about US\$1\.23 for 1 chat(?!s)/);
@@ -282,7 +282,7 @@ describe('Analyse all new: the monthly limit and what it cost', { timeout: 60000
     fakeBridge({});
     seed();
     const { user } = renderApp();
-    await user.click(nav('Me'));
+    await openMe(user, 'Claude');
     const spent = screen.getByLabelText('What Claude has cost').textContent;
     expect(spent).toMatch(/This month: under US\$0\.01 for 1 chat/);
   });
@@ -291,7 +291,7 @@ describe('Analyse all new: the monthly limit and what it cost', { timeout: 60000
     fakeBridge({});
     seed();
     const { user } = renderApp();
-    await user.click(nav('Me'));
+    await openMe(user, 'Claude');
     expect(screen.getByLabelText('Chat analysis')).toBeTruthy();
     expect(screen.queryByLabelText('What Claude has cost')).toBeNull();
   });

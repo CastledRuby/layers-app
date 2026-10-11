@@ -7,7 +7,7 @@ import { ErrorBoundary } from '../../src/components/ErrorBoundary.jsx';
 import { EMPTY_SKILLS, INITIAL_SKILLS } from '../../src/data/seed.js';
 import { toISODate } from '../../src/lib/dates.js';
 import { STORAGE_KEY, UNREADABLE_PREFIX } from '../../src/lib/storage.js';
-import { confirmDialog, dialog, done, logDetails, nav, openExtra, person, queryDialog, renderApp, savedPerson, savedState, seedState, toasts, trackErrors, wait } from './harness.jsx';
+import { confirmDialog, dialog, done, logDetails, nav, openExtra, person, queryDialog, renderApp, savedPerson, savedState, seedState, toasts, trackErrors, wait, openMe } from './harness.jsx';
 
 const TODAY = toISODate(new Date());
 
@@ -106,7 +106,7 @@ describe('#2 saved data that is damaged or fails to save', () => {
     seedState();
     const { user } = renderApp();
     vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => { throw new Error('QuotaExceededError'); });
-    await user.click(nav('Me'));
+    await openMe(user, 'App');
     await user.click(screen.getByRole('button', { name: 'Dark' }));
     await user.click(screen.getByRole('button', { name: 'Light' }));
     expect(toasts().filter(t => t.includes("couldn't save")).length).toBe(1);

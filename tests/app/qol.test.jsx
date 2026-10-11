@@ -4,7 +4,7 @@
 import { act, screen, within } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { toISODate } from '../../src/lib/dates.js';
-import { dialog, nav, person, renderApp, savedState, seedState, toasts, wait } from './harness.jsx';
+import { dialog, nav, person, renderApp, savedState, seedState, toasts, wait, openMe } from './harness.jsx';
 
 const day = (n) => { const d = new Date(); d.setDate(d.getDate() + n); return toISODate(d); };
 const TODAY = day(0);
@@ -88,7 +88,7 @@ describe('daily backups', () => {
     const [onDay, json] = saveDailyBackup.mock.calls[0];
     expect(onDay).toBe(TODAY);
     expect(JSON.parse(json).people.map(p => p.name)).toEqual(['Morgan']);
-    await user.click(nav('Me'));
+    await openMe(user, 'Your data');
     expect(screen.getByText(/One a day, the last 14 kept, in Documents\\Layers backups\. Latest: Today\./)).toBeTruthy();
     await user.click(screen.getByRole('button', { name: 'Open folder' }));
     expect(openBackupsFolder).toHaveBeenCalled();
@@ -99,7 +99,7 @@ describe('Match Windows', () => {
   it('is the default, and Light or Dark can still be picked', async () => {
     seedState();
     const { user } = renderApp();
-    await user.click(nav('Me'));
+    await openMe(user, 'App');
     expect(screen.getByRole('button', { name: 'Match Windows' }).getAttribute('aria-pressed')).toBe('true');
     await user.click(screen.getByRole('button', { name: 'Dark' }));
     expect(document.querySelector('.layers-root').classList.contains('dark')).toBe(true);

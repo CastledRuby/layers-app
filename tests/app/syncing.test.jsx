@@ -6,7 +6,7 @@
 import { screen, waitFor, within } from '@testing-library/react';
 import { afterEach, describe, expect, it } from 'vitest';
 import { openSyncFile, sealSyncFile } from '../../src/lib/syncFile.js';
-import { dialog, nav, person, renderApp, savedState, seedState, toasts } from './harness.jsx';
+import { dialog, nav, person, renderApp, savedState, seedState, toasts, openMe } from './harness.jsx';
 
 const PASS = 'correct horse battery';
 
@@ -46,7 +46,7 @@ describe('sync through OneDrive', () => {
     const bridge = fakeBridge();
     seedState({ people: [person('Morgan')] });
     const { user } = renderApp();
-    await user.click(nav('Me'));
+    await openMe(user, 'Your data');
     await user.click(screen.getByRole('button', { name: 'Turn on sync' }));
     const sheet = dialog('Sync through OneDrive');
     await user.keyboard(`${PASS}{Enter}${PASS}{Enter}`);
@@ -63,7 +63,7 @@ describe('sync through OneDrive', () => {
     const bridge = fakeBridge({ 'layers-sync.json': await sealSyncFile(other([person('Sam', { updatedAt: '2026-10-07T01:00:00.000Z' })]), PASS) });
     seedState({ people: [person('Morgan')] });
     const { user } = renderApp();
-    await user.click(nav('Me'));
+    await openMe(user, 'Your data');
     await user.click(screen.getByRole('button', { name: 'Turn on sync' }));
     const sheet = dialog('Sync through OneDrive');
     expect(within(sheet).queryByLabelText('Passphrase again')).toBeNull(); // the file's there: just once
@@ -82,7 +82,7 @@ describe('sync through OneDrive', () => {
     const bridge = fakeBridge();
     seedState({ people: [person('Morgan')] });
     const { user } = renderApp();
-    await user.click(nav('Me'));
+    await openMe(user, 'Your data');
     await user.click(screen.getByRole('button', { name: 'Turn on sync' }));
     await user.keyboard(`${PASS}{Enter}${PASS}{Enter}`);
     await waitFor(() => expect(toasts()).toContain('Sync is on'), { timeout: 10000 });

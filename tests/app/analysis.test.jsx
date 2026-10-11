@@ -7,7 +7,7 @@
 import { screen, waitFor, within } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { toISODate } from '../../src/lib/dates.js';
-import { confirmDialog, dialog, nav, person, queryDialog, relaunch, renderApp, savedPerson, savedState, seedState, toasts } from './harness.jsx';
+import { confirmDialog, dialog, nav, person, queryDialog, relaunch, renderApp, savedPerson, savedState, seedState, toasts, openMe } from './harness.jsx';
 
 vi.mock('../../src/lib/photo.js', () => ({
   MAX_PHOTO_BYTES: 25 * 1024 * 1024,
@@ -80,7 +80,7 @@ describe('chat analysis with Claude', () => {
     await openAnalyse(user, 'Priya');
     expect(screen.getByLabelText('The chat')).toBeTruthy();
 
-    await user.click(nav('Me'));
+    await openMe(user, 'Claude');
     await user.click(within(card()).getByRole('button', { name: 'Remove the key' }));
     await user.click(within(confirmDialog('Remove your API key?')).getByRole('button', { name: 'Remove' }));
     expect(bridge.clearAnalysisKey).toHaveBeenCalled();
@@ -298,7 +298,7 @@ describe('chat analysis with Claude', () => {
     expect(savedState().journal).toHaveLength(1);
 
     // Me says what they cost: each answer once, by model.
-    await user.click(nav('Me'));
+    await openMe(user, 'Claude');
     const spent = screen.getByLabelText('What Claude has cost');
     expect(spent.textContent).toMatch(/This month: about US\$0\.20 for 2 chats \(1 with Opus 5\.5, 1 with Sonnet 5\.5\)/);
     await user.click(nav('Coach'));

@@ -11,7 +11,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { toISODate } from '../../src/lib/dates.js';
 import { createBackup } from '../../src/lib/backup.js';
 import { openSyncFile, sealSyncFile } from '../../src/lib/syncFile.js';
-import { nav, person, renderApp, savedPerson, savedState, seedState } from './harness.jsx';
+import { nav, person, renderApp, savedPerson, savedState, seedState, openMe } from './harness.jsx';
 
 const PASS = 'correct horse battery';
 const T1 = '2026-10-01T01:00:00.000Z';
@@ -43,7 +43,7 @@ const fileWith = (data, pass = PASS) => sealSyncFile({ journal: [], events: [], 
 const goal = (id, title, updatedAt) => ({ id, personId: null, category: 'relationship', type: 'learn', title, description: '', progress: 10, history: [], updatedAt });
 const syncOn = () => window.localStorage.setItem('layers-sync', JSON.stringify({ on: true, lastSynced: null, error: null }));
 async function syncNow(user) {
-  await user.click(nav('Me'));
+  await openMe(user, 'Your data');
   await user.click(within(screen.getByLabelText('Sync')).getByRole('button', { name: 'Sync now' }));
 }
 const LONG = { timeout: 30000 };

@@ -5,7 +5,7 @@
 import { screen, within } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import { toISODate } from '../../src/lib/dates.js';
-import { nav, person, renderApp, savedPerson, savedState, seedState, toasts } from './harness.jsx';
+import { nav, person, renderApp, savedPerson, savedState, seedState, toasts, openMe } from './harness.jsx';
 
 const goal = (id, title) => ({ id, personId: null, category: 'relationship', type: 'learn', title, description: '', progress: 10, history: [] });
 
@@ -52,7 +52,7 @@ describe('ready for syncing', () => {
     URL.createObjectURL = (blob) => { saved = blob; return 'blob:x'; };
     URL.revokeObjectURL = () => {};
     try {
-      await user.click(nav('Me'));
+      await openMe(user, 'Your data');
       await user.click(screen.getByRole('button', { name: /Export/ }));
     } finally { Object.assign(URL, { createObjectURL, revokeObjectURL }); }
     expect(saved).toBeTruthy();

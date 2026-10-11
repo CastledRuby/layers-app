@@ -295,6 +295,9 @@ analysis; all four for using Layers. Each is marked as it's built.
   (repeats 1, 2 and 4). In the plan sheet under Repeat (E steps through how often, or
   which day of the month), and typed: "fortnightly", "every other tue", "every 2 weeks
   on mon", "monthly on the 15th", "first fri of the month".
+- **Built: Me in sections** (using Layers 4). Tabs under your name: You, Calendar, Claude,
+  App and Your data (five, not the four drafted: appearance, startup and updates needed a
+  home), 1–5 to switch, and Find a setting (F) across them all.
 - **Built: keys for where you are** (using Layers 2). ? lists the keys for the screen or
   sheet you're on first, then the ones that work everywhere, then the rest; it works in a
   sheet too, and sheets with keys have a ? button.

@@ -8,7 +8,7 @@
 import { screen, waitFor, within } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { toISODate } from '../../src/lib/dates.js';
-import { dialog, nav, person, queryDialog, relaunch, renderApp, savedPerson, savedState, seedState, toasts } from './harness.jsx';
+import { dialog, nav, person, queryDialog, relaunch, renderApp, savedPerson, savedState, seedState, toasts, openMe } from './harness.jsx';
 
 const DAY = 24 * 3600 * 1000;
 const at = (daysAgo, h, m = 0) => { const d = new Date(Date.now() - daysAgo * DAY); d.setHours(h, m, 0, 0); return d; };
@@ -164,7 +164,7 @@ describe('Analyse all new', () => {
     expect(bridge.runAnalysis).not.toHaveBeenCalled();
 
     // A higher limit in Me.
-    await user.click(nav('Me'));
+    await openMe(user, 'Claude');
     const limit = within(screen.getByLabelText('Chat analysis')).getByRole('group', { name: 'Monthly limit' });
     expect(within(limit).getByRole('button', { name: 'US$10' }).getAttribute('aria-pressed')).toBe('true');
     await user.click(within(limit).getByRole('button', { name: 'US$20' }));
@@ -185,7 +185,7 @@ describe('Analyse all new', () => {
     fakeBridge();
     seed();
     const { user } = renderApp();
-    await user.click(nav('Me'));
+    await openMe(user, 'Claude');
     const limit = within(screen.getByLabelText('Chat analysis')).getByRole('group', { name: 'Monthly limit' });
     expect(within(limit).getByRole('button', { name: 'US$10' }).getAttribute('aria-pressed')).toBe('true');
     await user.click(within(limit).getByRole('button', { name: 'US$5' }));

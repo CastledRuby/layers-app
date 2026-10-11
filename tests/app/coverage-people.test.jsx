@@ -7,7 +7,7 @@
 import { screen, waitFor, within } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { openSyncFile } from '../../src/lib/syncFile.js';
-import { dialog, nav, person, renderApp, savedState, seedState, toasts, trackErrors } from './harness.jsx';
+import { dialog, nav, person, renderApp, savedState, seedState, toasts, trackErrors, openMe } from './harness.jsx';
 
 const DAY = 24 * 3600 * 1000;
 const at = (daysAgo, h, m = 0) => { const d = new Date(Date.now() - daysAgo * DAY); d.setHours(h, m, 0, 0); return d; };
@@ -58,7 +58,7 @@ describe('with nobody in your circle', { timeout: 60000 }, () => {
     expect(screen.queryByLabelText('Analyse all new')).toBeNull();
     await user.keyboard('a');
     expect(bridge.runAnalysis).not.toHaveBeenCalled();
-    await user.click(nav('Me'));
+    await openMe(user, 'Claude');
     expect(screen.getByLabelText('Chat analysis')).toBeTruthy();
     errors.stop();
     expect(errors.errors).toEqual([]);
@@ -98,7 +98,7 @@ describe('with nobody in your circle', { timeout: 60000 }, () => {
     window.localStorage.setItem('layers-sync', JSON.stringify({ on: true, lastSynced: null, error: null }));
     seedState({ profile: { name: 'Liam', focus: 'mix' } });
     const { user } = renderApp();
-    await user.click(nav('Me'));
+    await openMe(user, 'Your data');
     await user.click(within(screen.getByLabelText('Sync')).getByRole('button', { name: 'Sync now' }));
     await waitFor(() => expect(b.syncFiles['layers-sync.json']).toBeTruthy(), { timeout: 15000 });
     const { payload } = await openSyncFile(b.syncFiles['layers-sync.json'], 'correct horse battery');

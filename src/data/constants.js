@@ -84,6 +84,7 @@ export const SHORTCUTS = [
   { keys: ['Q', 'W', 'E'], or: true, desc: 'Coach, What to say: copy the natural, playful or deeper reply (Ctrl+↵ in the box asks for them)', where: ['coach'] },
   { keys: ['S', 'L'], or: true, desc: 'Coach, an analysed chat: Save every detail found, Log it (Ctrl+↵ in the chat box analyses it)', where: ['coach'] },
   { keys: ['A', 'R'], or: true, desc: 'Coach, Analyse: Analyse all new chats from your exports, or Review the answers ready (then ↵ logs one, X skips it, E the full review, B reminders, 1–9 leave a detail out, ⇧↵ logs them all)', where: ['coach', 'queue'] },
+  { keys: ['1–5', 'F'], or: true, desc: 'Me: switch sections (You, Calendar, Claude, App, Your data), or find a setting', where: ['me'] },
   { keys: ['/'], desc: 'Jump to search (People or Journal)', where: ['people', 'journal'] },
   { keys: ['Backspace'], desc: 'Go back from a person or goals screen', where: ['person'] },
   { keys: ['Ctrl', 'Z'], desc: 'Undo what you just did, while its message shows (a delete, tick, log or saved plan)', where: ['everywhere'] },

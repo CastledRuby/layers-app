@@ -8,7 +8,7 @@
 import { act, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { toISODate } from '../../src/lib/dates.js';
-import { logDetails, nav, person, queryDialog, relaunch, renderApp, seedState } from './harness.jsx';
+import { logDetails, nav, person, queryDialog, relaunch, renderApp, seedState, openMe } from './harness.jsx';
 
 const DAY = 24 * 3600 * 1000;
 const ago = (n) => toISODate(new Date(Date.now() - n * DAY));
@@ -150,7 +150,7 @@ describe('who to message, in the evening', () => {
     windowsBridge();
     seedEvening();
     const { user } = renderApp();
-    await user.click(nav('Me'));
+    await openMe(user, 'Calendar');
     const toggle = screen.getByRole('switch', { name: /Who to message, in the evening/ });
     expect(toggle.getAttribute('aria-checked')).toBe('true');
     await user.click(toggle);

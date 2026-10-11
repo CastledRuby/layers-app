@@ -4,7 +4,7 @@
 import { screen, within } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { toISODate } from '../../src/lib/dates.js';
-import { dialog, nav, person, queryDialog, renderApp, savedPerson, savedState, seedState, toasts, wait } from './harness.jsx';
+import { dialog, nav, person, queryDialog, renderApp, savedPerson, savedState, seedState, toasts, wait, openMe } from './harness.jsx';
 
 const day = (n) => { const d = new Date(); d.setDate(d.getDate() + n); return toISODate(d); };
 const TOMORROW = day(1);
@@ -35,7 +35,7 @@ describe('Delete my data and start over', () => {
     });
   }
   async function openStartOver(user) {
-    await user.click(nav('Me'));
+    await openMe(user, 'Your data');
     await user.click(screen.getByRole('button', { name: 'Delete my data and start over' }));
     return dialog('Start over');
   }

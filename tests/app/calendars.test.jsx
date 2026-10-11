@@ -7,7 +7,7 @@
 import { screen, waitFor, within } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { toISODate } from '../../src/lib/dates.js';
-import { dialog, nav, person, renderApp, seedState, toasts } from './harness.jsx';
+import { dialog, nav, person, renderApp, seedState, toasts, openMe } from './harness.jsx';
 
 const today = toISODate(new Date());
 const compact = today.replace(/-/g, '');
@@ -40,7 +40,7 @@ describe('your Google Calendar', () => {
     const bridge = fakeBridge();
     seedState({ people: [person('Morgan')] });
     const { user } = renderApp();
-    await user.click(nav('Me'));
+    await openMe(user, 'Calendar');
     const card = () => screen.getByLabelText('Other calendars');
     await user.type(within(card()).getByLabelText('Secret address in iCal format'), 'not an address{Enter}');
     await within(card()).findByRole('alert');

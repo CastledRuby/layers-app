@@ -72,6 +72,12 @@ export function nav(name) {
   return within(document.querySelector('.nav-bar')).getByRole('button', { name: new RegExp(`^${name}$`, 'i') });
 }
 
+// Me, on one of its sections (2026-10-11): You, Calendar, Claude, App or Your data.
+export async function openMe(user, section) {
+  await user.click(nav('Me'));
+  if (section) await user.click(screen.getByRole('tab', { name: section }));
+}
+
 // The toasts' messages (without an Undo button's label).
 export function toasts() {
   return [...document.querySelectorAll('.toast')].map(t => (t.querySelector('.toast-text') || t).textContent);

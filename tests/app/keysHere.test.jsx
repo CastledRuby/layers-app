@@ -34,12 +34,12 @@ describe('keys for where you are', () => {
     expect(section('Here: Planning')).toBeTruthy();
   });
 
-  it('on Me, with no keys of its own, it lists everywhere and each screen', async () => {
+  it("on Me, Me's own keys (1-5 and F) come first", async () => {
     seedState();
     const { user } = renderApp();
     await user.click(nav('Me'));
     await user.keyboard('?');
-    expect(within(dialog('Keyboard shortcuts')).queryByRole('region', { name: /^Here:/ })).toBeNull();
-    expect(section('On each screen').textContent).toContain('Today: back to today');
+    expect(section('Here: Me').textContent).toContain('Me: switch sections');
+    expect(section('Everything else').textContent).toContain('Today: back to today');
   });
 });

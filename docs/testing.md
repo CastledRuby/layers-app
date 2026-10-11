@@ -300,6 +300,9 @@ interact.
   endings don't count), and `src/scenarios.test.js` that every Analyse suggestion has its
   natural, playful and deeper versions. `src/backups.test.js` checks `electron/backups.cjs` on a temporary folder:
   one file a day, never overwritten, the newest 14 kept.
+- `meSections.test.jsx` covers Me in sections: opening on You, 1–5 switching (no Claude
+  in the browser), and Find a setting across sections (saying where) or nothing matching.
+  Tests reach a section with the harness's `openMe(user, 'Claude')`.
 - `keysHere.test.jsx` covers ? listing the keys for where you are first (Today, the plan
   sheet by ? and by its ? button, Esc back to the plan) and Me with none of its own.
   `keycaps.test.jsx` covers key hints drawing ↵, ⇧ and ⌫ as icons.

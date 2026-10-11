@@ -5,7 +5,7 @@
 import { screen, within } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import { toISODate } from '../../src/lib/dates.js';
-import { dialog, done, logDetails, nav, openExtra, person, renderApp, savedPerson, savedState, seedState } from './harness.jsx';
+import { dialog, done, logDetails, nav, openExtra, person, renderApp, savedPerson, savedState, seedState, openMe } from './harness.jsx';
 
 const TODAY = toISODate(new Date());
 const goal = (id, title, progress = 10) => ({ id, personId: null, category: 'relationship', type: 'learn', title, description: '', progress, history: [] });
@@ -146,7 +146,7 @@ describe('P4 sample people', () => {
     await user.type(screen.getByPlaceholderText('Their name'), 'Morgan');
     await user.click(screen.getByRole('button', { name: /Skip the questions/ }));
     await user.click(screen.getByRole('button', { name: /Add Morgan to my circle/ }));
-    await user.click(nav('Me'));
+    await openMe(user, 'Your data');
     await user.click(screen.getByRole('button', { name: 'Remove sample people' }));
     const confirm = screen.getByRole('alertdialog', { name: 'Remove the sample people?' });
     expect(confirm.textContent).toContain('Alex, Jamie, Priya, Noah and Sam');
@@ -163,7 +163,7 @@ describe('P4 sample people', () => {
   it('adds the samples alongside your own, once', async () => {
     seedState({ people: [person('Morgan')] });
     const { user } = renderApp();
-    await user.click(nav('Me'));
+    await openMe(user, 'Your data');
     await user.click(screen.getByRole('button', { name: 'Add sample people' }));
     await user.click(screen.getByRole('button', { name: 'Add samples' }));
     const names = savedState().people.map(p => p.name);
@@ -177,7 +177,7 @@ describe('P4 sample people', () => {
     const skills = { activeListening: { label: 'Active listening', current: 7, history: [] }, followUp: { label: 'Follow-up questions', current: 0, history: [] }, reciprocity: { label: 'Reciprocity', current: 0, history: [] }, selfDisclosure: { label: 'Self-disclosure', current: 0, history: [] }, readingCues: { label: 'Reading conversational cues', current: 0, history: [] }, knowingWhenToStop: { label: 'Knowing when to stop', current: 0, history: [] } };
     seedState({ skills });
     const { user } = renderApp();
-    await user.click(nav('Me'));
+    await openMe(user, 'Your data');
     await user.click(screen.getByRole('button', { name: 'Add sample people' }));
     await user.click(screen.getByRole('button', { name: 'Add samples' }));
     expect(savedState().skills.activeListening.current).toBe(7);
@@ -262,7 +262,7 @@ describe('P6 smarter reminders', () => {
   it('notification switches live in Me', async () => {
     seedState();
     const { user } = renderApp();
-    await user.click(nav('Me'));
+    await openMe(user, 'Calendar');
     const sw = screen.getByRole('switch', { name: /Reminders before plans/ });
     expect(sw.getAttribute('aria-checked')).toBe('true');
     await user.click(sw);
@@ -381,7 +381,7 @@ describe('follow-up fixes from the 1.0.28 docs review', () => {
       achievements: { firstMeaningful: '2026-09-01' },
     });
     const { user } = renderApp();
-    await user.click(nav('Me'));
+    await openMe(user, 'Your data');
     await user.click(screen.getByRole('button', { name: 'Remove sample people' }));
     await user.click(screen.getByRole('button', { name: 'Remove samples' }));
     expect(savedState().achievements).toEqual({ firstMeaningful: '2026-09-01' });
