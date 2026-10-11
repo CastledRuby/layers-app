@@ -363,7 +363,7 @@ export function PlanSheet({ people, events = [], today, prefill = {}, defaultAle
         </div>;
 
   return (
-    <Sheet title={titles[step]} onClose={onClose} onBack={BACK[step] ? () => go(BACK[step]) : undefined} onKey={onKey} footer={footer} tall>
+    <Sheet title={titles[step]} onClose={onClose} onBack={BACK[step] ? () => go(BACK[step]) : undefined} onKey={onKey} keysFor="plan" footer={footer} tall>
       <div key={`${step}${added.length}`} className={dir === 'in' ? 'step-in' : dir === 'back' ? 'step-back' : ''}>
         {step === 'what' && (
           <>

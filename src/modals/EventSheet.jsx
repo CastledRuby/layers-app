@@ -68,7 +68,7 @@ export function EventSheet({ ev, day, today, people, goals, journal = [], genera
 
   const copyButton = <button type="button" onClick={onCopy} className="text-xs font-semibold flex items-center gap-1.5" style={{ color: COLORS.accent }}><Copy size={13} />Plan it again <Kbd>C</Kbd></button>;
   return (
-    <Sheet title={`${template ? `${template.emoji} ` : ''}${ev.title}`} onClose={onClose} onKey={onKey}
+    <Sheet title={`${template ? `${template.emoji} ` : ''}${ev.title}`} onClose={onClose} onKey={onKey} keysFor="event"
       footer={
         <div className="flex flex-col gap-2">
           {started ? (

@@ -5,6 +5,7 @@ import { useContext, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { ChevronLeft, X } from 'lucide-react';
 import { isTyping, returnFocus, SheetLayerContext, topSheet, useOpenSheet } from './sheetLayer.js';
+import { Kbd } from './atoms.jsx';
 import { COLORS } from '../theme.js';
 
 // Never fall back to document.body: content portaled outside .layers-root
@@ -28,12 +29,15 @@ const animate = () => typeof window.matchMedia === 'function' && !window.matchMe
 // - tall: a fixed 80% height, for sheets whose content changes (steps).
 // - top: drops down from the top with no title bar (the title still names
 //   it for screen readers), for the Ctrl+K box.
+// - keysFor: which shortcuts are this sheet's (a `where` in SHORTCUTS: plan,
+//   log, event...), so ? lists them first; a sheet with keys also shows a ?
+//   button in its title bar for the same list (2026-10-11).
 // Closing by X, the backdrop or Esc slides the sheet away first; a parent
 // that unmounts it directly (after saving) closes it at once.
 // Focus moves into the sheet when it opens (unless something in it took it
 // already, a text box with autoFocus), and back to where it was when it
 // closes, so Tab and screen readers start in the right place.
-export function Sheet({ title, onClose, onBack, onKey, children, footer, tall, top }) {
+export function Sheet({ title, onClose, onBack, onKey, children, footer, tall, top, keysFor = null }) {
   const [closing, setClosing] = useState(false);
   const closingRef = useRef(false);
   const timer = useRef(null);
@@ -46,7 +50,7 @@ export function Sheet({ title, onClose, onBack, onKey, children, footer, tall, t
     // If the parent keeps the sheet open after all, show it again.
     timer.current = setTimeout(() => { onClose(); closingRef.current = false; setClosing(false); }, CLOSE_MS);
   }
-  const entry = useOpenSheet(requestClose);
+  const entry = useOpenSheet(requestClose, keysFor);
   const panelRef = useRef(null);
   const [opener] = useState(() => (typeof document === 'undefined' ? null : document.activeElement));
   useEffect(() => {
@@ -82,6 +86,7 @@ export function Sheet({ title, onClose, onBack, onKey, children, footer, tall, t
               <button type="button" onClick={onBack} aria-label="Back" className="icon-btn -ml-2"><ChevronLeft size={20} color={COLORS.inkSoft} /></button>
             )}
             <p className="font-display sheet-title flex-1 min-w-0">{title}</p>
+            {hasKeys && keysFor && <button type="button" onClick={() => window.dispatchEvent(new CustomEvent('layers-show-keys'))} aria-label="Keys for this" className="icon-btn"><Kbd>?</Kbd></button>}
             <button type="button" onClick={requestClose} aria-label="Close" className="icon-btn -mr-2"><X size={19} color={COLORS.inkSoft} /></button>
           </div>}
           <div className="sheet-body no-scrollbar">{children}</div>

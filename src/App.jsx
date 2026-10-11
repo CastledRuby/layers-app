@@ -255,7 +255,7 @@ function LayersApp() {
   const [quickInterestPersonId, setQuickInterestPersonId] = useState(null);
   const [addPersonOpen, setAddPersonOpen] = useState(false);
   const [photoFolderOpen, setPhotoFolderOpen] = useState(false); // PhotoFolderSheet
-  const [shortcutsOpen, setShortcutsOpen] = useState(false);
+  const [shortcutsOpen, setShortcutsOpen] = useState(false); // false, or where it was opened (a `where` in SHORTCUTS)
   const [startOverOpen, setStartOverOpen] = useState(false);
   const [standaloneDetailOpen, setStandaloneDetailOpen] = useState(false);
   const [reviewEntryId, setReviewEntryId] = useState(null); // an analysed chat's review, from the Journal
@@ -597,6 +597,21 @@ function LayersApp() {
     if (el) el.focus();
   }, [searchFocus]);
 
+  // Where you are, for the keys list: the top sheet's keysFor, a profile, or the tab.
+  function keysHere() {
+    const top = topSheet();
+    if (top && top.keysFor) return top.keysFor;
+    return screen.name === 'person' ? 'person' : activeTab;
+  }
+  const keysHereRef = useRef(keysHere);
+  useLayoutEffect(() => { keysHereRef.current = keysHere; });
+  // A sheet's ? button (Sheet.jsx) asks for its keys.
+  useEffect(() => {
+    const show = () => setShortcutsOpen(o => o || keysHereRef.current());
+    window.addEventListener('layers-show-keys', show);
+    return () => window.removeEventListener('layers-show-keys', show);
+  }, []);
+
   useEffect(() => {
     function onKeyDown(e) {
       // Esc leaves a search box, or closes the top-most sheet or dialog only
@@ -621,13 +636,14 @@ function LayersApp() {
       // A focused slider or checkbox isn't typing; a text field is.
       const el = document.activeElement;
       const typing = !!el && (el.tagName === 'TEXTAREA' || el.isContentEditable || (el.tagName === 'INPUT' && !['range', 'checkbox', 'radio', 'button', 'submit'].includes(el.type)));
+      // ? lists the keys for where you are, a sheet's first; it works in a sheet too.
+      if (!typing && onboarded && !e.ctrlKey && !e.metaKey && !e.altKey && e.key === '?') { e.preventDefault(); setShortcutsOpen(o => o || keysHere()); return; }
       if (typing || !onboarded || hasOpenSheet()) return;
       // Single-key shortcuts ignore Ctrl/Alt/Win combinations, so Ctrl+N or
       // Alt+D (browser and Windows habits) don't open anything.
       const plain = !e.ctrlKey && !e.metaKey && !e.altKey;
       const ctrlOnly = (e.ctrlKey || e.metaKey) && !e.altKey;
 
-      if (plain && e.key === '?') { e.preventDefault(); setShortcutsOpen(true); return; }
       // 'D' opens Add Detail as a standalone lookup; a pick is copied to the
       // clipboard, since there's no note to add it to outside a log.
       if (plain && (e.key === 'd' || e.key === 'D')) { e.preventDefault(); setStandaloneDetailOpen(true); return; }
@@ -1720,7 +1736,7 @@ function LayersApp() {
             )}
             {addPersonOpen && <AddPersonModal onClose={() => setAddPersonOpen(false)} onSave={handleAddPerson} />}
             {photoFolderOpen && <PhotoFolderSheet people={people} onClose={() => setPhotoFolderOpen(false)} onApply={handlePhotoFolder} />}
-            {shortcutsOpen && <ShortcutsModal onClose={() => setShortcutsOpen(false)} />}
+            {shortcutsOpen && <ShortcutsModal here={typeof shortcutsOpen === 'string' ? shortcutsOpen : null} onClose={() => setShortcutsOpen(false)} />}
             {jumpOpen && (
               <JumpSheet people={people} events={events} today={today} has={{ bridge: hasSystemBridge, updater: hasUpdater }}
                 onRun={runJump} onClose={() => setJumpOpen(false)} />

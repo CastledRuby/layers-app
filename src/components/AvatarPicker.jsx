@@ -132,7 +132,7 @@ export function AvatarSheet({ person, onChange, onClose }) {
     picker.handleKey(e);
   }
   return (
-    <Sheet title={`${person.name}'s avatar`} onClose={onClose} onKey={onKey}
+    <Sheet title={`${person.name}'s avatar`} onClose={onClose} onKey={onKey} keysFor="avatar"
       footer={<button type="button" onClick={onClose} className="primary-btn">Done <Kbd onAccent>↵</Kbd></button>}>
       <div className="flex justify-center mb-4"><Avatar person={person} size={64} /></div>
       <AvatarPicker picker={picker} name={person.name} layer={person.layer} current={person.avatar} />

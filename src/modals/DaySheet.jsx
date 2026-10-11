@@ -50,7 +50,7 @@ export function DaySheet({ day, today, people, journal, events, generalGoals, on
   }
 
   return (
-    <Sheet title={dayTitle(day, today)} onClose={onClose} onKey={onKey} tall
+    <Sheet title={dayTitle(day, today)} onClose={onClose} onKey={onKey} keysFor="day" tall
       footer={<button type="button" onClick={() => onPlan({ day })} className="primary-btn">Plan something <Kbd onAccent>P</Kbd></button>}>
       <p className="text-xs -mt-1 mb-3 flex items-center gap-1 flex-wrap" style={{ color: COLORS.inkSoft }}>
         <button type="button" onClick={() => onDay(addDays(day, -1))} aria-label="The day before" className="icon-btn -ml-2"><ChevronLeft size={17} color={COLORS.inkSoft} /></button>

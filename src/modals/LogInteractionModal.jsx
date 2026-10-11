@@ -195,7 +195,7 @@ export function LogInteractionModal({ people, defaultPersonId, prefill, onClose,
     ) : null;
 
   return (
-    <Sheet title={titles[step]} onClose={onClose} onBack={BACK[step] ? goBack : undefined} onKey={handleKey} footer={footer} tall>
+    <Sheet title={titles[step]} onClose={onClose} onBack={BACK[step] ? goBack : undefined} onKey={handleKey} keysFor="log" footer={footer} tall>
       <div key={step} className={dir === 'in' ? 'step-in' : dir === 'back' ? 'step-back' : ''}>
         {step === 'kind' && (
           <div className={`grid ${onAnalyse ? 'grid-cols-3 gap-2.5' : 'grid-cols-2 gap-3'}`}>

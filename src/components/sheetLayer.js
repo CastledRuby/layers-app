@@ -34,10 +34,13 @@ export function hasOpenSheet() { return openSheets.length > 0; }
 // Registers the calling sheet while it's mounted; Esc calls its latest
 // onClose. Returns the sheet's entry, so the sheet can tell whether it's the
 // one on top (topSheet() === entry) before acting on a key.
-export function useOpenSheet(onClose) {
+// keysFor: which shortcuts are the sheet's (Sheet's keysFor), read by ? as
+// entry.keysFor.
+export function useOpenSheet(onClose, keysFor = null) {
   const latest = useRef(onClose);
-  const [entry] = useState(() => ({ close: () => { if (latest.current) latest.current(); } }));
-  useLayoutEffect(() => { latest.current = onClose; });
+  const keys = useRef(keysFor);
+  const [entry] = useState(() => ({ close: () => { if (latest.current) latest.current(); }, get keysFor() { return keys.current; } }));
+  useLayoutEffect(() => { latest.current = onClose; keys.current = keysFor; });
   useEffect(() => registerSheet(entry), [entry]);
   return entry;
 }

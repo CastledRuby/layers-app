@@ -300,6 +300,9 @@ interact.
   endings don't count), and `src/scenarios.test.js` that every Analyse suggestion has its
   natural, playful and deeper versions. `src/backups.test.js` checks `electron/backups.cjs` on a temporary folder:
   one file a day, never overwritten, the newest 14 kept.
+- `keysHere.test.jsx` covers ? listing the keys for where you are first (Today, the plan
+  sheet by ? and by its ? button, Esc back to the plan) and Me with none of its own.
+  `keycaps.test.jsx` covers key hints drawing ↵, ⇧ and ⌫ as icons.
 - `polish.test.jsx` covers the quick log redesign:
   - the quick log asks for little
   - each extra detail opens its own sheet

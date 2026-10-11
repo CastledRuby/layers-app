@@ -131,7 +131,7 @@ export function GoalModal({ people, defaultPersonId, editingGoal, editingPersonI
   }
 
   return (
-    <Sheet title={isEdit ? 'Edit goal' : 'New goal'} onClose={onClose} onKey={onKey}
+    <Sheet title={isEdit ? 'Edit goal' : 'New goal'} onClose={onClose} onKey={onKey} keysFor="goal"
       footer={<button onClick={handleSave} disabled={!canSave} className="w-full flex items-center justify-center gap-2 text-sm font-semibold rounded-full py-3" style={{ background: canSave ? COLORS.accent : COLORS.line, color: canSave ? COLORS.onAccent : COLORS.inkSoft }}>{isEdit ? 'Save changes' : 'Create goal'}{canSave && <Kbd onAccent>↵</Kbd>}</button>}>
 
       {heading('Who is this goal for?', !isEdit && <><Kbd>←</Kbd><Kbd>→</Kbd></>)}

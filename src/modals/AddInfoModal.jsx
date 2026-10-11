@@ -35,7 +35,7 @@ export function AddInfoModal({ personName, category, onClose, onSave }) {
   }
 
   return (
-    <Sheet title={`Add to ${cat.label}`} onClose={onClose} onKey={onKey}
+    <Sheet title={`Add to ${cat.label}`} onClose={onClose} onKey={onKey} keysFor="info"
       footer={<button onClick={save} disabled={!canSave} className="w-full flex items-center justify-center gap-2 text-sm font-semibold rounded-full py-3" style={{ background: canSave ? COLORS.accent : COLORS.line, color: canSave ? COLORS.onAccent : COLORS.inkSoft }}>Save{canSave && <Kbd onAccent>↵</Kbd>}</button>}>
       <p className="text-xs mb-3" style={{ color: COLORS.inkSoft }}>Adding to {personName}'s profile</p>
       <p className="text-sm font-semibold mb-2 flex items-center gap-1.5" style={{ color: COLORS.ink }}>Choose an icon <Kbd>←</Kbd><Kbd>→</Kbd></p>

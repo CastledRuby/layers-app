@@ -182,7 +182,7 @@ Every modal is a `Sheet` (or `ConfirmDialog`). Most are opened by a boolean flag
 | `EditPersonModal` | Profile "Edit": name, nicknames ("Also known as", with commas), avatar | `LayersApp` |
 | `EditEntryModal` | The pencil on a Journal entry | `LayersApp` (`editingEntryId`) |
 | `EditProfileModal` | Me's profile card "Edit" | `LayersApp` (`editProfileOpen`) |
-| `ShortcutsModal` | `?`, Me tab | `LayersApp` |
+| `ShortcutsModal` | `?` (in a sheet too), a sheet's ? button, Me tab | `LayersApp` (`shortcutsOpen` is where it was opened) |
 | `TemplatePickerModal` (standalone) | `D` outside logging. A pick copies the text to the clipboard. | `LayersApp` |
 | `ConfirmDialog` | `askConfirm({...})` from any destructive handler | `LayersApp` (`confirmState`) |
 | `TemplatePickerModal` (in-flow) | "+ Add detail" while logging (`templates`: ACTIVITY_TEMPLATES; NOTE_TEMPLATES for a profile's Quick add interest) | local state |
@@ -356,6 +356,13 @@ sheets that were open before going somewhere; an action like Dark mode leaves th
 
 These are defined once in `SHORTCUTS` (shown by `ShortcutsModal`) and implemented in the
 `keydown` effect in `LayersApp`.
+
+**Keys for where you are** (2026-10-11): each shortcut says where it works (`where`: a tab,
+`person` for a profile, a sheet's `keysFor` such as `plan`, `log`, `event`, `day`, `goal`,
+`info`, `avatar`, `queue`, or `everywhere`). `?` opens the list with the keys for where you
+are first (`keysHere`: the top sheet's `keysFor`, else a profile or the tab), then
+**Everywhere**, then the rest. It works inside a sheet too, and a sheet with keys has a
+**?** button in its title bar (it sends `layers-show-keys`).
 
 - **When they're off (all but `Esc`):** while typing in a text field (a focused slider or
   checkbox doesn't count), before onboarding, and while any sheet or dialog is open.

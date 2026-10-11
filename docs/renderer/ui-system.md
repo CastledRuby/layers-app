@@ -302,6 +302,8 @@ ARIA attribute carries the state:
   `aria-checked`.
 - **A person's number** on a "who" step is a solid badge (`.pick-key`), readable over any
   avatar ring in either theme; the person the arrow keys are on has `.pick-cursor`.
+- **A sheet's keys**: a sheet with `onKey` and a `keysFor` shows a small **?** button in its
+  title bar ("Keys for this"), which lists its keys first (ShortcutsModal).
 - **Key hints** (`Kbd`) are `aria-hidden`, so a button's name stays what it does
   ("Save interaction", not "Save interaction ↵").
 

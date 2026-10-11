@@ -69,7 +69,7 @@ export function ChatQueueSheet({ items, people, yourName = '', onLog, onSkip, on
 
   return (
     <>
-      <Sheet title="Ready to review" onClose={onClose} onKey={onKey} tall footer={footer}>
+      <Sheet title="Ready to review" onClose={onClose} onKey={onKey} keysFor="queue" tall footer={footer}>
         <div className="flex items-center gap-1 -mt-2 mb-3">
           <button type="button" onClick={() => move(-1)} disabled={at === 0} aria-label="The one before" className="icon-btn -ml-2"><ChevronLeft size={18} color={COLORS.inkSoft} /></button>
           <p className="text-sm" style={{ color: COLORS.inkSoft }}>{at + 1} of {items.length}</p>

@@ -295,6 +295,9 @@ analysis; all four for using Layers. Each is marked as it's built.
   (repeats 1, 2 and 4). In the plan sheet under Repeat (E steps through how often, or
   which day of the month), and typed: "fortnightly", "every other tue", "every 2 weeks
   on mon", "monthly on the 15th", "first fri of the month".
+- **Built: keys for where you are** (using Layers 2). ? lists the keys for the screen or
+  sheet you're on first, then the ones that work everywhere, then the rest; it works in a
+  sheet too, and sheets with keys have a ? button.
 - **Built: type a plan in the plan sheet** (using Layers 1). **Type it** (T) on the first
   step reads "gym tue thu fri 7am" as Ctrl+K does, shows what it understood (and any
   names not in Layers), and Enter fills in every step.
