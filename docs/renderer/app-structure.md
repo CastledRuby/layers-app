@@ -251,8 +251,10 @@ Planning is three steps, one thing at a time, nearly all taps, and every tap has
    - **Time** (`T`): five times, All day, or **Other time**
    - **How long** (`L`)
    - **Repeat** (`R`): once, **several days** (pick as many days as you like; one plan
-     is saved for each), every day, **every weekday** (Monday to Friday), or every week
-     on chosen days (with a **Mon–Fri** chip)
+     is saved for each), every day, **every weekday** (Monday to Friday), or **on certain
+     days** (as many of Mon–Sun as you like, Tue, Thu and Fri say, with **Mon–Fri** and
+     **Weekends** chips; 1–7 turn Mon–Sun on and off there). It reads "Every Tue, Thu and
+     Fri" (`formatWeekdays`, Monday first)
    - **Change** (`O`), when editing a repeating plan opened on one of its days: **Only
      <that day>** (it becomes a one-off of its own, so Repeat goes) or **Every time**.
      Deleting it asks the same

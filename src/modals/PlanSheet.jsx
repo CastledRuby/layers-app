@@ -3,7 +3,8 @@
 //   what  a template (Coffee, Call, ...)            keys 1-8, or one of your
 //         recent plans under "Plan again"           Q W E R
 //   who   the people                                1-9 or type a name, Enter goes on
-//   when  day, time, length, repeat and reminder    1-7 the day; T, L, R, A and G
+//   when  day, time, length, repeat and reminder    1-7 the day (on certain days,
+//                                                   Mon-Sun on or off); T, L, R, A and G
 //                                                   step through time, length,
 //                                                   repeat, reminder and goal
 //                                                   (with Shift, backwards);
@@ -13,7 +14,8 @@
 // Shift+Enter (or "Save + another") saves and starts the next plan in the same
 // sheet, for putting in a lot at once; what's been added shows on the first
 // step. "Several days" saves one plan for each day picked; "Every weekday"
-// repeats Monday to Friday.
+// repeats Monday to Friday; "On certain days" repeats on the weekdays picked
+// (Tue, Thu and Fri, say), with Mon-Fri and Weekends to start from.
 // "When?" sums the plan up in a sentence and warns when it overlaps a plan
 // you already have. Editing one of several copies of a plan (the same title,
 // people and time, as "Several days" saves them): a copy isn't an overlap, and
@@ -35,14 +37,17 @@ import { usePeopleKeys } from '../components/peopleKeys.js';
 import { DateDropdown, TimeDropdown } from '../components/pickers.jsx';
 import { QuickGoalSheet } from './QuickGoalSheet.jsx';
 import { DEFAULT_DURATION, EVENT_TEMPLATES, alertOf, clashesOn, durationOf, isDaily, recentPlans, templateFor } from '../lib/calendar.js';
-import { formatCalendarDate, formatTime12, formatWeekdays, parseISODay, toISODate, WEEKDAY_SHORT } from '../lib/dates.js';
+import { formatCalendarDate, formatTime12, formatWeekdays, parseISODay, toISODate, WEEKDAY_FULL, WEEKDAY_SHORT } from '../lib/dates.js';
 import { COLORS } from '../theme.js';
 
 const TIMES = [9 * 60, 12 * 60 + 30, 15 * 60 + 30, 18 * 60, 20 * 60];
 const LENGTHS = [15, 30, 60, 120, 180];
 const ALERTS = [null, 0, 5, 15, 30, 60, 1440];
-const REPEATS = [['once', 'Once'], ['several', 'Several days'], ['daily', 'Every day'], ['weekdays', 'Every weekday'], ['weekly', 'Every week']];
+const REPEATS = [['once', 'Once'], ['several', 'Several days'], ['daily', 'Every day'], ['weekdays', 'Every weekday'], ['weekly', 'On certain days']];
 const MON_FRI = [1, 2, 3, 4, 5];
+const WEEKENDS = [0, 6];
+// The week as the day chips show it, Monday first: 1-7 toggle these.
+const MON_FIRST = [1, 2, 3, 4, 5, 6, 0];
 const ALL_WEEK = [0, 1, 2, 3, 4, 5, 6];
 const isMonFri = (days) => (days || []).length === 5 && MON_FRI.every(d => days.includes(d));
 // The weekdays a repeating plan falls on; null when it doesn't repeat.
@@ -189,6 +194,9 @@ export function PlanSheet({ people, events = [], today, prefill = {}, defaultAle
     if (repeat === 'several') set(f => ({ days: f.days.includes(d) ? f.days.filter(x => x !== d) : [...f.days, d].sort() }));
     else set(f => ({ day: d, weekdays: f.repeat === 'weekly' && f.weekdays.length === 1 ? [parseISODay(d).getDay()] : f.weekdays }));
   }
+  function toggleWeekday(i) {
+    set(f => ({ weekdays: f.weekdays.includes(i) ? f.weekdays.filter(x => x !== i) : [...f.weekdays, i].sort((a, b) => a - b) }));
+  }
   function pickRepeat(r) {
     set(f => ({
       repeat: r,
@@ -265,6 +273,7 @@ export function PlanSheet({ people, events = [], today, prefill = {}, defaultAle
     const back = e.shiftKey;
     const letter = e.key.length === 1 ? e.key.toLowerCase() : null;
     if (e.key === 'Enter') act(() => save(e.shiftKey));
+    else if (num && num <= 7 && repeat === 'weekly' && !form.only) act(() => toggleWeekday(MON_FIRST[num - 1]));
     else if (num && num <= 7) act(() => pickDay(nextDays[num - 1]));
     else if (letter === 't') act(() => pickTime(cycle([...TIMES, 'all'], allDay ? 'all' : time, back)));
     else if (letter === 'l' && !allDay) act(() => set({ duration: cycle(LENGTHS, duration, back) }));
@@ -384,7 +393,7 @@ export function PlanSheet({ people, events = [], today, prefill = {}, defaultAle
                 <Choice on={!form.only} onClick={() => pickOnly(false)}>Every time</Choice>
               </Section>
             )}
-            <Section title={repeat === 'several' ? 'Days (pick as many as you like)' : repeat === 'once' ? 'Day' : 'Starting'} hint="1–7">
+            <Section title={repeat === 'several' ? 'Days (pick as many as you like)' : repeat === 'once' ? 'Day' : 'Starting'} hint={repeat === 'weekly' && !form.only ? null : '1–7'}>
               {nextDays.map((d, i) => <Choice key={d} on={isDayOn(d)} onClick={() => pickDay(d)}>{dayLabel(d, i)}</Choice>)}
               {repeat === 'several' && days.filter(d => !nextDays.includes(d)).map(d => <Choice key={d} on onClick={() => pickDay(d)}>{shortDay(d)}</Choice>)}
               <DateDropdown compact other highlight={repeat !== 'several' && !nextDays.includes(day)} value={parseISODay(repeat === 'several' ? days[days.length - 1] || day : day)}
@@ -404,9 +413,14 @@ export function PlanSheet({ people, events = [], today, prefill = {}, defaultAle
             {!form.only && <Section title="Repeat" hint="R">
               {repeats.map(([k, label]) => <Choice key={k} on={repeat === k} onClick={() => pickRepeat(k)}>{label}</Choice>)}
               {repeat === 'weekly' && (
-                <span className="w-full flex flex-wrap gap-1 mt-1">
-                  {WEEKDAY_SHORT.map((w, i) => <Choice key={w} label={w} on={weekdays.includes(i)} onClick={() => set(f => ({ weekdays: f.weekdays.includes(i) ? f.weekdays.filter(x => x !== i) : [...f.weekdays, i].sort((a, b) => a - b) }))}>{w[0]}</Choice>)}
-                  <Choice on={weekdays.join() === MON_FRI.join()} onClick={() => set({ weekdays: MON_FRI })}>Mon–Fri</Choice>
+                <span className="w-full mt-1.5" role="group" aria-label="Repeat on">
+                  <span className="text-xs mb-1.5 flex items-center gap-1.5" style={{ color: COLORS.inkSoft }}>Pick as many days as you like <Kbd>1–7</Kbd></span>
+                  <span className="flex flex-wrap gap-1.5">
+                    {MON_FIRST.map(i => <Choice key={i} label={WEEKDAY_FULL[i]} on={weekdays.includes(i)} onClick={() => toggleWeekday(i)}>{WEEKDAY_SHORT[i]}</Choice>)}
+                    <Choice on={weekdays.join() === MON_FRI.join()} onClick={() => set({ weekdays: MON_FRI })}>Mon–Fri</Choice>
+                    <Choice on={weekdays.join() === WEEKENDS.join()} onClick={() => set({ weekdays: WEEKENDS })}>Weekends</Choice>
+                  </span>
+                  {!weekdays.length && <span className="text-xs mt-1.5 block" style={{ color: COLORS.alert }}>Pick at least one day.</span>}
                 </span>
               )}
             </Section>}

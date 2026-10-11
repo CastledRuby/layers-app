@@ -777,6 +777,14 @@ its own. Changes made while building are marked.
 
 ## History
 
+### Repeat on certain days (not released yet)
+
+- **Repeat → On certain days** (it was "Every week", with S M T W T F S, so Tuesday and
+  Thursday were both "T"): **Mon** to **Sun** in full, as many as you like (Tue, Thu and
+  Fri, say), with **Mon–Fri** and **Weekends** to start from; **1–7** turn them on and
+  off. Plans read "Every Tue, Thu and Fri". Typed plans already did it: "gym every tue
+  thu fri 7am".
+
 ### Finishing what's built, from your answers (not released yet)
 
 Step 1 of [the order from here](#the-order-from-here), with your choices of 2026-10-10:

@@ -24,17 +24,22 @@ export function startOfDay(d) { const c = new Date(d); c.setHours(0, 0, 0, 0); r
 
 export const WEEKDAY_SHORT = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
-const WEEKDAY_FULL = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+export const WEEKDAY_FULL = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
+// "Every Tue, Thu and Fri": Monday first (the week as Layers shows it), a run
+// of three or more as a range ("Every Monday\u2013Thursday").
 export function formatWeekdays(days) {
   if (!days || days.length === 0) return '';
   if (days.length === 7) return 'Every day';
   if (days.length === 5 && [1, 2, 3, 4, 5].every(d => days.includes(d))) return 'Every weekday';
-  const sorted = [...days].sort((a, b) => a - b);
+  if (days.length === 2 && days.includes(0) && days.includes(6)) return 'Every weekend';
+  const order = (d) => (d + 6) % 7;
+  const sorted = [...days].sort((a, b) => order(a) - order(b));
   let contiguous = true;
-  for (let i = 1; i < sorted.length; i++) { if (sorted[i] !== sorted[i - 1] + 1) { contiguous = false; break; } }
+  for (let i = 1; i < sorted.length; i++) { if (order(sorted[i]) !== order(sorted[i - 1]) + 1) { contiguous = false; break; } }
   if (contiguous && sorted.length > 2) return `Every ${WEEKDAY_FULL[sorted[0]]}\u2013${WEEKDAY_FULL[sorted[sorted.length - 1]]}`;
-  return `Every ${sorted.map(d => WEEKDAY_SHORT[d]).join(', ')}`;
+  const names = sorted.map(d => WEEKDAY_SHORT[d]);
+  return `Every ${names.length > 1 ? `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}` : names[0]}`;
 }
 
 export const MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];

@@ -12,6 +12,7 @@ import {
   infoItemDateLabel,
   timelineDateLabel,
   backfillPeopleDates,
+  formatWeekdays,
 } from './lib/dates.js';
 
 // Local-time dates, mid-afternoon so a test never sits on a day boundary.
@@ -455,5 +456,19 @@ describe('typed key dates', () => {
     expect(toISODate(dayMonthToDate({ day: 20, month: 9, year: null }, false, now))).toBe('2026-10-20');
     expect(toISODate(dayMonthToDate({ day: 29, month: 1, year: null }, true, now))).toBe('2028-02-29');
     expect(toISODate(dayMonthToDate({ day: 14, month: 2, year: 2008 }, true, now))).toBe('2008-03-14');
+  });
+});
+
+describe('formatWeekdays', () => {
+  it('lists the days Monday first, with "and", and names the usual sets', () => {
+    expect(formatWeekdays([5, 2, 4])).toBe('Every Tue, Thu and Fri');
+    expect(formatWeekdays([0, 1])).toBe('Every Mon and Sun');
+    expect(formatWeekdays([3])).toBe('Every Wed');
+    expect(formatWeekdays([1, 2, 3, 4])).toBe('Every Monday–Thursday');
+    expect(formatWeekdays([5, 6, 0])).toBe('Every Friday–Sunday');
+    expect(formatWeekdays([0, 6])).toBe('Every weekend');
+    expect(formatWeekdays([1, 2, 3, 4, 5])).toBe('Every weekday');
+    expect(formatWeekdays([0, 1, 2, 3, 4, 5, 6])).toBe('Every day');
+    expect(formatWeekdays([])).toBe('');
   });
 });

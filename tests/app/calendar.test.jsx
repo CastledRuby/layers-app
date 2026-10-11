@@ -97,7 +97,7 @@ describe('Planning', () => {
     const next = dialog('Plan another');
     expect(within(next).getByRole('status', { name: 'Added so far' }).textContent).toMatch(/Coffee with Morgan · \w{3} \d+, 10:00 AM/);
     await user.keyboard('6{Enter}'); // Study, nobody
-    await user.keyboard('rrrr'); // Once -> Several days -> Every day -> Every weekday -> Every week
+    await user.keyboard('rrrr'); // Once -> Several days -> Every day -> Every weekday -> On certain days
     await user.click(screen.getByRole('button', { name: 'Mon–Fri' }));
     await user.keyboard('{Enter}');
     expect(queryDialog('Plan another')).toBeNull();
@@ -120,6 +120,30 @@ describe('Planning', () => {
     expect(events.map(e => e.date).sort()).toEqual([TODAY, TOMORROW, day(2)]);
     expect(events.every(e => e.kind === 'oneoff' && e.time === 540 && e.alert === 5)).toBe(true);
     expect(toasts()).toContain('3 plans saved');
+  });
+
+  it('"On certain days" repeats on the days picked: 1-7 turn Mon-Sun on and off', async () => {
+    seedState();
+    const { user } = renderApp();
+    await user.keyboard('p8{Enter}'); // Something else, nobody
+    await user.keyboard('rrrr'); // Once -> Several days -> Every day -> Every weekday -> On certain days
+    const days = within(dialog('When?')).getByRole('group', { name: 'Repeat on' });
+    const on = () => within(days).getAllByRole('button').filter(b => b.getAttribute('aria-pressed') === 'true').map(b => b.getAttribute('aria-label') || b.textContent);
+    const todays = new Date().getDay();
+    expect(on()).toEqual([['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][todays]]);
+    await user.keyboard(String(((todays + 6) % 7) + 1)); // today's day off again
+    expect(within(days).getByText('Pick at least one day.')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Save plan' }).disabled).toBe(true);
+    await user.keyboard('245'); // Tue, Thu, Fri
+    expect(on()).toEqual(['Tuesday', 'Thursday', 'Friday']);
+    expect(within(dialog('When?')).getByLabelText('Summary').textContent).toMatch(/^Every Tue, Thu and Fri from/);
+    await user.click(within(days).getByRole('button', { name: 'Weekends' }));
+    expect(on()).toEqual(['Saturday', 'Sunday', 'Weekends']);
+    await user.click(within(days).getByRole('button', { name: 'Weekends' }));
+    await user.keyboard('67'); // Sat and Sun off again
+    await user.keyboard('245');
+    await user.keyboard('{Enter}');
+    expect(savedState().events[0]).toMatchObject({ kind: 'recurring', weekdays: [2, 4, 5] });
   });
 
   it('"Every weekday" repeats Monday to Friday, and opens that way to edit', async () => {

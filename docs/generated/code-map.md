@@ -4,7 +4,7 @@
 > Run `npm run docs:map` after changing anything under `src/`, `electron/*.cjs` or `package.json` scripts.
 > Hand-written explanations live in the other files under [`docs/`](../README.md).
 
-Package: `layers-web` v1.0.39 · `src/`: 94 files, 16079 lines, 114 components, 444 top-level functions, 222 constants.
+Package: `layers-web` v1.0.39 · `src/`: 94 files, 16098 lines, 114 components, 444 top-level functions, 224 constants.
 
 ## Source files
 
@@ -26,7 +26,7 @@ Package: `layers-web` v1.0.39 · `src/`: 94 files, 16079 lines, 114 components, 
 | [lib/chatImport.js](../../src/lib/chatImport.js) | 482 | CONVERSATION_GAP_HOURS, MAX_TEXT, PROGRESS_KEY, STAMP, IOS_LINE, ANDROID_LINE, ch, MARKS, MARKED, ODD_SPACES, … (+44) | `lib/analysis` |
 | [lib/chatTrend.js](../../src/lib/chatTrend.js) | 50 | TREND_LINES, chatTrend, trendChange | `lib/dates` |
 | [lib/closeness.js](../../src/lib/closeness.js) | 64 | QUIZ, ANSWERS, REACHED, inLayer, share, nextQuestion, quizPlacement | — |
-| [lib/dates.js](../../src/lib/dates.js) | 314 | parseDaysAgo, startOfDay, WEEKDAY_SHORT, WEEKDAY_FULL, formatWeekdays, MONTH_NAMES, MONTH_WORDS, readDayMonth, dayMonthToDate, dateToRelativeLabel, … (+26) | `data/constants` |
+| [lib/dates.js](../../src/lib/dates.js) | 319 | parseDaysAgo, startOfDay, WEEKDAY_SHORT, WEEKDAY_FULL, formatWeekdays, MONTH_NAMES, MONTH_WORDS, readDayMonth, dayMonthToDate, dateToRelativeLabel, … (+26) | `data/constants` |
 | [lib/drills.js](../../src/lib/drills.js) | 114 | DRILLS, drillByKey, drillFor, nextDrill, DRILL_SCHEMA, drillRequest, drillResult, KEY, isDay, readDrills, … (+1) | `lib/analysis`, `lib/replies`, `lib/dates` |
 | [lib/hooks.js](../../src/lib/hooks.js) | 290 | useToday, useDailyBackup, WIDE_QUERY, useWide, useSlideAcross, useSystemDark, useDailyCheckIn, notify, SCHEDULE_DAYS, LATE_MINUTES, … (+2) | `lib/dates`, `lib/calendar`, `lib/storage`, `lib/text`, `lib/analysis`, `lib/chatBatch`, `lib/chatImport` |
 | [lib/ics.js](../../src/lib/ics.js) | 211 | lines, unescape, readTime, readDuration, parseCalendar, zoneOffset, toInstant, pad, isoOf, wallDay, … (+7) | — |
@@ -85,7 +85,7 @@ Package: `layers-web` v1.0.39 · `src/`: 94 files, 16079 lines, 114 components, 
 | [modals/LogDetailSheets.jsx](../../src/modals/LogDetailSheets.jsx) | 251 | DoneButton, enterCloses, Pick, sectionLabel, INTEREST_GROUPS, CheckRow, RateSheet, ListeningSheet, NewInfoSheet, GoalsSheet, … (+1) | `components/Sheet`, `components/sheetLayer`, `components/atoms`, `data/constants`, `theme` |
 | [modals/LogInteractionModal.jsx](../../src/modals/LogInteractionModal.jsx) | 314 | STEP_ORDER, DETAIL_TITLE, namesText, SectionLabel, optional, Scale, LogInteractionModal | `components/Sheet`, `components/sheetLayer`, `components/atoms`, `components/pickers`, `components/PersonPick`, `components/peopleKeys`, `data/constants`, `lib/dates`, `modals/LogDetailSheets`, `modals/QuickGoalSheet`, `modals/TemplatePickerModal`, `theme` |
 | [modals/PhotoFolderSheet.jsx](../../src/modals/PhotoFolderSheet.jsx) | 177 | PhotoFolderSheet | `components/Sheet`, `components/sheetLayer`, `components/atoms`, `components/AvatarPicker`, `components/PersonPick`, `components/peopleKeys`, `data/avatars`, `lib/photo`, `theme` |
-| [modals/PlanSheet.jsx](../../src/modals/PlanSheet.jsx) | 432 | TIMES, LENGTHS, ALERTS, REPEATS, MON_FRI, ALL_WEEK, isMonFri, repeatDaysOf, STEPS, AGAIN_KEYS, … (+14) | `components/Sheet`, `components/sheetLayer`, `components/atoms`, `components/PersonPick`, `components/peopleKeys`, `components/pickers`, `modals/QuickGoalSheet`, `lib/calendar`, `lib/dates`, `theme` |
+| [modals/PlanSheet.jsx](../../src/modals/PlanSheet.jsx) | 446 | TIMES, LENGTHS, ALERTS, REPEATS, MON_FRI, WEEKENDS, MON_FIRST, ALL_WEEK, isMonFri, repeatDaysOf, … (+16) | `components/Sheet`, `components/sheetLayer`, `components/atoms`, `components/PersonPick`, `components/peopleKeys`, `components/pickers`, `modals/QuickGoalSheet`, `lib/calendar`, `lib/dates`, `theme` |
 | [modals/PlanTipsSheet.jsx](../../src/modals/PlanTipsSheet.jsx) | 69 | whenText, Heading, PlanTipsSheet | `components/Sheet`, `components/sheetLayer`, `components/atoms`, `data/constants`, `lib/tips`, `theme` |
 | [modals/QuickAddInterestModal.jsx](../../src/modals/QuickAddInterestModal.jsx) | 16 | QuickAddInterestModal | `modals/TemplatePickerModal` |
 | [modals/QuickGoalSheet.jsx](../../src/modals/QuickGoalSheet.jsx) | 147 | SUGGESTIONS, DUES, dueLabel, QuickGoalSheet | `components/Sheet`, `components/sheetLayer`, `components/atoms`, `data/constants`, `lib/dates`, `lib/progress`, `lib/util`, `theme` |
@@ -180,9 +180,9 @@ Package: `layers-web` v1.0.39 · `src/`: 94 files, 16079 lines, 114 components, 
 | `Scale` | [LogInteractionModal.jsx:45](../../src/modals/LogInteractionModal.jsx#L45) | `value`, `onChange`, `label`, `size` | `LogInteractionModal` |
 | `LogInteractionModal` | [LogInteractionModal.jsx:59](../../src/modals/LogInteractionModal.jsx#L59) | `people`, `defaultPersonId`, `prefill`, `onClose`, `onSubmit`, `onPlan`, `onAnalyse`, `onCreateGoal` | `LayersApp` |
 | `PhotoFolderSheet` | [PhotoFolderSheet.jsx:25](../../src/modals/PhotoFolderSheet.jsx#L25) | `people`, `onClose`, `onApply` | `LayersApp` |
-| `Choice` | [PlanSheet.jsx:111](../../src/modals/PlanSheet.jsx#L111) | `on`, `onClick`, `children`, `label` | `PlanSheet` |
-| `Section` | [PlanSheet.jsx:114](../../src/modals/PlanSheet.jsx#L114) | `title`, `hint`, `children` | `ChatReviewSheet`, `PlanSheet` |
-| `PlanSheet` | [PlanSheet.jsx:123](../../src/modals/PlanSheet.jsx#L123) | `people`, `events`, `today`, `prefill`, `defaultAlert`, `onClose`, `onSave`, `onDelete`, `onCreateGoal` | `LayersApp` |
+| `Choice` | [PlanSheet.jsx:116](../../src/modals/PlanSheet.jsx#L116) | `on`, `onClick`, `children`, `label` | `PlanSheet` |
+| `Section` | [PlanSheet.jsx:119](../../src/modals/PlanSheet.jsx#L119) | `title`, `hint`, `children` | `ChatReviewSheet`, `PlanSheet` |
+| `PlanSheet` | [PlanSheet.jsx:128](../../src/modals/PlanSheet.jsx#L128) | `people`, `events`, `today`, `prefill`, `defaultAlert`, `onClose`, `onSave`, `onDelete`, `onCreateGoal` | `LayersApp` |
 | `Heading` | [PlanTipsSheet.jsx:16](../../src/modals/PlanTipsSheet.jsx#L16) | `children` | `PlanTipsSheet` |
 | `PlanTipsSheet` | [PlanTipsSheet.jsx:20](../../src/modals/PlanTipsSheet.jsx#L20) | `ev`, `day`, `people`, `journal`, `generalGoals`, `onClose`, `onPrepare` | `DaySheet`, `EventSheet` |
 | `QuickAddInterestModal` | [QuickAddInterestModal.jsx:5](../../src/modals/QuickAddInterestModal.jsx#L5) | `personName`, `onClose`, `onSave` | `LayersApp` |
@@ -404,36 +404,36 @@ Package: `layers-web` v1.0.39 · `src/`: 94 files, 16079 lines, 114 components, 
 | `quizPlacement` | [closeness.js:54](../../src/lib/closeness.js#L54) | ✓ | ✓ |
 | `parseDaysAgo` | [dates.js:6](../../src/lib/dates.js#L6) | ✓ | ✓ |
 | `startOfDay` | [dates.js:23](../../src/lib/dates.js#L23) | ✓ |  |
-| `formatWeekdays` | [dates.js:29](../../src/lib/dates.js#L29) | ✓ |  |
-| `readDayMonth` | [dates.js:46](../../src/lib/dates.js#L46) | ✓ |  |
-| `dayMonthToDate` | [dates.js:64](../../src/lib/dates.js#L64) | ✓ |  |
-| `dateToRelativeLabel` | [dates.js:73](../../src/lib/dates.js#L73) |  |  |
-| `formatCalendarDate` | [dates.js:84](../../src/lib/dates.js#L84) | ✓ |  |
-| `toISODate` | [dates.js:95](../../src/lib/dates.js#L95) | ✓ |  |
-| `formatAbsoluteDate` | [dates.js:104](../../src/lib/dates.js#L104) | ✓ |  |
-| `parseAbsoluteLabel` | [dates.js:109](../../src/lib/dates.js#L109) |  |  |
-| `historySortKey` | [dates.js:126](../../src/lib/dates.js#L126) |  |  |
-| `sortHistory` | [dates.js:144](../../src/lib/dates.js#L144) | ✓ | ✓ |
-| `pushHistoryPoint` | [dates.js:161](../../src/lib/dates.js#L161) | ✓ |  |
-| `parseISODay` | [dates.js:171](../../src/lib/dates.js#L171) | ✓ |  |
-| `storedDay` | [dates.js:177](../../src/lib/dates.js#L177) |  |  |
-| `storedDaysAgo` | [dates.js:186](../../src/lib/dates.js#L186) |  |  |
-| `storedDateLabel` | [dates.js:191](../../src/lib/dates.js#L191) |  |  |
-| `journalDaysAgo` | [dates.js:196](../../src/lib/dates.js#L196) | ✓ | ✓ |
-| `journalDateLabel` | [dates.js:198](../../src/lib/dates.js#L198) | ✓ | ✓ |
-| `isJournalThisWeek` | [dates.js:201](../../src/lib/dates.js#L201) | ✓ | ✓ |
-| `newestFirst` | [dates.js:206](../../src/lib/dates.js#L206) | ✓ | ✓ |
-| `infoItemDaysAgo` | [dates.js:210](../../src/lib/dates.js#L210) | ✓ | ✓ |
-| `infoItemDateLabel` | [dates.js:212](../../src/lib/dates.js#L212) | ✓ | ✓ |
-| `timelineDateLabel` | [dates.js:218](../../src/lib/dates.js#L218) | ✓ | ✓ |
-| `sortByDay` | [dates.js:233](../../src/lib/dates.js#L233) | ✓ | ✓ |
-| `backfillAnchor` | [dates.js:238](../../src/lib/dates.js#L238) |  |  |
-| `backfillDated` | [dates.js:243](../../src/lib/dates.js#L243) |  |  |
-| `backfillJournalDates` | [dates.js:254](../../src/lib/dates.js#L254) | ✓ | ✓ |
-| `backfillPeopleDates` | [dates.js:258](../../src/lib/dates.js#L258) | ✓ | ✓ |
-| `backfillSkillDates` | [dates.js:273](../../src/lib/dates.js#L273) | ✓ | ✓ |
-| `formatTime12` | [dates.js:305](../../src/lib/dates.js#L305) | ✓ |  |
-| `nowToMinutes` | [dates.js:313](../../src/lib/dates.js#L313) | ✓ |  |
+| `formatWeekdays` | [dates.js:31](../../src/lib/dates.js#L31) | ✓ | ✓ |
+| `readDayMonth` | [dates.js:51](../../src/lib/dates.js#L51) | ✓ |  |
+| `dayMonthToDate` | [dates.js:69](../../src/lib/dates.js#L69) | ✓ |  |
+| `dateToRelativeLabel` | [dates.js:78](../../src/lib/dates.js#L78) |  |  |
+| `formatCalendarDate` | [dates.js:89](../../src/lib/dates.js#L89) | ✓ |  |
+| `toISODate` | [dates.js:100](../../src/lib/dates.js#L100) | ✓ |  |
+| `formatAbsoluteDate` | [dates.js:109](../../src/lib/dates.js#L109) | ✓ |  |
+| `parseAbsoluteLabel` | [dates.js:114](../../src/lib/dates.js#L114) |  |  |
+| `historySortKey` | [dates.js:131](../../src/lib/dates.js#L131) |  |  |
+| `sortHistory` | [dates.js:149](../../src/lib/dates.js#L149) | ✓ | ✓ |
+| `pushHistoryPoint` | [dates.js:166](../../src/lib/dates.js#L166) | ✓ |  |
+| `parseISODay` | [dates.js:176](../../src/lib/dates.js#L176) | ✓ |  |
+| `storedDay` | [dates.js:182](../../src/lib/dates.js#L182) |  |  |
+| `storedDaysAgo` | [dates.js:191](../../src/lib/dates.js#L191) |  |  |
+| `storedDateLabel` | [dates.js:196](../../src/lib/dates.js#L196) |  |  |
+| `journalDaysAgo` | [dates.js:201](../../src/lib/dates.js#L201) | ✓ | ✓ |
+| `journalDateLabel` | [dates.js:203](../../src/lib/dates.js#L203) | ✓ | ✓ |
+| `isJournalThisWeek` | [dates.js:206](../../src/lib/dates.js#L206) | ✓ | ✓ |
+| `newestFirst` | [dates.js:211](../../src/lib/dates.js#L211) | ✓ | ✓ |
+| `infoItemDaysAgo` | [dates.js:215](../../src/lib/dates.js#L215) | ✓ | ✓ |
+| `infoItemDateLabel` | [dates.js:217](../../src/lib/dates.js#L217) | ✓ | ✓ |
+| `timelineDateLabel` | [dates.js:223](../../src/lib/dates.js#L223) | ✓ | ✓ |
+| `sortByDay` | [dates.js:238](../../src/lib/dates.js#L238) | ✓ | ✓ |
+| `backfillAnchor` | [dates.js:243](../../src/lib/dates.js#L243) |  |  |
+| `backfillDated` | [dates.js:248](../../src/lib/dates.js#L248) |  |  |
+| `backfillJournalDates` | [dates.js:259](../../src/lib/dates.js#L259) | ✓ | ✓ |
+| `backfillPeopleDates` | [dates.js:263](../../src/lib/dates.js#L263) | ✓ | ✓ |
+| `backfillSkillDates` | [dates.js:278](../../src/lib/dates.js#L278) | ✓ | ✓ |
+| `formatTime12` | [dates.js:310](../../src/lib/dates.js#L310) | ✓ |  |
+| `nowToMinutes` | [dates.js:318](../../src/lib/dates.js#L318) | ✓ |  |
 | `drillByKey` | [drills.js:43](../../src/lib/drills.js#L43) | ✓ | ✓ |
 | `drillFor` | [drills.js:47](../../src/lib/drills.js#L47) | ✓ | ✓ |
 | `nextDrill` | [drills.js:54](../../src/lib/drills.js#L54) | ✓ | ✓ |
@@ -641,19 +641,19 @@ Package: `layers-web` v1.0.39 · `src/`: 94 files, 16079 lines, 114 components, 
 | `sectionLabel` | [LogDetailSheets.jsx:35](../../src/modals/LogDetailSheets.jsx#L35) |  |  |
 | `namesText` | [LogInteractionModal.jsx:30](../../src/modals/LogInteractionModal.jsx#L30) |  |  |
 | `optional` | [LogInteractionModal.jsx:43](../../src/modals/LogInteractionModal.jsx#L43) |  |  |
-| `isMonFri` | [PlanSheet.jsx:47](../../src/modals/PlanSheet.jsx#L47) |  |  |
-| `repeatDaysOf` | [PlanSheet.jsx:49](../../src/modals/PlanSheet.jsx#L49) |  |  |
-| `lengthLabel` | [PlanSheet.jsx:52](../../src/modals/PlanSheet.jsx#L52) |  |  |
-| `alertLabel` | [PlanSheet.jsx:53](../../src/modals/PlanSheet.jsx#L53) |  |  |
-| `namesText` | [PlanSheet.jsx:54](../../src/modals/PlanSheet.jsx#L54) |  |  |
-| `addDays` | [PlanSheet.jsx:55](../../src/modals/PlanSheet.jsx#L55) |  |  |
-| `shortDay` | [PlanSheet.jsx:56](../../src/modals/PlanSheet.jsx#L56) |  |  |
-| `daysText` | [PlanSheet.jsx:57](../../src/modals/PlanSheet.jsx#L57) |  |  |
-| `isCopyOf` | [PlanSheet.jsx:60](../../src/modals/PlanSheet.jsx#L60) |  |  |
-| `autoTitleFor` | [PlanSheet.jsx:64](../../src/modals/PlanSheet.jsx#L64) |  |  |
-| `cycle` | [PlanSheet.jsx:68](../../src/modals/PlanSheet.jsx#L68) |  |  |
-| `firstStep` | [PlanSheet.jsx:78](../../src/modals/PlanSheet.jsx#L78) |  |  |
-| `freshForm` | [PlanSheet.jsx:81](../../src/modals/PlanSheet.jsx#L81) |  |  |
+| `isMonFri` | [PlanSheet.jsx:52](../../src/modals/PlanSheet.jsx#L52) |  |  |
+| `repeatDaysOf` | [PlanSheet.jsx:54](../../src/modals/PlanSheet.jsx#L54) |  |  |
+| `lengthLabel` | [PlanSheet.jsx:57](../../src/modals/PlanSheet.jsx#L57) |  |  |
+| `alertLabel` | [PlanSheet.jsx:58](../../src/modals/PlanSheet.jsx#L58) |  |  |
+| `namesText` | [PlanSheet.jsx:59](../../src/modals/PlanSheet.jsx#L59) |  |  |
+| `addDays` | [PlanSheet.jsx:60](../../src/modals/PlanSheet.jsx#L60) |  |  |
+| `shortDay` | [PlanSheet.jsx:61](../../src/modals/PlanSheet.jsx#L61) |  |  |
+| `daysText` | [PlanSheet.jsx:62](../../src/modals/PlanSheet.jsx#L62) |  |  |
+| `isCopyOf` | [PlanSheet.jsx:65](../../src/modals/PlanSheet.jsx#L65) |  |  |
+| `autoTitleFor` | [PlanSheet.jsx:69](../../src/modals/PlanSheet.jsx#L69) |  |  |
+| `cycle` | [PlanSheet.jsx:73](../../src/modals/PlanSheet.jsx#L73) |  |  |
+| `firstStep` | [PlanSheet.jsx:83](../../src/modals/PlanSheet.jsx#L83) |  |  |
+| `freshForm` | [PlanSheet.jsx:86](../../src/modals/PlanSheet.jsx#L86) |  |  |
 | `whenText` | [PlanTipsSheet.jsx:14](../../src/modals/PlanTipsSheet.jsx#L14) |  |  |
 | `dueLabel` | [QuickGoalSheet.jsx:23](../../src/modals/QuickGoalSheet.jsx#L23) |  |  |
 | `count` | [StartOverSheet.jsx:19](../../src/modals/StartOverSheet.jsx#L19) |  |  |
@@ -789,8 +789,8 @@ Package: `layers-web` v1.0.39 · `src/`: 94 files, 16079 lines, 114 components, 
 | `REACHED` | [closeness.js:34](../../src/lib/closeness.js#L34) |
 | `WEEKDAY_SHORT` | [dates.js:25](../../src/lib/dates.js#L25) |
 | `WEEKDAY_FULL` | [dates.js:27](../../src/lib/dates.js#L27) |
-| `MONTH_NAMES` | [dates.js:40](../../src/lib/dates.js#L40) |
-| `MONTH_WORDS` | [dates.js:45](../../src/lib/dates.js#L45) |
+| `MONTH_NAMES` | [dates.js:45](../../src/lib/dates.js#L45) |
+| `MONTH_WORDS` | [dates.js:50](../../src/lib/dates.js#L50) |
 | `DRILLS` | [drills.js:13](../../src/lib/drills.js#L13) |
 | `DRILL_SCHEMA` | [drills.js:62](../../src/lib/drills.js#L62) |
 | `KEY` | [drills.js:95](../../src/lib/drills.js#L95) |
@@ -873,14 +873,16 @@ Package: `layers-web` v1.0.39 · `src/`: 94 files, 16079 lines, 114 components, 
 | `INTEREST_GROUPS` | [LogDetailSheets.jsx:38](../../src/modals/LogDetailSheets.jsx#L38) |
 | `STEP_ORDER` | [LogInteractionModal.jsx:26](../../src/modals/LogInteractionModal.jsx#L26) |
 | `DETAIL_TITLE` | [LogInteractionModal.jsx:29](../../src/modals/LogInteractionModal.jsx#L29) |
-| `TIMES` | [PlanSheet.jsx:41](../../src/modals/PlanSheet.jsx#L41) |
-| `LENGTHS` | [PlanSheet.jsx:42](../../src/modals/PlanSheet.jsx#L42) |
-| `ALERTS` | [PlanSheet.jsx:43](../../src/modals/PlanSheet.jsx#L43) |
-| `REPEATS` | [PlanSheet.jsx:44](../../src/modals/PlanSheet.jsx#L44) |
-| `MON_FRI` | [PlanSheet.jsx:45](../../src/modals/PlanSheet.jsx#L45) |
-| `ALL_WEEK` | [PlanSheet.jsx:46](../../src/modals/PlanSheet.jsx#L46) |
-| `STEPS` | [PlanSheet.jsx:50](../../src/modals/PlanSheet.jsx#L50) |
-| `AGAIN_KEYS` | [PlanSheet.jsx:51](../../src/modals/PlanSheet.jsx#L51) |
+| `TIMES` | [PlanSheet.jsx:43](../../src/modals/PlanSheet.jsx#L43) |
+| `LENGTHS` | [PlanSheet.jsx:44](../../src/modals/PlanSheet.jsx#L44) |
+| `ALERTS` | [PlanSheet.jsx:45](../../src/modals/PlanSheet.jsx#L45) |
+| `REPEATS` | [PlanSheet.jsx:46](../../src/modals/PlanSheet.jsx#L46) |
+| `MON_FRI` | [PlanSheet.jsx:47](../../src/modals/PlanSheet.jsx#L47) |
+| `WEEKENDS` | [PlanSheet.jsx:48](../../src/modals/PlanSheet.jsx#L48) |
+| `MON_FIRST` | [PlanSheet.jsx:50](../../src/modals/PlanSheet.jsx#L50) |
+| `ALL_WEEK` | [PlanSheet.jsx:51](../../src/modals/PlanSheet.jsx#L51) |
+| `STEPS` | [PlanSheet.jsx:55](../../src/modals/PlanSheet.jsx#L55) |
+| `AGAIN_KEYS` | [PlanSheet.jsx:56](../../src/modals/PlanSheet.jsx#L56) |
 | `SUGGESTIONS` | [QuickGoalSheet.jsx:21](../../src/modals/QuickGoalSheet.jsx#L21) |
 | `DUES` | [QuickGoalSheet.jsx:22](../../src/modals/QuickGoalSheet.jsx#L22) |
 | `STEPS` | [StartOverSheet.jsx:17](../../src/modals/StartOverSheet.jsx#L17) |
