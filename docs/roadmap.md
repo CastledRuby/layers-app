@@ -1,7 +1,7 @@
 # Roadmap
 
 Where Layers stands against [vision.md](vision.md), what was decided along the way, and
-what comes next. Last updated 2026-10-10, after 1.0.39 (anything since is at the top of
+what comes next. Last updated 2026-10-12, after 1.0.40 (anything since is at the top of
 [History](#history), marked not released yet). **What's next is
 [Where Layers goes next](#where-layers-goes-next-your-answers-2026-10-10)**, from your
 answers to 20 planning questions.
@@ -855,7 +855,7 @@ its own. Changes made while building are marked.
 
 ## History
 
-### Each person in a group log on their own (not released yet)
+### Each person in a group log on their own (1.0.40)
 
 Asked for on 2026-10-12: a log with several people assumed it went the same with each.
 Your picks: each person in turn, nobody rated for you, and questions specific to each
@@ -879,7 +879,7 @@ Your picks: each person in turn, nobody rated for you, and questions specific to
 - **The "How did it go?" notification** for a plan with several people offers Log it and
   Just tick it instead of one rating for everyone.
 
-### Repeat on certain days (not released yet)
+### Repeat on certain days (1.0.40)
 
 - **Repeat → On certain days** (it was "Every week", with S M T W T F S, so Tuesday and
   Thursday were both "T"): **Mon** to **Sun** in full, as many as you like (Tue, Thu and
@@ -887,7 +887,7 @@ Your picks: each person in turn, nobody rated for you, and questions specific to
   off. Plans read "Every Tue, Thu and Fri". Typed plans already did it: "gym every tue
   thu fri 7am".
 
-### Finishing what's built, from your answers (not released yet)
+### Finishing what's built, from your answers (1.0.40)
 
 Step 1 of [the order from here](#the-order-from-here), with your choices of 2026-10-10:
 
@@ -910,7 +910,7 @@ Step 1 of [the order from here](#the-order-from-here), with your choices of 2026
   drill** sits on Today (R to reply) until you've done one that day; Coach → Practise has
   a **Quick drill** above the role-play, with **Another**. Scores join Me's Practice line.
 
-### Fixes from the audit of 2026-10-10 (not released yet)
+### Fixes from the audit of 2026-10-10 (1.0.40)
 
 A review of everything built between 1.0.32 and 1.0.37, with a test for each fix:
 
