@@ -376,6 +376,20 @@ button[style*="background: var(--c-accent)"]:not(:disabled):hover { box-shadow: 
 .sheet-overlay { backdrop-filter: blur(2px); -webkit-backdrop-filter: blur(2px); }
 .toast { box-shadow: 0 10px 26px -6px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,.08); }
 
+/* Today's week view (WeekGrid.jsx): a time gutter and seven day columns, each
+   plan a block at its time; and where a dragged plan would land (planDrag.js). */
+.week-row { display: grid; grid-template-columns: 34px repeat(7, minmax(0, 1fr)); gap: 2px; }
+.week-col { position: relative; border-left: 1px solid ${COLORS.line}; border-radius: 4px; transition: background-color .12s ease; }
+.week-line { position: absolute; left: 0; right: 0; border-top: 1px dashed color-mix(in srgb, ${COLORS.line} 80%, transparent); pointer-events: none; }
+.week-hour { position: absolute; right: 4px; transform: translateY(-50%); font-size: 10px; color: ${COLORS.inkSoft}; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.week-now { position: absolute; left: 0; right: 0; height: 2px; background: ${COLORS.alert}; border-radius: 2px; pointer-events: none; z-index: 3; }
+.week-block { position: absolute; padding: 2px 4px; border-radius: 8px; font-size: 10.5px; line-height: 1.2; text-align: left; color: ${COLORS.ink}; background: color-mix(in srgb, ${COLORS.accent} 13%, ${COLORS.paperRaised}); border-left: 3px solid; overflow: hidden; box-shadow: var(--shadow-chip); z-index: 1; }
+.week-block:hover { box-shadow: var(--shadow-card-hover); z-index: 2; }
+.week-allday { min-height: 22px; display: flex; flex-direction: column; gap: 2px; padding: 1px; border-radius: 8px; }
+.week-chip { font-size: 10.5px; padding: 1px 4px; border-radius: 6px; border-left: 3px solid; text-align: left; color: ${COLORS.ink}; background: color-mix(in srgb, ${COLORS.accent} 10%, ${COLORS.paperRaised}); }
+.drop-over { background: color-mix(in srgb, ${COLORS.accent} 12%, transparent) !important; outline: 2px dashed color-mix(in srgb, ${COLORS.accent} 55%, transparent); outline-offset: -2px; border-radius: 10px; }
+.event-row[draggable="true"] { cursor: grab; }
+
 /* A moment Claude pointed at in a chat (AnalysisExtras.jsx): a soft band
    behind the line, green where it landed, amber where something was missed. */
 .moment { border-radius: 14px; padding: 6px 8px 2px; margin: 0 -8px 6px; }

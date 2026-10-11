@@ -49,6 +49,7 @@ test('dark mode is saved for the next launch, so the window opens dark', async (
   let { app, page } = await launch(dataDir);
   await onboard(page);
   await page.locator('.nav-bar').getByRole('button', { name: 'Me', exact: true }).click();
+  await page.getByRole('tab', { name: 'App' }).click(); // Me in sections (2026-10-11)
   await page.getByRole('button', { name: 'Dark', exact: true }).click();
   await expect.poll(() => fs.existsSync(path.join(dataDir, 'theme.json')) && JSON.parse(fs.readFileSync(path.join(dataDir, 'theme.json'), 'utf8')).theme).toBe('dark');
   await quit(app);
@@ -285,7 +286,7 @@ test('sync: two copies of Layers sharing a folder end up the same, with the pass
   const shared = tempDataDir(); // stands in for OneDrive's Documents\Layers sync
   const first = tempDataDir();
   const second = tempDataDir();
-  const me = (page) => page.locator('.nav-bar').getByRole('button', { name: 'Me', exact: true }).click();
+  const me = async (page) => { await page.locator('.nav-bar').getByRole('button', { name: 'Me', exact: true }).click(); await page.getByRole('tab', { name: 'Your data' }).click(); };
   const people = (page) => page.evaluate(() => JSON.parse(localStorage.getItem('layers-app-state-v1')).people.map(p => p.name).sort());
 
   // The first copy: the example people, sync turned on.
@@ -333,6 +334,7 @@ test('your Google Calendar: the packaged app refuses an address that is not a ca
   const { app, page } = await launch(dataDir);
   await onboard(page, 'Sam');
   await page.locator('.nav-bar').getByRole('button', { name: 'Me', exact: true }).click();
+  await page.getByRole('tab', { name: 'Calendar' }).click(); // Me in sections (2026-10-11)
   const card = page.getByLabel('Other calendars');
   await card.getByLabel('Secret address in iCal format').fill('http://example.com/not-secure.ics');
   await card.getByRole('button', { name: 'Add' }).click();
@@ -422,6 +424,7 @@ test('chat analysis: the packaged app refuses a key that is not an Anthropic key
   const { app, page } = await launch(dataDir);
   await onboard(page, 'Sam');
   await page.locator('.nav-bar').getByRole('button', { name: 'Me', exact: true }).click();
+  await page.getByRole('tab', { name: 'Claude' }).click(); // Me in sections (2026-10-11)
   const card = page.getByLabel('Chat analysis');
   await card.getByLabel('Anthropic API key').fill('sk-proj-not-an-anthropic-key-1234567890');
   await card.getByRole('button', { name: 'Save' }).click();
@@ -448,5 +451,29 @@ test('a one-page summary of someone is saved as a real PDF', async () => {
   const pdf = fs.readFileSync(path.join(out, file));
   expect(pdf.subarray(0, 5).toString()).toBe('%PDF-');
   expect(pdf.length).toBeGreaterThan(5000);
+  await quit(app);
+});
+
+test('a plan dragged in the week view moves to that day and time (a real drag)', async () => {
+  const dataDir = tempDataDir();
+  const { app, page } = await launch(dataDir);
+  await onboard(page);
+  await page.keyboard.press('p');
+  await page.keyboard.press('t'); // Type it
+  await page.keyboard.type('coffee today 10am');
+  await page.keyboard.press('Enter');
+  await page.getByRole('button', { name: 'Save plan' }).click();
+  await page.keyboard.press('v'); // the week view
+  const block = page.getByRole('button', { name: 'Coffee, 10:00 AM' });
+  await expect(block).toBeVisible();
+  const todayCol = (new Date().getDay() + 6) % 7;
+  const target = page.locator('.week-col').nth((todayCol + 1) % 7);
+  // Grabbed 5 px down the block, dropped 7 hours (44 px each) below 7 AM: 2 PM.
+  await block.dragTo(target, { sourcePosition: { x: 5, y: 5 }, targetPosition: { x: 10, y: 7 * 44 + 5 } });
+  const ev = () => page.evaluate(() => JSON.parse(localStorage.getItem('layers-app-state-v1')).events[0]);
+  await expect.poll(async () => (await ev()).time).toBe(14 * 60);
+  const moved = await ev();
+  const d = new Date(); d.setDate(d.getDate() + (todayCol === 6 ? -6 : 1));
+  expect(moved.date).toBe(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`);
   await quit(app);
 });

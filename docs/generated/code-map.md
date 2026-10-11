@@ -4,17 +4,17 @@
 > Run `npm run docs:map` after changing anything under `src/`, `electron/*.cjs` or `package.json` scripts.
 > Hand-written explanations live in the other files under [`docs/`](../README.md).
 
-Package: `layers-web` v1.0.39 · `src/`: 96 files, 16702 lines, 120 components, 465 top-level functions, 234 constants.
+Package: `layers-web` v1.0.39 · `src/`: 98 files, 16896 lines, 121 components, 471 top-level functions, 237 constants.
 
 ## Source files
 
 | File | Lines | Declares | Imports from |
 |---|---|---|---|
 | [main.jsx](../../src/main.jsx) | 20 | quick | — |
-| [App.jsx](../../src/App.jsx) | 1788 | sampleData, SAMPLE_PERSON_IDS, SAMPLE_GOAL_IDS, skillsCameWithSamples, allSkillsZero, listNames, unlinkMissingPeople, addNotes, applyLog, namesText, … (+3) | `components/BottomNav`, `components/ErrorBoundary`, `components/PageTransition`, `components/sheetLayer`, `data/constants`, `data/seed`, `lib/dates`, `lib/achievements`, `lib/progress`, `lib/backup`, `lib/calendar`, `lib/hooks`, `lib/chatBatch`, `lib/reminders`, `lib/analysis`, `lib/storage`, `lib/replies`, `lib/chatBatch`, `lib/drills`, `lib/util`, `modals/AddInfoModal`, `modals/AddPersonModal`, `modals/ConfirmDialog`, `modals/EditEntryModal`, `modals/EditPersonModal`, `modals/EditProfileModal`, `modals/EventSheet`, `modals/GoalModal`, `modals/KeyDateSheet`, `modals/LogInteractionModal`, `modals/PlanSheet`, `modals/PhotoFolderSheet`, `lib/sync`, `lib/syncFile`, `modals/SyncSheet`, `lib/ics`, `lib/summary`, `modals/QuickAddInterestModal`, `modals/ShortcutsModal`, `modals/StartOverSheet`, `modals/DaySheet`, `modals/JumpSheet`, `lib/sentence`, `modals/TemplatePickerModal`, `modals/ChatReviewSheet`, `modals/WeekReviewSheet`, `theme`, `views/CoachView`, `views/GoalsView`, `views/JournalView`, `views/MeView`, `views/OnboardingView`, `views/PeopleView`, `views/PersonProfile`, `components/ClosenessQuiz`, `views/TodayView` |
-| [theme.js](../../src/theme.js) | 410 | THEME_LIGHT, THEME_DARK, COLORS, cssVarBlock, EASE, GRAIN, DEPTH_LIGHT, DEPTH_DARK, CSS | `fonts` |
+| [App.jsx](../../src/App.jsx) | 1810 | sampleData, SAMPLE_PERSON_IDS, SAMPLE_GOAL_IDS, skillsCameWithSamples, allSkillsZero, listNames, unlinkMissingPeople, addNotes, applyLog, namesText, … (+3) | `components/BottomNav`, `components/ErrorBoundary`, `components/PageTransition`, `components/sheetLayer`, `data/constants`, `data/seed`, `lib/dates`, `lib/achievements`, `lib/progress`, `lib/backup`, `lib/calendar`, `lib/hooks`, `lib/chatBatch`, `lib/reminders`, `lib/analysis`, `lib/storage`, `lib/replies`, `lib/chatBatch`, `lib/drills`, `lib/util`, `modals/AddInfoModal`, `modals/AddPersonModal`, `modals/ConfirmDialog`, `modals/EditEntryModal`, `modals/EditPersonModal`, `modals/EditProfileModal`, `modals/EventSheet`, `modals/GoalModal`, `modals/KeyDateSheet`, `modals/LogInteractionModal`, `modals/PlanSheet`, `modals/PhotoFolderSheet`, `lib/sync`, `lib/syncFile`, `modals/SyncSheet`, `lib/ics`, `lib/summary`, `modals/QuickAddInterestModal`, `modals/ShortcutsModal`, `modals/StartOverSheet`, `modals/DaySheet`, `modals/JumpSheet`, `lib/sentence`, `modals/TemplatePickerModal`, `modals/ChatReviewSheet`, `modals/WeekReviewSheet`, `theme`, `views/CoachView`, `views/GoalsView`, `views/JournalView`, `views/MeView`, `views/OnboardingView`, `views/PeopleView`, `views/PersonProfile`, `components/ClosenessQuiz`, `views/TodayView` |
+| [theme.js](../../src/theme.js) | 424 | THEME_LIGHT, THEME_DARK, COLORS, cssVarBlock, EASE, GRAIN, DEPTH_LIGHT, DEPTH_DARK, CSS | `fonts` |
 | [data/avatars.js](../../src/data/avatars.js) | 203 | AVATAR_COLS, AVATAR_GROUPS, findAvatars, INITIAL_COLORS, INITIALS_GROUP, isInitials, PHOTO_SIZE, PHOTO_GROUP, PHOTO_SRC, isPhoto, … (+16) | — |
-| [data/constants.js](../../src/data/constants.js) | 358 | LAYERS, getLayer, DIM_ORDER, DIM_LABELS, DIM_COLORS, LAYER_BASE_DIMS, CATEGORIES, categoryMeta, TABS, SHORTCUTS, … (+29) | `theme` |
+| [data/constants.js](../../src/data/constants.js) | 359 | LAYERS, getLayer, DIM_ORDER, DIM_LABELS, DIM_COLORS, LAYER_BASE_DIMS, CATEGORIES, categoryMeta, TABS, SHORTCUTS, … (+29) | `theme` |
 | [data/scenarios.js](../../src/data/scenarios.js) | 115 | SCENARIOS | — |
 | [data/seed.js](../../src/data/seed.js) | 176 | INITIAL_PEOPLE, INITIAL_GENERAL_GOALS, INITIAL_JOURNAL, INITIAL_SKILLS, EMPTY_SKILLS | — |
 | [lib/achievements.js](../../src/lib/achievements.js) | 37 | achievementProgress, newlyUnlocked, progressText | `data/constants` |
@@ -66,11 +66,13 @@ Package: `layers-web` v1.0.39 · `src/`: 96 files, 16702 lines, 120 components, 
 | [components/peopleKeys.js](../../src/components/peopleKeys.js) | 80 | startsWord, columns, usePeopleKeys | — |
 | [components/PersonPick.jsx](../../src/components/PersonPick.jsx) | 67 | PersonPick, PeopleGrid, AvatarStack | `components/atoms`, `data/constants`, `theme` |
 | [components/pickers.jsx](../../src/components/pickers.jsx) | 142 | DateDropdown, TimeDropdown | `components/Sheet`, `lib/dates`, `theme` |
+| [components/planDrag.js](../../src/components/planDrag.js) | 24 | TYPE, canDragPlan, startPlanDrag, isPlanDrag, readPlanDrag | — |
 | [components/Practice.jsx](../../src/components/Practice.jsx) | 192 | card, Practice | `components/atoms`, `data/constants`, `lib/analysis`, `components/Drill`, `lib/drills`, `lib/practice`, `lib/dates`, `theme` |
 | [components/ReplyIdeas.jsx](../../src/components/ReplyIdeas.jsx) | 140 | KINDS, RECENT, fromChat, ReplyIdeas | `components/atoms`, `components/sheetLayer`, `data/constants`, `lib/analysis`, `lib/chatImport`, `lib/replies`, `theme` |
 | [components/rows.jsx](../../src/components/rows.jsx) | 94 | GoalRow, InfoItemRow | `components/atoms`, `data/constants`, `lib/dates`, `theme` |
 | [components/Sheet.jsx](../../src/components/Sheet.jsx) | 99 | SheetPortal, CLOSE_MS, animate, Sheet | `components/sheetLayer`, `components/atoms`, `theme` |
 | [components/sheetLayer.js](../../src/components/sheetLayer.js) | 89 | SheetLayerContext, openSheets, registerSheet, topSheet, hasOpenSheet, useOpenSheet, returnFocus, tabbing, isTabbedToButton, isTyping, … (+1) | — |
+| [components/WeekGrid.jsx](../../src/components/WeekGrid.jsx) | 116 | HOUR, STEP, addDays, lanesOf, WeekGrid | `lib/calendar`, `lib/dates`, `data/constants`, `components/planDrag`, `theme` |
 | [modals/AddInfoModal.jsx](../../src/modals/AddInfoModal.jsx) | 60 | AddInfoModal | `components/Sheet`, `components/sheetLayer`, `components/atoms`, `data/constants`, `theme` |
 | [modals/AddPersonModal.jsx](../../src/modals/AddPersonModal.jsx) | 101 | STEP_ORDER, AddPersonModal | `components/Sheet`, `components/sheetLayer`, `components/atoms`, `components/AvatarPicker`, `components/avatarKeys`, `components/ClosenessQuiz`, `components/closenessKeys`, `data/constants`, `theme` |
 | [modals/ChatQueueSheet.jsx](../../src/modals/ChatQueueSheet.jsx) | 137 | ChatQueueSheet | `components/Sheet`, `components/atoms`, `components/PersonPick`, `components/sheetLayer`, `data/constants`, `lib/analysis`, `lib/chatImport`, `lib/dates`, `modals/ChatReviewSheet`, `theme` |
@@ -103,7 +105,7 @@ Package: `layers-web` v1.0.39 · `src/`: 96 files, 16702 lines, 120 components, 
 | [views/OnboardingView.jsx](../../src/views/OnboardingView.jsx) | 301 | QUICK_NAMES, STEP_LABELS, KEYS_TO_KNOW, shortDate, listNames, Progress, Switch, OnboardingView | `components/atoms`, `components/ClosenessQuiz`, `components/AvatarPicker`, `modals/KeyDateSheet`, `components/sheetLayer`, `components/illustrations`, `data/constants`, `lib/calendar`, `lib/dates`, `lib/util`, `theme` |
 | [views/PeopleView.jsx](../../src/views/PeopleView.jsx) | 231 | PeopleView | `components/atoms`, `components/sheetLayer`, `components/illustrations`, `data/constants`, `lib/dates`, `lib/text`, `theme` |
 | [views/PersonProfile.jsx](../../src/views/PersonProfile.jsx) | 319 | shortDate, keyDatesInOrder, AdjustSlider, PrepareTipsModal, PersonProfile | `components/ActivityCalendar`, `components/ChatTrendChart`, `lib/chatTrend`, `components/ClosenessChart`, `components/Sheet`, `components/atoms`, `components/rows`, `data/constants`, `lib/dates`, `lib/progress`, `lib/calendar`, `lib/dates`, `lib/text`, `theme` |
-| [views/TodayView.jsx](../../src/views/TodayView.jsx) | 452 | WEEKDAY_LONG, addDays, daysBetween, relativeLabel, fullDate, Dots, DayCell, WeekStrip, MonthGrid, SectionTitle, … (+4) | `components/atoms`, `components/PersonPick`, `components/Drill`, `components/sheetLayer`, `data/constants`, `lib/analysis`, `lib/calendar`, `lib/dates`, `lib/text`, `theme` |
+| [views/TodayView.jsx](../../src/views/TodayView.jsx) | 469 | WEEKDAY_LONG, addDays, daysBetween, relativeLabel, fullDate, Dots, DayCell, WeekStrip, MonthGrid, SectionTitle, … (+4) | `components/atoms`, `components/PersonPick`, `components/Drill`, `components/WeekGrid`, `components/planDrag`, `components/sheetLayer`, `data/constants`, `lib/analysis`, `lib/calendar`, `lib/dates`, `lib/text`, `theme` |
 | [fonts.js](../../src/fonts.js) | 28 | LATIN, LATIN_EXT, face, FONT_FACES | — |
 | [QuickAdd.jsx](../../src/QuickAdd.jsx) | 178 | RATING_LABELS, SAVED_MS, UNDO_MS, readSaved, listNames, whenText, MISSING_TEXT, QuickAdd | `components/atoms`, `lib/calendar`, `lib/dates`, `lib/hooks`, `lib/sentence`, `lib/storage`, `theme` |
 
@@ -160,6 +162,7 @@ Package: `layers-web` v1.0.39 · `src/`: 96 files, 16702 lines, 120 components, 
 | `SheetPortal` | [Sheet.jsx:15](../../src/components/Sheet.jsx#L15) | `children` | `Sheet`, `ConfirmDialog` |
 | `Sheet` | [Sheet.jsx:40](../../src/components/Sheet.jsx#L40) | `title`, `onClose`, `onBack`, `onKey`, `children`, `footer`, `tall`, `top`, `keysFor` | `AvatarSheet`, `QuizSheet`, `DateDropdown`, `TimeDropdown`, `AddInfoModal`, `AddPersonModal`, `ChatQueueSheet`, `ChatReviewSheet`, `DaySheet`, `EditEntryModal`, `EditPersonModal`, `EditProfileModal`, `EventSheet`, `GoalModal`, `JumpSheet`, `KeyDateSheet`, `RateSheet`, `ListeningSheet`, `NewInfoSheet`, `GoalsSheet`, `ReflectionSheet`, `LogInteractionModal`, `PhotoFolderSheet`, `PlanSheet`, `PlanTipsSheet`, `QuickGoalSheet`, `ShortcutsModal`, `StartOverSheet`, `SyncSheet`, `TemplatePickerModal`, `WeekReviewSheet`, `PrepareTipsModal` |
 | `SheetLayerContext` | [sheetLayer.js:12](../../src/components/sheetLayer.js#L12) | — | `LayersApp` |
+| `WeekGrid` | [WeekGrid.jsx:37](../../src/components/WeekGrid.jsx#L37) | `selected`, `today`, `state`, `nowMinutes`, `onOpenEvent`, `onMove`, `onSelectDay` | `TodayView` |
 | `AddInfoModal` | [AddInfoModal.jsx:13](../../src/modals/AddInfoModal.jsx#L13) | `personName`, `category`, `onClose`, `onSave` | `LayersApp` |
 | `AddPersonModal` | [AddPersonModal.jsx:24](../../src/modals/AddPersonModal.jsx#L24) | `onClose`, `onSave` | `LayersApp` |
 | `ChatQueueSheet` | [ChatQueueSheet.jsx:25](../../src/modals/ChatQueueSheet.jsx#L25) | `items`, `people`, `yourName`, `onLog`, `onSkip`, `onRemind`, `onClose` | `CoachView` |
@@ -221,15 +224,15 @@ Package: `layers-web` v1.0.39 · `src/`: 96 files, 16702 lines, 120 components, 
 | `AdjustSlider` | [PersonProfile.jsx:38](../../src/views/PersonProfile.jsx#L38) | `label`, `value`, `onChange`, `color` | `PersonProfile` |
 | `PrepareTipsModal` | [PersonProfile.jsx:50](../../src/views/PersonProfile.jsx#L50) | `person`, `journal`, `onClose`, `onOpenFullCoach` | `PersonProfile` |
 | `PersonProfile` | [PersonProfile.jsx:77](../../src/views/PersonProfile.jsx#L77) | `today`, `person`, `journal`, `onBack`, `onOpenLog`, `onOpenGoalCreate`, `onOpenGoalEdit`, `onDeleteGoal`, `onBumpGoal`, `onOpenAddInfo`, `onOpenQuickAddInterest`, `onSaveInfo`, `onDeleteInfo`, `onToggleTemporary`, `onToggleArchive`, `onAdjust`, `onOpenCoach`, `onEditPerson`, `onClearLevelUpFlag`, `onRemindFollowUp`, `onPlan`, `onAddKeyDate`, `onDeleteKeyDate`, `onRecheck`, `onShowGoalLogs`, `onShowDayLogs`, `onExportSummary` | — |
-| `Dots` | [TodayView.jsx:49](../../src/views/TodayView.jsx#L49) | `mark` | `DayCell` |
-| `DayCell` | [TodayView.jsx:59](../../src/views/TodayView.jsx#L59) | `day`, `today`, `selected`, `mark`, `onSelect`, `compact` | `WeekStrip`, `MonthGrid` |
-| `WeekStrip` | [TodayView.jsx:72](../../src/views/TodayView.jsx#L72) | `selected`, `today`, `marksFor`, `onSelect` | `TodayView` |
-| `MonthGrid` | [TodayView.jsx:85](../../src/views/TodayView.jsx#L85) | `selected`, `today`, `marksFor`, `onSelect` | `TodayView` |
-| `SectionTitle` | [TodayView.jsx:113](../../src/views/TodayView.jsx#L113) | `children`, `extra` | `TodayView` |
-| `EventRow` | [TodayView.jsx:122](../../src/views/TodayView.jsx#L122) | `item`, `now`, `onOpen` | `TodayView` |
-| `TodayView` | [TodayView.jsx:158](../../src/views/TodayView.jsx#L158) | `today`, `selectedDay`, `onSelectDay`, `mode`, `onSetMode`, `people`, `journal`, `events`, `generalGoals`, `skills`, `profile`, `onPlan`, `onOpenEvent`, `onLogEvent`, `onTickEvent`, `onMissEvent`, `onOpenPerson`, `onAddPerson`, `onOpenLog`, `onSwitchTab`, `onOpenGoals`, `onOpenReview`, `onOpenDay`, `onOpenJump`, `onHideFirstSteps`, `wide`, `nudge`, `onNudgeMessaged`, `onNudgeSkip`, `drill`, `onAnalyse`, `onDrillDone`, `onDrillMore` | `LayersApp` |
-| `GettingStarted` | [TodayView.jsx:417](../../src/views/TodayView.jsx#L417) | `steps`, `onHide` | `TodayView` |
-| `NowLine` | [TodayView.jsx:443](../../src/views/TodayView.jsx#L443) | `minutes` | `TodayView` |
+| `Dots` | [TodayView.jsx:52](../../src/views/TodayView.jsx#L52) | `mark` | `DayCell` |
+| `DayCell` | [TodayView.jsx:63](../../src/views/TodayView.jsx#L63) | `day`, `today`, `selected`, `mark`, `onSelect`, `compact`, `onDropPlan` | `WeekStrip`, `MonthGrid` |
+| `WeekStrip` | [TodayView.jsx:82](../../src/views/TodayView.jsx#L82) | `selected`, `today`, `marksFor`, `onSelect`, `onDropPlan` | `TodayView` |
+| `MonthGrid` | [TodayView.jsx:95](../../src/views/TodayView.jsx#L95) | `selected`, `today`, `marksFor`, `onSelect`, `onDropPlan` | `TodayView` |
+| `SectionTitle` | [TodayView.jsx:123](../../src/views/TodayView.jsx#L123) | `children`, `extra` | `TodayView` |
+| `EventRow` | [TodayView.jsx:132](../../src/views/TodayView.jsx#L132) | `item`, `now`, `onOpen` | `TodayView` |
+| `TodayView` | [TodayView.jsx:169](../../src/views/TodayView.jsx#L169) | `today`, `selectedDay`, `onSelectDay`, `mode`, `onSetMode`, `people`, `journal`, `events`, `generalGoals`, `skills`, `profile`, `onPlan`, `onOpenEvent`, `onLogEvent`, `onTickEvent`, `onMissEvent`, `onOpenPerson`, `onAddPerson`, `onOpenLog`, `onSwitchTab`, `onOpenGoals`, `onOpenReview`, `onOpenDay`, `onOpenJump`, `onHideFirstSteps`, `wide`, `nudge`, `onNudgeMessaged`, `onNudgeSkip`, `drill`, `onAnalyse`, `onDrillDone`, `onDrillMore`, `onMovePlan` | `LayersApp` |
+| `GettingStarted` | [TodayView.jsx:434](../../src/views/TodayView.jsx#L434) | `steps`, `onHide` | `TodayView` |
+| `NowLine` | [TodayView.jsx:460](../../src/views/TodayView.jsx#L460) | `minutes` | `TodayView` |
 | `QuickAdd` | [QuickAdd.jsx:48](../../src/QuickAdd.jsx#L48) | — | `quick` |
 
 ## Functions
@@ -266,8 +269,8 @@ Package: `layers-web` v1.0.39 · `src/`: 96 files, 16702 lines, 120 components, 
 | `avatarName` | [avatars.js:197](../../src/data/avatars.js#L197) | ✓ | ✓ |
 | `getLayer` | [constants.js:13](../../src/data/constants.js#L13) | ✓ |  |
 | `categoryMeta` | [constants.js:32](../../src/data/constants.js#L32) | ✓ |  |
-| `activityTemplatesFor` | [constants.js:133](../../src/data/constants.js#L133) | ✓ |  |
-| `presetMeta` | [constants.js:262](../../src/data/constants.js#L262) | ✓ |  |
+| `activityTemplatesFor` | [constants.js:134](../../src/data/constants.js#L134) | ✓ |  |
+| `presetMeta` | [constants.js:263](../../src/data/constants.js#L263) | ✓ |  |
 | `achievementProgress` | [achievements.js:9](../../src/lib/achievements.js#L9) | ✓ |  |
 | `newlyUnlocked` | [achievements.js:29](../../src/lib/achievements.js#L29) | ✓ |  |
 | `progressText` | [achievements.js:34](../../src/lib/achievements.js#L34) | ✓ |  |
@@ -644,6 +647,10 @@ Package: `layers-web` v1.0.39 · `src/`: 96 files, 16702 lines, 120 components, 
 | `startsWord` | [peopleKeys.js:15](../../src/components/peopleKeys.js#L15) |  |  |
 | `columns` | [peopleKeys.js:18](../../src/components/peopleKeys.js#L18) |  |  |
 | `usePeopleKeys` | [peopleKeys.js:25](../../src/components/peopleKeys.js#L25) | ✓ |  |
+| `canDragPlan` | [planDrag.js:9](../../src/components/planDrag.js#L9) | ✓ |  |
+| `startPlanDrag` | [planDrag.js:13](../../src/components/planDrag.js#L13) | ✓ |  |
+| `isPlanDrag` | [planDrag.js:17](../../src/components/planDrag.js#L17) | ✓ |  |
+| `readPlanDrag` | [planDrag.js:18](../../src/components/planDrag.js#L18) | ✓ |  |
 | `card` | [Practice.jsx:20](../../src/components/Practice.jsx#L20) |  |  |
 | `fromChat` | [ReplyIdeas.jsx:23](../../src/components/ReplyIdeas.jsx#L23) |  |  |
 | `animate` | [Sheet.jsx:22](../../src/components/Sheet.jsx#L22) |  |  |
@@ -657,6 +664,8 @@ Package: `layers-web` v1.0.39 · `src/`: 96 files, 16702 lines, 120 components, 
 | `isTabbedToButton` | [sheetLayer.js:71](../../src/components/sheetLayer.js#L71) | ✓ |  |
 | `isTyping` | [sheetLayer.js:78](../../src/components/sheetLayer.js#L78) | ✓ |  |
 | `isPlusKey` | [sheetLayer.js:86](../../src/components/sheetLayer.js#L86) | ✓ |  |
+| `addDays` | [WeekGrid.jsx:17](../../src/components/WeekGrid.jsx#L17) |  |  |
+| `lanesOf` | [WeekGrid.jsx:20](../../src/components/WeekGrid.jsx#L20) |  |  |
 | `addDays` | [DaySheet.jsx:21](../../src/modals/DaySheet.jsx#L21) |  |  |
 | `dayTitle` | [DaySheet.jsx:22](../../src/modals/DaySheet.jsx#L22) |  |  |
 | `hasStarted` | [EventSheet.jsx:29](../../src/modals/EventSheet.jsx#L29) |  |  |
@@ -693,10 +702,10 @@ Package: `layers-web` v1.0.39 · `src/`: 96 files, 16702 lines, 120 components, 
 | `listNames` | [OnboardingView.jsx:43](../../src/views/OnboardingView.jsx#L43) |  |  |
 | `shortDate` | [PersonProfile.jsx:21](../../src/views/PersonProfile.jsx#L21) |  |  |
 | `keyDatesInOrder` | [PersonProfile.jsx:26](../../src/views/PersonProfile.jsx#L26) |  |  |
-| `addDays` | [TodayView.jsx:32](../../src/views/TodayView.jsx#L32) |  |  |
-| `daysBetween` | [TodayView.jsx:33](../../src/views/TodayView.jsx#L33) |  |  |
-| `relativeLabel` | [TodayView.jsx:35](../../src/views/TodayView.jsx#L35) |  |  |
-| `fullDate` | [TodayView.jsx:42](../../src/views/TodayView.jsx#L42) |  |  |
+| `addDays` | [TodayView.jsx:35](../../src/views/TodayView.jsx#L35) |  |  |
+| `daysBetween` | [TodayView.jsx:36](../../src/views/TodayView.jsx#L36) |  |  |
+| `relativeLabel` | [TodayView.jsx:38](../../src/views/TodayView.jsx#L38) |  |  |
+| `fullDate` | [TodayView.jsx:45](../../src/views/TodayView.jsx#L45) |  |  |
 | `face` | [fonts.js:18](../../src/fonts.js#L18) |  |  |
 | `readSaved` | [QuickAdd.jsx:28](../../src/QuickAdd.jsx#L28) |  |  |
 | `listNames` | [QuickAdd.jsx:34](../../src/QuickAdd.jsx#L34) |  |  |
@@ -734,33 +743,33 @@ Package: `layers-web` v1.0.39 · `src/`: 96 files, 16702 lines, 120 components, 
 | `CATEGORIES` | [constants.js:24](../../src/data/constants.js#L24) |
 | `TABS` | [constants.js:35](../../src/data/constants.js#L35) |
 | `SHORTCUTS` | [constants.js:42](../../src/data/constants.js#L42) |
-| `EMOJI_CHOICES` | [constants.js:98](../../src/data/constants.js#L98) |
-| `PERSON_EMOJIS` | [constants.js:100](../../src/data/constants.js#L100) |
-| `NOTE_TEMPLATES` | [constants.js:106](../../src/data/constants.js#L106) |
-| `ACTIVITY_TEMPLATES` | [constants.js:122](../../src/data/constants.js#L122) |
-| `NOTE_TEMPLATE_CATEGORY` | [constants.js:144](../../src/data/constants.js#L144) |
-| `INFO_TEMPLATES` | [constants.js:153](../../src/data/constants.js#L153) |
-| `PLAN_TIPS` | [constants.js:162](../../src/data/constants.js#L162) |
-| `REFLECTION_TEMPLATES` | [constants.js:207](../../src/data/constants.js#L207) |
-| `ML_LABELS` | [constants.js:216](../../src/data/constants.js#L216) |
-| `DIM_QUESTIONS` | [constants.js:218](../../src/data/constants.js#L218) |
-| `GOAL_PRESET_DIM` | [constants.js:229](../../src/data/constants.js#L229) |
-| `STANDOUTS` | [constants.js:236](../../src/data/constants.js#L236) |
-| `PRESETS` | [constants.js:244](../../src/data/constants.js#L244) |
-| `PRESET_VARIANTS` | [constants.js:267](../../src/data/constants.js#L267) |
-| `GOAL_DIM_PHRASES` | [constants.js:289](../../src/data/constants.js#L289) |
-| `TYPE_META` | [constants.js:291](../../src/data/constants.js#L291) |
-| `TYPE_ORDER` | [constants.js:301](../../src/data/constants.js#L301) |
-| `AL_ITEMS` | [constants.js:303](../../src/data/constants.js#L303) |
-| `CONV_STATES` | [constants.js:310](../../src/data/constants.js#L310) |
-| `SKILL_GOAL_PRESETS` | [constants.js:321](../../src/data/constants.js#L321) |
-| `SKILL_GOAL_STEP` | [constants.js:325](../../src/data/constants.js#L325) |
-| `ACHIEVEMENTS` | [constants.js:327](../../src/data/constants.js#L327) |
-| `SKILL_ORDER` | [constants.js:335](../../src/data/constants.js#L335) |
-| `FOCUS_SKILL_KEY` | [constants.js:337](../../src/data/constants.js#L337) |
-| `SKILL_TIPS` | [constants.js:341](../../src/data/constants.js#L341) |
-| `FOCUS_OPTIONS` | [constants.js:350](../../src/data/constants.js#L350) |
-| `FOCUS_LABELS` | [constants.js:357](../../src/data/constants.js#L357) |
+| `EMOJI_CHOICES` | [constants.js:99](../../src/data/constants.js#L99) |
+| `PERSON_EMOJIS` | [constants.js:101](../../src/data/constants.js#L101) |
+| `NOTE_TEMPLATES` | [constants.js:107](../../src/data/constants.js#L107) |
+| `ACTIVITY_TEMPLATES` | [constants.js:123](../../src/data/constants.js#L123) |
+| `NOTE_TEMPLATE_CATEGORY` | [constants.js:145](../../src/data/constants.js#L145) |
+| `INFO_TEMPLATES` | [constants.js:154](../../src/data/constants.js#L154) |
+| `PLAN_TIPS` | [constants.js:163](../../src/data/constants.js#L163) |
+| `REFLECTION_TEMPLATES` | [constants.js:208](../../src/data/constants.js#L208) |
+| `ML_LABELS` | [constants.js:217](../../src/data/constants.js#L217) |
+| `DIM_QUESTIONS` | [constants.js:219](../../src/data/constants.js#L219) |
+| `GOAL_PRESET_DIM` | [constants.js:230](../../src/data/constants.js#L230) |
+| `STANDOUTS` | [constants.js:237](../../src/data/constants.js#L237) |
+| `PRESETS` | [constants.js:245](../../src/data/constants.js#L245) |
+| `PRESET_VARIANTS` | [constants.js:268](../../src/data/constants.js#L268) |
+| `GOAL_DIM_PHRASES` | [constants.js:290](../../src/data/constants.js#L290) |
+| `TYPE_META` | [constants.js:292](../../src/data/constants.js#L292) |
+| `TYPE_ORDER` | [constants.js:302](../../src/data/constants.js#L302) |
+| `AL_ITEMS` | [constants.js:304](../../src/data/constants.js#L304) |
+| `CONV_STATES` | [constants.js:311](../../src/data/constants.js#L311) |
+| `SKILL_GOAL_PRESETS` | [constants.js:322](../../src/data/constants.js#L322) |
+| `SKILL_GOAL_STEP` | [constants.js:326](../../src/data/constants.js#L326) |
+| `ACHIEVEMENTS` | [constants.js:328](../../src/data/constants.js#L328) |
+| `SKILL_ORDER` | [constants.js:336](../../src/data/constants.js#L336) |
+| `FOCUS_SKILL_KEY` | [constants.js:338](../../src/data/constants.js#L338) |
+| `SKILL_TIPS` | [constants.js:342](../../src/data/constants.js#L342) |
+| `FOCUS_OPTIONS` | [constants.js:351](../../src/data/constants.js#L351) |
+| `FOCUS_LABELS` | [constants.js:358](../../src/data/constants.js#L358) |
 | `SCENARIOS` | [scenarios.js:5](../../src/data/scenarios.js#L5) |
 | `INITIAL_PEOPLE` | [seed.js:12](../../src/data/seed.js#L12) |
 | `INITIAL_GENERAL_GOALS` | [seed.js:142](../../src/data/seed.js#L142) |
@@ -896,9 +905,12 @@ Package: `layers-web` v1.0.39 · `src/`: 96 files, 16702 lines, 120 components, 
 | `ANSWER_EMOJI` | [ClosenessQuiz.jsx:18](../../src/components/ClosenessQuiz.jsx#L18) |
 | `LAYER` | [illustrations.jsx:7](../../src/components/illustrations.jsx#L7) |
 | `TINT` | [illustrations.jsx:9](../../src/components/illustrations.jsx#L9) |
+| `TYPE` | [planDrag.js:7](../../src/components/planDrag.js#L7) |
 | `KINDS` | [ReplyIdeas.jsx:18](../../src/components/ReplyIdeas.jsx#L18) |
 | `RECENT` | [ReplyIdeas.jsx:19](../../src/components/ReplyIdeas.jsx#L19) |
 | `CLOSE_MS` | [Sheet.jsx:21](../../src/components/Sheet.jsx#L21) |
+| `HOUR` | [WeekGrid.jsx:15](../../src/components/WeekGrid.jsx#L15) |
+| `STEP` | [WeekGrid.jsx:16](../../src/components/WeekGrid.jsx#L16) |
 | `STEP_ORDER` | [AddPersonModal.jsx:22](../../src/modals/AddPersonModal.jsx#L22) |
 | `SLOTS` | [ChatReviewSheet.jsx:19](../../src/modals/ChatReviewSheet.jsx#L19) |
 | `WEEKDAY_LONG` | [DaySheet.jsx:20](../../src/modals/DaySheet.jsx#L20) |
@@ -932,7 +944,7 @@ Package: `layers-web` v1.0.39 · `src/`: 96 files, 16702 lines, 120 components, 
 | `QUICK_NAMES` | [OnboardingView.jsx:32](../../src/views/OnboardingView.jsx#L32) |
 | `STEP_LABELS` | [OnboardingView.jsx:33](../../src/views/OnboardingView.jsx#L33) |
 | `KEYS_TO_KNOW` | [OnboardingView.jsx:35](../../src/views/OnboardingView.jsx#L35) |
-| `WEEKDAY_LONG` | [TodayView.jsx:31](../../src/views/TodayView.jsx#L31) |
+| `WEEKDAY_LONG` | [TodayView.jsx:34](../../src/views/TodayView.jsx#L34) |
 | `LATIN` | [fonts.js:15](../../src/fonts.js#L15) |
 | `LATIN_EXT` | [fonts.js:16](../../src/fonts.js#L16) |
 | `FONT_FACES` | [fonts.js:22](../../src/fonts.js#L22) |

@@ -295,6 +295,11 @@ analysis; all four for using Layers. Each is marked as it's built.
   (repeats 1, 2 and 4). In the plan sheet under Repeat (E steps through how often, or
   which day of the month), and typed: "fortnightly", "every other tue", "every 2 weeks
   on mon", "monthly on the 15th", "first fri of the month".
+- **Built: move plans by dragging** (using Layers 3). A plan's row onto a day in the week
+  strip or month; a **Week** view (V) with the times down the side, where a plan's block
+  drags to another day and time in 15-minute steps. A repeating plan moves for that day
+  only. Undo puts it back. With the mouse only; on the keyboard, a plan's Edit (E) still
+  moves it.
 - **Built: Me in sections** (using Layers 4). Tabs under your name: You, Calendar, Claude,
   App and Your data (five, not the four drafted: appearance, startup and updates needed a
   home), 1–5 to switch, and Find a setting (F) across them all.

@@ -9,7 +9,7 @@ import { nav, person, renderApp, seedState } from './harness.jsx';
 afterEach(() => { delete window.__layersWide; });
 
 describe('a wide window', () => {
-  it('shows the month beside the day, with no Day/Month switch', async () => {
+  it('shows the month beside the day, with a Day/Week switch but no Month', async () => {
     window.__layersWide = true;
     seedState();
     renderApp();
@@ -17,7 +17,7 @@ describe('a wide window', () => {
     const now = new Date();
     expect(screen.getByRole('grid', { name: `${MONTH_NAMES[now.getMonth()]} ${now.getFullYear()}` })).toBeTruthy();
     expect(screen.getByText('Your day')).toBeTruthy();
-    expect(screen.queryByRole('group', { name: 'Calendar view' })).toBeNull();
+    expect(within(screen.getByRole('group', { name: 'Calendar view' })).getAllByRole('button').map(b => b.textContent)).toEqual(['Day', 'Week']);
   });
 
   it('shows the people list in the middle, then beside a profile once someone is picked, and it stays as you go from person to person', async () => {

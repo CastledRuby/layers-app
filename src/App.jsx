@@ -11,11 +11,11 @@ import { PageTransition } from './components/PageTransition.jsx';
 import { hasOpenSheet, isTyping, SheetLayerContext, topSheet } from './components/sheetLayer.js';
 import { ACHIEVEMENTS, ACTIVITY_TEMPLATES, categoryMeta, DIM_LABELS, DIM_ORDER, getLayer, TABS } from './data/constants.js';
 import { EMPTY_SKILLS, INITIAL_GENERAL_GOALS, INITIAL_JOURNAL, INITIAL_PEOPLE, INITIAL_SKILLS } from './data/seed.js';
-import { backfillJournalDates, backfillPeopleDates, backfillSkillDates, formatAbsoluteDate, formatCalendarDate, parseISODay, pushHistoryPoint, toISODate } from './lib/dates.js';
+import { backfillJournalDates, backfillPeopleDates, backfillSkillDates, formatAbsoluteDate, formatCalendarDate, formatTime12, parseISODay, pushHistoryPoint, toISODate } from './lib/dates.js';
 import { achievementProgress, newlyUnlocked } from './lib/achievements.js';
 import { advanceLayer, advanceSkillGoals, bumpSkills, chartDay, computeOverall, dimBumps, dimsEqual, goalBumpFor, keepDimsInLayer, makePerson, migrateDimsToLayers, movePerson, placeOnLayers, raisedSkills } from './lib/progress.js';
 import { MAX_BACKUP_BYTES, createBackup, validateBackup } from './lib/backup.js';
-import { NOTIFY_DEFAULTS, dayNudge, isDoneOn, notifySettings, parseActionUrl, repeatText, snoozeUntil, templateFor } from './lib/calendar.js';
+import { NOTIFY_DEFAULTS, dayNudge, isDoneOn, notifySettings, parseActionUrl, repeatText, snoozeUntil, templateFor, timeOn } from './lib/calendar.js';
 import { useCalendarNotifications, useChatBatch, useDailyBackup, useDailyCheckIn, useSlideAcross, useSystemDark, useToday, useWide } from './lib/hooks.js';
 import { waiting } from './lib/chatBatch.js';
 import { followUpEvent, markDone, markMissed } from './lib/reminders.js';
@@ -1035,6 +1035,28 @@ function LayersApp() {
     setPlanState(null);
     if (fields.kind === 'oneoff' && fields.date) setSelectedDay(fields.date === today ? null : fields.date);
   }
+  // A plan dragged to another day, and in the week view a time (decided
+  // 2026-10-11): a one-off moves; a repeating plan moves for that day only,
+  // as "Only <day>" editing does (a one-off of its own, the repeat skipping
+  // the day). time null keeps its time. With Undo.
+  function handleMovePlan(eventId, fromDay, toDay, time) {
+    const ev = events.find(e => e.id === eventId);
+    if (!ev || ev.source === 'google') return;
+    const at = time === null || time === undefined ? timeOn(ev, fromDay) : time;
+    if (toDay === fromDay && at === timeOn(ev, fromDay)) return;
+    const snap = snapshot();
+    const now = new Date().toISOString();
+    const timeFields = ev.allDay || at === null ? {} : { time: at, allDay: false };
+    if (ev.kind === 'oneoff') {
+      setEvents(prev => prev.map(e => e.id !== eventId ? e : { ...e, date: toDay, ...timeFields, updatedAt: now }));
+    } else {
+      const { id, weekdays, from, skipDays, doneDays, doneOn, missedDays, interval, monthly, times, ...rest } = ev; // eslint-disable-line no-unused-vars
+      const moved = { ...rest, id: uid(), kind: 'oneoff', date: toDay, time: ev.allDay ? null : at, ...timeFields, createdAt: toISODate(new Date()), updatedAt: now };
+      setEvents(prev => [moved, ...prev.map(e => e.id !== eventId ? e : { ...e, skipDays: [...new Set([...(e.skipDays || []), fromDay])].sort(), updatedAt: now })]);
+    }
+    const where = `${toDay === today ? 'today' : formatCalendarDate(parseISODay(toDay))}${timeFields.time !== undefined && (toDay !== fromDay || at !== timeOn(ev, fromDay)) ? `, ${formatTime12(at)}` : ''}`;
+    pushToast(`"${ev.title}" moved to ${where}${ev.kind === 'recurring' ? ' (that day only)' : ''}`, { undo: snap });
+  }
   // A notification's Snooze: remind again in 10 or 60 minutes, or tomorrow.
   function handleSnooze(eventId, day, minutes) {
     const ev = events.find(e => e.id === eventId);
@@ -1670,7 +1692,7 @@ function LayersApp() {
                       <>
                         {activeTab === 'today' && <TodayView wide={wide} today={today} selectedDay={selectedDay || today} onSelectDay={(d) => setSelectedDay(d === today ? null : d)} mode={calendarMode} onSetMode={setCalendarMode} people={people} journal={journal} events={shownEvents} generalGoals={generalGoals} skills={skills} profile={profile} onPlan={openPlan} onOpenEvent={(eventId, day) => setEventView({ eventId, day })} onLogEvent={openLogFromEvent} onTickEvent={(ev, day) => handleMarkEventDone(ev.id, day)} onMissEvent={(ev, day) => handleMarkEventMissed(ev.id, day)} onOpenPerson={openPerson} onAddPerson={() => setAddPersonOpen(true)} onOpenLog={() => openLog(null)} onSwitchTab={switchTab} onOpenGoals={openGoalsOverview} onOpenReview={setWeekReview} onOpenDay={setDayView} onOpenJump={() => { setJumpOpen(true); markTried('jump'); }} onHideFirstSteps={() => setProfile(p => ({ ...p, gettingStartedHidden: true }))}
                           nudge={nudge ? { ...nudge, opener: openerText, writing: writingOpener === nudgeKey } : null} onNudgeMessaged={handleNudgeMessaged} onNudgeSkip={handleNudgeSkip}
-                          drill={todayDrill} onAnalyse={analysisBridge ? (request) => analysisBridge.runAnalysis(request) : undefined} onDrillDone={(next) => { setDrills(next); setDrillDoneHere(today); }} onDrillMore={() => openCoach(null, 'practise')} />}
+                          onMovePlan={handleMovePlan} drill={todayDrill} onAnalyse={analysisBridge ? (request) => analysisBridge.runAnalysis(request) : undefined} onDrillDone={(next) => { setDrills(next); setDrillDoneHere(today); }} onDrillMore={() => openCoach(null, 'practise')} />}
                         {activeTab === 'people' && <PeopleView people={people} journal={journal} onOpenPerson={openPerson} onAddPerson={() => setAddPersonOpen(true)} onAddPhotos={() => setPhotoFolderOpen(true)} />}
                         {activeTab === 'coach' && <div className="page-col"><CoachView people={people} journal={journal} initialPersonId={coachInit.personId} initialTab={coachInit.tab} onOpenLog={openLog} onApproveInfo={handleApproveInfo} onApproveInfoAll={handleApproveInfoAll} onRemindAbout={handleRemindFollowUp} onLogFromAnalysis={handleLogFromAnalysis} onOpenPerson={openPerson}
                           onLogChat={(l) => handleLogSubmit({ personIds: l.personIds.filter(id => people.some(p => p.id === id)), type: 'messaged', meaningfulness: l.meaningfulness, notes: [], activeListening: l.activeListening, summary: l.summary || undefined, pickedDate: l.date, ratings: l.ratings, analysis: l.analysis })}

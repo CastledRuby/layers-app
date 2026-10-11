@@ -50,6 +50,7 @@ export const SHORTCUTS = [
   { keys: ['Ctrl', '5'], desc: 'Go to Me', where: ['everywhere'] },
   { keys: ['N'], desc: 'Quick log an interaction', where: ['everywhere'] },
   { keys: ['P'], desc: 'Plan something on the calendar', where: ['everywhere'] },
+  { keys: ['V'], desc: 'Today: the week view, with times (drag a plan to another day or time to move it)', where: ['today'] },
   { keys: ['M'], desc: 'Today: switch between the day and the month', where: ['today'] },
   { keys: ['←', '→'], or: true, desc: 'Today: the day before or after', where: ['today'] },
   { keys: ['↑', '↓'], or: true, desc: 'Today: a week before or after', where: ['today'] },

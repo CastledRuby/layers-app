@@ -300,6 +300,11 @@ interact.
   endings don't count), and `src/scenarios.test.js` that every Analyse suggestion has its
   natural, playful and deeper versions. `src/backups.test.js` checks `electron/backups.cjs` on a temporary folder:
   one file a day, never overwritten, the newest 14 kept.
+- `dragPlans.test.jsx` covers moving plans by dragging (a stand-in for the browser's drag
+  data): a row onto another day in the week strip (with Undo), the week view (V) with a
+  repeating plan dragged to another day and time moving for that day only, and plans
+  done (or Google Calendar's) not moving. The end-to-end tests do a real drag in the
+  packaged app's week view.
 - `meSections.test.jsx` covers Me in sections: opening on You, 1–5 switching (no Claude
   in the browser), and Find a setting across sections (saying where) or nothing matching.
   Tests reach a section with the harness's `openMe(user, 'Claude')`.

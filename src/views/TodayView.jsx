@@ -2,7 +2,8 @@
 // or the month grid to move around in, what's waiting for a quick answer,
 // ideas for who to see, and your goals. See docs/renderer/app-structure.md.
 //
-// Keys (not while typing or with a sheet open): M switches Day and Month,
+// Keys (not while typing or with a sheet open): M switches Day and Month, V
+// the week view (WeekGrid, times down the side; drag a plan to move it),
 // ← → move a day and ↑ ↓ a week, T comes back to today, and Enter (or
 // clicking the day that's picked) opens the day in a popup (DaySheet), with
 // Coach tips for its plans. L and J answer the first
@@ -20,6 +21,8 @@ import { Bell, Check, ChevronLeft, ChevronRight, Plus, Repeat, Search, X } from 
 import { Kbd, ProgressBar } from '../components/atoms.jsx';
 import { AvatarStack } from '../components/PersonPick.jsx';
 import { Drill } from '../components/Drill.jsx';
+import { WeekGrid } from '../components/WeekGrid.jsx';
+import { canDragPlan, isPlanDrag, readPlanDrag, startPlanDrag } from '../components/planDrag.js';
 import { hasOpenSheet, isTabbedToButton as isTabbed, isTyping } from '../components/sheetLayer.js';
 import { getLayer, TYPE_META } from '../data/constants.js';
 import { DEFAULT_ANALYSIS_MODEL } from '../lib/analysis.js';
@@ -56,12 +59,19 @@ function Dots({ mark }) {
   );
 }
 
-function DayCell({ day, today, selected, mark, onSelect, compact }) {
+// A day takes a plan dragged onto it: onDropPlan(day, { eventId, day }).
+function DayCell({ day, today, selected, mark, onSelect, compact, onDropPlan }) {
   const d = parseISODay(day);
   const isToday = day === today;
   const isSel = day === selected;
+  const [over, setOver] = useState(false);
+  const drop = onDropPlan ? {
+    onDragOver: (e) => { if (isPlanDrag(e)) { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; setOver(true); } },
+    onDragLeave: () => setOver(false),
+    onDrop: (e) => { const data = readPlanDrag(e); setOver(false); if (data) { e.preventDefault(); onDropPlan(day, data); } },
+  } : {};
   return (
-    <button type="button" onClick={() => onSelect(day)} aria-pressed={isSel} aria-label={fullDate(day, today)} className="flex flex-col items-center gap-1 rounded-2xl py-1.5 day-cell" style={{ flex: 1, minWidth: 0 }}>
+    <button type="button" onClick={() => onSelect(day)} aria-pressed={isSel} aria-label={fullDate(day, today)} className={`flex flex-col items-center gap-1 rounded-2xl py-1.5 day-cell${over ? ' drop-over' : ''}`} style={{ flex: 1, minWidth: 0 }} {...drop}>
       {!compact && <span className="text-xs font-semibold" style={{ color: isSel ? COLORS.accent : COLORS.inkSoft }}>{WEEKDAY_SHORT[d.getDay()][0]}</span>}
       <span className={isSel ? 'pop' : ''} style={{ width: 34, height: 34, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: isSel || isToday ? 700 : 500, fontVariantNumeric: 'tabular-nums', background: isSel ? COLORS.accent : 'transparent', color: isSel ? COLORS.onAccent : COLORS.ink, boxShadow: isToday && !isSel ? `inset 0 0 0 1.5px ${COLORS.accent}` : 'none' }}>{d.getDate()}</span>
       <Dots mark={mark} />
@@ -69,20 +79,20 @@ function DayCell({ day, today, selected, mark, onSelect, compact }) {
   );
 }
 
-function WeekStrip({ selected, today, marksFor, onSelect }) {
+function WeekStrip({ selected, today, marksFor, onSelect, onDropPlan }) {
   const d = parseISODay(selected);
   const monday = addDays(selected, -((d.getDay() + 6) % 7));
   const days = Array.from({ length: 7 }, (_, i) => addDays(monday, i));
   return (
     <div className="flex items-center gap-1 mt-4">
       <button type="button" onClick={() => onSelect(addDays(selected, -7))} aria-label="Previous week" className="icon-btn"><ChevronLeft size={18} color={COLORS.inkSoft} /></button>
-      <div className="flex flex-1 min-w-0">{days.map(day => <DayCell key={day} day={day} today={today} selected={selected} mark={marksFor(day)} onSelect={onSelect} />)}</div>
+      <div className="flex flex-1 min-w-0">{days.map(day => <DayCell key={day} day={day} today={today} selected={selected} mark={marksFor(day)} onSelect={onSelect} onDropPlan={onDropPlan} />)}</div>
       <button type="button" onClick={() => onSelect(addDays(selected, 7))} aria-label="Next week" className="icon-btn"><ChevronRight size={18} color={COLORS.inkSoft} /></button>
     </div>
   );
 }
 
-function MonthGrid({ selected, today, marksFor, onSelect }) {
+function MonthGrid({ selected, today, marksFor, onSelect, onDropPlan }) {
   const d = parseISODay(selected);
   const year = d.getFullYear(); const month = d.getMonth();
   const lead = (new Date(year, month, 1).getDay() + 6) % 7; // weeks start on Monday
@@ -104,7 +114,7 @@ function MonthGrid({ selected, today, marksFor, onSelect }) {
         {['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((w, i) => <span key={i} className="text-center text-xs font-semibold" style={{ color: COLORS.inkSoft }}>{w}</span>)}
       </div>
       <div className="grid grid-cols-7" role="grid" aria-label={`${MONTH_NAMES[month]} ${year}`}>
-        {cells.map((day, i) => day ? <DayCell key={day} day={day} today={today} selected={selected} mark={marksFor(day)} onSelect={onSelect} compact /> : <span key={`x${i}`} />)}
+        {cells.map((day, i) => day ? <DayCell key={day} day={day} today={today} selected={selected} mark={marksFor(day)} onSelect={onSelect} onDropPlan={onDropPlan} compact /> : <span key={`x${i}`} />)}
       </div>
     </div>
   );
@@ -126,7 +136,8 @@ function EventRow({ item, now, onOpen }) {
   const past = end !== null && now !== null && end <= now;
   const alert = alertOf(ev);
   return (
-    <button type="button" onClick={onOpen} aria-label={`${ev.title}${missed ? ", didn't happen" : done ? ', done' : ''}`} className="w-full flex items-stretch gap-3 text-left event-row">
+    <button type="button" onClick={onOpen} aria-label={`${ev.title}${missed ? ", didn't happen" : done ? ', done' : ''}`} className="w-full flex items-stretch gap-3 text-left event-row"
+      draggable={canDragPlan(item)} onDragStart={(e) => startPlanDrag(e, item)}>
       <div className="shrink-0 text-right pt-2.5" style={{ width: 62 }}>
         {start === null ? (
           <p className="text-xs font-semibold" style={{ color: COLORS.inkSoft }}>All day</p>
@@ -147,7 +158,7 @@ function EventRow({ item, now, onOpen }) {
           {missed && <span className="shrink-0 font-semibold">Didn't happen</span>}
           {people.length > 0 && <span className="truncate">{people.map(p => p.name).join(', ')}</span>}
           {ev.source === 'google' && <span className="truncate">{ev.feedName || 'Google Calendar'}{ev.location ? ` · ${ev.location}` : ''}</span>}
-          {ev.kind === 'recurring' && <span className="flex items-center gap-0.5 shrink-0"><Repeat size={11} />{isDaily(ev) ? 'Daily' : 'Weekly'}</span>}
+          {ev.kind === 'recurring' && <span className="flex items-center gap-0.5 shrink-0"><Repeat size={11} />{isDaily(ev) && !(ev.interval > 1) ? 'Daily' : ev.monthly ? 'Monthly' : ev.interval > 1 ? `Every ${ev.interval} weeks` : 'Weekly'}</span>}
           {alert !== null && !done && <span className="flex items-center gap-0.5 shrink-0"><Bell size={11} />{alert === 0 ? 'At time' : alert >= 1440 ? '1 day' : alert >= 60 ? `${alert / 60} h` : `${alert} min`}</span>}
         </p>
       </div>
@@ -155,7 +166,7 @@ function EventRow({ item, now, onOpen }) {
   );
 }
 
-export function TodayView({ today, selectedDay, onSelectDay, mode, onSetMode, people, journal, events, generalGoals, skills, profile, onPlan, onOpenEvent, onLogEvent, onTickEvent, onMissEvent, onOpenPerson, onAddPerson, onOpenLog, onSwitchTab, onOpenGoals, onOpenReview, onOpenDay, onOpenJump, onHideFirstSteps, wide = false, nudge = null, onNudgeMessaged, onNudgeSkip, drill = null, onAnalyse, onDrillDone, onDrillMore }) {
+export function TodayView({ today, selectedDay, onSelectDay, mode, onSetMode, people, journal, events, generalGoals, skills, profile, onPlan, onOpenEvent, onLogEvent, onTickEvent, onMissEvent, onOpenPerson, onAddPerson, onOpenLog, onSwitchTab, onOpenGoals, onOpenReview, onOpenDay, onOpenJump, onHideFirstSteps, wide = false, nudge = null, onNudgeMessaged, onNudgeSkip, drill = null, onAnalyse, onDrillDone, onDrillMore, onMovePlan }) {
   // The opener copied (its text), so the button can say so.
   const [copiedOpener, setCopiedOpener] = useState(null);
   function copyOpener() {
@@ -195,6 +206,7 @@ export function TodayView({ today, selectedDay, onSelectDay, mode, onSetMode, pe
     function onKey(e) {
       if (e.ctrlKey || e.metaKey || e.altKey || isTyping() || hasOpenSheet()) return;
       if (e.key === 'm' || e.key === 'M') { e.preventDefault(); onSetMode(mode === 'month' ? 'day' : 'month'); }
+      else if (e.key === 'v' || e.key === 'V') { e.preventDefault(); onSetMode(mode === 'week' ? 'day' : 'week'); }
       else if (e.key === 'ArrowLeft') { e.preventDefault(); onSelectDay(addDays(day, -1)); }
       else if (e.key === 'ArrowRight') { e.preventDefault(); onSelectDay(addDays(day, 1)); }
       else if (e.key === 'ArrowUp') { e.preventDefault(); onSelectDay(addDays(day, -7)); }
@@ -219,6 +231,11 @@ export function TodayView({ today, selectedDay, onSelectDay, mode, onSetMode, pe
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [mode, day, today, waiting, ideas, onSetMode, onSelectDay, onLogEvent, onTickEvent, onMissEvent, onPlan, onOpenReview, onOpenDay]);
+  // The view: Day, Week or Month (a wide window keeps the month beside, so Day or Week).
+  const view = wide && mode === 'month' ? 'day' : mode;
+  // A plan dragged to another day (and, in the week view, time): onMovePlan(eventId, fromDay, toDay, time).
+  const moveTo = onMovePlan ? (eventId, from, to, time) => onMovePlan(eventId, from, to, time) : () => {};
+  const dropOnDay = onMovePlan ? (to, data) => onMovePlan(data.eventId, data.day, to, null) : undefined;
   // Clicking the day that's already picked opens it in the popup.
   const pickDay = (d) => (d === day && onOpenDay ? onOpenDay(d) : onSelectDay(d));
 
@@ -261,18 +278,18 @@ export function TodayView({ today, selectedDay, onSelectDay, mode, onSetMode, pe
             {day !== today && <button type="button" onClick={() => onSelectDay(today)} className="chip" style={{ padding: '2px 8px', fontSize: 11 }}>Back to today <Kbd>T</Kbd></button>}
           </p>
         </div>
-        {!wide && (
-          <div className="seg seg--sm shrink-0" role="group" aria-label="Calendar view" style={{ width: 132 }}>
-            {['day', 'month'].map(m => (
-              <button key={m} type="button" onClick={() => onSetMode(m)} aria-pressed={mode === m} className={`seg-btn${mode === m ? ' seg-btn--on' : ''}`} style={{ fontSize: 12 }}>{m === 'day' ? 'Day' : 'Month'}</button>
-            ))}
-          </div>
-        )}
+        <div className="seg seg--sm shrink-0" role="group" aria-label="Calendar view" style={{ width: wide ? 132 : 186 }}>
+          {(wide ? ['day', 'week'] : ['day', 'week', 'month']).map(m => (
+            <button key={m} type="button" onClick={() => onSetMode(m)} aria-pressed={view === m} className={`seg-btn${view === m ? ' seg-btn--on' : ''}`} style={{ fontSize: 12 }}>{m === 'day' ? 'Day' : m === 'week' ? 'Week' : 'Month'}</button>
+          ))}
+        </div>
       </div>
 
-      {!wide && (mode === 'month'
-        ? <MonthGrid selected={day} today={today} marksFor={marksFor} onSelect={pickDay} />
-        : <WeekStrip selected={day} today={today} marksFor={marksFor} onSelect={pickDay} />)}
+      {view === 'week'
+        ? <WeekGrid selected={day} today={today} state={state} nowMinutes={clock.getHours() * 60 + clock.getMinutes()} onOpenEvent={onOpenEvent} onMove={moveTo} onSelectDay={(d) => { pickDay(d); }} />
+        : !wide && (view === 'month'
+          ? <MonthGrid selected={day} today={today} marksFor={marksFor} onSelect={pickDay} onDropPlan={dropOnDay} />
+          : <WeekStrip selected={day} today={today} marksFor={marksFor} onSelect={pickDay} onDropPlan={dropOnDay} />)}
 
       {waiting.length > 0 && (
         <div className="mt-5 flex flex-col gap-2">
@@ -407,7 +424,7 @@ export function TodayView({ today, selectedDay, onSelectDay, mode, onSetMode, pe
         </>
       )}
       </div>
-      {wide && <aside className="today-wide-side" aria-label="Month"><MonthGrid selected={day} today={today} marksFor={marksFor} onSelect={pickDay} /></aside>}
+      {wide && <aside className="today-wide-side" aria-label="Month"><MonthGrid selected={day} today={today} marksFor={marksFor} onSelect={pickDay} onDropPlan={dropOnDay} /></aside>}
     </div>
   );
 }
