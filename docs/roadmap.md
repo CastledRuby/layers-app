@@ -291,6 +291,9 @@ analysis; all four for using Layers. Each is marked as it's built.
   time's tip (names hidden), and the numbers counted on this laptop; Claude says whether
   you followed the tip and quotes the moments that mattered, marked on the chat (green
   where it landed, amber where something was missed). The Journal's review keeps them.
+- **Built: type a plan in the plan sheet** (using Layers 1). **Type it** (T) on the first
+  step reads "gym tue thu fri 7am" as Ctrl+K does, shows what it understood (and any
+  names not in Layers), and Enter fills in every step.
 
 ### Repeating plans
 

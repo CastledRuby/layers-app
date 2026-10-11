@@ -1,7 +1,9 @@
 // Plan something: a new calendar event, or editing one. Three steps, one
 // thing at a time, almost all taps, and every tap has a key:
 //   what  a template (Coffee, Call, ...)            keys 1-8, or one of your
-//         recent plans under "Plan again"           Q W E R
+//         recent plans under "Plan again"           Q W E R; or T to type
+//         it ("gym tue thu fri 7am", read as Ctrl+K reads it), and Enter
+//         fills in every step and goes on to "when" to check it
 //   who   the people                                1-9 or type a name, Enter goes on
 //   when  day, time, length, repeat and reminder    1-7 the day (on certain days,
 //                                                   Mon-Sun on or off); T, L, R, A and G
@@ -31,7 +33,8 @@ import { useMemo, useRef, useState } from 'react';
 import { AlertTriangle, Check, Copy } from 'lucide-react';
 import { Sheet } from '../components/Sheet.jsx';
 import { isPlusKey, isTabbedToButton, isTyping } from '../components/sheetLayer.js';
-import { Kbd } from '../components/atoms.jsx';
+import { Kbd, KeyedField } from '../components/atoms.jsx';
+import { planFieldsOf, readSentence } from '../lib/sentence.js';
 import { AvatarStack, PeopleGrid } from '../components/PersonPick.jsx';
 import { usePeopleKeys } from '../components/peopleKeys.js';
 import { DateDropdown, TimeDropdown } from '../components/pickers.jsx';
@@ -65,6 +68,11 @@ const daysText = (list) => { const s = [...list].sort().map(shortDay); return s.
 function isCopyOf(ev, of) {
   const ids = (x) => [...(x.personIds || [])].sort().join();
   return ev.id !== of.id && ev.kind === 'oneoff' && ev.title === of.title && ids(ev) === ids(of) && !!ev.allDay === !!of.allDay && (!!ev.allDay || ev.time === of.time);
+}
+// A typed plan's when, as "Type it" reads it back: "Every Tue, Thu and Fri, 7:00 AM".
+function typedWhen(r) {
+  const day = r.repeat === 'daily' ? 'Every day' : r.repeat === 'weekly' ? formatWeekdays(r.weekdays) : formatCalendarDate(parseISODay(r.day));
+  return `${day}, ${r.allDay ? 'all day' : formatTime12(r.time)}`;
 }
 const autoTitleFor = (template, people, personIds) => (template || templateFor('custom')).title(namesText(personIds.map(id => (people.find(p => p.id === id) || {}).name).filter(Boolean)));
 
@@ -136,7 +144,17 @@ export function PlanSheet({ people, events = [], today, prefill = {}, defaultAle
   const titleRef = useRef(null);
   const [titleFocus, setTitleFocus] = useState(false);
   const [newGoal, setNewGoal] = useState(false);
+  // "Type it" on the first step: a plan as a sentence (lib/sentence.js).
+  const [typed, setTyped] = useState('');
+  const typedRef = useRef(null);
+  const read = useMemo(() => (typed.trim() ? readSentence(typed, { people, today }) : null), [typed, people, today]);
   const set = (patch) => setForm(f => ({ ...f, ...(typeof patch === 'function' ? patch(f) : patch) }));
+  function fillFromTyped() {
+    if (!read || read.kind !== 'plan') return;
+    setForm(freshForm({ draft: planFieldsOf(read, defaultAlert) }, people, today, defaultAlert));
+    setTyped('');
+    go('when');
+  }
 
   const editing = start.event || null;
   const copyOf = !editing && (start.copyOf || start.draft) ? start.copyOf || start.draft : null;
@@ -264,6 +282,7 @@ export function PlanSheet({ people, events = [], today, prefill = {}, defaultAle
       const again = recent[AGAIN_KEYS.indexOf(e.key.toLowerCase())];
       if (num && num <= EVENT_TEMPLATES.length) act(() => pickTemplate(EVENT_TEMPLATES[num - 1]));
       else if (again) act(() => pickAgain(again));
+      else if (e.key.toLowerCase() === 't' && typedRef.current) act(() => typedRef.current.focus());
       return;
     }
     if (step === 'who') {
@@ -319,6 +338,23 @@ export function PlanSheet({ people, events = [], today, prefill = {}, defaultAle
                 {added.length > 4 && <p className="text-xs pl-5" style={{ color: COLORS.inkSoft }}>and {added.length - 4} before that</p>}
               </div>
             )}
+            <div className="mb-4">
+              <KeyedField letter="T" ref={typedRef} value={typed} onChange={e => setTyped(e.target.value)} aria-label="Type it"
+                placeholder='Type it: "gym tue thu fri 7am"'
+                onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); fillFromTyped(); } }}
+                className="w-full text-sm rounded-xl px-3 py-2.5" style={{ border: `1px solid ${COLORS.line}` }} />
+              {read && (
+                <p className="text-xs mt-1.5 flex items-center gap-1.5 flex-wrap" style={{ color: read.kind === 'plan' ? COLORS.inkSoft : COLORS.alert }} role="status" aria-label="What it reads">
+                  {read.kind !== 'plan' ? 'That reads as a log: press N to log it, or use Ctrl+K.' : (
+                    <>
+                      <span><span className="font-semibold" style={{ color: COLORS.ink }}>{read.title}</span> · {typedWhen(read)}</span>
+                      {read.unknown.length > 0 && <span style={{ color: COLORS.warn }}>Not in Layers: {read.unknown.join(', ')}</span>}
+                      <span className="flex items-center gap-1">fill it in <Kbd>↵</Kbd></span>
+                    </>
+                  )}
+                </p>
+              )}
+            </div>
             <div className="grid grid-cols-4 gap-2">
               {EVENT_TEMPLATES.map((t, i) => (
                 <button key={t.key} type="button" onClick={() => pickTemplate(t)} className="tile py-4 px-1 flex flex-col items-center gap-1.5">

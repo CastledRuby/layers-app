@@ -241,7 +241,11 @@ Planning is three steps, one thing at a time, nearly all taps, and every tap has
 (shown next to it):
 
 1. **what**: eight templates (`EVENT_TEMPLATES`), keys 1–8. Each fills the title, the
-   interaction type a log gets, a usual time and a length.
+   interaction type a log gets, a usual time and a length. Or **Type it** (`T`; added
+   2026-10-11): a plan as a sentence ("gym tue thu fri 7am", "coffee w Priya fri 10am"),
+   read as Ctrl+K reads it (`readSentence`) and shown back as you type, names not in
+   Layers called out; Enter fills in every step (`planFieldsOf`, the `draft` prefill)
+   and goes on to **when** to check it.
 2. **who**: the people, closest first (as on the People tab), each with a solid number
    badge. 1–9 picks one of the first nine; for anyone else, type part of a name (Enter
    picks the first match) or move with the arrows and pick with Space

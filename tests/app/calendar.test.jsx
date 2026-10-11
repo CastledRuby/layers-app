@@ -122,6 +122,22 @@ describe('Planning', () => {
     expect(toasts()).toContain('3 plans saved');
   });
 
+  it('"Type it" on the first step reads a typed plan and fills in every step (T to reach it)', async () => {
+    const morgan = person('Morgan');
+    seedState({ people: [morgan] });
+    const { user } = renderApp();
+    await user.keyboard('pt'); // Plan something, then the Type it box
+    expect(document.activeElement).toBe(screen.getByLabelText('Type it'));
+    await user.keyboard('gym with morgan and Jess every tue thu fri 7am');
+    const read = screen.getByLabelText('What it reads').textContent;
+    expect(read).toMatch(/Every Tue, Thu and Fri, 7:00 AM/);
+    expect(read).toMatch(/Not in Layers: Jess/);
+    await user.keyboard('{Enter}');
+    expect(within(dialog('When?')).getByLabelText('Summary').textContent).toMatch(/^Every Tue, Thu and Fri from/);
+    await user.keyboard('{Enter}'); // save
+    expect(savedState().events[0]).toMatchObject({ kind: 'recurring', weekdays: [2, 4, 5], time: 420, personIds: [morgan.id] });
+  });
+
   it('"On certain days" repeats on the days picked: 1-7 turn Mon-Sun on and off', async () => {
     seedState();
     const { user } = renderApp();
