@@ -1074,7 +1074,11 @@ devices ([electron.md](../electron.md) has the file side).
   and Redo are cleared (they'd undo them too), and a message says "Synced: changes from
   your other device". If something changed here while the sync was running, its merge
   isn't taken (it would undo that change); the sync runs again straight after, merging
-  both.
+  both. A sync that starts straight after one that took a merge starts from that merge,
+  not the data from before React has shown it (`applySynced` points `syncLocal` and
+  `syncData` at it). Up to 1.0.40 it started from the old copy: the stamper, having
+  just adopted the merge, counted those records as changed now and the ones only the
+  other device had as deleted, and that went into the sync file.
 - **Data replaced wholesale** (finishing setting up, **Start over**, restoring a backup)
   isn't counted as deleted (`createStamper().forget`), so it never wipes other devices.
   Start over and restoring a backup also turn sync off on this computer (the import's

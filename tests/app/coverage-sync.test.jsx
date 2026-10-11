@@ -76,6 +76,43 @@ describe('sync through OneDrive, once it is on', { timeout: 60000 }, () => {
     await waitFor(() => expect(within(screen.getByLabelText('Sync')).getByRole('status').textContent).toMatch(/^On\. Last synced just now/), LONG);
   });
 
+  it('a sync asked for during one that brings changes in starts from those changes, not the data from before', async () => {
+    // The second sync starts the moment the first ends, before React has
+    // shown the merge: it used to send this laptop's old copy back, stamped
+    // as changed now (Riley back at layer 1, Sam deleted), over the merge.
+    const bridge = fakeBridge({ 'layers-sync.json': await fileWith({ people: [
+      person('Riley', { id: 'p-riley', layer: 3, updatedAt: T3 }),
+      person('Sam', { id: 'p-sam', layer: 2, updatedAt: T2 }),
+    ] }) });
+    let release = null;
+    const held = new Promise(r => { release = r; });
+    const read = bridge.readSyncFiles;
+    const write = bridge.writeSyncFile;
+    Object.assign(bridge, { reads: 0, written: [] });
+    bridge.readSyncFiles = async () => { bridge.reads += 1; if (bridge.reads === 1) await held; return read(); };
+    bridge.writeSyncFile = (text) => { bridge.written.push(text); return write(text); };
+    syncOn();
+    seedState({ people: [person('Riley', { id: 'p-riley', layer: 1, updatedAt: T1 })] });
+    renderApp();
+    await waitFor(() => expect(bridge.reads).toBe(1), LONG); // the sync on start, held reading the file
+    document.dispatchEvent(new Event('visibilitychange')); // asks for another while it runs
+    release();
+    await waitFor(() => expect(savedState().people.map(p => p.name)).toEqual(['Riley', 'Sam']), LONG);
+    expect(savedState().people.map(p => [p.name, p.layer, p.updatedAt])).toEqual([['Riley', 3, T3], ['Sam', 2, T2]]);
+    expect(savedState().deleted).toEqual([]);
+    // Syncs run one at a time, so once a third has read the file the second
+    // has finished: every copy written by then has the merge.
+    await waitFor(() => expect(bridge.reads).toBe(2), LONG);
+    document.dispatchEvent(new Event('visibilitychange'));
+    await waitFor(() => expect(bridge.reads).toBe(3), LONG);
+    expect(bridge.written.length).toBeGreaterThan(0);
+    for (const text of bridge.written) {
+      const { payload } = await openSyncFile(text, PASS);
+      expect(payload.people.map(p => [p.name, p.layer, p.updatedAt])).toEqual([['Riley', 3, T3], ['Sam', 2, T2]]);
+      expect(payload.deleted).toEqual([]);
+    }
+  });
+
   it("takes on another device's deletions, unless the record changed here after", async () => {
     const bridge = fakeBridge({ 'layers-sync.json': await fileWith({
       people: [],

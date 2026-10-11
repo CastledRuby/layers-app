@@ -855,6 +855,17 @@ its own. Changes made while building are marked.
 
 ## History
 
+### A sync straight after another no longer undoes it (next release)
+
+Found on 2026-10-12 from a sync app test that failed now and then on a busy laptop. When
+a sync was asked for while another was running (Sync now, the one on start, the window
+showing) and the first brought in another device's changes, the second started before
+the app had shown them. It sent this laptop's old copy to the sync file, stamped as
+changed just now, and counted records only the other device had as deleted. So the other
+device's newer edits were overwritten and its new records deleted there too. Now the
+second sync starts from the merge. `coverage-sync.test.jsx` holds the first sync
+mid-read to make it happen every time.
+
 ### Each person in a group log on their own (1.0.40)
 
 Asked for on 2026-10-12: a log with several people assumed it went the same with each.
