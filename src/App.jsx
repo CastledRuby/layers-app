@@ -11,11 +11,11 @@ import { PageTransition } from './components/PageTransition.jsx';
 import { hasOpenSheet, isTyping, SheetLayerContext, topSheet } from './components/sheetLayer.js';
 import { ACHIEVEMENTS, ACTIVITY_TEMPLATES, categoryMeta, DIM_LABELS, DIM_ORDER, getLayer, TABS } from './data/constants.js';
 import { EMPTY_SKILLS, INITIAL_GENERAL_GOALS, INITIAL_JOURNAL, INITIAL_PEOPLE, INITIAL_SKILLS } from './data/seed.js';
-import { backfillJournalDates, backfillPeopleDates, backfillSkillDates, formatAbsoluteDate, formatCalendarDate, formatWeekdays, parseISODay, pushHistoryPoint, toISODate } from './lib/dates.js';
+import { backfillJournalDates, backfillPeopleDates, backfillSkillDates, formatAbsoluteDate, formatCalendarDate, parseISODay, pushHistoryPoint, toISODate } from './lib/dates.js';
 import { achievementProgress, newlyUnlocked } from './lib/achievements.js';
 import { advanceLayer, advanceSkillGoals, bumpSkills, chartDay, computeOverall, dimBumps, dimsEqual, goalBumpFor, keepDimsInLayer, makePerson, migrateDimsToLayers, movePerson, placeOnLayers, raisedSkills } from './lib/progress.js';
 import { MAX_BACKUP_BYTES, createBackup, validateBackup } from './lib/backup.js';
-import { NOTIFY_DEFAULTS, dayNudge, isDoneOn, notifySettings, parseActionUrl, snoozeUntil, templateFor } from './lib/calendar.js';
+import { NOTIFY_DEFAULTS, dayNudge, isDoneOn, notifySettings, parseActionUrl, repeatText, snoozeUntil, templateFor } from './lib/calendar.js';
 import { useCalendarNotifications, useChatBatch, useDailyBackup, useDailyCheckIn, useSlideAcross, useSystemDark, useToday, useWide } from './lib/hooks.js';
 import { waiting } from './lib/chatBatch.js';
 import { followUpEvent, markDone, markMissed } from './lib/reminders.js';
@@ -1005,7 +1005,7 @@ function LayersApp() {
       });
       pushToast(`Changed for ${dayWords(onlyDay)} only`, { undo: snap });
     } else if (editingId) {
-      setEvents(prev => prev.filter(e => !replaceIds.includes(e.id)).map(e => e.id !== editingId ? e : tidy({ ...e, goalId: null, from: null, date: null, weekdays: null, allDay: null, ...fields, updatedAt: now })));
+      setEvents(prev => prev.filter(e => !replaceIds.includes(e.id)).map(e => e.id !== editingId ? e : tidy({ ...e, goalId: null, from: null, date: null, weekdays: null, allDay: null, interval: null, monthly: null, times: null, ...fields, updatedAt: now })));
       pushToast(replaceIds.length ? `Plan updated, and ${replaceIds.length === 1 ? 'its copy' : `its ${replaceIds.length} copies`} replaced` : 'Plan updated', { undo: snap });
     } else {
       const created = toISODate(new Date());
@@ -1127,7 +1127,7 @@ function LayersApp() {
     if (ev && ev.kind === 'recurring' && day) {
       askConfirm({
         title: 'Delete this plan?',
-        message: `"${ev.title}" repeats ${formatWeekdays(ev.weekdays || []).replace(/^Every/, 'every')}. Delete it for ${dayWords(day)} only, or every time?`,
+        message: `"${ev.title}" repeats ${repeatText(ev).replace(/^(Every|Monthly)/, w => w.toLowerCase())}. Delete it for ${dayWords(day)} only, or every time?`,
         altLabel: `Only ${dayWords(day)}`,
         onAlt: () => {
           setEvents(prev => prev.map(e => e.id !== eventId ? e : { ...e, skipDays: [...new Set([...(e.skipDays || []), day])].sort(), updatedAt: new Date().toISOString() }));

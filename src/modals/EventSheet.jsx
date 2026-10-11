@@ -11,8 +11,8 @@ import { Sheet } from '../components/Sheet.jsx';
 import { isTabbedToButton, isTyping } from '../components/sheetLayer.js';
 import { Kbd } from '../components/atoms.jsx';
 import { AvatarStack } from '../components/PersonPick.jsx';
-import { alertOf, durationOf, isDaily, isDoneOn, isMissedOn, templateFor } from '../lib/calendar.js';
-import { formatCalendarDate, formatTime12, formatWeekdays, parseISODay } from '../lib/dates.js';
+import { alertOf, durationOf, isDoneOn, isMissedOn, repeatText, templateFor, timeOn, timesText } from '../lib/calendar.js';
+import { formatCalendarDate, formatTime12, parseISODay } from '../lib/dates.js';
 import { PlanTipsSheet } from './PlanTipsSheet.jsx';
 import { COLORS } from '../theme.js';
 
@@ -40,9 +40,10 @@ export function EventSheet({ ev, day, today, people, goals, journal = [], genera
   const started = hasStarted(ev, day, today);
   const alert = alertOf(ev);
   const template = templateFor(ev.template);
-  const when = ev.allDay || typeof ev.time !== 'number'
+  const at = timeOn(ev, day);
+  const when = at === null
     ? `${formatCalendarDate(parseISODay(day))}, all day`
-    : `${formatCalendarDate(parseISODay(day))} · ${formatTime12(ev.time)} to ${formatTime12(ev.time + durationOf(ev))}`;
+    : `${formatCalendarDate(parseISODay(day))} · ${formatTime12(at)} to ${formatTime12(at + durationOf(ev))}`;
 
   if (ev.source === 'google') {
     return (
@@ -91,7 +92,7 @@ export function EventSheet({ ev, day, today, people, goals, journal = [], genera
         </div>
       }>
       <Row Icon={Clock}>{when}</Row>
-      {ev.kind === 'recurring' && <Row Icon={Repeat}>{isDaily(ev) ? 'Every day' : formatWeekdays(ev.weekdays || [])}</Row>}
+      {ev.kind === 'recurring' && <Row Icon={Repeat}>{repeatText(ev)}{timesText(ev) ? ` · ${timesText(ev)}` : ''}</Row>}
       <Row Icon={Bell}>{alert === null ? 'No reminder' : alert === 0 ? 'Reminder at the time' : alert === 1440 ? 'Reminder the day before' : `Reminder ${alert >= 60 ? `${alert / 60} hour${alert > 60 ? 's' : ''}` : `${alert} minutes`} before`}</Row>
       {goal && <Row Icon={Target}>Moves "{goal.title}"</Row>}
       {who.length > 0 && (

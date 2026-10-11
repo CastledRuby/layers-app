@@ -87,3 +87,27 @@ describe('logs', () => {
 it('reads nothing from an empty sentence', () => {
   expect(read('   ')).toBeNull();
 });
+
+describe('every few weeks, and monthly (2026-10-11)', () => {
+  it('reads fortnightly, every other tue, and every 2 weeks on a day', () => {
+    expect(read('football fortnightly sat 9am')).toMatchObject({ repeat: 'weekly', interval: 2, weekdays: [6], day: '2026-10-10', time: at(9) });
+    expect(read('gym every other tue thu 7am')).toMatchObject({ repeat: 'weekly', interval: 2, weekdays: [2, 4], day: '2026-10-06' });
+    expect(read('study every 2 weeks on mon 4pm')).toMatchObject({ repeat: 'weekly', interval: 2, weekdays: [1], day: '2026-10-05' });
+    expect(read('call every three weeks')).toMatchObject({ repeat: 'weekly', interval: 3 });
+    expect(read('gym every tue')).toMatchObject({ repeat: 'weekly', interval: 1, weekdays: [2] });
+  });
+
+  it('reads a day of the month, or a weekday of it, starting on the next one', () => {
+    expect(read('book club monthly on the 15th 7pm')).toMatchObject({ repeat: 'monthly', monthly: { day: 15 }, day: '2026-10-15', weekdays: null });
+    expect(read('drinks first fri of the month 6pm')).toMatchObject({ repeat: 'monthly', monthly: { nth: 1, weekday: 5 }, day: '2026-11-06' });
+    expect(read('dinner last sunday of every month')).toMatchObject({ repeat: 'monthly', monthly: { nth: -1, weekday: 0 }, day: '2026-10-25' });
+    expect(read('rent the 1st of every month')).toMatchObject({ repeat: 'monthly', monthly: { day: 1 }, day: '2026-11-01' });
+    expect(read('call mum every month')).toMatchObject({ repeat: 'monthly', monthly: { day: 5 } });
+    expect(read('dinner 15th october')).toMatchObject({ repeat: 'once', day: '2026-10-15' });
+  });
+
+  it('saves them as the plan sheet would', () => {
+    expect(planFieldsOf(read('drinks first fri of the month 6pm'), 15)).toMatchObject({ kind: 'recurring', weekdays: [], monthly: { nth: 1, weekday: 5 }, interval: null, from: '2026-11-06' });
+    expect(planFieldsOf(read('gym every other tue thu 7am'), 15)).toMatchObject({ kind: 'recurring', weekdays: [2, 4], interval: 2, monthly: null });
+  });
+});

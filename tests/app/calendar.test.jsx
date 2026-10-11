@@ -162,6 +162,49 @@ describe('Planning', () => {
     expect(savedState().events[0]).toMatchObject({ kind: 'recurring', weekdays: [2, 4, 5] });
   });
 
+  it('every 2 weeks (E), a different time on some days, and monthly (2026-10-11)', async () => {
+    seedState();
+    const { user } = renderApp();
+    await user.keyboard('p8{Enter}'); // Something else, nobody
+    await user.keyboard('rrrr'); // On certain days
+    const when = () => dialog('When?');
+    const todays = new Date().getDay();
+    const other = (todays + 2) % 7; // a second day, two on
+    await user.keyboard(String(((other + 6) % 7) + 1));
+    await user.keyboard('e'); // Every 2 weeks
+    expect(within(when()).getByRole('group', { name: 'How often' }).querySelector('[aria-pressed="true"]').textContent).toBe('Every 2 weeks');
+    expect(within(when()).getByLabelText('Summary').textContent).toMatch(/^Every 2 weeks on /);
+    await user.click(within(when()).getByRole('button', { name: 'A different time on some days' }));
+    const names = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    expect(within(when()).getByLabelText(`${names[other]}'s time`)).toBeTruthy();
+    await user.keyboard('{Enter}');
+    const saved = savedState().events[0];
+    expect(saved).toMatchObject({ kind: 'recurring', interval: 2, from: TODAY });
+    expect(saved.weekdays.sort()).toEqual([todays, other].sort());
+    expect(saved).not.toHaveProperty('times'); // no day changed from the plan's time
+
+    // Monthly, on the date it starts, or that weekday of the month.
+    await user.keyboard('p8{Enter}');
+    await user.keyboard('rrrrr'); // Monthly
+    const each = within(when()).getByRole('group', { name: 'Each month' });
+    const date = new Date().getDate();
+    expect(each.querySelector('[aria-pressed="true"]').textContent).toBe(`On the ${date}${date % 100 >= 11 && date % 100 <= 13 ? 'th' : ['th', 'st', 'nd', 'rd'][date % 10] || 'th'}`);
+    await user.keyboard('e');
+    expect(within(when()).getByLabelText('Summary').textContent).toMatch(/^Monthly on the (first|second|third|fourth|last) \w+day from/);
+    await user.keyboard('{Enter}');
+    const monthly = savedState().events.find(e => e.monthly);
+    expect(monthly).toMatchObject({ kind: 'recurring', weekdays: [], from: TODAY });
+    expect(monthly.monthly.weekday).toBe(todays);
+  });
+
+  it('a day at a time of its own shows on that day', async () => {
+    const gym = { id: 'g', title: 'Gym', kind: 'recurring', weekdays: [0, 1, 2, 3, 4, 5, 6], from: TODAY, time: 18 * 60, duration: 60, times: { [new Date().getDay()]: 7 * 60 }, personIds: [] };
+    seedState({ events: [gym] });
+    const { user } = renderApp();
+    await user.click(nav('Today'));
+    expect(screen.getByText('7:00 AM')).toBeTruthy();
+  });
+
   it('"Every weekday" repeats Monday to Friday, and opens that way to edit', async () => {
     seedState();
     const { user } = renderApp();

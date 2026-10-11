@@ -14,7 +14,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { CalendarPlus, Check, PenLine, Sparkles } from 'lucide-react';
 import { Kbd } from './components/atoms.jsx';
-import { formatCalendarDate, formatTime12, formatWeekdays, parseISODay, toISODate } from './lib/dates.js';
+import { repeatText } from './lib/calendar.js';
+import { formatCalendarDate, formatTime12, parseISODay, toISODate } from './lib/dates.js';
 import { useSystemDark } from './lib/hooks.js';
 import { readSentence } from './lib/sentence.js';
 import { STORAGE_KEY } from './lib/storage.js';
@@ -35,7 +36,7 @@ const listNames = (names) => (names.length <= 1 ? names.join('') : `${names.slic
 // "Fri 9 October, 10:00 AM to 11:00 AM", or how it repeats.
 function whenText(r) {
   const from = formatCalendarDate(parseISODay(r.day));
-  const day = r.repeat === 'daily' ? `Every day, from ${from}` : r.repeat === 'weekly' ? `${formatWeekdays(r.weekdays)}, from ${from}` : from;
+  const day = r.repeat === 'once' ? from : `${repeatText({ kind: 'recurring', weekdays: r.weekdays || [], interval: r.interval, monthly: r.monthly })}, from ${from}`;
   return `${day}, ${r.allDay ? 'all day' : `${formatTime12(r.time)} to ${formatTime12(r.time + r.duration)}`}`;
 }
 const MISSING_TEXT = {

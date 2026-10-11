@@ -291,6 +291,10 @@ analysis; all four for using Layers. Each is marked as it's built.
   time's tip (names hidden), and the numbers counted on this laptop; Claude says whether
   you followed the tip and quotes the moments that mattered, marked on the chat (green
   where it landed, amber where something was missed). The Journal's review keeps them.
+- **Built: every 2, 3 or 4 weeks, monthly, and a different time on different days**
+  (repeats 1, 2 and 4). In the plan sheet under Repeat (E steps through how often, or
+  which day of the month), and typed: "fortnightly", "every other tue", "every 2 weeks
+  on mon", "monthly on the 15th", "first fri of the month".
 - **Built: type a plan in the plan sheet** (using Layers 1). **Type it** (T) on the first
   step reads "gym tue thu fri 7am" as Ctrl+K does, shows what it understood (and any
   names not in Layers), and Enter fills in every step.

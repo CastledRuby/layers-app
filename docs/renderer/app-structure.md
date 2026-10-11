@@ -258,8 +258,11 @@ Planning is three steps, one thing at a time, nearly all taps, and every tap has
    - **Repeat** (`R`): once, **several days** (pick as many days as you like; one plan
      is saved for each), every day, **every weekday** (Monday to Friday), or **on certain
      days** (as many of Mon–Sun as you like, Tue, Thu and Fri say, with **Mon–Fri** and
-     **Weekends** chips; 1–7 turn Mon–Sun on and off there). It reads "Every Tue, Thu and
-     Fri" (`formatWeekdays`, Monday first)
+     **Weekends** chips; 1–7 turn Mon–Sun on and off there), **every week or every 2, 3 or 4
+     weeks** (`E`), and **a different time on some days** (a time for each day picked), or
+     **monthly** (on the date it starts, that weekday of the month such as the third
+     Friday, or the last one; `E`). It reads "Every Tue, Thu and Fri", "Every 2 weeks on
+     Mon" or "Monthly on the last Friday" (`repeatText` in `lib/calendar.js`)
    - **Change** (`O`), when editing a repeating plan opened on one of its days: **Only
      <that day>** (it becomes a one-off of its own, so Repeat goes) or **Every time**.
      Deleting it asks the same

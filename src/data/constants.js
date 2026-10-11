@@ -62,6 +62,7 @@ export const SHORTCUTS = [
   { keys: ['+'], desc: 'Planning "When?", or Goals when logging: a new goal with them' },
   { keys: ['Q', 'W', 'E', 'R'], or: true, desc: 'Planning "What?": plan one of your recent plans again' },
   { keys: ['T'], desc: 'Planning "What?": type the plan ("gym tue thu fri 7am"); ↵ fills in every step' },
+  { keys: ['E'], desc: 'Planning "When?": every week, 2, 3 or 4 weeks (on certain days), or which day of the month (monthly)' },
   { keys: ['C'], desc: 'An open plan: plan it again (a copy)' },
   { keys: ['X'], desc: 'An open plan that has started: it didn’t happen (nothing is logged)' },
   { keys: ['T'], desc: 'An open plan, or a plan in the day popup: Coach tips for it' },

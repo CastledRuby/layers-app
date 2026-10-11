@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { clashesOn, dayAgenda, dayNudge, keyDateOn, messageNudge, monthMarks, needsAnswer, occursOn, parseActionUrl, planIdeas, plannedNotifications, quietDay, recentPlans, snoozeUntil, usualGap, weekSummary } from './lib/calendar.js';
+import { clashesOn, dayAgenda, dayNudge, keyDateOn, messageNudge, monthlyOn, monthMarks, ordinal, repeatText, timeOn, timesText, needsAnswer, occursOn, parseActionUrl, planIdeas, plannedNotifications, quietDay, recentPlans, snoozeUntil, usualGap, weekSummary } from './lib/calendar.js';
 
 // Sunday 4 October 2026.
 const DAY = '2026-10-04';
@@ -247,5 +247,41 @@ describe('messageNudge: who to message today', () => {
     expect(evening({ people: [priya], journal: [] }, null, { ...only, keyDateReminders: false })[0]).toMatchObject({ body: "Priya's birthday is tomorrow." });
     const onTheDay = plannedNotifications({ people: [priya], journal: [] }, only, local('2026-10-05', 0), local('2026-10-05', 23, 59)).filter(n => n.kind === 'nudge');
     expect(onTheDay[0]).toMatchObject({ title: 'Still time to message Priya?', body: "Priya's birthday is today." });
+  });
+});
+
+describe('repeats of 2026-10-11: every few weeks, monthly, times of their own', () => {
+  const ev = (extra) => ({ id: 'r', title: 'Gym', kind: 'recurring', weekdays: [2], from: '2026-10-06', time: 1140, duration: 60, ...extra });
+  it('every 2 weeks counts from the week it starts', () => {
+    const every2 = ev({ interval: 2 });
+    expect(['2026-10-06', '2026-10-13', '2026-10-20', '2026-10-27'].map(d => occursOn(every2, d))).toEqual([true, false, true, false]);
+    const every3 = ev({ interval: 3, weekdays: [2, 4] });
+    expect(['2026-10-08', '2026-10-15', '2026-10-22', '2026-10-29'].map(d => occursOn(every3, d))).toEqual([true, false, false, true]);
+  });
+  it('monthly on a date (a later day falls on the last) or a weekday of the month', () => {
+    expect(monthlyOn({ day: 31 }, '2026-11-30')).toBe(true);
+    expect(monthlyOn({ day: 31 }, '2026-10-31')).toBe(true);
+    expect(monthlyOn({ nth: 1, weekday: 5 }, '2026-10-02')).toBe(true);
+    expect(monthlyOn({ nth: 1, weekday: 5 }, '2026-10-09')).toBe(false);
+    expect(monthlyOn({ nth: -1, weekday: 5 }, '2026-10-30')).toBe(true);
+    expect(monthlyOn({ nth: -1, weekday: 5 }, '2026-10-23')).toBe(false);
+    expect(occursOn(ev({ weekdays: [], monthly: { day: 15 } }), '2026-11-15')).toBe(true);
+    expect(occursOn(ev({ weekdays: [], monthly: { day: 15 }, from: '2026-12-01' }), '2026-11-15')).toBe(false);
+  });
+  it('a day can have a time of its own', () => {
+    const two = ev({ weekdays: [2, 4], times: { 2: 1080 } });
+    expect([timeOn(two, '2026-10-06'), timeOn(two, '2026-10-08'), timeOn({ ...two, allDay: true }, '2026-10-06')]).toEqual([1080, 1140, null]);
+    expect(dayAgenda({ events: [two] }, '2026-10-06').timed[0]).toMatchObject({ start: 1080, end: 1140 });
+    expect(timesText(two)).toBe('Tue 6:00 PM, Thu 7:00 PM');
+    expect(timesText(ev({ weekdays: [2, 4] }))).toBe('');
+  });
+  it('says how it repeats', () => {
+    expect(repeatText(ev({ weekdays: [2, 4, 5] }))).toBe('Every Tue, Thu and Fri');
+    expect(repeatText(ev({ interval: 2, weekdays: [1] }))).toBe('Every 2 weeks on Mon');
+    expect(repeatText(ev({ interval: 2, weekdays: [1, 2, 3, 4, 5] }))).toBe('Every 2 weeks on weekdays');
+    expect(repeatText(ev({ weekdays: [], monthly: { day: 22 } }))).toBe('Monthly on the 22nd');
+    expect(repeatText(ev({ weekdays: [], monthly: { nth: -1, weekday: 0 } }))).toBe('Monthly on the last Sunday');
+    expect(repeatText({ kind: 'oneoff' })).toBe('');
+    expect([1, 2, 3, 4, 11, 12, 13, 21, 22, 23, 31].map(ordinal)).toEqual(['1st', '2nd', '3rd', '4th', '11th', '12th', '13th', '21st', '22nd', '23rd', '31st']);
   });
 });

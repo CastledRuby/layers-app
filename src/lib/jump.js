@@ -6,7 +6,7 @@
 // docs/renderer/app-structure.md.
 
 import { getLayer } from '../data/constants.js';
-import { occursOn, templateFor } from './calendar.js';
+import { occursOn, repeatText, templateFor, timeOn } from './calendar.js';
 import { formatTime12, MONTH_NAMES, parseISODay, toISODate, WEEKDAY_SHORT } from './dates.js';
 import { readSentence } from './sentence.js';
 
@@ -80,11 +80,11 @@ export function planRows(events, people, today) {
   events.forEach(ev => {
     let day = null;
     if (ev.kind === 'oneoff') day = ev.date >= addDays(today, -14) && ev.date <= addDays(today, 28) ? ev.date : null;
-    else for (let n = 0; n <= 7 && !day; n++) if (occursOn(ev, addDays(today, n))) day = addDays(today, n);
+    else for (let n = 0, ahead = ev.monthly || ev.interval >= 2 ? 35 : 7; n <= ahead && !day; n++) if (occursOn(ev, addDays(today, n))) day = addDays(today, n);
     if (!day) return;
     const who = (ev.personIds || []).map(id => people.find(p => p.id === id)).filter(Boolean);
     const t = templateFor(ev.template);
-    const when = `${day === today ? 'Today' : shortDate(day)}${typeof ev.time === 'number' && !ev.allDay ? `, ${formatTime12(ev.time)}` : ''}`;
+    const when = `${day === today ? 'Today' : shortDate(day)}${timeOn(ev, day) !== null ? `, ${formatTime12(timeOn(ev, day))}` : ''}`;
     rows.push({
       id: `plan:${ev.id}`, group: 'plan', label: ev.title, sub: `${when}${who.length ? ` · with ${who.map(p => p.name).join(', ')}` : ''}`,
       emoji: t ? t.emoji : '📌', day, words: who.map(p => p.name.toLowerCase()), run: { type: 'plan', eventId: ev.id, day },
@@ -101,7 +101,7 @@ export function sentenceRow(query, { people, today, now }) {
   if (!r) return null;
   const who = r.personIds.map(id => people.find(p => p.id === id).name);
   if (r.kind === 'plan' && !r.missing.length) {
-    const when = r.repeat === 'daily' ? 'every day' : r.repeat === 'weekly' ? `every ${r.weekdays.map(d => WEEKDAY_SHORT[d]).join(', ')}` : r.day === today ? 'today' : shortDate(r.day);
+    const when = r.repeat === 'once' ? (r.day === today ? 'today' : shortDate(r.day)) : repeatText({ kind: 'recurring', weekdays: r.weekdays || [], interval: r.interval, monthly: r.monthly }).replace(/^(Every|Monthly)/, w => w.toLowerCase());
     return { id: 'sentence', group: 'sentence', label: `Plan: ${r.title}`, sub: `${when}${r.allDay ? ', all day' : `, ${formatTime12(r.time)}`}${r.unknown.length ? ` · not in Layers: ${r.unknown.join(', ')}` : ''}`, emoji: '📅', sentence: r, run: { type: 'sentence' } };
   }
   if (r.kind === 'log' && r.personIds.length) {

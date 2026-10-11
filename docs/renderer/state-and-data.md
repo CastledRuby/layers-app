@@ -170,6 +170,9 @@ type Event = {                                // a plan on the calendar; see The
   weekdays?: number[];                        // 0=Sun…6=Sat (recurring; all seven = daily); legacy single `weekday` also read
   from?: string;                              // recurring: the first day it applies (1.0.30+; older ones have always applied)
   skipDays?: string[];                        // recurring: days it doesn't come up on, because that day alone was changed (now a one-off) or deleted
+  interval?: 2 | 3 | 4;                       // recurring on weekdays: every 2-4 weeks, counted from the week of `from` (2026-10-11)
+  monthly?: { day: number } | { nth: 1 | 2 | 3 | 4 | -1; weekday: number }; // recurring once a month instead (weekdays empty): the 15th (a later day than the month has is its last), or the first…last Friday
+  times?: { [weekday: number]: number };      // recurring on weekdays: days at a time of their own (Tue 6 pm, Thu 7 pm); `timeOn(ev, day)` reads it
   time?: number | null;                       // minutes since midnight; null for all day
   allDay?: boolean;
   duration?: number;                          // minutes; missing means 60

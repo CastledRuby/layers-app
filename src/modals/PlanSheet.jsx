@@ -39,14 +39,28 @@ import { AvatarStack, PeopleGrid } from '../components/PersonPick.jsx';
 import { usePeopleKeys } from '../components/peopleKeys.js';
 import { DateDropdown, TimeDropdown } from '../components/pickers.jsx';
 import { QuickGoalSheet } from './QuickGoalSheet.jsx';
-import { DEFAULT_DURATION, EVENT_TEMPLATES, alertOf, clashesOn, durationOf, isDaily, recentPlans, templateFor } from '../lib/calendar.js';
-import { formatCalendarDate, formatTime12, formatWeekdays, parseISODay, toISODate, WEEKDAY_FULL, WEEKDAY_SHORT } from '../lib/dates.js';
+import { DEFAULT_DURATION, EVENT_TEMPLATES, alertOf, clashesOn, durationOf, isDaily, ordinal, recentPlans, repeatText, templateFor, timesText } from '../lib/calendar.js';
+import { formatCalendarDate, formatTime12, parseISODay, toISODate, WEEKDAY_FULL, WEEKDAY_SHORT } from '../lib/dates.js';
 import { COLORS } from '../theme.js';
 
 const TIMES = [9 * 60, 12 * 60 + 30, 15 * 60 + 30, 18 * 60, 20 * 60];
 const LENGTHS = [15, 30, 60, 120, 180];
 const ALERTS = [null, 0, 5, 15, 30, 60, 1440];
-const REPEATS = [['once', 'Once'], ['several', 'Several days'], ['daily', 'Every day'], ['weekdays', 'Every weekday'], ['weekly', 'On certain days']];
+const REPEATS = [['once', 'Once'], ['several', 'Several days'], ['daily', 'Every day'], ['weekdays', 'Every weekday'], ['weekly', 'On certain days'], ['monthly', 'Monthly']];
+const INTERVALS = [[1, 'Every week'], [2, 'Every 2 weeks'], [3, 'Every 3 weeks'], [4, 'Every 4 weeks']];
+// A monthly plan from its first day: on that date, that weekday of the month
+// ("the third Friday"), or the last one; { by, rule, label } for each that fits.
+const NTH_WORDS = ['first', 'second', 'third', 'fourth'];
+function monthlyChoices(day) {
+  const d = parseISODay(day);
+  const last = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
+  const name = WEEKDAY_FULL[d.getDay()];
+  const out = [{ by: 'date', rule: { day: d.getDate() }, label: `On the ${ordinal(d.getDate())}` }];
+  if (d.getDate() <= 28) out.push({ by: 'nth', rule: { nth: Math.ceil(d.getDate() / 7), weekday: d.getDay() }, label: `On the ${NTH_WORDS[Math.ceil(d.getDate() / 7) - 1]} ${name}` });
+  if (d.getDate() + 7 > last) out.push({ by: 'last', rule: { nth: -1, weekday: d.getDay() }, label: `On the last ${name}` });
+  return out;
+}
+const monthlyRule = (day, by) => { const list = monthlyChoices(day); return (list.find(c => c.by === by) || list[0]).rule; };
 const MON_FRI = [1, 2, 3, 4, 5];
 const WEEKENDS = [0, 6];
 // The week as the day chips show it, Monday first: 1-7 toggle these.
@@ -71,7 +85,7 @@ function isCopyOf(ev, of) {
 }
 // A typed plan's when, as "Type it" reads it back: "Every Tue, Thu and Fri, 7:00 AM".
 function typedWhen(r) {
-  const day = r.repeat === 'daily' ? 'Every day' : r.repeat === 'weekly' ? formatWeekdays(r.weekdays) : formatCalendarDate(parseISODay(r.day));
+  const day = r.repeat === 'once' ? formatCalendarDate(parseISODay(r.day)) : repeatText({ kind: 'recurring', weekdays: r.weekdays || [], interval: r.interval, monthly: r.monthly });
   return `${day}, ${r.allDay ? 'all day' : formatTime12(r.time)}`;
 }
 const autoTitleFor = (template, people, personIds) => (template || templateFor('custom')).title(namesText(personIds.map(id => (people.find(p => p.id === id) || {}).name).filter(Boolean)));
@@ -113,8 +127,13 @@ function freshForm(start, people, today, defaultAlert) {
     allDay: source ? !!source.allDay : false,
     time: source && typeof source.time === 'number' ? source.time : template ? template.time : 18 * 60,
     duration: source ? durationOf(source) : template ? template.duration : DEFAULT_DURATION,
-    repeat: recurring ? (isDaily(source) ? 'daily' : isMonFri(source.weekdays) ? 'weekdays' : 'weekly') : 'once',
-    weekdays: recurring && !isDaily(source) ? source.weekdays : [parseISODay(day).getDay()],
+    repeat: !recurring ? 'once' : source.monthly ? 'monthly' : source.interval > 1 ? 'weekly' : isDaily(source) ? 'daily' : isMonFri(source.weekdays) ? 'weekdays' : 'weekly',
+    weekdays: recurring && !source.monthly && (!isDaily(source) || source.interval > 1) ? source.weekdays : [parseISODay(day).getDay()],
+    // Every 2-4 weeks, which day of the month, and days at times of their own (2026-10-11).
+    interval: recurring && source.interval > 1 ? source.interval : 1,
+    monthlyBy: source && source.monthly ? (typeof source.monthly.day === 'number' ? 'date' : source.monthly.nth === -1 ? 'last' : 'nth') : 'date',
+    ownTimes: !!(recurring && source.times && Object.keys(source.times).length),
+    times: recurring && source.times ? { ...source.times } : {},
     alert: source ? alertOf(source) : defaultAlert,
     goalId: source ? source.goalId || null : null,
     only: false, // a repeating plan: change only the day it was opened on
@@ -182,6 +201,18 @@ export function PlanSheet({ people, events = [], today, prefill = {}, defaultAle
     .filter(c => !replaced.includes(c.it.ev))), [events, people, allDay, repeat, days, day, time, duration, editing, replaced]);
   const copyClashes = editing ? clashes.filter(c => isCopyOf(c.it.ev, editing)) : [];
   const overlaps = clashes.filter(c => !copyClashes.includes(c)).slice(0, 3);
+  // How it repeats, as a plan would have it (for the summary and the save).
+  const repeating = repeat !== 'once' && repeat !== 'several';
+  const repeatShape = {
+    kind: 'recurring',
+    weekdays: repeat === 'monthly' ? [] : [...(repeatDays || [])],
+    interval: repeat === 'weekly' && form.interval > 1 ? form.interval : null,
+    monthly: repeat === 'monthly' ? monthlyRule(day, form.monthlyBy) : null,
+  };
+  // Days at times of their own: only those that differ from the plan's time.
+  const ownTimes = repeat === 'weekly' && form.ownTimes && !allDay
+    ? Object.fromEntries(weekdays.filter(d => typeof form.times[d] === 'number' && form.times[d] !== time).map(d => [d, form.times[d]]))
+    : {};
   const peopleKeys = usePeopleKeys(people, personIds, (id) => set(f => ({ personIds: f.personIds.includes(id) ? f.personIds.filter(x => x !== id) : [...f.personIds, id] })));
 
   function go(next) {
@@ -236,20 +267,24 @@ export function PlanSheet({ people, events = [], today, prefill = {}, defaultAle
     const at = allDay ? 'all day' : formatTime12(time);
     const when = repeat === 'once' ? `${day === today ? 'today' : shortDay(day)}, ${at}`
       : repeat === 'several' ? `${days.length} days, ${at}`
-        : `${formatWeekdays(repeatDays).replace(/^Every/, 'every')}, ${at}`;
+        : `${repeatText(repeatShape).replace(/^(Every|Monthly)/, w => w.toLowerCase())}, ${at}`;
     return `${shownTitle.trim()} · ${when}`;
   }
   function save(another = false) {
     if (!canSave) return;
-    const kind = repeatDays ? 'recurring' : 'oneoff';
+    const kind = repeating ? 'recurring' : 'oneoff';
     const fields = {
       title: shownTitle.trim(),
       template: template ? template.key : 'custom',
       personIds,
       kind,
       date: kind === 'oneoff' ? day : null,
-      weekdays: kind === 'recurring' ? [...repeatDays] : null,
-      from: kind === 'recurring' ? (editing && editing.from && editing.from < day ? editing.from : day) : undefined,
+      weekdays: kind === 'recurring' ? [...repeatShape.weekdays] : null,
+      interval: kind === 'recurring' ? repeatShape.interval : null,
+      monthly: kind === 'recurring' ? repeatShape.monthly : null,
+      times: kind === 'recurring' && Object.keys(ownTimes).length ? ownTimes : null,
+      // A monthly plan starts on its first day; others keep the start they had.
+      from: kind === 'recurring' ? (editing && editing.from && editing.from < day && repeat !== 'monthly' ? editing.from : day) : undefined,
       allDay,
       time: allDay ? null : time,
       duration: allDay ? null : duration,
@@ -297,6 +332,8 @@ export function PlanSheet({ people, events = [], today, prefill = {}, defaultAle
     else if (letter === 't') act(() => pickTime(cycle([...TIMES, 'all'], allDay ? 'all' : time, back)));
     else if (letter === 'l' && !allDay) act(() => set({ duration: cycle(LENGTHS, duration, back) }));
     else if (letter === 'r' && !form.only) act(() => pickRepeat(cycle(repeats.map(([k]) => k), repeat, back)));
+    else if (letter === 'e' && repeat === 'weekly' && !form.only) act(() => set({ interval: cycle(INTERVALS.map(([n]) => n), form.interval, back) }));
+    else if (letter === 'e' && repeat === 'monthly' && !form.only) act(() => set({ monthlyBy: cycle(monthlyChoices(day).map(c => c.by), form.monthlyBy, back) }));
     else if (letter === 'o' && occurrence) act(() => pickOnly(!form.only));
     else if (letter === 'a') act(() => set({ alert: cycle(ALERTS, alert, back) }));
     else if (letter === 'g' && goals.length) act(() => set({ goalId: cycle([null, ...goals.map(g => g.id)], goalId, back) }));
@@ -309,8 +346,8 @@ export function PlanSheet({ people, events = [], today, prefill = {}, defaultAle
   const whenText = [
     repeat === 'once' ? formatCalendarDate(parseISODay(day))
       : repeat === 'several' ? `${days.length} ${days.length === 1 ? 'day' : 'days'}: ${days.map(shortDay).join(', ')}`
-        : `${formatWeekdays(repeatDays) || 'Every week'} from ${formatCalendarDate(parseISODay(day))}`,
-    allDay ? 'all day' : span(time, time + duration),
+        : `${repeatText(repeatShape) || 'Every week'} from ${formatCalendarDate(parseISODay(day))}`,
+    allDay ? 'all day' : Object.keys(ownTimes).length ? timesText({ ...repeatShape, time, times: ownTimes }) : span(time, time + duration),
   ].join(', ') + ` · ${alert === null ? 'no reminder' : alert === 0 ? 'reminder at the time' : `reminder ${alertLabel(alert)}`}`;
   const isDayOn = (d) => (repeat === 'several' ? days.includes(d) : day === d);
   const titles = { what: added.length ? 'Plan another' : 'Plan something', who: 'Who with?', when: editing ? 'Edit plan' : start.copyOf ? 'Plan it again' : 'When?' };
@@ -457,6 +494,33 @@ export function PlanSheet({ people, events = [], today, prefill = {}, defaultAle
                     <Choice on={weekdays.join() === WEEKENDS.join()} onClick={() => set({ weekdays: WEEKENDS })}>Weekends</Choice>
                   </span>
                   {!weekdays.length && <span className="text-xs mt-1.5 block" style={{ color: COLORS.alert }}>Pick at least one day.</span>}
+                </span>
+              )}
+              {repeat === 'weekly' && (
+                <span className="w-full flex flex-wrap items-center gap-1.5 mt-1.5" role="group" aria-label="How often">
+                  {INTERVALS.map(([n, label]) => <Choice key={n} on={form.interval === n} onClick={() => set({ interval: n })}>{label}</Choice>)}
+                  <Kbd>E</Kbd>
+                </span>
+              )}
+              {repeat === 'weekly' && !allDay && weekdays.length > 1 && (
+                <span className="w-full mt-1.5" role="group" aria-label="Times">
+                  <Choice on={form.ownTimes} onClick={() => set(f => ({ ownTimes: !f.ownTimes }))}>A different time on some days</Choice>
+                  {form.ownTimes && (
+                    <span className="flex flex-wrap gap-x-3 gap-y-1.5 mt-1.5">
+                      {MON_FIRST.filter(d => weekdays.includes(d)).map(d => (
+                        <span key={d} className="flex items-center gap-1.5 text-xs font-semibold" style={{ color: COLORS.ink }} aria-label={`${WEEKDAY_FULL[d]}'s time`}>
+                          {WEEKDAY_SHORT[d]}
+                          <TimeDropdown compact value={typeof form.times[d] === 'number' ? form.times[d] : time} onChange={(t) => set(f => ({ times: { ...f.times, [d]: t } }))} />
+                        </span>
+                      ))}
+                    </span>
+                  )}
+                </span>
+              )}
+              {repeat === 'monthly' && (
+                <span className="w-full flex flex-wrap items-center gap-1.5 mt-1.5" role="group" aria-label="Each month">
+                  {monthlyChoices(day).map(c => <Choice key={c.by} on={monthlyChoices(day).some(x => x.by === form.monthlyBy) ? form.monthlyBy === c.by : c.by === 'date'} onClick={() => set({ monthlyBy: c.by })}>{c.label}</Choice>)}
+                  <Kbd>E</Kbd>
                 </span>
               )}
             </Section>}

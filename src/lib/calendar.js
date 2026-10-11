@@ -10,6 +10,14 @@
 //     from?       recurring: the first day it applies ('YYYY-MM-DD')
 //     skipDays?   recurring: days it doesn't come up on, because that day
 //                 alone was changed (now a one-off of its own) or deleted
+//     interval?   recurring on weekdays: every 2, 3 or 4 weeks, counted from
+//                 the week of `from` (added 2026-10-11)
+//     monthly?    recurring once a month instead of on weekdays (weekdays
+//                 empty): { day: 1-31 } (a later day than a month has falls
+//                 on its last day) or { nth: 1-4, or -1 for the last,
+//                 weekday: 0-6 } ("the first Friday")
+//     times?      recurring on weekdays: { [weekday]: minutes } for days at
+//                 another time than `time` (Tue 6 pm, Thu 7 pm)
 //     time        minutes after midnight, or null with allDay
 //     allDay?     true for an all-day event
 //     duration?   minutes (DEFAULT_DURATION when missing)
@@ -21,7 +29,7 @@
 //     createdAt, updatedAt? }
 // A person's key dates (person.dates) are { id, kind, label, date: 'YYYY-MM-DD',
 // yearly }: a yearly one (birthday) comes round on the same month and day.
-import { journalDaysAgo, MONTH_NAMES, parseISODay, startOfDay, toISODate } from './dates.js';
+import { formatWeekdays, journalDaysAgo, MONTH_NAMES, parseISODay, startOfDay, toISODate } from './dates.js';
 
 const WEEKDAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
@@ -79,6 +87,19 @@ const addDays = (date, n) => new Date(date.getFullYear(), date.getMonth(), date.
 const weekdaysOf = (ev) => ev.weekdays || (ev.weekday != null ? [ev.weekday] : []);
 export const isDaily = (ev) => ev.kind === 'recurring' && weekdaysOf(ev).length === 7;
 
+const mondayOf = (d) => addDays(d, -((d.getDay() + 6) % 7));
+const weeksApart = (a, b) => Math.round((mondayOf(b) - mondayOf(a)) / (7 * 86400000));
+
+// Does a monthly rule ({ day } or { nth, weekday }) fall on this day?
+export function monthlyOn(rule, day) {
+  const d = dayDate(day);
+  if (!d || !rule) return false;
+  const last = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
+  if (typeof rule.day === 'number') return d.getDate() === Math.min(rule.day, last);
+  if (typeof rule.weekday !== 'number' || d.getDay() !== rule.weekday) return false;
+  return rule.nth === -1 ? d.getDate() + 7 > last : Math.ceil(d.getDate() / 7) === rule.nth;
+}
+
 // Does the event come up on this day ('YYYY-MM-DD')?
 export function occursOn(ev, day) {
   if (ev.kind === 'oneoff') return ev.date === day;
@@ -86,7 +107,41 @@ export function occursOn(ev, day) {
   if (ev.from && day < ev.from) return false;
   if (ev.skipDays && ev.skipDays.includes(day)) return false;
   const d = dayDate(day);
-  return !!d && weekdaysOf(ev).includes(d.getDay());
+  if (!d) return false;
+  if (ev.monthly) return monthlyOn(ev.monthly, day);
+  if (!weekdaysOf(ev).includes(d.getDay())) return false;
+  const every = ev.interval >= 2 ? ev.interval : 1;
+  return every === 1 || !ev.from || weeksApart(dayDate(ev.from), d) % every === 0;
+}
+
+// The event's start on a day, in minutes (a day of its own time, `times`, or
+// its time), or null when it has none.
+export function timeOn(ev, day) {
+  if (ev.allDay || typeof ev.time !== 'number') return null;
+  const d = day ? dayDate(day) : null;
+  const own = ev.times && d ? ev.times[d.getDay()] : undefined;
+  return typeof own === 'number' ? own : ev.time;
+}
+
+// How a repeating event repeats, said plainly: "Every Tue, Thu and Fri",
+// "Every 2 weeks on Mon", "Monthly on the 15th", "Monthly on the last Friday".
+const NTH = { 1: 'first', 2: 'second', 3: 'third', 4: 'fourth', '-1': 'last' };
+export const ordinal = (n) => `${n}${n % 100 >= 11 && n % 100 <= 13 ? 'th' : ['th', 'st', 'nd', 'rd'][n % 10] || 'th'}`;
+export function repeatText(ev) {
+  if (!ev || ev.kind !== 'recurring') return '';
+  if (ev.monthly) return typeof ev.monthly.day === 'number' ? `Monthly on the ${ordinal(ev.monthly.day)}` : `Monthly on the ${NTH[ev.monthly.nth]} ${WEEKDAY_NAMES[ev.monthly.weekday]}`;
+  const days = formatWeekdays(weekdaysOf(ev));
+  const every = ev.interval >= 2 ? ev.interval : 1;
+  if (every === 1) return days;
+  const on = days.replace(/^Every /, '');
+  return `Every ${every} weeks on ${{ weekday: 'weekdays', weekend: 'weekends', day: 'every day' }[on] || on}`;
+}
+// A repeating event's days at times of their own: "Tue 6:00 PM, Thu 7:00 PM".
+export function timesText(ev) {
+  if (!ev || !ev.times || ev.allDay || ev.monthly) return '';
+  const days = weekdaysOf(ev).slice().sort((a, b) => ((a + 6) % 7) - ((b + 6) % 7));
+  if (!days.some(d => typeof ev.times[d] === 'number' && ev.times[d] !== ev.time)) return '';
+  return days.map(d => `${WEEKDAY_NAMES[d].slice(0, 3)} ${clock(typeof ev.times[d] === 'number' ? ev.times[d] : ev.time)}`).join(', ');
 }
 
 export function isDoneOn(ev, day) {
@@ -141,8 +196,8 @@ export function dayAgenda({ events = [], people = [], generalGoals = [], journal
     people: (ev.personIds || []).map(id => peopleById[id]).filter(Boolean),
     done: isDoneOn(ev, day),
     missed: isMissedOn(ev, day),
-    start: timed(ev) ? ev.time : null,
-    end: timed(ev) ? ev.time + durationOf(ev) : null,
+    start: timed(ev) ? timeOn(ev, day) : null,
+    end: timed(ev) ? timeOn(ev, day) + durationOf(ev) : null,
   }));
   items.filter(it => it.start === null).forEach(it => allDay.push(it));
   const timedItems = items.filter(it => it.start !== null).sort((a, b) => a.start - b.start || a.ev.title.localeCompare(b.ev.title));

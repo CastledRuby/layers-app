@@ -187,6 +187,20 @@ function cleanEvent(e, personIds, skipped) {
   if ('alert' in clean && clean.alert !== null && !(typeof clean.alert === 'number' && clean.alert >= 0 && clean.alert <= 7 * 24 * 60)) delete clean.alert;
   if ('allDay' in clean) clean.allDay = clean.allDay === true;
   if ('from' in clean && !isISODay(clean.from)) delete clean.from;
+  // Repeats from 2026-10-11 (lib/calendar.js): every 2-4 weeks, monthly, and days at times of their own.
+  if ('interval' in clean && !(Number.isInteger(clean.interval) && clean.interval >= 2 && clean.interval <= 4)) delete clean.interval;
+  if ('monthly' in clean) {
+    const m = clean.monthly;
+    const byDay = isObject(m) && Number.isInteger(m.day) && m.day >= 1 && m.day <= 31;
+    const byWeekday = isObject(m) && [1, 2, 3, 4, -1].includes(m.nth) && Number.isInteger(m.weekday) && m.weekday >= 0 && m.weekday <= 6;
+    if (byDay) clean.monthly = { day: m.day };
+    else if (byWeekday) clean.monthly = { nth: m.nth, weekday: m.weekday };
+    else delete clean.monthly;
+  }
+  if ('times' in clean) {
+    const times = isObject(clean.times) ? Object.fromEntries(Object.entries(clean.times).filter(([d, t]) => /^[0-6]$/.test(d) && Number.isInteger(t) && t >= 0 && t < 24 * 60)) : {};
+    if (Object.keys(times).length) clean.times = times; else delete clean.times;
+  }
   if ('template' in clean && !isText(clean.template)) delete clean.template;
   return clean;
 }

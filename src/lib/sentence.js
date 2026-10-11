@@ -8,19 +8,22 @@
 // readSentence(text, { people, today, now }) returns null for an empty
 // sentence, or one of:
 //   { kind: 'plan', title, template, personIds, unknown, day, allDay, time,
-//     duration, repeat: 'once' | 'daily' | 'weekly', weekdays, missing }
+//     duration, repeat: 'once' | 'daily' | 'weekly' | 'monthly', weekdays,
+//     interval (1, or every 2-4 weeks), monthly (a rule, or null), missing }
 //   { kind: 'log', personIds, unknown, type, meaningfulness, day, note,
 //     missing }
 // `unknown` is the names after "with" that aren't anyone in Layers;
 // `missing` lists what still has to be said: 'when' (a plan with no day,
 // time or kind), 'who' and 'rating' (a log).
 
-import { templateFor } from './calendar.js';
+import { monthlyOn, templateFor } from './calendar.js';
 import { parseISODay, toISODate } from './dates.js';
 
 const WEEKDAYS = { sun: 0, sunday: 0, mon: 1, monday: 1, tue: 2, tues: 2, tuesday: 2, wed: 3, weds: 3, wednesday: 3, thu: 4, thur: 4, thurs: 4, thursday: 4, fri: 5, friday: 5, sat: 6, saturday: 6 };
 const MONTHS = { jan: 0, january: 0, feb: 1, february: 1, mar: 2, march: 2, apr: 3, april: 3, may: 4, jun: 5, june: 5, jul: 6, july: 6, aug: 7, august: 7, sep: 8, sept: 8, september: 8, oct: 9, october: 9, nov: 10, november: 10, dec: 11, december: 11 };
 export const RATING_WORDS = { brief: 1, casual: 2, good: 3, personal: 4, deep: 5 };
+const COUNT_WORDS = { two: 2, three: 3, four: 4 };
+const NTHS = { first: 1, '1st': 1, second: 2, '2nd': 2, third: 3, '3rd': 3, fourth: 4, '4th': 4, last: -1 };
 // The word that picks a template, and the time a meal word means.
 const TEMPLATE_WORDS = {
   coffee: 'coffee', call: 'call', phone: 'call', ring: 'call', facetime: 'call',
@@ -94,6 +97,22 @@ export function readSentence(text, { people = [], today, now = new Date() } = {}
   const low = (i) => (t[i] ? t[i].low : '');
 
   let day = null; let time = null; let duration = null; let repeat = 'once'; let weekdays = null;
+  let interval = 1; let monthly = null; // every 2-4 weeks; a monthly rule ({ day } or { nth, weekday })
+  // Weekdays from j on ("tue thu and fri"), taken; { days, end }.
+  const readDays = (j) => {
+    const days = [];
+    while (j < t.length && (low(j) in WEEKDAYS || (['and', '&', 'on'].includes(low(j)) && low(j + 1) in WEEKDAYS))) {
+      if (low(j) in WEEKDAYS) days.push(WEEKDAYS[low(j)]);
+      take(j); j++;
+    }
+    return { days, end: j };
+  };
+  // "of the month", "of every month", "each month", "every month" after a monthly day.
+  const takeOfMonth = (j) => {
+    const words = ['of', 'the', 'every', 'each', 'month'];
+    while (j < t.length && words.includes(low(j)) && t.slice(j).some(x => x.low === 'month')) { take(j); if (low(j) === 'month') return j; j++; }
+    return j - 1;
+  };
   let logWord = false; let rating = null; let partOfDay = false;
   let rollable = false; // a date said without a year ("12 oct"), which a plan reads as the next one
   let mealWord = null;
@@ -105,6 +124,36 @@ export function readSentence(text, { people = [], today, now = new Date() } = {}
     if (used[i]) continue;
     const w = low(i);
     const n = low(i + 1);
+
+    // Every few weeks (added 2026-10-11): "fortnightly", "every other tue",
+    // "every other week", "every 2 weeks on mon", "every three weeks".
+    if (w === 'fortnightly') { repeat = 'weekly'; interval = 2; take(i); continue; }
+    if (w === 'every' && (n === 'other' || /^[234]$/.test(n) || n in COUNT_WORDS)) {
+      const k = n === 'other' ? 2 : Number(n) || COUNT_WORDS[n];
+      if (low(i + 2) === 'week' || low(i + 2) === 'weeks') {
+        take(i, i + 1, i + 2); repeat = 'weekly'; interval = k;
+        const { days, end } = readDays(i + 3);
+        if (days.length) weekdays = [...new Set(days)].sort((a, b) => a - b);
+        i = end - 1; continue;
+      }
+      if (n === 'other' && low(i + 2) in WEEKDAYS) {
+        take(i, i + 1); repeat = 'weekly'; interval = 2;
+        const { days, end } = readDays(i + 2);
+        weekdays = [...new Set(days)].sort((a, b) => a - b);
+        i = end - 1; continue;
+      }
+    }
+    // Monthly: "monthly", "every month", "first fri of the month", "the last
+    // sunday of every month", "on the 15th every month", "monthly on the 15th".
+    if (w === 'monthly' || (w === 'every' && n === 'month')) { repeat = 'monthly'; take(i); if (w === 'every') take(i + 1); continue; }
+    if (w in NTHS && n in WEEKDAYS) {
+      repeat = 'monthly'; monthly = { nth: NTHS[w], weekday: WEEKDAYS[n] };
+      take(i, i + 1); i = takeOfMonth(i + 2); continue;
+    }
+    if (/^(\d{1,2})(st|nd|rd|th)$/.test(w) && Number(w.slice(0, -2)) <= 31 && (repeat === 'monthly' || ['of', 'every', 'each'].includes(n)) && !(n in MONTHS)) {
+      const after = takeOfMonth(i + 1);
+      if (repeat === 'monthly' || after > i) { repeat = 'monthly'; monthly = { day: Number(w.slice(0, -2)) }; take(i); i = after; continue; }
+    }
 
     // Repeats: "every day", "daily", "weekdays", "every mon wed", "mondays", "weekly".
     if ((w === 'every' && n === 'day') || w === 'daily' || w === 'everyday') { repeat = 'daily'; take(i); if (w === 'every') take(i + 1); continue; }
@@ -265,6 +314,11 @@ export function readSentence(text, { people = [], today, now = new Date() } = {}
   if (repeat === 'weekly' && weekdays === null) weekdays = [weekdayOf(day || day0)];
   if (repeat === 'weekly' && !start) start = [...Array(8).keys()].map(k => addDays(day0, k)).find(d => weekdays.includes(weekdayOf(d)) && (d > day0 || stillToday));
   if (repeat === 'daily' && !start) start = stillToday ? day0 : addDays(day0, 1);
+  if (repeat === 'monthly') {
+    if (!monthly) monthly = { day: parseISODay(day || day0).getDate() };
+    const from = day || day0;
+    if (!start || !monthlyOn(monthly, start)) start = [...Array(62).keys()].map(k => addDays(from, k)).find(d => monthlyOn(monthly, d) && (d > day0 || stillToday));
+  }
   if (!start && startTime !== null) start = stillToday ? day0 : addDays(day0, 1);
   const missing = [];
   if (!start && !tWord) missing.push('when');
@@ -275,6 +329,8 @@ export function readSentence(text, { people = [], today, now = new Date() } = {}
     time: startTime,
     duration: duration || (tWord ? template.duration : 60),
     repeat, weekdays: repeat === 'daily' ? [0, 1, 2, 3, 4, 5, 6] : repeat === 'weekly' ? weekdays : null,
+    interval: repeat === 'weekly' && interval > 1 ? interval : 1,
+    monthly: repeat === 'monthly' ? monthly : null,
     missing,
   };
 }
@@ -288,7 +344,9 @@ export function planFieldsOf(r, alert) {
   return {
     title: r.title, template: r.template, personIds: r.personIds, kind,
     date: kind === 'oneoff' ? r.day : null,
-    weekdays: kind === 'recurring' ? r.weekdays : null,
+    weekdays: kind === 'recurring' ? (r.repeat === 'monthly' ? [] : r.weekdays) : null,
+    interval: r.repeat === 'weekly' && r.interval > 1 ? r.interval : null,
+    monthly: r.repeat === 'monthly' ? r.monthly : null,
     from: kind === 'recurring' ? r.day : undefined,
     allDay: r.allDay, time: r.allDay ? null : r.time, duration: r.allDay ? null : r.duration,
     alert, goalId: null,

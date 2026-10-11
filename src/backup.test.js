@@ -138,6 +138,22 @@ describe('validateBackup repairs or skips damaged records', () => {
     expect(j3).not.toHaveProperty('analysis');
     expect(j4.analysis.chat.length).toBe(20040);
   });
+  it('keeps a plan repeating every few weeks, monthly, or at times of its own, and drops what isn\'t right (2026-10-11)', () => {
+    const ev = (extra) => ({ id: 'e', title: 'Gym', kind: 'recurring', weekdays: [2, 4], from: '2026-10-06', time: 1140, personIds: [], ...extra });
+    const { data } = validateBackup({ version: 1, people: [person()], events: [
+      ev({ id: 'a', interval: 2, times: { 2: 1080, 9: 60, 4: 'late' } }),
+      ev({ id: 'b', interval: 5, monthly: { nth: 5, weekday: 1 }, times: {} }),
+      ev({ id: 'c', weekdays: [], monthly: { day: 15, extra: 1 } }),
+      ev({ id: 'd', weekdays: [], monthly: { nth: -1, weekday: 5 } }),
+    ] });
+    const [a, b, c, d] = data.events;
+    expect(a).toMatchObject({ interval: 2, times: { 2: 1080 } });
+    expect(b).not.toHaveProperty('interval');
+    expect(b).not.toHaveProperty('monthly');
+    expect(b).not.toHaveProperty('times');
+    expect(c.monthly).toEqual({ day: 15 });
+    expect(d.monthly).toEqual({ nth: -1, weekday: 5 });
+  });
   it("keeps a review's moments and last time's tip, tidied (from 2026-10-11)", () => {
     const review = { wentWell: [], opportunity: '', tryNextTime: '', next: {},
       moments: [{ quote: 'how are you feeling?', kind: 'good', note: 'Asked' }, { quote: 'x', kind: 'odd' }, { kind: 'missed' }],
