@@ -581,7 +581,9 @@ Once reached, an achievement is recorded in the `achievements` state with the da
 `newlyUnlocked(progress, achievements)` whenever people, the journal or skills change,
 and records anything new. A recorded achievement stays unlocked even if the data changes
 later, for example after you remove a person, and Me shows "Unlocked Oct 4". Up to
-1.0.27 they were worked out on every render, so they could lock again.
+1.0.27 they were worked out on every render, so they could lock again. Nothing is
+recorded until you've set up (`onboarded`): before that the people shown are the
+samples, and up to 1.0.40 "Start fresh" kept three achievements they had reached.
 
 `achievements` is saved with the rest of the state and goes into backups, where
 `validateBackup` checks it ([below](#backup-format)). `null` means "not worked out yet":

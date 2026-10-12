@@ -315,9 +315,12 @@ function LayersApp() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [people, journal, generalGoals, events, skills, profile, onboarded, theme, themeMode, achievements]);
 
-  // Record achievements as they're reached (lib/achievements.js).
+  // Record achievements as they're reached (lib/achievements.js). Not before
+  // setting up: the people shown then are the samples, and "Start fresh"
+  // used to keep three achievements they had reached.
   useEffect(() => {
-    const quiet = achievements === null || quietAchievements.current || !onboarded;
+    if (!onboarded) return;
+    const quiet = achievements === null || quietAchievements.current;
     quietAchievements.current = false;
     const fresh = newlyUnlocked(achievementProgress(people, journal, skills), achievements);
     if (fresh.length === 0) { if (achievements === null) setAchievements({}); return; }

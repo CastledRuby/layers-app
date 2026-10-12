@@ -134,6 +134,19 @@ describe('setting up', () => {
     expect(savedPerson('Kai').dates).toEqual([expect.objectContaining({ kind: 'birthday', yearly: true, date: expect.stringMatching(/-03-14$/) })]);
   });
 
+  it('starting fresh unlocks no achievements: the people shown before setting up are the samples, not yours', async () => {
+    const { user } = renderApp();
+    await user.type(screen.getByLabelText('Your name'), 'Sam{Enter}');
+    await user.type(screen.getByLabelText("Person's name"), 'Kai{Enter}');
+    await user.keyboard('{Enter}'); // an empty box goes on
+    await user.keyboard('{Enter}'); // Go to Today
+    await wait(50);
+    expect(savedState().achievements).toEqual({});
+    await user.click(nav('Me'));
+    expect(screen.queryByText(/^Unlocked /)).toBeNull();
+    expect(screen.getByText('Locked · 0 of 10 things')).toBeTruthy();
+  });
+
   it('can restore from a backup instead', async () => {
     const click = vi.spyOn(HTMLInputElement.prototype, 'click').mockImplementation(() => {});
     const { user } = renderApp();

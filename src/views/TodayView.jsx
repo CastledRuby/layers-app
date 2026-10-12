@@ -218,7 +218,7 @@ export function TodayView({ today, selectedDay, onSelectDay, mode, onSetMode, pe
       else if ((e.key === 'x' || e.key === 'X') && waiting[0] && onMissEvent) { e.preventDefault(); onMissEvent(waiting[0].ev, day); }
       else if ((e.key === 'i' || e.key === 'I') && ideas[0]) { e.preventDefault(); onPlan({ day, personIds: [ideas[0].person.id], template: ideas[0].template }); }
       // On a Monday the week has barely begun, so W shows the one just gone.
-      else if ((e.key === 'w' || e.key === 'W') && onOpenReview) { e.preventDefault(); onOpenReview(sel.getDay() === 1 ? addDays(day, -1) : day); }
+      else if ((e.key === 'w' || e.key === 'W') && onOpenReview) { e.preventDefault(); onOpenReview(parseISODay(day).getDay() === 1 ? addDays(day, -1) : day); }
       else if ((e.key === 'r' || e.key === 'R') && day === today && drillBox.current) { e.preventDefault(); drillBox.current.focus(); }
       else if (day === today && nudgeKeys.current && nudgeKeys.current.nudge && /^[ogz]$/i.test(e.key)) {
         const n = nudgeKeys.current;

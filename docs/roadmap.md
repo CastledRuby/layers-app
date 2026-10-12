@@ -855,6 +855,16 @@ its own. Changes made while building are marked.
 
 ## History
 
+### Evaluation of 2026-10-12 (not released yet)
+
+A click-through of a fresh install, and the tests run many times over:
+
+- **Achievements on a fresh start**: setting up with "Start fresh" unlocked First
+  Meaningful Conversation, Remembered 10 Things and Relationship Builder straight away,
+  reached by the sample people shown before setting up. Achievements are now recorded
+  only once you're set up. (Ones already saved are kept: they can't be told apart from
+  real ones.)
+
 ### Each person in a group log on their own (1.0.40)
 
 Asked for on 2026-10-12: a log with several people assumed it went the same with each.
