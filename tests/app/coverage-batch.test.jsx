@@ -219,7 +219,9 @@ describe('Analyse all new: the review queue', { timeout: 60000 }, () => {
 
 describe('Analyse all new: the monthly limit and what it cost', { timeout: 60000 }, () => {
   it('stops partway, before going past US$10: what was sent waits to be reviewed, the rest stay new, and Me counts it', async () => {
-    window.localStorage.setItem('layers-analysis-spend', JSON.stringify({ [month()]: { dollars: 9.97, chats: 200, models: { 'claude-haiku-4-5': 200 } } }));
+    // With Haiku 5.5 each conversation is estimated at about US$0.0033 and this
+    // answer costs US$0.00155: from US$9.996 one is sent, the next would go past.
+    window.localStorage.setItem('layers-analysis-spend', JSON.stringify({ [month()]: { dollars: 9.996, chats: 200, models: { 'claude-haiku-5-5': 200 } } }));
     const bridge = fakeBridge({ ...CHATS.amelieTwice, ...CHATS.chloe });
     seed();
     const { user } = renderApp();
@@ -236,7 +238,7 @@ describe('Analyse all new: the monthly limit and what it cost', { timeout: 60000
     expect(spend.dollars).toBeLessThanOrEqual(10);
 
     await openMe(user, 'Claude');
-    expect(screen.getByLabelText('What Claude has cost').textContent).toMatch(/This month: about US\$9\.99 for 201 chats \(Haiku 4\.5\)/);
+    expect(screen.getByLabelText('What Claude has cost').textContent).toMatch(/This month: about US\$10\.00 for 201 chats \(Haiku 5\.5\)/);
   });
 
   it('No limit sends everything, without a warning', async () => {

@@ -671,7 +671,7 @@ Windows ([electron.md](../electron.md)); the page gets the files.
 ### Analysing your own chat
 
 Coach → Analyse a chat → **Analyse your own chat**: a pasted chat (or, on a phone or
-tablet, screenshots too, up to six), read by **Claude Haiku 4.5**. On the laptop the card
+tablet, screenshots too, up to six), read by **Claude Haiku 5.5**. On the laptop the card
 only takes pasted text: screenshots are for the phone, and text is cheaper. It needs your own Anthropic API key, added
 in Me (**Chat analysis**) and kept by the main process ([electron.md](../electron.md)).
 Nothing is sent until you press **Analyse with Claude**, and the card says each time what
@@ -766,18 +766,23 @@ will be sent.
   backup (`cleanAnalysis` in `lib/backup.js`): a log whose analysis has no scores loses
   it. Without logging, nothing is kept: the screenshots and Claude's answer are gone
   once you leave.
-- **Which model** (`ANALYSIS_MODELS`): **Claude Haiku 4.5**, the cheapest, unless you
-  pick another with the card's **Model** buttons: Sonnet 5.5, Opus 5.5 or Fable 5.1, which
-  think first (slower, and more). A whole chat's analysis, practice feedback and the
-  week's read are `deep` requests: those three models run them at high effort (Opus 5.5
-  would otherwise be medium; decided 2026-10-11), while quick ones (a practice turn, reply
-  ideas, a drill) keep each model's own. `LayersApp` keeps the choice only while Layers is open,
-  so it's Haiku again each start. On a result, **The same chat with another model** sends
+- **Which model** (`ANALYSIS_MODELS`): **Claude Haiku 5.5**, the cheapest, unless you
+  pick another with the card's **Model** buttons: Haiku 4.5, Sonnet 5.5, Opus 5.5 or Fable
+  5.1. Sonnet, Opus and Fable think longer first (slower, and more), and the card says so;
+  Haiku 5.5 thinks a little too. Haiku 4.5 was the default until 2026-10-12, when Haiku 5.5
+  replaced it at a tenth of the price; it stays in the list so spending and reviews saved
+  with it keep its name. A whole chat's analysis, practice feedback and the week's read
+  are `deep` requests: every model that thinks runs them at high effort (Opus 5.5 and
+  Haiku 5.5 would otherwise be medium; decided 2026-10-11), while quick ones (a practice
+  turn, reply ideas, a drill) keep each model's own; Haiku 4.5 takes no effort.
+  `LayersApp` keeps the choice only while Layers is open, so it's Haiku 5.5 again each
+  start. On a result, **The same chat with another model** sends
   that chat to another one in a click; each model's answer is kept for that chat, so going
   back to one shows it again without asking again, and the chat is logged only once.
-- **Cost**: about US$0.02 a chat with Haiku, up to about US$0.35 with Fable, from your
-  Anthropic credit. Most of it is Claude's written answer; pasted text costs a fraction of
-  a cent, and each screenshot about US$0.0015 with Haiku.
+- **Cost**: under a cent a chat with Haiku 5.5 (about US$0.02 with Haiku 4.5), up to about
+  US$0.35 with Fable, from your Anthropic credit. Most of it is Claude's written answer and
+  its thinking; pasted text costs a fraction of a cent, and each screenshot about
+  US$0.00015 with Haiku 5.5.
 - **What it has cost** (Me → Chat analysis): every answer Claude gives is added to
   `layers-analysis-spend` in localStorage by month (`recordSpend`: `{ 'YYYY-MM': {
   dollars, chats, models } }`), including ones that couldn't be used (a refusal, too
@@ -956,7 +961,7 @@ are left out of the pick, so logging a chat with them doesn't swap them for some
 It counts as messaging them (`done`), like Messaged, for the card and the evening.
 
 - **Claude's opener**: when Layers first opens that day (with a key, and within the
-  monthly limit, since nobody pressed anything), `LayersApp` asks Haiku for one opener
+  monthly limit, since nobody pressed anything), `LayersApp` asks Haiku 5.5 for one opener
   (`openerRequest` in [lib/replies.js](../../src/lib/replies.js)): why message them, up to
   12 of their saved details, your latest three notes with them, and your style, every
   name hidden (theirs `[them]`, yours `[you]`, anyone else's `[someone]`). About half a
@@ -1013,7 +1018,7 @@ it carries on while you use the rest of Layers.
 - **The card** (`ChatBatchCard`, above "From your chats"): **Analyse all new** (A) with how
   many conversations, with whom, and roughly what it costs (`batchDollars`: the
   instructions and the chat in, the answer out), warning when that's more than is left of
-  the monthly limit; then "Haiku 4.5 is reading 3 of 9…" with **Stop**; then **Ready to
+  the monthly limit; then "Haiku 5.5 is reading 3 of 9…" with **Stop**; then **Ready to
   review** (R).
 - **As it runs**: each answer goes into the queue as it arrives (`analysisResult`, dated
   on its day), and each chat's progress moves past what's been sent or marked seen, so

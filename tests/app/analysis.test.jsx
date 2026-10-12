@@ -106,7 +106,7 @@ describe('chat analysis with Claude', () => {
     expect(sent.system).toMatch(/Layer 2/);
 
     expect(screen.getByText('No way Priya, congrats!')).toBeTruthy();
-    expect(screen.getByText(/this one cost about US\$0\.03/)).toBeTruthy();
+    expect(screen.getByText(/Read by Claude Haiku 5\.5: this one cost under US\$0\.01/)).toBeTruthy();
     expect(screen.getByText(/You celebrated Priya straight away/)).toBeTruthy();
     expect(screen.queryByText('Encourager use')).toBeNull(); // none in this chat
     expect(screen.getByText('Librarian era!')).toBeTruthy();
@@ -124,7 +124,7 @@ describe('chat analysis with Claude', () => {
     expect(savedState().journal).toEqual([expect.objectContaining({
       type: 'messaged', at: YESTERDAY, meaningfulness: 4, summary: 'Her new job at the library', activeListening: ['followup'],
       ratings: { depth: 3, trust: 4, reciprocity: 3, interaction: 5, sharedExperiences: 1, listening: 4 },
-      analysis: expect.objectContaining({ grading: expect.objectContaining({ overall: 80 }), conversationState: 'engaged', model: 'claude-haiku-4-5' }),
+      analysis: expect.objectContaining({ grading: expect.objectContaining({ overall: 80 }), conversationState: 'engaged', model: 'claude-haiku-5-5' }),
     })]);
     expect(toasts()).toContain('Logged time with Priya Shah');
     expect(within(log()).queryByRole('button', { name: 'Log this chat' })).toBeNull();
@@ -251,7 +251,7 @@ describe('chat analysis with Claude', () => {
     await openAnalyse(user, 'Priya');
     await user.type(within(screen.getByLabelText('Your own chat')).getByLabelText('The chat'), 'hello');
     await user.click(screen.getByRole('button', { name: 'Analyse with Claude' }));
-    expect(screen.getByText('Claude Haiku 4.5 is reading the chat…')).toBeTruthy();
+    expect(screen.getByText('Claude Haiku 5.5 is reading the chat…')).toBeTruthy();
     await user.keyboard('1'); // Prepare
     await user.keyboard('{ArrowRight}'); // Morgan
     await user.keyboard('a'); // analyse a chat with Morgan
@@ -270,10 +270,10 @@ describe('chat analysis with Claude', () => {
     const { user } = app;
     await openAnalyse(user, 'Priya');
     const models = () => within(screen.getByRole('group', { name: 'Model' }));
-    expect(models().getByRole('button', { name: /Haiku 4\.5/ }).getAttribute('aria-pressed')).toBe('true');
-    expect(screen.getByText(/to Anthropic for Claude Haiku 4\.5 to read \(about US\$0\.02\)/)).toBeTruthy();
+    expect(models().getByRole('button', { name: /Haiku 5\.5/ }).getAttribute('aria-pressed')).toBe('true');
+    expect(screen.getByText(/to Anthropic for Claude Haiku 5\.5 to read \(under US\$0\.01\)\. /)).toBeTruthy();
     await user.click(models().getByRole('button', { name: /Opus 5\.5/ }));
-    expect(screen.getByText(/for Claude Opus 5\.5 to read \(about US\$0\.14; it thinks first/)).toBeTruthy();
+    expect(screen.getByText(/for Claude Opus 5\.5 to read \(about US\$0\.14; it thinks longer first/)).toBeTruthy();
     await user.type(screen.getByLabelText('The chat'), 'Priya: hi');
     await user.click(screen.getByRole('button', { name: 'Analyse with Claude' }));
     await screen.findByText('From claude-opus-5-5');
@@ -306,7 +306,7 @@ describe('chat analysis with Claude', () => {
     // Started again, it's the cheapest again.
     const next = relaunch(app);
     await openAnalyse(next.user, 'Priya');
-    expect(models().getByRole('button', { name: /Haiku 4\.5/ }).getAttribute('aria-pressed')).toBe('true');
+    expect(models().getByRole('button', { name: /Haiku 5\.5/ }).getAttribute('aria-pressed')).toBe('true');
   });
 
   it('says what went wrong trying another model, and keeps the first answer', async () => {
@@ -320,7 +320,7 @@ describe('chat analysis with Claude', () => {
     await screen.findByText('Reconstructed conversation');
     await user.click(within(screen.getByRole('group', { name: 'The same chat with' })).getByRole('button', { name: /Fable 5\.1/ }));
     expect((await screen.findByRole('alert')).textContent).toMatch(/credit has run out/);
-    expect(screen.getByText(/Read by Claude Haiku 4\.5/)).toBeTruthy();
+    expect(screen.getByText(/Read by Claude Haiku 5\.5/)).toBeTruthy();
   });
 
   it("knows who it's with from the names on the messages, so a chat with Amelie goes to Amelie", async () => {
@@ -359,7 +359,7 @@ describe('chat analysis with Claude', () => {
         { about: 'them 1', meaningfulness: 5, ratings: { depth: 5, trust: 4, reciprocity: 4, interaction: 5, sharedExperiences: 2, listening: 4 } },
         { about: 'them 2', meaningfulness: 2, ratings: { depth: 1, trust: 2, reciprocity: 2, interaction: 2, sharedExperiences: 1, listening: 3 } },
       ] },
-    }, usage: { input: 1, output: 1 }, model: 'claude-haiku-4-5' }));
+    }, usage: { input: 1, output: 1 }, model: 'claude-haiku-5-5' }));
     seedState({ profile: { name: 'Liam', focus: 'mix' }, people: [person('Amelie', { layer: 4 }), person('Chloe', { layer: 3 }), person('Zoe')] });
     const { user } = renderApp();
     await openAnalyse(user, 'Amelie');

@@ -22,7 +22,9 @@ function folder(files = {}) {
 describe('the sync file', () => {
   it('opens with the passphrase, and only with it', async () => {
     const text = await sealSyncFile(data({ people: [person('kai')] }), 'correct horse battery');
-    expect(text).not.toContain('kai'); // nothing readable in it
+    // Nothing readable in it. Quoted, since the base64 can't hold a quote but
+    // can spell "kai" by chance (it did, and failed about one run in 40).
+    expect(text).not.toMatch(/"kai"|"people"/);
     const { payload } = await openSyncFile(text, 'correct horse battery');
     expect(payload.people[0].id).toBe('kai');
     await expect(openSyncFile(text, 'wrong passphrase')).rejects.toMatchObject({ code: 'wrong-passphrase' });

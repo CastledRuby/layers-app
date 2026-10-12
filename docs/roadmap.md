@@ -35,7 +35,7 @@ how the app behaves for you is listed with the default chosen, so it can be chan
 | People & Layers | ✅ Done | Every layer change gets a dated timeline step. Logging keeps the dimensions inside the layer (P3 option C), so Adjust agrees with the layer shown, and its preview shows any change of percentage. |
 | Goals | ✅ Mostly | Skill goals move with their skills (1.0.28). Goals linked to a reminder move when it's logged. Every part of a goal works by keys (2026-10-06), and logs record the goals they moved. |
 | Coach, Prepare | ✅ Done (1.0.28) | Hooks come from all saved interests, plans, preferences, things to ask about, recent topics and reflections. Personal experiences are kept for Layer 3 and closer. |
-| Coach, Analyse | ✅ Done | Your own chat, pasted (or as screenshots on a touch screen), read by Claude Haiku 4.5 only when you press Analyse, with your own API key; the four sample chats stay to try it out. |
+| Coach, Analyse | ✅ Done | Your own chat, pasted (or as screenshots on a touch screen), read by Claude Haiku 5.5 (Haiku 4.5 until 2026-10-12) only when you press Analyse, with your own API key; the four sample chats stay to try it out. |
 | Social skills | ✅ Done | The chart records points, and achievements are stored with dates. Strength and focus come from your real levels. |
 | Journal | ✅ Done (1.0.28) | Edit or delete an entry. Filters by person, type and period, plus search, which includes reflections. Every filter row fits on screen (1.0.29). |
 | Logging flow | ✅ Done | The quick log asks only for the date, how meaningful it was and a note. Each extra (ratings, active listening, something new, goals, reflection) opens in its own small sheet from a chip. Every step works from the keyboard. |
@@ -864,6 +864,15 @@ A click-through of a fresh install, and the tests run many times over:
   reached by the sample people shown before setting up. Achievements are now recorded
   only once you're set up. (Ones already saved are kept: they can't be told apart from
   real ones.)
+- **Claude Haiku 5.5 by default** (your choice, 2026-10-12): every Claude feature used
+  Haiku 4.5, picked on 2026-10-07 as the cheapest. Haiku 5.5 came out since: newer, better
+  at following instructions, and a tenth of the price (US$0.10 / 0.50 per million tokens
+  against US$1 / 5), so a chat costs under a cent. It thinks a little before answering,
+  and like the other thinking models it reads whole chats, practice feedback and your
+  week at high effort. Haiku 4.5 stays in Coach's Model buttons. Checked by the tests, not
+  yet against Anthropic: the first real chat analysed is the live check.
+- The sync file's test no longer fails when the random ciphertext happens to spell "kai"
+  (about one run in 40).
 
 ### Each person in a group log on their own (1.0.40)
 

@@ -762,7 +762,7 @@ function LayersApp() {
   });
   // --- Know what to say: today's who to message (dayNudge), and Claude's
   // opener for them, written when Layers first opens that day (decided
-  // 2026-10-10; Haiku, within the monthly limit). Messaged, or logging a chat
+  // 2026-10-10; Haiku 5.5, within the monthly limit). Messaged, or logging a chat
   // with them, is it done for the day. ---
   const picked = onboarded ? dayNudge({ people, journal, events }, today, nudgeDay) : null;
   const nudge = picked && !picked.done ? picked : null;

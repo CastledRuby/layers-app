@@ -10,15 +10,16 @@ const Anthropic = require('@anthropic-ai/sdk');
 
 const Client = Anthropic.Anthropic || Anthropic.default || Anthropic;
 // The models Coach may ask for (src/lib/analysis.js ANALYSIS_MODELS);
-// anything else gets the first, Claude Haiku 4.5, the cheapest.
-const MODELS = ['claude-haiku-4-5', 'claude-sonnet-5-5', 'claude-opus-5-5', 'claude-fable-5-1'];
+// anything else gets the first, Claude Haiku 5.5, the cheapest.
+const MODELS = ['claude-haiku-5-5', 'claude-haiku-4-5', 'claude-sonnet-5-5', 'claude-opus-5-5', 'claude-fable-5-1'];
 const MODEL = MODELS[0];
 // A deep request (the page's `deep`: a whole chat's analysis, practice
 // feedback, the week's read) runs the thinking models at high effort, for a
 // sharper read (decided 2026-10-11). They think anyway; effort is how much.
-// Opus 5.5 would be medium without it. Haiku doesn't take effort, and quick
-// requests (a practice turn, reply ideas) keep each model's own.
-const DEEP_EFFORT = { 'claude-sonnet-5-5': 'high', 'claude-opus-5-5': 'high', 'claude-fable-5-1': 'high' };
+// Opus 5.5 and Haiku 5.5 would be medium without it. Haiku 4.5 doesn't take
+// effort, and quick requests (a practice turn, reply ideas) keep each
+// model's own.
+const DEEP_EFFORT = { 'claude-haiku-5-5': 'high', 'claude-sonnet-5-5': 'high', 'claude-opus-5-5': 'high', 'claude-fable-5-1': 'high' };
 const MAX_IMAGES = 6;
 const MAX_IMAGE_CHARS = 6 * 1024 * 1024; // base64, after the page shrinks them
 const MAX_TEXT_CHARS = 60000;

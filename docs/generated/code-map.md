@@ -4,7 +4,7 @@
 > Run `npm run docs:map` after changing anything under `src/`, `electron/*.cjs` or `package.json` scripts.
 > Hand-written explanations live in the other files under [`docs/`](../README.md).
 
-Package: `layers-web` v1.0.40 · `src/`: 99 files, 17260 lines, 124 components, 477 top-level functions, 237 constants.
+Package: `layers-web` v1.0.40 · `src/`: 99 files, 17265 lines, 124 components, 477 top-level functions, 237 constants.
 
 ## Source files
 
@@ -19,7 +19,7 @@ Package: `layers-web` v1.0.40 · `src/`: 99 files, 17260 lines, 124 components, 
 | [data/seed.js](../../src/data/seed.js) | 176 | INITIAL_PEOPLE, INITIAL_GENERAL_GOALS, INITIAL_JOURNAL, INITIAL_SKILLS, EMPTY_SKILLS | — |
 | [lib/achievements.js](../../src/lib/achievements.js) | 37 | achievementProgress, newlyUnlocked, progressText | `data/constants` |
 | [lib/activity.js](../../src/lib/activity.js) | 48 | ACTIVITY_WEEKS, activityLevel, activityGrid | `lib/dates` |
-| [lib/analysis.js](../../src/lib/analysis.js) | 451 | ANALYSIS_MODELS, DEFAULT_ANALYSIS_MODEL, analysisModel, MAX_SCREENSHOTS, THEM, YOU, tokensFor, STAMP, chatSpeakers, detectPeople, … (+37) | `data/constants`, `lib/dates`, `lib/chatNumbers` |
+| [lib/analysis.js](../../src/lib/analysis.js) | 456 | ANALYSIS_MODELS, DEFAULT_ANALYSIS_MODEL, analysisModel, MAX_SCREENSHOTS, THEM, YOU, tokensFor, STAMP, chatSpeakers, detectPeople, … (+37) | `data/constants`, `lib/dates`, `lib/chatNumbers` |
 | [lib/backup.js](../../src/lib/backup.js) | 280 | BACKUP_VERSION, MAX_BACKUP_BYTES, createBackup, isObject, isText, isISODay, num, count, cleanHistory, cleanGoal, … (+9) | `lib/calendar`, `data/constants`, `data/seed`, `data/avatars`, `lib/util`, `lib/sync`, `lib/analysis` |
 | [lib/calendar.js](../../src/lib/calendar.js) | 539 | WEEKDAY_NAMES, DEFAULT_DURATION, EVENT_TEMPLATES, templateFor, DATE_KINDS, dateKind, NOTIFY_DEFAULTS, notifySettings, dayDate, addDays, … (+38) | `lib/dates` |
 | [lib/chatBatch.js](../../src/lib/chatBatch.js) | 117 | TINY, batchPlan, batchDollars, QUEUE_KEY, isText, cleanItem, readQueue, saveQueue, waiting, pruneQueue, … (+7) | `lib/analysis`, `lib/chatImport` |
@@ -280,43 +280,43 @@ Package: `layers-web` v1.0.40 · `src/`: 99 files, 17260 lines, 124 components, 
 | `progressText` | [achievements.js:34](../../src/lib/achievements.js#L34) | ✓ |  |
 | `activityLevel` | [activity.js:12](../../src/lib/activity.js#L12) | ✓ | ✓ |
 | `activityGrid` | [activity.js:20](../../src/lib/activity.js#L20) | ✓ | ✓ |
-| `analysisModel` | [analysis.js:24](../../src/lib/analysis.js#L24) | ✓ |  |
-| `tokensFor` | [analysis.js:31](../../src/lib/analysis.js#L31) | ✓ |  |
-| `chatSpeakers` | [analysis.js:42](../../src/lib/analysis.js#L42) | ✓ | ✓ |
-| `detectPeople` | [analysis.js:58](../../src/lib/analysis.js#L58) | ✓ | ✓ |
-| `firstName` | [analysis.js:68](../../src/lib/analysis.js#L68) |  |  |
-| `isYou` | [analysis.js:70](../../src/lib/analysis.js#L70) | ✓ |  |
-| `namesOf` | [analysis.js:77](../../src/lib/analysis.js#L77) | ✓ | ✓ |
-| `otherSpeakers` | [analysis.js:82](../../src/lib/analysis.js#L82) | ✓ | ✓ |
-| `personNamed` | [analysis.js:91](../../src/lib/analysis.js#L91) | ✓ | ✓ |
-| `str` | [analysis.js:100](../../src/lib/analysis.js#L100) |  |  |
-| `int` | [analysis.js:101](../../src/lib/analysis.js#L101) |  |  |
-| `obj` | [analysis.js:102](../../src/lib/analysis.js#L102) |  |  |
-| `orNull` | [analysis.js:103](../../src/lib/analysis.js#L103) |  |  |
-| `list` | [analysis.js:104](../../src/lib/analysis.js#L104) |  |  |
-| `tones` | [analysis.js:105](../../src/lib/analysis.js#L105) |  |  |
-| `analysisSchema` | [analysis.js:116](../../src/lib/analysis.js#L116) | ✓ | ✓ |
-| `writesDayFirst` | [analysis.js:148](../../src/lib/analysis.js#L148) |  |  |
-| `analysisSystem` | [analysis.js:156](../../src/lib/analysis.js#L156) | ✓ | ✓ |
-| `escapeRe` | [analysis.js:200](../../src/lib/analysis.js#L200) |  |  |
-| `nameParts` | [analysis.js:202](../../src/lib/analysis.js#L202) |  |  |
-| `signedAs` | [analysis.js:212](../../src/lib/analysis.js#L212) |  |  |
-| `hideNames` | [analysis.js:223](../../src/lib/analysis.js#L223) | ✓ | ✓ |
-| `restoreNames` | [analysis.js:244](../../src/lib/analysis.js#L244) | ✓ | ✓ |
-| `analysisContext` | [analysis.js:264](../../src/lib/analysis.js#L264) | ✓ | ✓ |
-| `lastTipFor` | [analysis.js:277](../../src/lib/analysis.js#L277) | ✓ |  |
-| `analysisRequest` | [analysis.js:280](../../src/lib/analysis.js#L280) | ✓ | ✓ |
-| `analysisResult` | [analysis.js:320](../../src/lib/analysis.js#L320) | ✓ | ✓ |
-| `analysisToKeep` | [analysis.js:388](../../src/lib/analysis.js#L388) | ✓ | ✓ |
-| `analysisDollars` | [analysis.js:406](../../src/lib/analysis.js#L406) | ✓ |  |
-| `dollarsText` | [analysis.js:410](../../src/lib/analysis.js#L410) | ✓ | ✓ |
-| `analysisCost` | [analysis.js:412](../../src/lib/analysis.js#L412) | ✓ | ✓ |
-| `monthOf` | [analysis.js:423](../../src/lib/analysis.js#L423) |  |  |
-| `readSpend` | [analysis.js:424](../../src/lib/analysis.js#L424) | ✓ |  |
-| `addSpend` | [analysis.js:428](../../src/lib/analysis.js#L428) | ✓ | ✓ |
-| `recordSpend` | [analysis.js:434](../../src/lib/analysis.js#L434) | ✓ |  |
-| `spendSummary` | [analysis.js:440](../../src/lib/analysis.js#L440) | ✓ | ✓ |
-| `typicalCost` | [analysis.js:448](../../src/lib/analysis.js#L448) | ✓ | ✓ |
+| `analysisModel` | [analysis.js:29](../../src/lib/analysis.js#L29) | ✓ |  |
+| `tokensFor` | [analysis.js:36](../../src/lib/analysis.js#L36) | ✓ |  |
+| `chatSpeakers` | [analysis.js:47](../../src/lib/analysis.js#L47) | ✓ | ✓ |
+| `detectPeople` | [analysis.js:63](../../src/lib/analysis.js#L63) | ✓ | ✓ |
+| `firstName` | [analysis.js:73](../../src/lib/analysis.js#L73) |  |  |
+| `isYou` | [analysis.js:75](../../src/lib/analysis.js#L75) | ✓ |  |
+| `namesOf` | [analysis.js:82](../../src/lib/analysis.js#L82) | ✓ | ✓ |
+| `otherSpeakers` | [analysis.js:87](../../src/lib/analysis.js#L87) | ✓ | ✓ |
+| `personNamed` | [analysis.js:96](../../src/lib/analysis.js#L96) | ✓ | ✓ |
+| `str` | [analysis.js:105](../../src/lib/analysis.js#L105) |  |  |
+| `int` | [analysis.js:106](../../src/lib/analysis.js#L106) |  |  |
+| `obj` | [analysis.js:107](../../src/lib/analysis.js#L107) |  |  |
+| `orNull` | [analysis.js:108](../../src/lib/analysis.js#L108) |  |  |
+| `list` | [analysis.js:109](../../src/lib/analysis.js#L109) |  |  |
+| `tones` | [analysis.js:110](../../src/lib/analysis.js#L110) |  |  |
+| `analysisSchema` | [analysis.js:121](../../src/lib/analysis.js#L121) | ✓ | ✓ |
+| `writesDayFirst` | [analysis.js:153](../../src/lib/analysis.js#L153) |  |  |
+| `analysisSystem` | [analysis.js:161](../../src/lib/analysis.js#L161) | ✓ | ✓ |
+| `escapeRe` | [analysis.js:205](../../src/lib/analysis.js#L205) |  |  |
+| `nameParts` | [analysis.js:207](../../src/lib/analysis.js#L207) |  |  |
+| `signedAs` | [analysis.js:217](../../src/lib/analysis.js#L217) |  |  |
+| `hideNames` | [analysis.js:228](../../src/lib/analysis.js#L228) | ✓ | ✓ |
+| `restoreNames` | [analysis.js:249](../../src/lib/analysis.js#L249) | ✓ | ✓ |
+| `analysisContext` | [analysis.js:269](../../src/lib/analysis.js#L269) | ✓ | ✓ |
+| `lastTipFor` | [analysis.js:282](../../src/lib/analysis.js#L282) | ✓ |  |
+| `analysisRequest` | [analysis.js:285](../../src/lib/analysis.js#L285) | ✓ | ✓ |
+| `analysisResult` | [analysis.js:325](../../src/lib/analysis.js#L325) | ✓ | ✓ |
+| `analysisToKeep` | [analysis.js:393](../../src/lib/analysis.js#L393) | ✓ | ✓ |
+| `analysisDollars` | [analysis.js:411](../../src/lib/analysis.js#L411) | ✓ |  |
+| `dollarsText` | [analysis.js:415](../../src/lib/analysis.js#L415) | ✓ | ✓ |
+| `analysisCost` | [analysis.js:417](../../src/lib/analysis.js#L417) | ✓ | ✓ |
+| `monthOf` | [analysis.js:428](../../src/lib/analysis.js#L428) |  |  |
+| `readSpend` | [analysis.js:429](../../src/lib/analysis.js#L429) | ✓ |  |
+| `addSpend` | [analysis.js:433](../../src/lib/analysis.js#L433) | ✓ | ✓ |
+| `recordSpend` | [analysis.js:439](../../src/lib/analysis.js#L439) | ✓ |  |
+| `spendSummary` | [analysis.js:445](../../src/lib/analysis.js#L445) | ✓ | ✓ |
+| `typicalCost` | [analysis.js:453](../../src/lib/analysis.js#L453) | ✓ | ✓ |
 | `createBackup` | [backup.js:20](../../src/lib/backup.js#L20) | ✓ | ✓ |
 | `isObject` | [backup.js:24](../../src/lib/backup.js#L24) |  |  |
 | `isText` | [backup.js:25](../../src/lib/backup.js#L25) |  |  |
@@ -786,16 +786,16 @@ Package: `layers-web` v1.0.40 · `src/`: 99 files, 17260 lines, 124 components, 
 | `INITIAL_SKILLS` | [seed.js:159](../../src/data/seed.js#L159) |
 | `EMPTY_SKILLS` | [seed.js:168](../../src/data/seed.js#L168) |
 | `ACTIVITY_WEEKS` | [activity.js:8](../../src/lib/activity.js#L8) |
-| `ANALYSIS_MODELS` | [analysis.js:17](../../src/lib/analysis.js#L17) |
-| `DEFAULT_ANALYSIS_MODEL` | [analysis.js:23](../../src/lib/analysis.js#L23) |
-| `MAX_SCREENSHOTS` | [analysis.js:25](../../src/lib/analysis.js#L25) |
-| `THEM` | [analysis.js:26](../../src/lib/analysis.js#L26) |
-| `YOU` | [analysis.js:27](../../src/lib/analysis.js#L27) |
-| `STAMP` | [analysis.js:38](../../src/lib/analysis.js#L38) |
-| `ANALYSIS_SCHEMA` | [analysis.js:145](../../src/lib/analysis.js#L145) |
-| `WEEKDAYS` | [analysis.js:151](../../src/lib/analysis.js#L151) |
-| `KEPT_CHAT` | [analysis.js:387](../../src/lib/analysis.js#L387) |
-| `SPEND_KEY` | [analysis.js:422](../../src/lib/analysis.js#L422) |
+| `ANALYSIS_MODELS` | [analysis.js:21](../../src/lib/analysis.js#L21) |
+| `DEFAULT_ANALYSIS_MODEL` | [analysis.js:28](../../src/lib/analysis.js#L28) |
+| `MAX_SCREENSHOTS` | [analysis.js:30](../../src/lib/analysis.js#L30) |
+| `THEM` | [analysis.js:31](../../src/lib/analysis.js#L31) |
+| `YOU` | [analysis.js:32](../../src/lib/analysis.js#L32) |
+| `STAMP` | [analysis.js:43](../../src/lib/analysis.js#L43) |
+| `ANALYSIS_SCHEMA` | [analysis.js:150](../../src/lib/analysis.js#L150) |
+| `WEEKDAYS` | [analysis.js:156](../../src/lib/analysis.js#L156) |
+| `KEPT_CHAT` | [analysis.js:392](../../src/lib/analysis.js#L392) |
+| `SPEND_KEY` | [analysis.js:427](../../src/lib/analysis.js#L427) |
 | `BACKUP_VERSION` | [backup.js:15](../../src/lib/backup.js#L15) |
 | `MAX_BACKUP_BYTES` | [backup.js:17](../../src/lib/backup.js#L17) |
 | `GRADES` | [backup.js:111](../../src/lib/backup.js#L111) |

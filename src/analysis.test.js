@@ -271,17 +271,18 @@ describe('the answer', () => {
 
   it('offers the models the main process allows, the cheapest first and by default', () => {
     expect(ANALYSIS_MODELS.map(m => m.id)).toEqual(MODELS);
-    expect(DEFAULT_ANALYSIS_MODEL).toBe('claude-haiku-4-5');
+    expect(DEFAULT_ANALYSIS_MODEL).toBe('claude-haiku-5-5');
     const cost = (m) => m.price.input + m.price.output;
     expect(ANALYSIS_MODELS.every((m, i) => i === 0 || cost(m) > cost(ANALYSIS_MODELS[i - 1]))).toBe(true);
     expect(analysisRequest({ person: priya, yourName: '', text: 'hi', model: 'claude-opus-5-5' }).model).toBe('claude-opus-5-5');
-    expect(analysisRequest({ person: priya, yourName: '', text: 'hi', model: 'gpt-4' }).model).toBe('claude-haiku-4-5');
-    expect(analysisRequest({ person: priya, yourName: '', text: 'hi' }).model).toBe('claude-haiku-4-5');
+    expect(analysisRequest({ person: priya, yourName: '', text: 'hi', model: 'gpt-4' }).model).toBe('claude-haiku-5-5');
+    expect(analysisRequest({ person: priya, yourName: '', text: 'hi' }).model).toBe('claude-haiku-5-5');
   });
 
   it("prices each model's tokens, and roughly what a chat costs before sending it", () => {
     expect(analysisCost({ input: 4000, output: 6000 }, 'claude-opus-5-5')).toBe('about US$0.14');
     expect(analysisCost({ input: 4000, output: 6000 }, 'claude-fable-5-1')).toBe('about US$0.34');
+    expect(typicalCost('claude-haiku-5-5')).toBe('under US$0.01'); // about US$0.0034
     expect(typicalCost('claude-haiku-4-5')).toBe('about US$0.02');
     expect(typicalCost('claude-sonnet-5-5')).toBe('about US$0.07');
   });
@@ -303,9 +304,9 @@ describe('the answer', () => {
   });
 
   it('says roughly what it cost, from the tokens used', () => {
-    expect(analysisCost({ input: 4000, output: 2000 })).toBe('about US$0.01');
-    expect(analysisCost({ input: 9000, output: 4000 })).toBe('about US$0.03');
-    expect(analysisCost({ input: 1000, output: 500 })).toBe('under US$0.01');
+    expect(analysisCost({ input: 4000, output: 2000 }, 'claude-haiku-4-5')).toBe('about US$0.01');
+    expect(analysisCost({ input: 9000, output: 4000 }, 'claude-haiku-4-5')).toBe('about US$0.03');
+    expect(analysisCost({ input: 1000, output: 500 }, 'claude-haiku-4-5')).toBe('under US$0.01');
     expect(analysisCost()).toBe('under US$0.01');
   });
 });

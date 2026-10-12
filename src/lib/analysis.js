@@ -9,12 +9,17 @@ import { AL_ITEMS, CATEGORIES, CONV_STATES, DIM_ORDER, LAYERS } from '../data/co
 import { parseISODay, toISODate } from './dates.js';
 import { chatNumbers, numbersFacts } from './chatNumbers.js';
 
-// The models you can try it with, cheapest first. Haiku 4.5 is the cheapest
+// The models you can try it with, cheapest first. Haiku 5.5 is the cheapest
 // Claude and the one used unless you pick another (each time Layers starts,
-// it's Haiku again); the others think before answering, which is slower and
-// costs more. Prices are US$ per million tokens, for "this one cost about".
+// it's Haiku 5.5 again). It replaced Haiku 4.5 as the default on 2026-10-12:
+// newer and a tenth of the price. Haiku 4.5 stays, so spending and reviews
+// saved with it keep its name. All but Haiku 4.5 think before answering
+// (thinking is charged as output); the bigger ones are slower and cost more.
+// Prices are US$ per million tokens, for "this one cost about" (Haiku 5.5's
+// are for prompts up to 100K tokens; a chat here is far smaller).
 // electron/analysis.cjs allows exactly these.
 export const ANALYSIS_MODELS = [
+  { id: 'claude-haiku-5-5', name: 'Claude Haiku 5.5', short: 'Haiku 5.5', price: { input: 0.1, output: 0.5 }, thinks: true },
   { id: 'claude-haiku-4-5', name: 'Claude Haiku 4.5', short: 'Haiku 4.5', price: { input: 1, output: 5 }, thinks: false },
   { id: 'claude-sonnet-5-5', name: 'Claude Sonnet 5.5', short: 'Sonnet 5.5', price: { input: 2, output: 10 }, thinks: true },
   { id: 'claude-opus-5-5', name: 'Claude Opus 5.5', short: 'Opus 5.5', price: { input: 4, output: 20 }, thinks: true },

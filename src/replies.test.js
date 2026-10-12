@@ -37,7 +37,7 @@ describe('reply ideas', () => {
     expect(request.system).toContain('- omg yes [someone] coming too?');
     expect(request.system).toContain('How the user describes their texting style: "lowercase, lots of emoji"');
     expect(request.system).toMatch(/Layer 4/);
-    expect(request.model).toBe('claude-haiku-4-5');
+    expect(request.model).toBe('claude-haiku-5-5');
   });
   it('asks for three replies and a read, in a format with no either-or fields', () => {
     expect(Object.keys(REPLY_SCHEMA.properties)).toEqual(['read', 'natural', 'playful', 'deeper']);

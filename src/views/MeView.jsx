@@ -60,7 +60,7 @@ function AnalysisKeyCard({ analysisKey, onSave, onRemove, style = '', onSaveStyl
   const [error, setError] = useState(null);
   const [spend] = useState(() => spendSummary()); // read when Me opens
   const [limit, setLimit] = useState(() => readLimit()); // Analyse all new's monthly limit (lib/chatBatch.js)
-  // "Haiku 4.5" for one model; "2 with Haiku 4.5, 1 with Opus 5.5" for more.
+  // "Haiku 5.5" for one model; "2 with Haiku 5.5, 1 with Opus 5.5" for more.
   const byModel = (models) => { const list = Object.entries(models); return list.length === 1 ? analysisModel(list[0][0]).short : list.map(([id, n]) => `${n} with ${analysisModel(id).short}`).join(', '); };
   // "under US$0.01" already says it is rough, so "about" goes only before a real amount.
   const aboutDollars = (d) => (d < 0.01 ? dollarsText(d) : `about ${dollarsText(d)}`);
@@ -76,8 +76,8 @@ function AnalysisKeyCard({ analysisKey, onSave, onRemove, style = '', onSaveStyl
       <p className="text-sm font-semibold" style={{ color: COLORS.ink }}>Chat analysis (Claude)</p>
       <p className="text-xs mt-1.5" style={{ color: COLORS.inkSoft }}>
         {analysisKey.hasKey
-          ? 'Ready: Coach → Analyse a chat sends a chat you choose to Claude, only when you press Analyse, from your Anthropic credit. It uses Claude Haiku 4.5, the cheapest (about US$0.02 a chat); pick a bigger model there to compare, until Layers is next started.'
-          : 'Analyse your own chats in Coach with Claude. Make an API key at console.anthropic.com (API keys), add a few dollars of credit there (about US$0.02 a chat with Claude Haiku 4.5, the cheapest), then paste the key here. Layers keeps it on this laptop, protected by Windows.'}
+          ? 'Ready: Coach → Analyse a chat sends a chat you choose to Claude, only when you press Analyse, from your Anthropic credit. It uses Claude Haiku 5.5, the cheapest (under a cent a chat); pick a bigger model there to compare, until Layers is next started.'
+          : 'Analyse your own chats in Coach with Claude. Make an API key at console.anthropic.com (API keys), add a few dollars of credit there (under a cent a chat with Claude Haiku 5.5, the cheapest), then paste the key here. Layers keeps it on this laptop, protected by Windows.'}
       </p>
       {(spend.thisMonth.chats > 0 || spend.lastMonth.chats > 0) && (
         <div className="mt-2.5 text-xs" aria-label="What Claude has cost" style={{ color: COLORS.ink }}>

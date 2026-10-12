@@ -546,7 +546,7 @@ export function CoachView({ people, journal, initialPersonId, initialTab, onOpen
                       </div>}
                       <p className="text-xs font-semibold mt-3 mb-1.5" style={{ color: COLORS.ink }}>Model</p>
                       <ModelButtons label="Model" value={model} onPick={onModel} />
-                      <p className="text-xs mt-2.5" style={{ color: COLORS.inkSoft }}>Pressing Analyse sends this chat, and only this chat, to Anthropic for {analysisModel(model).name} to read ({typicalCost(model)}{analysisModel(model).thinks ? '; it thinks first, so it takes longer and costs more' : ''}). {ownPeople.map(p => p.name.split(' ')[0]).join(', ')}'s name and yours are swapped for tags first{touch ? '; screenshots go as they are' : ''}.</p>
+                      <p className="text-xs mt-2.5" style={{ color: COLORS.inkSoft }}>Pressing Analyse sends this chat, and only this chat, to Anthropic for {analysisModel(model).name} to read ({typicalCost(model)}{model !== DEFAULT_ANALYSIS_MODEL && analysisModel(model).thinks ? '; it thinks longer first, so it takes longer and costs more' : ''}). {ownPeople.map(p => p.name.split(' ')[0]).join(', ')}'s name and yours are swapped for tags first{touch ? '; screenshots go as they are' : ''}.</p>
                       {ownError && <p className="text-xs mt-2 font-semibold" role="alert" style={{ color: COLORS.alert }}>{ownError}</p>}
                       <button type="button" onClick={analyseOwn} disabled={!ownPeople.length || (!ownText.trim() && !ownShots.length)} className="w-full flex items-center justify-center gap-1.5 text-sm font-semibold rounded-full py-2.5 mt-3" style={{ background: COLORS.accent, color: COLORS.onAccent, opacity: !ownPeople.length || (!ownText.trim() && !ownShots.length) ? 0.5 : 1 }}>Analyse with Claude <Kbd onAccent>Ctrl+↵</Kbd></button>
                     </div>
@@ -569,7 +569,7 @@ export function CoachView({ people, journal, initialPersonId, initialTab, onOpen
             <div className="flex flex-col items-center justify-center py-16" role="status">
               <div style={{ width: 30, height: 30, borderRadius: '50%', border: `3px solid ${COLORS.line}`, borderTopColor: COLORS.accent }} className="spin" />
               <p className="text-sm mt-4" style={{ color: COLORS.inkSoft }}>{analysisModel(askingModel).name} is reading the chat…</p>
-              {analysisModel(askingModel).thinks && <p className="text-xs mt-1" style={{ color: COLORS.inkSoft }}>It thinks first, so this can take a minute.</p>}
+              {askingModel !== DEFAULT_ANALYSIS_MODEL && analysisModel(askingModel).thinks && <p className="text-xs mt-1" style={{ color: COLORS.inkSoft }}>It thinks first, so this can take a minute.</p>}
             </div>
           )}
 

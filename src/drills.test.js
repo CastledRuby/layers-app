@@ -40,7 +40,7 @@ describe('the request and the answer', () => {
     expect(req.system).toContain('"lowercase, lots of haha"');
     expect(JSON.stringify(req)).not.toMatch(/Sam|Liam/);
     expect(req.schema.required).toEqual(['score', 'worked', 'better', 'why']);
-    expect(req.model).toBe('claude-haiku-4-5');
+    expect(req.model).toBe('claude-haiku-5-5');
   });
 
   it('tidies the answer: a whole score from 0 to 100, no quotes, and you for [you]', () => {

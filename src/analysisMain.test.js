@@ -67,11 +67,11 @@ describe('what the page may send', () => {
 });
 
 describe('asking Claude', () => {
-  it('asks Haiku 4.5 for the answer as JSON, and gives back the answer and tokens used', async () => {
+  it('asks Haiku 5.5 (thinking left to it) for the answer as JSON, and gives back the answer and tokens used', async () => {
     const { client, create } = claude(reply('{"opportunity":"Ask more"}'));
     expect(await runAnalysis(request, { client })).toEqual({ result: { opportunity: 'Ask more' }, model: MODEL, usage: { input: 4000, output: 900 } });
     const sent = create.mock.calls[0][0];
-    expect(sent).toMatchObject({ model: 'claude-haiku-4-5', system: 'Coach', messages: [{ role: 'user', content: request.content }], output_config: { format: { type: 'json_schema', schema: request.schema } } });
+    expect(sent).toMatchObject({ model: 'claude-haiku-5-5', system: 'Coach', messages: [{ role: 'user', content: request.content }], output_config: { format: { type: 'json_schema', schema: request.schema } } });
     expect(sent).not.toHaveProperty('thinking');
   });
 
@@ -80,15 +80,17 @@ describe('asking Claude', () => {
     expect(await runAnalysis({ ...request, model: 'claude-opus-5-5' }, { client: opus.client })).toMatchObject({ model: 'claude-opus-5-5' });
     expect(opus.create.mock.calls[0][0].model).toBe('claude-opus-5-5');
     const other = claude(reply('{}'));
-    expect(await runAnalysis({ ...request, model: 'claude-3-opus-20240229' }, { client: other.client })).toMatchObject({ model: 'claude-haiku-4-5' });
-    expect(other.create.mock.calls[0][0].model).toBe('claude-haiku-4-5');
+    expect(await runAnalysis({ ...request, model: 'claude-3-opus-20240229' }, { client: other.client })).toMatchObject({ model: 'claude-haiku-5-5' });
+    expect(other.create.mock.calls[0][0].model).toBe('claude-haiku-5-5');
   });
 
-  it('runs a deep request on the thinking models at high effort; never on Haiku, nor a quick request', async () => {
+  it('runs a deep request on the thinking models at high effort, Haiku 5.5 included; never on Haiku 4.5, nor a quick request', async () => {
     const sent = async (extra) => { const c = claude(reply('{}')); await runAnalysis({ ...request, ...extra }, { client: c.client }); return c.create.mock.calls[0][0].output_config; };
     expect(await sent({ model: 'claude-opus-5-5', deep: true })).toEqual({ format: { type: 'json_schema', schema: request.schema }, effort: 'high' });
     expect(await sent({ model: 'claude-sonnet-5-5', deep: true })).toMatchObject({ effort: 'high' });
     expect(await sent({ model: 'claude-fable-5-1', deep: true })).toMatchObject({ effort: 'high' });
+    expect(await sent({ model: 'claude-haiku-5-5', deep: true })).toMatchObject({ effort: 'high' });
+    expect(await sent({ model: 'claude-haiku-5-5' })).not.toHaveProperty('effort');
     expect(await sent({ model: 'claude-haiku-4-5', deep: true })).not.toHaveProperty('effort');
     expect(await sent({ model: 'claude-opus-5-5' })).not.toHaveProperty('effort');
     expect(await sent({ model: 'claude-opus-5-5', deep: 'yes' })).not.toHaveProperty('effort');
@@ -104,7 +106,7 @@ describe('asking Claude', () => {
   });
 
   it("says so when Claude declines, runs out of room, or answers badly, with what it used (that's still charged)", async () => {
-    const used = { model: 'claude-haiku-4-5', usage: { input: 4000, output: 900 } };
+    const used = { model: 'claude-haiku-5-5', usage: { input: 4000, output: 900 } };
     expect(await runAnalysis(request, claude(reply('', 'refusal')))).toEqual({ error: "Claude wouldn't analyse that chat.", ...used });
     expect(await runAnalysis(request, claude(reply('{"a":', 'max_tokens')))).toMatchObject({ error: expect.stringMatching(/too long/), ...used });
     expect(await runAnalysis(request, claude(reply('not json')))).toMatchObject({ error: expect.stringMatching(/couldn't be read/), ...used });

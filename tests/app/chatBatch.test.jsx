@@ -74,7 +74,7 @@ describe('Analyse all new', () => {
     seed();
     const { user } = renderApp();
     const card = await openAnalyse(user);
-    expect(card.textContent).toMatch(/3 conversations with Amelie and Chloe \(a day with someone each\), about US\$0\.0\d with Haiku 4\.5/);
+    expect(card.textContent).toMatch(/3 conversations with Amelie and Chloe \(a day with someone each\), (under|about) US\$0\.0\d with Haiku 5\.5/);
     expect(card.textContent).toMatch(/1 tiny one \(under 4 written messages, or only one side writing\) is marked as seen without sending/);
 
     await user.keyboard('a');
@@ -153,12 +153,12 @@ describe('Analyse all new', () => {
 
   it("stops before going past the monthly limit, set in Me, and when Claude can't be reached; the rest stay new", async () => {
     const month = `${new Date().getFullYear()}-${pad(new Date().getMonth() + 1)}`;
-    window.localStorage.setItem('layers-analysis-spend', JSON.stringify({ [month]: { dollars: 9.99, chats: 200, models: { 'claude-haiku-4-5': 200 } } }));
+    window.localStorage.setItem('layers-analysis-spend', JSON.stringify({ [month]: { dollars: 9.999, chats: 200, models: { 'claude-haiku-5-5': 200 } } }));
     const bridge = fakeBridge();
     seed();
     const { user } = renderApp();
     let card = await openAnalyse(user);
-    expect(card.textContent).toMatch(/more than is left of your US\$10 monthly limit \(about US\$9\.99 spent\), so it stops partway/);
+    expect(card.textContent).toMatch(/more than is left of your US\$10 monthly limit \(about US\$10\.00 spent\), so it stops partway/);
     await user.keyboard('a');
     await waitFor(() => expect(within(screen.getByLabelText('Analyse all new')).getByRole('alert').textContent).toBe('Stopped at your US$10 monthly limit (Me → Chat analysis). 3 conversations are still new.'));
     expect(bridge.runAnalysis).not.toHaveBeenCalled();
