@@ -5,6 +5,7 @@
 // here is sent, through the same main-process call (analysis-run).
 import { LAYERS } from '../data/constants.js';
 import { analysisModel, DEFAULT_ANALYSIS_MODEL, hideNames, isYou, namesOf, restoreNames, tokensFor } from './analysis.js';
+import { chatPeople, everywhereName, loadedChats, ownerOf, readChatProgress } from './chatImport.js';
 
 const str = { type: 'string' };
 const obj = (properties) => ({ type: 'object', additionalProperties: false, required: Object.keys(properties), properties });
@@ -30,6 +31,67 @@ export function styleSamples(journal = [], yourName = '', max = 12) {
     });
   return out;
 }
+
+// Your own messages from all your chats (decided 2026-10-13): you text people
+// you're not close to differently from close friends, so the samples come
+// from chats with people as close as the one it's for: Layers 1-2 for
+// someone you're not close to, 3-4 for someone close. Chats with nobody in
+// Layers are left out (they mix strangers with people you're close to).
+// The newest of yours from each chat in turn, so no one chat fills them. A
+// line that names someone, or has a link, an email or a long number, is
+// skipped, so no one else's name or details go with them.
+const COMMON_CAPS = new Set([
+  'I', 'Im', 'Ive', 'Ill', 'Id', 'OK', 'Ok', 'Okay', 'God', 'Lord', 'Christmas', 'Easter', 'Uber', 'Google', 'Instagram', 'Snapchat', 'Netflix', 'Spotify',
+  'Mon', 'Tue', 'Tues', 'Wed', 'Thu', 'Thurs', 'Fri', 'Sat', 'Sun', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday',
+  'Jan', 'Feb', 'Mar', 'Apr', 'Jun', 'Jul', 'Aug', 'Sep', 'Sept', 'Oct', 'Nov', 'Dec', 'January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December',
+]);
+// A reply of one word that's usually capitalised by the phone, not a name.
+const ONE_WORD = /^(yes|yeah|yep|yup|no|nah|nope|sure|thanks|thank|ok|okay|nice|cool|fair|perfect|same|maybe|sorry|lol|haha|what|why|how|when|where|who|hello|hi|hey|bye|cya|true|wait|really|done|great|good|fine|lucky|exactly|definitely|probably|congrats|damn|oh|ah|hmm|omg)$/i;
+function namesSomeone(text) {
+  const words = text.split(/\s+/).filter(Boolean);
+  const bare = (w) => w.replace(/[^A-Za-z]/g, '');
+  if (words.length === 1) { const w = bare(words[0]); return /^[A-Z][a-z]+$/.test(w) && !COMMON_CAPS.has(w) && !ONE_WORD.test(w); }
+  return words.some((w, i) => {
+    if (i === 0 || /[.?!]["”')]*$/.test(words[i - 1])) return false; // a sentence starts with a capital anyway
+    const b = bare(w);
+    return /^[A-Z][a-z]+$/.test(b) && !COMMON_CAPS.has(b);
+  });
+}
+const usable = (t) => t.length > 1
+  && !/^\(.*\)$/.test(t) // "(photo)" and the like
+  && !/^(liked|loved|laughed at|emphasi[sz]ed|disliked|questioned|reacted)\b/i.test(t) // iMessage reactions
+  && !/https?:\/\/|www\.|\S+@\S+\.\S+|\d{5,}/i.test(t)
+  && !namesSomeone(t);
+export function chatStyleSamples(chats = [], { people = [], yourName = '', layer = 1, progress = {}, max = 12 } = {}) {
+  const band = layer >= 3 ? [3, 4] : [1, 2];
+  const layerOf = (id) => (people.find(p => p.id === id) || {}).layer || 0;
+  const everywhere = everywhereName(chats.filter(c => c.source === 'instagram'));
+  const pools = chats.map(chat => {
+    const owner = ownerOf(chat, { yourName, picked: (progress[chat.key] || {}).me, everywhere });
+    if (!owner || !chat.messages.length) return null;
+    const { ids } = chatPeople(chat, people, owner);
+    if (!band.includes(Math.max(0, ...ids.map(layerOf)))) return null;
+    const mine = chat.messages.filter(m => m.sender === owner).map(m => String(m.text || '').trim()).filter(usable).reverse();
+    return mine.length ? { last: chat.messages[chat.messages.length - 1].at, mine } : null;
+  }).filter(Boolean).sort((a, b) => b.last - a.last);
+  const out = [];
+  for (let round = 0; out.length < max && pools.some(p => p.mine.length > round); round++) {
+    pools.forEach(p => {
+      const t = p.mine[round];
+      if (t && out.length < max && !out.some(x => x.toLowerCase() === t.toLowerCase())) out.push(t.slice(0, 200));
+    });
+  }
+  return out;
+}
+// The samples to send for someone at `layer`: from your chats when Layers
+// has read them (loadedChats), topped up from your logged chats only when
+// those give fewer than half.
+export function yourSamples({ journal = [], yourName = '', people = [], layer = 1, chats = loadedChats(), progress = readChatProgress(), max = 12 } = {}) {
+  const fromChats = chatStyleSamples(chats, { people, yourName, layer, progress, max });
+  if (fromChats.length >= max / 2) return fromChats;
+  return [...fromChats, ...styleSamples(journal, yourName, max).filter(t => !fromChats.includes(t))].slice(0, max);
+}
+
 // The line you wrote about how you text (Me), tidied.
 export const cleanStyle = (s) => String(s || '').replace(/\s+/g, ' ').trim().slice(0, STYLE_MAX);
 

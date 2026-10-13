@@ -2,7 +2,7 @@
 // logged chats, and the requests for reply ideas and the daily opener, with
 // every name in your circle hidden and theirs put back in the answer.
 import { describe, expect, it } from 'vitest';
-import { cleanStyle, openerRequest, REPLY_SCHEMA, replyRequest, replyResult, openerResult, styleSamples } from './lib/replies.js';
+import { chatStyleSamples, cleanStyle, openerRequest, REPLY_SCHEMA, replyRequest, replyResult, openerResult, styleSamples, yourSamples } from './lib/replies.js';
 
 const amelie = { id: 'a', name: 'Amelie Smith', layer: 4, aka: ['Mel'] };
 const chloe = { id: 'c', name: 'Chloe', layer: 3 };
@@ -22,6 +22,37 @@ describe('your style', () => {
     expect(styleSamples(journal, 'Liam', 2)).toHaveLength(2);
     expect(styleSamples([], 'Liam')).toEqual([]);
   });
+  // Your own messages from all your chats, by how close the person is (2026-10-13).
+  const chat = (key, other, lines, at = 1000) => ({
+    key, source: 'whatsapp', title: other, participants: [other, 'Liam'],
+    messages: lines.map(([who, text], i) => ({ at: at + i, sender: who === 'me' ? 'Liam' : other, text })),
+  });
+  const chats = [
+    chat('w:noah', 'Noah', [['them', 'you coming?'], ['me', 'sounds good, anything i should bring?'], ['me', 'perfect lmk'], ['me', 'ask Kelsey if shes in'], ['me', '(photo)']], 2000),
+    chat('w:amelie', 'Amelie Smith', [['them', 'missed u'], ['me', 'omg same 😭'], ['me', 'love u']], 3000),
+    chat('w:stranger', 'Zed', [['me', 'who is this lol']], 4000),
+    chat('w:noah2', 'Noah', [['me', 'Liked "you coming?"'], ['me', 'here https://maps.example'], ['me', 'call 0211234567'], ['me', 'fair'], ['me', 'Annabelle?'], ['me', 'Thanks lol']], 1000),
+  ];
+
+  it('takes yours from chats with people as close as the one it is for, newest from each chat in turn', () => {
+    expect(chatStyleSamples(chats, { people: everyone, yourName: 'Liam', layer: 2 })).toEqual(['perfect lmk', 'Thanks lol', 'sounds good, anything i should bring?', 'fair']);
+    expect(chatStyleSamples(chats, { people: everyone, yourName: 'Liam', layer: 4 })).toEqual(['love u', 'omg same 😭']);
+    expect(chatStyleSamples(chats, { people: everyone, yourName: 'Liam', layer: 2, max: 2 })).toEqual(['perfect lmk', 'Thanks lol']);
+  });
+
+  it("leaves out chats with nobody in Layers, and lines naming someone, links, numbers, reactions and photos", () => {
+    const all = [...chatStyleSamples(chats, { people: everyone, yourName: 'Liam', layer: 2 }), ...chatStyleSamples(chats, { people: everyone, yourName: 'Liam', layer: 4 })];
+    for (const left of ['who is this lol', 'ask Kelsey if shes in', 'Annabelle?', 'here https://maps.example', 'call 0211234567', 'Liked "you coming?"', '(photo)']) expect(all).not.toContain(left);
+  });
+
+  it('tops up from logged chats only when your chats give fewer than half', () => {
+    const fromBoth = yourSamples({ journal, yourName: 'Liam', people: everyone, layer: 4, chats, progress: {} });
+    expect(fromBoth).toEqual(['love u', 'omg same 😭', 'see u at 7', 'omg yes 🍕 noah coming too?', 'heyy whats up']);
+    const many = [chat('w:m', 'Noah', Array.from({ length: 8 }, (_, i) => ['me', `line ${i} ok`]))];
+    expect(yourSamples({ journal, yourName: 'Liam', people: everyone, layer: 2, chats: many, progress: {} })).not.toContain('see u at 7');
+    expect(yourSamples({ journal, yourName: 'Liam', people: everyone, layer: 2, chats: [], progress: {} })).toEqual(styleSamples(journal, 'Liam'));
+  });
+
   it('tidies the line you wrote in Me', () => {
     expect(cleanStyle('  lowercase,\n  lots of emoji ')).toBe('lowercase, lots of emoji');
     expect(cleanStyle('x'.repeat(300))).toHaveLength(200);

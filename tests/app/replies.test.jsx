@@ -84,6 +84,42 @@ describe('What to say', () => {
     expect(within(card).getByRole('group', { name: "Who it's with" }).textContent).toMatch(/Amelie/);
   });
 
+  it('learns your style from your chats with people as close as the one you are replying to (2026-10-13)', async () => {
+    const t = new Date(Date.now() - 3 * DAY);
+    t.setHours(18, 0, 0, 0);
+    const at = (min) => new Date(t.getTime() + min * 60000);
+    const files = {
+      'WhatsApp Chat - Amelie.zip': [wa(at(0), 'Amelie', 'can u make it thurs?'), wa(at(1), 'Liam', 'Sounds good, anything I should bring?'), wa(at(2), 'Liam', 'ask Kelsey too')],
+      'WhatsApp Chat - Priya Shah.zip': [wa(at(5), 'Priya Shah', 'missed u'), wa(at(6), 'Liam', 'omg same 😭 love u')],
+    };
+    const bridge = fakeBridge({
+      getChatsInfo: async () => ({ dir: 'C:\\Users\\Liam\\OneDrive\\Documents\\Layers chats' }),
+      listChatExports: async () => Object.keys(files).map(name => ({ name, kind: 'whatsapp', title: name.replace(/^WhatsApp Chat - |\.zip$/g, ''), size: 1, modified: 1 })),
+      readChatExport: async (name) => ({ kind: 'whatsapp', title: name.replace(/^WhatsApp Chat - |\.zip$/g, ''), files: [{ path: '_chat.txt', text: files[name].join('\n') }] }),
+      openChatsFolder: async () => ({ error: null }),
+      onChatExportsChanged: () => () => {},
+    });
+    seed(); // Amelie is in Layer 1, Priya in Layer 3
+    const { user } = renderApp();
+    await user.click(nav('Coach'));
+    await user.keyboard('3');
+    const card = await screen.findByLabelText('Reply ideas');
+    const ask = async (text) => {
+      await user.clear(within(card).getByLabelText('Their latest messages'));
+      await user.type(within(card).getByLabelText('Their latest messages'), text);
+      await user.keyboard('{Control>}{Enter}{/Control}');
+      await screen.findByLabelText('Replies');
+      return bridge.runAnalysis.mock.calls.at(-1)[0].system;
+    };
+    const toAmelie = await ask('Amelie: are you around later?');
+    expect(toAmelie).toContain('- Sounds good, anything I should bring?');
+    expect(toAmelie).not.toContain('love u');
+    expect(toAmelie).not.toContain('Kelsey'); // a line naming someone else isn't sent
+    const toPriya = await ask('Priya: hows ur week');
+    expect(toPriya).toContain('- omg same 😭 love u');
+    expect(toPriya).not.toContain('anything I should bring');
+  });
+
   it('keeps how you text, written in Me', async () => {
     fakeBridge();
     seedState({ profile: { name: 'Liam', focus: 'mix' } });

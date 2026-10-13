@@ -855,6 +855,21 @@ its own. Changes made while building are marked.
 
 ## History
 
+### Your style with people you're not close to (not released yet)
+
+Asked for on 2026-10-11, "Layers learns it" picked; read on 2026-10-13 with your
+permission. Your own messages to people in Layers 1–2 are short (a median of six
+words), seldom end in a full stop or "!", use "lol", "tbh" and "lmk", and rarely
+emoji. Messages to people not in Layers mix strangers with people you're close to, so
+they're left out.
+
+- **Reply ideas, the evening opener and drills** now learn your style from all your
+  chats (the Layers chats folder and the iPhone backup), only from chats with people as
+  close as the one it's for: Layers 1–2 for someone you're not close to, 3–4 for someone
+  close. Lines naming anyone else, links and long numbers are skipped, so nobody else's
+  name or details are sent. Chats you've analysed and logged top it up when there are
+  few.
+
 ### Evaluation of 2026-10-12 (not released yet)
 
 A click-through of a fresh install, and the tests run many times over:

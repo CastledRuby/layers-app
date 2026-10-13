@@ -12,7 +12,7 @@ import { hasOpenSheet, isTyping } from './sheetLayer.js';
 import { getLayer } from '../data/constants.js';
 import { analysisModel, detectPeople, recordSpend } from '../lib/analysis.js';
 import { chatPeople, conversationLabel, conversationText, sourceLabel } from '../lib/chatImport.js';
-import { replyRequest, replyResult, styleSamples } from '../lib/replies.js';
+import { replyRequest, replyResult, yourSamples } from '../lib/replies.js';
 import { COLORS } from '../theme.js';
 
 const KINDS = [['natural', 'Natural', 'q'], ['playful', 'Playful', 'w'], ['deeper', 'Deeper', 'e']];
@@ -48,7 +48,9 @@ export function ReplyIdeas({ people, journal, yourName = '', style = '', ready =
   async function ask() {
     if (!canAsk) return;
     setAsking(true); setError(null);
-    const request = replyRequest({ people: withPeople, everyone: people, yourName, text, samples: styleSamples(journal, yourName), style, model });
+    // Your style with someone this close: the closest one in the chat.
+    const layer = Math.max(...withPeople.map(p => p.layer || 1));
+    const request = replyRequest({ people: withPeople, everyone: people, yourName, text, samples: yourSamples({ journal, yourName, people, layer }), style, model });
     const answer = await Promise.resolve(onAnalyse(request)).catch(() => null);
     if (answer && answer.usage) recordSpend(answer.usage, answer.model || model);
     setAsking(false);

@@ -10,7 +10,7 @@ import { ChatBubble, Kbd } from './atoms.jsx';
 import { analysisModel, recordSpend } from '../lib/analysis.js';
 import { drillRequest, drillResult, saveDrill } from '../lib/drills.js';
 import { addPractice } from '../lib/practice.js';
-import { styleSamples } from '../lib/replies.js';
+import { yourSamples } from '../lib/replies.js';
 import { toISODate } from '../lib/dates.js';
 import { COLORS } from '../theme.js';
 
@@ -30,7 +30,9 @@ export const Drill = forwardRef(function Drill({ drill, title, people = [], jour
     const reply = draft.trim();
     if (!reply || asking || !onAnalyse) return;
     setAsking(true); setError(null);
-    const answer = await Promise.resolve(onAnalyse(drillRequest({ drill, reply, everyone: people, yourName, samples: styleSamples(journal, yourName), style, model }))).catch(() => null);
+    // Your style with someone like them: a close friend, or a newer one.
+    const samples = yourSamples({ journal, yourName, people, layer: /close/.test(drill.who || '') ? 4 : 2 });
+    const answer = await Promise.resolve(onAnalyse(drillRequest({ drill, reply, everyone: people, yourName, samples, style, model }))).catch(() => null);
     if (answer && answer.usage) recordSpend(answer.usage, answer.model || model);
     setAsking(false);
     const r = answer && answer.result ? drillResult(answer.result) : null;

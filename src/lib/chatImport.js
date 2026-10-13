@@ -443,6 +443,10 @@ export const sourceLabel = (source) => SOURCES[source] || 'Chat';
 // until there's a newer backup.
 const cache = new Map();
 let phone = null; // { at, chats }
+// The chats from the last read, wherever it was asked for (Coach, Your week,
+// or LayersApp at the start): loadedChats(), for learning your style
+// (lib/replies.js yourSamples).
+let loaded = [];
 const isMessage = (m) => m && typeof m.at === 'number' && Number.isFinite(m.at) && typeof m.sender === 'string' && typeof m.text === 'string';
 const isChat = (c) => c && typeof c.key === 'string' && c.key.startsWith('imessage:') && typeof c.title === 'string' && Array.isArray(c.participants) && Array.isArray(c.messages);
 // Every chat in the Layers chats folder (bridge: the main process's
@@ -477,5 +481,7 @@ export async function loadChatExports(bridge, { dayFirst } = {}) {
       }
     }
   }
-  return { chats: mergeChats(all), problems, iphone };
+  loaded = mergeChats(all);
+  return { chats: loaded, problems, iphone };
 }
+export const loadedChats = () => loaded;

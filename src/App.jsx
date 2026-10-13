@@ -21,7 +21,8 @@ import { waiting } from './lib/chatBatch.js';
 import { followUpEvent, markDone, markMissed } from './lib/reminders.js';
 import { analysisToKeep, DEFAULT_ANALYSIS_MODEL, recordSpend, spendSummary } from './lib/analysis.js';
 import { getFeedCache, setFeedCache, getNudge, getSyncSettings, setNudge, setSyncSettings, getSnoozes, loadSavedState, persistState, setSnoozes } from './lib/storage.js';
-import { openerRequest, openerResult, styleSamples } from './lib/replies.js';
+import { openerRequest, openerResult, yourSamples } from './lib/replies.js';
+import { loadChatExports } from './lib/chatImport.js';
 import { readLimit } from './lib/chatBatch.js';
 import { drillByKey, drillFor, readDrills } from './lib/drills.js';
 import { clamp, uid } from './lib/util.js';
@@ -776,9 +777,19 @@ function LayersApp() {
   const nudgeLatest = useRef(null);
   useLayoutEffect(() => { nudgeLatest.current = { nudge, nudgeDay, people, journal, profile }; });
   const nudgeKey = nudge ? `${today}:${nudge.person.id}` : null;
+  // Your chats, read once Claude can be asked, so the opener, reply ideas and
+  // drills sound like you with someone that close (yourSamples, decided
+  // 2026-10-13). The opener waits for it.
+  const [chatsRead, setChatsRead] = useState(false);
+  useEffect(() => {
+    if (!chatsBridge || !hasAnalysisKey) return undefined;
+    let live = true;
+    loadChatExports(chatsBridge).catch(() => {}).finally(() => { if (live) setChatsRead(true); });
+    return () => { live = false; };
+  }, [chatsBridge, hasAnalysisKey]);
   const openerAsked = useRef(null);
   useEffect(() => {
-    if (!nudgeKey || openerText || !analysisBridge || !hasAnalysisKey || openerAsked.current === nudgeKey) return;
+    if (!nudgeKey || openerText || !analysisBridge || !hasAnalysisKey || openerAsked.current === nudgeKey || (chatsBridge && !chatsRead)) return;
     const limit = readLimit();
     if (limit && spendSummary().thisMonth.dollars >= limit) return; // automatic, so held to the monthly limit
     openerAsked.current = nudgeKey;
@@ -788,14 +799,14 @@ function LayersApp() {
       .sort((a, b) => String(b.at || '').localeCompare(String(a.at || ''))).map(it => it.text);
     const recent = logs.filter(j => j.personId === person.id && j.summary).sort((a, b) => String(b.at || '').localeCompare(String(a.at || ''))).slice(0, 3).map(j => `${j.at}: ${j.summary}`);
     setWritingOpener(nudgeKey);
-    const request = openerRequest({ person, everyone, yourName: me.name, reason: n.text, details, recent, samples: styleSamples(logs, me.name), style: me.style || '', model: DEFAULT_ANALYSIS_MODEL });
+    const request = openerRequest({ person, everyone, yourName: me.name, reason: n.text, details, recent, samples: yourSamples({ journal: logs, yourName: me.name, people: everyone, layer: person.layer }), style: me.style || '', model: DEFAULT_ANALYSIS_MODEL });
     Promise.resolve(analysisBridge.runAnalysis(request)).then(answer => {
       if (answer && answer.usage) recordSpend(answer.usage, answer.model || DEFAULT_ANALYSIS_MODEL);
       const text = answer && answer.result ? openerResult(answer.result, person) : '';
       const latest = nudgeLatest.current.nudgeDay;
       if (text && latest.day === nudgeKey.slice(0, 10)) { const next = { ...latest, opener: { personId: person.id, text } }; setNudgeSaved(next); setNudge(next); }
     }).catch(() => {}).finally(() => setWritingOpener(w => (w === nudgeKey ? null : w)));
-  }, [nudgeKey, openerText, analysisBridge, hasAnalysisKey]);
+  }, [nudgeKey, openerText, analysisBridge, hasAnalysisKey, chatsBridge, chatsRead]);
   // Messaged: the quick log, filled in; the card's done for the day.
   function handleNudgeMessaged(person) {
     changeNudge({ done: person.id });

@@ -988,10 +988,20 @@ written by Claude in your style ([`lib/replies.js`](../../src/lib/replies.js),
   chosen), or a conversation picked from "From your chats" in the tab, or **Reply ideas
   for the latest** on a chat in Analyse, which opens the tab with that chat's latest
   conversation in (its last 30 messages, `conversationText`).
-- **Your style**: a few of your own messages from chats you've analysed and logged
-  (`styleSamples`: lines signed with your name, "You" or "Me" in the chats kept on those
-  logs, newest first, each chat once), and **How you text** in Me → Chat analysis
-  (`profile.style`, up to 200 characters, `cleanStyle`; checked like a backup).
+- **Your style**: a few of your own messages (`yourSamples`), and **How you text** in
+  Me → Chat analysis (`profile.style`, up to 200 characters, `cleanStyle`; checked like
+  a backup). Since 2026-10-13 the messages come from all your chats (the Layers chats
+  folder and the iPhone backup, read once Claude can be asked, `loadedChats`), only from
+  chats with people as close as the one it's for: Layers 1–2 for someone you're not close
+  to, 3–4 for someone close (`chatStyleSamples`). Chats with nobody in Layers are left
+  out, because they mix strangers with people you're close to. The newest of yours from
+  each chat in turn, up to 12. A line that names someone (a capitalised word mid-sentence
+  that isn't a day, month or "I"), has a link, an email or a long number, or is a photo
+  or a reaction, is skipped, so nobody else's name or details go with them. Fewer than
+  six? It's topped up from chats you've analysed and logged (`styleSamples`: lines signed
+  with your name, "You" or "Me", newest first, each chat once). Reply ideas use the
+  closest person in the chat, the opener the person it's for (it waits for the chats to
+  be read), and a drill whether it's with "a close friend".
 - **What's sent** (`replyRequest`): the messages with names hidden as Analyse does
   (`[them]`, or `[them 1]`… for a group, and `[you]`), and anyone else in your circle as
   `[someone]`, in the messages and your samples; each person's layer; your samples and
