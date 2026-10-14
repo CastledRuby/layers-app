@@ -1,7 +1,7 @@
 # Roadmap
 
 Where Layers stands against [vision.md](vision.md), what was decided along the way, and
-what comes next. Last updated 2026-10-12, after 1.0.40 (anything since is at the top of
+what comes next. Last updated 2026-10-14, after 1.0.41 (anything since is at the top of
 [History](#history), marked not released yet). **What's next is
 [Where Layers goes next](#where-layers-goes-next-your-answers-2026-10-10)**, from your
 answers to 20 planning questions.
@@ -855,7 +855,7 @@ its own. Changes made while building are marked.
 
 ## History
 
-### Fixes from the audit of 2026-10-14 (not released yet)
+### Fixes from the audit of 2026-10-14 (1.0.41)
 
 A full audit: the code read in six areas (data and saving, the calendar, Claude and
 privacy, chat files, screens and keys, the Electron shell and builds), a fresh start
@@ -979,7 +979,7 @@ clicked through, and the installed app checked. Each fix has a test.
   results aren't announced as you move through them; big chat exports are slow to read
   the first time each session.
 
-### Conversations in person (not released yet)
+### Conversations in person (1.0.41)
 
 More chats, step 1 (picked 2026-10-14: in person, then Messenger; Discord for your
 style). Most conversations happen face to face, where there's no chat for Claude to read.
@@ -1003,7 +1003,7 @@ style). Most conversations happen face to face, where there's no chat for Claude
   listed to analyse, but your direct messages with people in Layers (matched by
   username) teach Claude how you text with someone that close.
 
-### Your style with people you're not close to (not released yet)
+### Your style with people you're not close to (1.0.41)
 
 Asked for on 2026-10-11, "Layers learns it" picked; read on 2026-10-13 with your
 permission. Your own messages to people in Layers 1–2 are short (a median of six
@@ -1018,7 +1018,7 @@ they're left out.
   name or details are sent. Chats you've analysed and logged top it up when there are
   few.
 
-### Evaluation of 2026-10-12 (not released yet)
+### Evaluation of 2026-10-12 (1.0.41)
 
 A click-through of a fresh install, and the tests run many times over:
 
@@ -1036,7 +1036,7 @@ A click-through of a fresh install, and the tests run many times over:
   yet against Anthropic: the first real chat analysed is the live check.
 - The sync file's test no longer fails when the random ciphertext happens to spell "kai"
   (about one run in 40).
-### A sync straight after another no longer undoes it (next release)
+### A sync straight after another no longer undoes it (1.0.41)
 
 Found on 2026-10-12 from a sync app test that failed now and then on a busy laptop. When
 a sync was asked for while another was running (Sync now, the one on start, the window
