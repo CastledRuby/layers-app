@@ -160,6 +160,7 @@ type JournalEntry = {
   ratings?: { [dimension]: 1|2|3|4|5 };       // "How did each part go?" (More details); only rated dimensions
   askedAbout?: string[];                      // "Did you ask about …?" yeses (2026-10-12): saved details you followed up on
   goalIds?: string[];                         // the goals this log moved (logs from 2026-10-06 on); the Journal's goal filter
+  logId?: string;                             // shared by the entries of one log (from 2026-10-14), so a review told after goes on all of them
   standouts?: string[];                       // older 1.0.28 builds' "What stood out?" picks; shown, no longer written
   analysis?: { grading: object; conversationState: string; model?: string; review?: object; chat?: string }; // from Coach → Analyse: since 2026-10-07 your own chat's review and the chat itself (its last 20,000 characters)
 };
@@ -820,6 +821,16 @@ said here.
   conversation** (L) keeps the review and your notes on the entry (`analysisToKeep`:
   `inPerson`, and the notes as `chat`, `notesText`), checked like a backup. The
   Journal's review is titled **Review**, shows **Your notes**, and has no numbers.
+- **Tell Claude what was said** (after a log): saving a Talked, Hung out, Activity or
+  Called log without a review, Log it on a plan included, while Claude is ready, puts
+  **Tell Claude what was said** on its "Logged time with …" message (it stays 10
+  seconds). The Journal has the same button on any such entry (`onTellClaude`). Either
+  opens Analyse on In person with who, what and the day from that log (`tellClaude` in
+  `LayersApp`; Coach is keyed afresh, `initialInPerson`), and the result's card is **Add
+  to your log** (L): it puts the review and your notes on every entry of that log
+  (`handleAttachReview`, by `logId`) and keeps the ratings you gave it, rather than
+  logging it again. Every log's entries share a `logId` (from 2026-10-14; older ones get
+  just the entry tapped).
 
 ### Skills over time
 

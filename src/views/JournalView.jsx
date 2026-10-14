@@ -3,7 +3,8 @@
 // kept by LayersApp, so a goal's "N logs" can open the Journal on it.
 
 import { useMemo, useState } from 'react';
-import { Check, MessageSquareText, Pencil, Search, Target, X } from 'lucide-react';
+import { Check, MessageSquarePlus, MessageSquareText, Pencil, Search, Target, X } from 'lucide-react';
+import { IN_PERSON_KINDS } from '../lib/analysis.js';
 import { ActivityCalendar } from '../components/ActivityCalendar.jsx';
 import { CONV_STATES, DIM_LABELS, DIM_ORDER, getLayer, STANDOUTS, TYPE_META } from '../data/constants.js';
 import { journalDateLabel, journalDaysAgo, parseISODay } from '../lib/dates.js';
@@ -26,7 +27,9 @@ function Chip({ active, onClick, children, label, slim }) {
   );
 }
 
-export function JournalView({ today, people, generalGoals = [], journal, goalFilter = 'all', onGoalFilter = () => {}, personFilter = 'all', onPersonFilter = () => {}, dayFilter = null, onDayFilter = () => {}, onOpenPerson, onEditEntry, onOpenReview }) {
+// onTellClaude(entryId): Tell Claude what was said, on a conversation in
+// person logged without a review (when Claude is ready), or null.
+export function JournalView({ today, people, generalGoals = [], journal, goalFilter = 'all', onGoalFilter = () => {}, personFilter = 'all', onPersonFilter = () => {}, dayFilter = null, onDayFilter = () => {}, onOpenPerson, onEditEntry, onOpenReview, onTellClaude = null }) {
   const filterPerson = personFilter;
   const setFilterPerson = onPersonFilter;
   const [filterType, setFilterType] = useState('all');
@@ -172,6 +175,7 @@ export function JournalView({ today, people, generalGoals = [], journal, goalFil
                   </button>
                   <button onClick={() => onEditEntry(entry.id)} aria-label={`Edit entry: ${p.name}, ${grp.date}`} className="absolute p-1.5" style={{ top: 10, right: 10 }}><Pencil size={14} color={COLORS.inkSoft} /></button>
                   {entry.analysis && entry.analysis.review && onOpenReview && <button onClick={() => onOpenReview(entry.id)} aria-label={`Chat review: ${p.name}, ${grp.date}`} className="absolute p-1.5" style={{ bottom: 8, right: 10 }}><MessageSquareText size={15} color={l.deep} /></button>}
+                  {!entry.analysis && onTellClaude && IN_PERSON_KINDS.includes(entry.type) && <button onClick={() => onTellClaude(entry.id)} aria-label={`Tell Claude what was said: ${p.name}, ${grp.date}`} title="Tell Claude what was said" className="absolute p-1.5" style={{ bottom: 8, right: 10 }}><MessageSquarePlus size={15} color={COLORS.inkSoft} /></button>}
                 </div>
               );
             })}

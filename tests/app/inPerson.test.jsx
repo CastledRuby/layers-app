@@ -94,6 +94,64 @@ describe('a conversation in person', () => {
     expect(within(review).getByLabelText('Your notes').textContent).toMatch(/nervous about her first week/);
   });
 
+  it('after logging time together, Tell Claude what was said opens it filled in, and adds the review to that log rather than logging again', async () => {
+    const bridge = fakeBridge();
+    seedState({ profile: { name: 'Liam', focus: 'mix' }, people: [person('Amelie'), person('Chloe')] });
+    const { user } = renderApp();
+    await user.click(document.querySelector('.fab-btn'));
+    await user.keyboard('1');
+    await user.keyboard('4'); // Hung out
+    await user.click(screen.getByRole('button', { name: /Amelie/ }));
+    await user.click(screen.getByRole('button', { name: /Chloe/ }));
+    await user.keyboard('{Enter}');
+    await user.keyboard('43{Enter}'); // how meaningful with each, then save
+    const logged = savedState().journal;
+    expect(logged).toHaveLength(2);
+    expect(logged[0].logId).toBe(logged[1].logId);
+    expect(screen.getByText('Logged time with Amelie and Chloe')).toBeTruthy();
+
+    await user.click(screen.getByRole('button', { name: 'Tell Claude what was said' }));
+    const card = screen.getByLabelText('Your own chat');
+    expect(within(card).getByText('Analyse a conversation in person')).toBeTruthy();
+    expect(within(card).getByRole('group', { name: "Who it's with" }).textContent).toMatch(/Amelie.*Chloe/);
+    expect(within(card).getByRole('button', { name: /Hung out/ }).getAttribute('aria-pressed')).toBe('true');
+    await user.type(within(card).getByLabelText('What did they share?'), 'Chloe is moving{Control>}{Enter}{/Control}');
+    expect(bridge.runAnalysis).toHaveBeenCalledTimes(1);
+    const add = await screen.findByLabelText('Add to your log');
+    expect(screen.queryByLabelText('Log it')).toBeNull();
+    await user.click(within(add).getByRole('button', { name: /Add to your log/ }));
+    const after = savedState().journal;
+    expect(after).toHaveLength(2); // the same two entries, not a new log
+    expect(after.map(j => j.meaningfulness).sort()).toEqual([3, 4]); // your own ratings stand
+    after.forEach(j => expect(j.analysis).toMatchObject({ inPerson: 'hangout', chat: 'What they shared:\nChloe is moving' }));
+    expect(within(add).getByText('✓ Added to your log')).toBeTruthy();
+  });
+
+  it('the Journal offers it on a conversation in person logged without a review, for everyone in that log', async () => {
+    fakeBridge();
+    const amelie = person('Amelie');
+    const chloe = person('Chloe');
+    const today = toISODate(new Date());
+    const entry = (id, p, type, extra = {}) => ({ id, personId: p.id, at: today, type, meaningfulness: 3, added: [], activeListening: [], ...extra });
+    seedState({ people: [amelie, chloe], journal: [entry('j1', amelie, 'activity', { logId: 'L1' }), entry('j2', chloe, 'activity', { logId: 'L1' }), entry('j3', amelie, 'messaged')] });
+    const { user } = renderApp();
+    await user.click(nav('Journal'));
+    expect(screen.getAllByRole('button', { name: /^Tell Claude what was said/ })).toHaveLength(2); // not on the messaged one
+    await user.click(screen.getByRole('button', { name: /^Tell Claude what was said: Chloe/ }));
+    const card = screen.getByLabelText('Your own chat');
+    expect(within(card).getByRole('group', { name: "Who it's with" }).textContent).toMatch(/Amelie.*Chloe/);
+    expect(within(card).getByRole('button', { name: /Did an activity/ }).getAttribute('aria-pressed')).toBe('true');
+  });
+
+  it("isn't offered without Claude", async () => {
+    const amelie = person('Amelie');
+    seedState({ people: [amelie], journal: [{ id: 'j1', personId: amelie.id, at: toISODate(new Date()), type: 'talked', meaningfulness: 3, added: [], activeListening: [] }] });
+    const { user } = renderApp();
+    await user.click(nav('Journal'));
+    expect(screen.getByRole('button', { name: /^Edit entry: Amelie/ })).toBeTruthy(); // the entry is there
+    expect(screen.queryByRole('button', { name: /^Tell Claude what was said/ })).toBeNull();
+  });
+
   it('I switches back to a chat, and the chat box is as it was', async () => {
     fakeBridge();
     seedState({ people: [person('Amelie')] });

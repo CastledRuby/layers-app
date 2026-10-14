@@ -150,7 +150,9 @@ function cleanEntry(j, personIds, skipped) {
     added: (Array.isArray(j.added) ? j.added : []).filter(s => typeof s === 'string'),
     activeListening: (Array.isArray(j.activeListening) ? j.activeListening : []).filter(s => typeof s === 'string'),
   };
-  // Optional text fields are rendered as-is, so anything but a string is dropped.
+  // Optional text fields are rendered as-is, so anything but a string is
+  // dropped; logId (the entries of one log) only as text.
+  if ('logId' in entry && !isText(entry.logId)) delete entry.logId;
   ['summary', 'reflection'].forEach(k => { if (k in entry && typeof entry[k] !== 'string') delete entry[k]; });
   if ('standouts' in entry) entry.standouts = (Array.isArray(entry.standouts) ? entry.standouts : []).filter(s => typeof s === 'string');
   // What you asked them about (a log's "Did you ask about…?" yeses): text only.

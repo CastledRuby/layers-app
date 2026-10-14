@@ -19,7 +19,7 @@ import { NOTIFY_DEFAULTS, dayNudge, isDoneOn, notifySettings, parseActionUrl, re
 import { useCalendarNotifications, useChatBatch, useDailyBackup, useDailyCheckIn, useSlideAcross, useSystemDark, useToday, useWide } from './lib/hooks.js';
 import { waiting } from './lib/chatBatch.js';
 import { followUpEvent, markDone, markMissed } from './lib/reminders.js';
-import { analysisToKeep, DEFAULT_ANALYSIS_MODEL, recordSpend, spendSummary } from './lib/analysis.js';
+import { analysisToKeep, DEFAULT_ANALYSIS_MODEL, IN_PERSON_KINDS, recordSpend, spendSummary } from './lib/analysis.js';
 import { getFeedCache, setFeedCache, getNudge, getSyncSettings, setNudge, setSyncSettings, getSnoozes, loadSavedState, persistState, setSnoozes } from './lib/storage.js';
 import { openerRequest, openerResult, yourSamples } from './lib/replies.js';
 import { loadChatExports } from './lib/chatImport.js';
@@ -185,10 +185,13 @@ function applyLog({ people, skills }, input) {
     const before = people.find(x => x.id === p.id);
     return [p.id, p.goals.filter(g => { const was = before.goals.find(x => x.id === g.id); return was && g.progress > was.progress; }).map(g => g.id)];
   }));
+  // Every entry of one log shares its logId, so Claude's review of it (a
+  // conversation in person, told after) goes on all of them.
+  const logId = uid();
   const entries = personIds.map(personId => {
     const { meaningfulness, ratings, activeListening: practised, notes, askedAbout } = parts[personId];
     const rated = DIM_ORDER.filter(k => ratings[k]);
-    return { id: uid(), personId, at: chartAt, type, meaningfulness, added: notes.map(n => n.text), activeListening: practised, ...(summary ? { summary } : {}), ...(moved[personId] && moved[personId].length ? { goalIds: moved[personId] } : {}), ...(rated.length ? { ratings: Object.fromEntries(rated.map(k => [k, ratings[k]])) } : {}), ...(askedAbout.length ? { askedAbout } : {}), ...(reflection ? { reflection } : {}), ...(analysis ? { analysis } : {}) };
+    return { id: uid(), logId, personId, at: chartAt, type, meaningfulness, added: notes.map(n => n.text), activeListening: practised, ...(summary ? { summary } : {}), ...(moved[personId] && moved[personId].length ? { goalIds: moved[personId] } : {}), ...(rated.length ? { ratings: Object.fromEntries(rated.map(k => [k, ratings[k]])) } : {}), ...(askedAbout.length ? { askedAbout } : {}), ...(reflection ? { reflection } : {}), ...(analysis ? { analysis } : {}) };
   });
   return { people: nextPeople, skills: nextSkills, raised, entries, levelUps, names: loggedNames };
 }
@@ -720,10 +723,11 @@ function LayersApp() {
 
   // `undo`: a snapshot() from just before the change; the toast then offers
   // Undo (or Ctrl+Z) while it's showing. `redo` (only "Undone" has one)
-  // offers Redo (or Ctrl+Y) the same way.
-  function pushToast(text, { undo, redo } = {}) {
+  // offers Redo (or Ctrl+Y) the same way. `action`: { label, run }, one more
+  // button (Tell Claude what was said), and the toast stays a little longer.
+  function pushToast(text, { undo, redo, action } = {}) {
     const id = uid();
-    setToasts(t => [...t, { id, text, undo, redo }]);
+    setToasts(t => [...t, { id, text, undo, redo, action }]);
     if (undo) { lastUndo.current = { id, undo }; lastRedo.current = null; }
     if (redo) lastRedo.current = { id, redo };
     // Longer messages (import errors) stay up long enough to read, and ones
@@ -732,7 +736,7 @@ function LayersApp() {
       setToasts(t => t.filter(x => x.id !== id));
       if (lastUndo.current && lastUndo.current.id === id) lastUndo.current = null;
       if (lastRedo.current && lastRedo.current.id === id) lastRedo.current = null;
-    }, undo || redo ? 7000 : Math.max(2600, text.length * 55));
+    }, action ? 10000 : undo || redo ? 7000 : Math.max(2600, text.length * 55));
   }
   // Undo puts the saved data back as it was just before a change: people,
   // journal, plans, goals, skills, achievements and your profile. Redo puts
@@ -923,6 +927,27 @@ function LayersApp() {
   }
   // chatKey: a chat from your exports to show opened in Analyse (from the week review).
   function openCoach(personId, tab, chatKey = null) { setCoachInit({ personId: personId || null, tab: tab || 'prepare', chatKey }); setActiveTab('coach'); setScreen({ name: 'tabs' }); }
+  // Tell Claude what was said (decided 2026-10-14): Coach's Analyse on In
+  // person, with who, what and when from a log of a conversation in person,
+  // and the review added to that log's entries rather than logged again.
+  function tellClaude(entries) {
+    const live = entries.filter(e => people.some(p => p.id === e.personId));
+    if (!live.length) return;
+    setLogOpen(false);
+    setCoachInit({ personId: live[0].personId, tab: 'analyse', chatKey: null, inPerson: { personIds: live.map(e => e.personId), day: live[0].at, kind: live[0].type, entryIds: live.map(e => e.id), n: uid() } });
+    setActiveTab('coach'); setScreen({ name: 'tabs' });
+  }
+  // The other entries of the same log (logId), or just this one.
+  function logEntries(entryId) {
+    const e = journal.find(j => j.id === entryId);
+    if (!e) return [];
+    return e.logId ? journal.filter(j => j.logId === e.logId) : [e];
+  }
+  function handleAttachReview(entryIds, analysis) {
+    const snap = snapshot();
+    setJournal(prev => prev.map(j => (entryIds.includes(j.id) ? { ...j, analysis } : j)));
+    pushToast("Claude's review added to your log", { undo: snap });
+  }
   // Ctrl+K's row picked (JumpSheet, lib/jump.js). Going somewhere closes the
   // sheets that were open; an action like Dark mode leaves them be.
   function closeSheets() {
@@ -1038,7 +1063,10 @@ function LayersApp() {
     setSkills(done.skills);
     setLogOpen(false);
     const who = namesText(done.names);
-    pushToast(who ? `Logged time with ${who}` : 'Interaction logged', { undo: snap });
+    // A conversation in person, with Claude ready: tell it what was said.
+    const offer = analysisBridge && hasAnalysisKey && !input.analysis && IN_PERSON_KINDS.includes(input.type) && done.entries.length
+      ? { label: 'Tell Claude what was said', run: () => tellClaude(done.entries) } : undefined;
+    pushToast(who ? `Logged time with ${who}` : 'Interaction logged', { undo: snap, action: offer });
     done.levelUps.forEach(lu => pushToast(`🎉 ${lu.name} moved up to Layer ${lu.layer}: ${getLayer(lu.layer).name}!`));
   }
 
@@ -1735,13 +1763,13 @@ function LayersApp() {
                           nudge={nudge ? { ...nudge, opener: openerText, writing: writingOpener === nudgeKey } : null} onNudgeMessaged={handleNudgeMessaged} onNudgeSkip={handleNudgeSkip}
                           onMovePlan={handleMovePlan} drill={todayDrill} onAnalyse={analysisBridge ? (request) => analysisBridge.runAnalysis(request) : undefined} onDrillDone={(next) => { setDrills(next); setDrillDoneHere(today); }} onDrillMore={() => openCoach(null, 'practise')} />}
                         {activeTab === 'people' && <PeopleView people={people} journal={journal} onOpenPerson={openPerson} onAddPerson={() => setAddPersonOpen(true)} onAddPhotos={() => setPhotoFolderOpen(true)} />}
-                        {activeTab === 'coach' && <div className="page-col"><CoachView people={people} journal={journal} initialPersonId={coachInit.personId} initialTab={coachInit.tab} onOpenLog={openLog} onApproveInfo={handleApproveInfo} onApproveInfoAll={handleApproveInfoAll} onRemindAbout={handleRemindFollowUp} onLogFromAnalysis={handleLogFromAnalysis} onOpenPerson={openPerson}
+                        {activeTab === 'coach' && <div className="page-col"><CoachView key={coachInit.inPerson ? coachInit.inPerson.n : 'coach'} people={people} journal={journal} initialPersonId={coachInit.personId} initialTab={coachInit.tab} initialInPerson={coachInit.inPerson || null} onAttachReview={handleAttachReview} onOpenLog={openLog} onApproveInfo={handleApproveInfo} onApproveInfoAll={handleApproveInfoAll} onRemindAbout={handleRemindFollowUp} onLogFromAnalysis={handleLogFromAnalysis} onOpenPerson={openPerson}
                           onLogChat={(l) => handleLogSubmit({ personIds: l.personIds.filter(id => people.some(p => p.id === id)), type: l.type || 'messaged', meaningfulness: l.meaningfulness, notes: [], activeListening: l.activeListening, summary: l.summary || undefined, pickedDate: l.date, ratings: l.ratings, each: l.each, analysis: l.analysis })}
                           analysisReady={!analysisBridge ? 'none' : hasAnalysisKey ? 'ready' : 'no-key'} onAnalyse={(request) => analysisBridge.runAnalysis(request)} onOpenMe={() => openMe('claude')} yourName={profile.name}
                           model={analysisModelId} onModel={setAnalysisModelId} chatExports={chatsBridge} initialChatKey={coachInit.chatKey || null} style={profile.style || ''} onDrillDone={setDrills}
                           chatBatch={analysisBridge && chatsBridge ? { ...chatBatch, waiting: waiting(chatBatch.queue, journal), onLog: handleLogQueued, onSkip: handleSkipQueued, onRemind: handleRemindQueued } : null} /></div>}
                         {activeTab === 'journal' && <div className="page-col"><JournalView today={today} people={people} generalGoals={generalGoals} journal={journal} goalFilter={journalGoal} onGoalFilter={setJournalGoal}
-                          personFilter={journalPerson} onPersonFilter={setJournalPerson} dayFilter={journalDay} onDayFilter={setJournalDay} onOpenPerson={openPerson} onEditEntry={setEditingEntryId} onOpenReview={setReviewEntryId} /></div>}
+                          personFilter={journalPerson} onPersonFilter={setJournalPerson} dayFilter={journalDay} onDayFilter={setJournalDay} onOpenPerson={openPerson} onEditEntry={setEditingEntryId} onOpenReview={setReviewEntryId} onTellClaude={analysisBridge && hasAnalysisKey ? (id) => tellClaude(logEntries(id)) : null} /></div>}
                         {activeTab === 'me' && <div className="page-col"><MeView tab={meTab} onTab={setMeTab} people={people} journal={journal} skills={skills} generalGoals={generalGoals} profile={profile} onAddSample={handleAddSample} onRemoveSample={handleRemoveSample} hasSamplePeople={people.some(p => SAMPLE_PERSON_IDS.has(p.id))} canAddSample={INITIAL_PEOPLE.some(sp => !people.some(p => p.id === sp.id))} onStartOver={() => setStartOverOpen(true)} onExport={handleExportData} onImportClick={handleImportClick} backupInfo={backupInfo} onOpenBackups={handleOpenBackups} hasUpdater={hasUpdater} updateStatus={updateStatus} onCheckForUpdates={handleCheckForUpdates} onInstallUpdate={handleInstallUpdate} onOpenDownloadPage={handleOpenDownloadPage} shortcutStatus={shortcutStatus} themeMode={themeMode} onSetTheme={setThemeMode} onUpdateProfile={(changes) => setProfile(p => ({ ...p, ...changes }))} onEditProfile={() => setEditProfileOpen(true)} achievements={achievements || {}} hasSystemBridge={hasSystemBridge} autoLaunch={autoLaunch} onToggleAutoLaunch={handleToggleAutoLaunch} onOpenShortcuts={() => setShortcutsOpen(true)} appVersion={appVersion}
                           sync={syncBridge ? { ...syncSettings, dir: syncInfo && syncInfo.dir } : null}
                           calendars={feedBridge ? { feeds, fetchedAt: feedCache.fetchedAt, errors: feedCache.errors, count: (id) => feedCache.items.filter(it => it.feedId === id).length } : null}
@@ -1768,6 +1796,7 @@ function LayersApp() {
                   <span className="toast-text">{t.text}</span>
                   {t.undo && <button type="button" onClick={() => undoToast(t.id, t.undo)} className="toast-undo" aria-label="Undo (Ctrl+Z)">Undo</button>}
                   {t.redo && <button type="button" onClick={() => redoToast(t.id, t.redo)} className="toast-undo" aria-label="Redo (Ctrl+Y)">Redo</button>}
+                  {t.action && <button type="button" onClick={() => { setToasts(all => all.filter(x => x.id !== t.id)); t.action.run(); }} className="toast-undo">{t.action.label}</button>}
                 </div>
               ))}
             </div>

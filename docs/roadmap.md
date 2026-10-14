@@ -867,6 +867,10 @@ style). Most conversations happen face to face, where there's no chat for Claude
   notes, and what to send them after. It never makes up what anyone said.
 - **Log this conversation** logs it as what you did, keeping the review and your notes,
   to read again from the Journal.
+- **Tell Claude what was said**, after logging time together (or Log it on a plan), on
+  its "Logged time with …" message, and on such logs in the Journal: Analyse opens on In
+  person with who, what and when filled in, and **Add to your log** puts the review and
+  your notes on that log, keeping your own ratings, instead of logging it twice.
 
 ### Your style with people you're not close to (not released yet)
 

@@ -90,8 +90,11 @@ function ModelButtons({ label, value, onPick, done = {} }) {
 // after), onApproveInfoAll several at once, onRemindAbout sets that follow-up
 // for one already saved. chatBatch: Analyse all new from LayersApp (running,
 // note, waiting, progress, saveProgress, start, stop, onLog, onSkip,
-// onRemind), or null.
-export function CoachView({ people, journal, initialPersonId, initialTab, onOpenLog, onApproveInfo, onApproveInfoAll, onRemindAbout, onLogFromAnalysis, onLogChat, onOpenPerson, analysisReady = 'none', onAnalyse, onOpenMe, yourName = '', model = DEFAULT_ANALYSIS_MODEL, onModel = () => {}, chatExports = null, initialChatKey = null, chatBatch = null, style = '', onDrillDone }) {
+// onRemind), or null. initialInPerson: { personIds, day, kind, entryIds }
+// from Tell Claude what was said on a log: Analyse opens on In person with
+// those filled in, and onAttachReview(entryIds, analysis) adds the review to
+// that log instead of logging it again.
+export function CoachView({ people, journal, initialPersonId, initialTab, initialInPerson = null, onAttachReview, onOpenLog, onApproveInfo, onApproveInfoAll, onRemindAbout, onLogFromAnalysis, onLogChat, onOpenPerson, analysisReady = 'none', onAnalyse, onOpenMe, yourName = '', model = DEFAULT_ANALYSIS_MODEL, onModel = () => {}, chatExports = null, initialChatKey = null, chatBatch = null, style = '', onDrillDone }) {
   const [tab, setTab] = useState(initialTab || 'prepare');
   const [preparePersonId, setPreparePersonId] = useState(initialPersonId || (people[0] && people[0].id) || null);
   const [analysisPersonId, setAnalysisPersonId] = useState(initialTab === 'analyse' ? initialPersonId || null : null);
@@ -114,16 +117,18 @@ export function CoachView({ people, journal, initialPersonId, initialTab, onOpen
   const [ownError, setOwnError] = useState(null);
   // Who your chat is with: null is the person picked above; otherwise ids,
   // read from the names on its messages ('chat') or chosen here ('you').
-  const [ownWith, setOwnWith] = useState(null);
-  const [ownWithFrom, setOwnWithFrom] = useState(null);
+  const [ownWith, setOwnWith] = useState(initialInPerson ? initialInPerson.personIds : null);
+  const [ownWithFrom, setOwnWithFrom] = useState(initialInPerson ? 'you' : null);
   const [ownWithPicking, setOwnWithPicking] = useState(false);
   const [ownLogDate, setOwnLogDate] = useState(() => new Date());
   // A conversation in person (decided 2026-10-14): your notes under four
   // questions, what you did and the day, read by Claude like a chat.
-  const [ownMode, setOwnMode] = useState('chat'); // 'chat' | 'person'
+  const [ownMode, setOwnMode] = useState(initialInPerson ? 'person' : 'chat'); // 'chat' | 'person'
   const [notes, setNotes] = useState(EMPTY_NOTES);
-  const [notesKind, setNotesKind] = useState('talked');
-  const [notesDate, setNotesDate] = useState(() => new Date());
+  const [notesKind, setNotesKind] = useState(initialInPerson && IN_PERSON_KINDS.includes(initialInPerson.kind) ? initialInPerson.kind : 'talked');
+  const [notesDate, setNotesDate] = useState(() => (initialInPerson && parseISODay(initialInPerson.day)) || new Date());
+  // The log these notes are about, when told after logging: { entryIds, day }.
+  const [attach, setAttach] = useState(initialInPerson ? { entryIds: initialInPerson.entryIds, day: initialInPerson.day } : null);
   const [askingNotes, setAskingNotes] = useState(false);
   // Chats from your exports: what's in the Layers chats folder (null while
   // it's read), where you got up to in each, and the conversation in the box
@@ -246,7 +251,7 @@ export function CoachView({ people, journal, initialPersonId, initialTab, onOpen
   // Your notes on a conversation in person, sent the same way.
   async function analyseNotes() {
     if (!onAnalyse || !ownPeople.length || !hasNotes(notes)) return;
-    const chat = { run: ++ownChats.current, people: ownPeople, notes: { ...notes }, kind: notesKind, date: notesDate };
+    const chat = { run: ++ownChats.current, people: ownPeople, notes: { ...notes }, kind: notesKind, date: notesDate, ...(attach ? { attach } : {}) };
     if (await ask(chat, {}, model, 'pick')) { setNotes(EMPTY_NOTES); setOwnWith(null); setOwnWithFrom(null); setOwnWithPicking(false); }
   }
   // One model's answer to a chat (or notes); on a problem, back to `backTo` saying so.
@@ -289,7 +294,7 @@ export function CoachView({ people, journal, initialPersonId, initialTab, onOpen
     if (ownResults[withModel]) { setOwnError(null); showOwn(ownChat, withModel, ownResults[withModel].result); }
     else ask(ownChat, ownResults, withModel, 'results');
   }
-  function changeAnalysisPerson() { setAnalysisPersonId(null); resetAnalyse(); }
+  function changeAnalysisPerson() { setAnalysisPersonId(null); setAttach(null); resetAnalyse(); }
   // Each detail is saved (with a reminder the day after, for one with a
   // day), ignored, or saved with the rest; `infoStatus`: 'saved', 'reminded'
   // or 'ignored'.
@@ -319,8 +324,16 @@ export function CoachView({ people, journal, initialPersonId, initialTab, onOpen
   // Your own chat: a normal log, filled in by Claude, on the chat's day, with
   // Claude's review and the chat kept on it (the Journal's Review).
   function logOwn() {
-    if (logged || !onLogChat) return;
-    onLogChat({ ...scenario.log, date: ownLogDate, analysis: analysisToKeep(scenario, { model: ownModel, chat: ownChat && (ownChat.notes ? notesText(ownChat.notes) : ownChat.text) }) });
+    if (logged) return;
+    const analysis = analysisToKeep(scenario, { model: ownModel, chat: ownChat && (ownChat.notes ? notesText(ownChat.notes) : ownChat.text) });
+    if (ownChat && ownChat.attach) {
+      if (!onAttachReview) return;
+      onAttachReview(ownChat.attach.entryIds, analysis);
+      setAttach(null);
+    } else {
+      if (!onLogChat) return;
+      onLogChat({ ...scenario.log, date: ownLogDate, analysis });
+    }
     updateSession(() => ({ logged: true }));
   }
   function handleLogAnalysis() {
@@ -794,7 +807,15 @@ export function CoachView({ people, journal, initialPersonId, initialTab, onOpen
                 </div>
               )}
 
-              {scenario.own ? (
+              {scenario.own && ownChat && ownChat.attach ? (
+                <div className="rounded-2xl p-4 mt-5" style={{ background: COLORS.paperRaised, border: `1px solid ${COLORS.line}` }} aria-label="Add to your log">
+                  <p className="text-sm font-semibold" style={{ color: COLORS.ink }}>Add to your log</p>
+                  <p className="text-xs mt-1" style={{ color: COLORS.inkSoft }}>{TYPE_META[scenario.inPerson].emoji} {KIND_TITLE[scenario.inPerson]} {scenario.log.personIds.map(nameOf).join(', ')}, {formatCalendarDate(parseISODay(ownChat.attach.day))}. It keeps the ratings you gave it; this adds Claude's review and your notes, to read again from the Journal.</p>
+                  {logged
+                    ? <p className="text-sm text-center font-medium mt-3" style={{ color: COLORS.good }}>✓ Added to your log</p>
+                    : <button type="button" onClick={logOwn} className="w-full flex items-center justify-center gap-1.5 text-sm font-semibold rounded-full py-3 mt-3" style={{ background: COLORS.accent, color: COLORS.onAccent }}>Add to your log <Kbd onAccent>L</Kbd></button>}
+                </div>
+              ) : scenario.own ? (
                 <div className="rounded-2xl p-4 mt-5" style={{ background: COLORS.paperRaised, border: `1px solid ${COLORS.line}` }} aria-label="Log it">
                   <p className="text-sm font-semibold" style={{ color: COLORS.ink }}>Log it</p>
                   <p className="text-xs mt-1" style={{ color: COLORS.inkSoft }}>{scenario.inPerson ? `${TYPE_META[scenario.inPerson].emoji} ${KIND_TITLE[scenario.inPerson]}` : '📱 Messaged'} {scenario.log.personIds.map(nameOf).join(', ')}{scenario.log.each ? '' : ` · ${ML_LABELS[scenario.log.meaningfulness - 1]} (${scenario.log.meaningfulness} of 5)`}</p>
