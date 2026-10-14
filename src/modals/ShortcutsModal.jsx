@@ -10,7 +10,7 @@ import { COLORS } from '../theme.js';
 const HERE_NAMES = {
   today: 'Today', people: 'People', person: 'A profile', coach: 'Coach', journal: 'Journal', me: 'Me',
   plan: 'Planning', log: 'Logging', event: 'This plan', day: 'This day', goal: 'A goal', info: 'Adding info',
-  avatar: 'Picking an avatar', setup: 'Setting up', jump: 'Ctrl+K', queue: 'Ready to review',
+  avatar: 'Picking an avatar', setup: 'Setting up', jump: 'Ctrl+K', queue: 'Ready to review', review: 'Your week',
 };
 
 function ShortcutKey({ label }) {

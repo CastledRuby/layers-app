@@ -198,8 +198,13 @@ keyboard handler in `LayersApp` uses the stack in two ways:
 - **Esc closes only the top sheet.** It first leaves a focused search box, or a text box
   in a sheet that has keys (its panel has `data-keys`), so the sheet's keys work again;
   otherwise it calls `topSheet().close()`. Tab in such a text box leaves it too
-  (`Sheet`), rather than landing on the next button. A picker opened inside a sheet closes by itself, and the
-  sheet underneath keeps what you typed.
+  (`Sheet`), rather than landing on the next button. Either way focus moves onto the
+  sheet's panel, not the page behind (from the audit of 2026-10-14). A picker opened
+  inside a sheet closes by itself, and the sheet underneath keeps what you typed. Esc
+  also leaves Me's Find box (`me-find-input`), as its key says.
+- **Tab stays in the sheet on top** (`Sheet`'s focus trap, from the audit of
+  2026-10-14): Tab and Shift+Tab go round its buttons and fields, and from anywhere
+  outside it they come back in. Before, they went on to the page behind.
 - **A text box shows its key** with `KeyedField` (`components/atoms.jsx`): the letter
   the sheet uses to get into it on its right (N for a note), and Esc once you're in.
   It's a plain `<input>` (or `<textarea>` with `multiline`) otherwise; the sheet's own

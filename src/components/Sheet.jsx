@@ -20,6 +20,8 @@ export function SheetPortal({ children }) {
 // How long the closing slide takes (.sheet.is-closing in theme.js).
 const CLOSE_MS = 170;
 const animate = () => typeof window.matchMedia === 'function' && !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+// What Tab can reach in a sheet.
+const FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]):not([type="hidden"]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
 // - onBack: shows a back arrow before the title.
 // - onKey(e): keydown while this sheet is the top one (not while a sheet
@@ -36,7 +38,8 @@ const animate = () => typeof window.matchMedia === 'function' && !window.matchMe
 // that unmounts it directly (after saving) closes it at once.
 // Focus moves into the sheet when it opens (unless something in it took it
 // already, a text box with autoFocus), and back to where it was when it
-// closes, so Tab and screen readers start in the right place.
+// closes, so Tab and screen readers start in the right place. Tab stays in
+// the sheet on top.
 export function Sheet({ title, onClose, onBack, onKey, children, footer, tall, top, keysFor = null }) {
   const [closing, setClosing] = useState(false);
   const closingRef = useRef(false);
@@ -68,12 +71,34 @@ export function Sheet({ title, onClose, onBack, onKey, children, footer, tall, t
     // a sheet, say) isn't handled again by the sheet that's now on top.
     function handle(e) {
       if (e.defaultPrevented || topSheet() !== entry || closingRef.current || !keyHandler.current) return;
-      if (e.key === 'Tab' && !e.shiftKey && isTyping()) { e.preventDefault(); document.activeElement.blur(); return; }
+      // Out of the text box onto the sheet itself, so its keys work and focus
+      // stays in it (it went to the page behind until the audit of 2026-10-14).
+      if (e.key === 'Tab' && !e.shiftKey && isTyping()) { e.preventDefault(); if (panelRef.current) panelRef.current.focus({ preventScroll: true }); else document.activeElement.blur(); return; }
       keyHandler.current(e);
     }
     window.addEventListener('keydown', handle);
     return () => window.removeEventListener('keydown', handle);
   }, [hasKeys, entry]);
+
+  // Tab and Shift+Tab stay in the sheet on top, going round its buttons and
+  // fields; they went on to the page behind it (audit 2026-10-14). A key the
+  // sheet already used (Tab leaving a text box) is left alone.
+  useEffect(() => {
+    function trap(e) {
+      if (e.key !== 'Tab' || e.defaultPrevented || topSheet() !== entry || !panelRef.current) return;
+      const panel = panelRef.current;
+      const items = [...panel.querySelectorAll(FOCUSABLE)].filter(el => !el.closest('[aria-hidden="true"], [hidden], [inert]'));
+      const at = document.activeElement;
+      if (!items.length) { e.preventDefault(); panel.focus({ preventScroll: true }); return; }
+      const first = items[0];
+      const last = items[items.length - 1];
+      if (!panel.contains(at) || at === panel) { e.preventDefault(); (e.shiftKey ? last : first).focus(); }
+      else if (e.shiftKey && at === first) { e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && at === last) { e.preventDefault(); first.focus(); }
+    }
+    window.addEventListener('keydown', trap);
+    return () => window.removeEventListener('keydown', trap);
+  }, [entry]);
 
   return (
     <SheetPortal>

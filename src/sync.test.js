@@ -83,10 +83,15 @@ describe('mergeData', () => {
     expect(mergeData(mine, theirs, T3).events.map(e => e.title)).toEqual(['Coffee at 11', 'Mine only', 'Theirs only']);
   });
 
-  it('a tie, or no times at all, keeps this computer’s', () => {
-    const mine = { ...base, journal: [{ id: 'j1', summary: 'mine' }] };
-    const theirs = { ...base, journal: [{ id: 'j1', summary: 'theirs' }] };
-    expect(mergeData(mine, theirs, T3).journal[0].summary).toBe('mine');
+  // Audit 2026-10-14: each kept its own, so two devices rewrote the file back and forth.
+  it('a tie, or no times at all, is settled the same way on both computers', () => {
+    const one = { ...base, journal: [{ id: 'j1', summary: 'one' }], profile: { name: 'Liam', updatedAt: T1 } };
+    const two = { ...base, journal: [{ summary: 'two', id: 'j1' }], profile: { updatedAt: T1, name: 'Liam C' } };
+    const here = mergeData(one, two, T3);
+    const there = mergeData(two, one, T3);
+    expect(here.journal).toEqual(there.journal);
+    expect(here.profile).toEqual(there.profile);
+    expect(mergeData(here, there, T3).journal).toEqual(here.journal); // and it stays settled
   });
 
   it("merges a person's goals one by one, so changes on both sides survive", () => {

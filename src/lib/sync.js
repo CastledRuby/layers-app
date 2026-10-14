@@ -113,17 +113,29 @@ export function cleanDeleted(list) {
 }
 
 const stampOf = (rec) => (rec && typeof rec.updatedAt === 'string' ? rec.updatedAt : '');
+// A record written out with its keys in order, the same on every device.
+const stable = (v) => JSON.stringify(v, (k, x) => (x && typeof x === 'object' && !Array.isArray(x) ? Object.fromEntries(Object.keys(x).sort().map(key => [key, x[key]])) : x));
+// Of two copies of one record, the one changed last. A tie (or no updatedAt
+// on either) is settled by the copies themselves, so every device picks the
+// same one: each keeping its own made two devices with different copies
+// rewrite the sync file back and forth for good (audit 2026-10-14).
+function later(m, t) {
+  const a = stampOf(m);
+  const b = stampOf(t);
+  if (a !== b) return b > a ? t : m;
+  return stable(t) > stable(m) ? t : m;
+}
 
-// Two copies of the same records, by id: the one changed last (a tie, or no
-// updatedAt on either, keeps `mine`), then without anything deleted after it
-// last changed. `inner` merges a pair that both have (a person's goals).
+// Two copies of the same records, by id: the one changed last (`later`),
+// then without anything deleted after it last changed. `inner` merges a pair
+// that both have (a person's goals).
 function mergeList(mine = [], theirs = [], kind, deleted, inner) {
   const byId = new Map();
   mine.forEach(r => byId.set(r.id, r));
   theirs.forEach(r => {
     const m = byId.get(r.id);
     if (!m) { byId.set(r.id, r); return; }
-    const winner = stampOf(r) > stampOf(m) ? r : m;
+    const winner = later(m, r);
     byId.set(r.id, inner ? inner(winner, m, r) : winner);
   });
   // Mine first in their order, then anything only they have, in theirs.
@@ -161,7 +173,7 @@ export function mergeData(mine, theirs, now = new Date().toISOString()) {
     journal: mergeList(mine.journal, theirs.journal, 'entry', deleted),
     events: mergeList(mine.events, theirs.events, 'event', deleted),
     generalGoals: mergeList(mine.generalGoals, theirs.generalGoals, 'goal', deleted),
-    profile: stampOf(theirs.profile) > stampOf(mine.profile) ? theirs.profile : mine.profile,
+    profile: theirs.profile && mine.profile ? later(mine.profile, theirs.profile) : mine.profile || theirs.profile,
     skills: mergeSkills(mine.skills, theirs.skills),
     achievements: mergeAchievements(mine.achievements || {}, theirs.achievements || {}),
     deleted,

@@ -457,7 +457,7 @@ export function MeView({ tab = 'you', onTab = () => {}, people, journal, skills,
           <button key={k} type="button" role="tab" aria-selected={!q && shown === k} onClick={() => { setFind(''); onTab(k); }} className="flex items-center gap-1.5 text-xs font-semibold rounded-full pl-3 pr-1.5 py-1" style={{ background: !q && shown === k ? COLORS.accent : COLORS.paperRaised, color: !q && shown === k ? COLORS.onAccent : COLORS.inkSoft, border: `1px solid ${!q && shown === k ? COLORS.accent : COLORS.line}` }}>{label}<Kbd onAccent={!q && shown === k}>{i + 1}</Kbd></button>
         ))}
       </div>
-      <KeyedField letter="F" ref={findRef} value={find} onChange={e => setFind(e.target.value)} aria-label="Find a setting" placeholder="Find a setting: dark, reminders, backup…"
+      <KeyedField letter="F" ref={findRef} id="me-find-input" value={find} onChange={e => setFind(e.target.value)} aria-label="Find a setting" placeholder="Find a setting: dark, reminders, backup…"
         wrapClassName="mb-5" className="w-full text-sm rounded-xl px-3 py-2" style={{ border: `1px solid ${COLORS.line}` }} />
 
       {found ? (

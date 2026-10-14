@@ -643,9 +643,11 @@ function LayersApp() {
   }, [searchFocus]);
 
   // Where you are, for the keys list: the top sheet's keysFor, a profile, or the tab.
+  // A sheet without keys of its own lists none as "Here": the tab's behind it
+  // don't work while it's open (audit 2026-10-14).
   function keysHere() {
     const top = topSheet();
-    if (top && top.keysFor) return top.keysFor;
+    if (top) return top.keysFor || 'sheet';
     return screen.name === 'person' ? 'person' : activeTab;
   }
   const keysHereRef = useRef(keysHere);
@@ -663,9 +665,10 @@ function LayersApp() {
       // (a picker opened inside a sheet closes by itself). See sheetLayer.js.
       if (e.key === 'Escape') {
         const activeEl = document.activeElement;
-        if (activeEl && (activeEl.id === 'people-search-input' || activeEl.id === 'journal-search-input')) { activeEl.blur(); return; }
+        if (activeEl && ['people-search-input', 'journal-search-input', 'me-find-input'].includes(activeEl.id)) { activeEl.blur(); return; }
         // Typing in a sheet that has keys: Esc leaves the text box first (Sheet.jsx).
-        if (isTyping() && activeEl.closest('[data-keys]')) { activeEl.blur(); return; }
+        // Onto the sheet itself, so focus stays in it.
+        if (isTyping() && activeEl.closest('[data-keys]')) { const panel = activeEl.closest('[data-keys]'); if (panel.focus) panel.focus({ preventScroll: true }); else activeEl.blur(); return; }
         const top = topSheet();
         if (top) top.close();
         return;
@@ -953,7 +956,7 @@ function LayersApp() {
   function tellClaude(entries) {
     const live = entries.filter(e => people.some(p => p.id === e.personId));
     if (!live.length) return;
-    setLogOpen(false);
+    closeSheets(); // its message can be pressed with another sheet open, which stayed over Coach
     setCoachInit({ personId: live[0].personId, tab: 'analyse', chatKey: null, inPerson: { personIds: live.map(e => e.personId), day: live[0].at, kind: live[0].type, entryIds: live.map(e => e.id), n: uid() } });
     setActiveTab('coach'); setScreen({ name: 'tabs' });
   }
@@ -982,6 +985,8 @@ function LayersApp() {
     setKeyDateFor(null); setRecheckFor(null); setGoalModalOpen(false); setAddInfoOpen(false); setQuickInterestOpen(false); setAddPersonOpen(false); setPhotoFolderOpen(false);
     setShortcutsOpen(false); setStartOverOpen(false); setStandaloneDetailOpen(false); setEditPersonOpen(false);
     setEditingEntryId(null); setEditProfileOpen(false);
+    // These stayed open behind where you went (audit 2026-10-14).
+    setSyncSheetOpen(false); setReviewEntryId(null); setConfirmState(null);
   }
   function runJump(row, { full = false } = {}) {
     const run = row.run;
@@ -1850,6 +1855,8 @@ function LayersApp() {
                   <button type="button" onClick={handleExportData} className="toast-undo">Export</button>
                 </div>
               )}
+              {/* Read out as they come (audit 2026-10-14: screen readers heard nothing). */}
+              <div aria-live="polite" style={{ display: 'contents' }}>
               {toasts.map(t => (
                 <div key={t.id} className={`toast${t.undo || t.redo ? ' toast--undo' : ''}`}>
                   <span className="toast-text">{t.text}</span>
@@ -1858,6 +1865,7 @@ function LayersApp() {
                   {t.action && <button type="button" onClick={() => { setToasts(all => all.filter(x => x.id !== t.id)); t.action.run(); }} className="toast-undo">{t.action.label}</button>}
                 </div>
               ))}
+              </div>
             </div>
 
             <input ref={importInputRef} type="file" accept="application/json" onChange={handleImportFile} style={{ display: 'none' }} />

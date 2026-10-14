@@ -93,7 +93,7 @@ export function WeekReviewSheet({ day: startDay, people, journal, events, genera
   }
 
   return (
-    <Sheet title="Your week" onClose={onClose} onKey={onKey} tall
+    <Sheet title="Your week" onClose={onClose} onKey={onKey} keysFor="review" tall
       footer={<button type="button" onClick={planNextWeek} className="primary-btn">Plan next week <Kbd onAccent>↵</Kbd></button>}>
       <div className="flex items-center gap-1 -mt-2 mb-3">
         <button type="button" onClick={() => setDay(d => addDays(d, -7))} aria-label="Week before" className="icon-btn -ml-2"><ChevronLeft size={18} color={COLORS.inkSoft} /></button>

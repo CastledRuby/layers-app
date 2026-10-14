@@ -378,10 +378,19 @@ These are defined once in `SHORTCUTS` (shown by `ShortcutsModal`) and implemente
 
 **Keys for where you are** (2026-10-11): each shortcut says where it works (`where`: a tab,
 `person` for a profile, a sheet's `keysFor` such as `plan`, `log`, `event`, `day`, `goal`,
-`info`, `avatar`, `queue`, or `everywhere`). `?` opens the list with the keys for where you
-are first (`keysHere`: the top sheet's `keysFor`, else a profile or the tab), then
-**Everywhere**, then the rest. It works inside a sheet too, and a sheet with keys has a
-**?** button in its title bar (it sends `layers-show-keys`).
+`info`, `avatar`, `queue`, `review` (Your week), or `everywhere`). `?` opens the list with
+the keys for where you are first (`keysHere`: the top sheet's `keysFor`, else a profile
+or the tab), then **Everywhere**, then the rest. It works inside a sheet too, and a sheet
+with keys has a **?** button in its title bar (it sends `layers-show-keys`). A sheet with
+no `keysFor` lists nothing as Here (until the audit of 2026-10-14 it showed the tab's
+keys behind it, which don't work while it's open). That audit also added the keys the
+list was missing: an open plan's E, L and ↵, the day popup's, Your week's, and the log's
+steps.
+
+**Going somewhere from Ctrl+K** (`closeSheets`) closes every sheet, the sync sheet, a
+Journal review and a question left open included (those stayed behind until the audit
+of 2026-10-14), and so does **Tell Claude what was said**. Messages (toasts) are in an
+`aria-live` region, so screen readers read them out.
 
 - **When they're off (all but `Esc`):** while typing in a text field (a focused slider or
   checkbox doesn't count), before onboarding, and while any sheet or dialog is open.

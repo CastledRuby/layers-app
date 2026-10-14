@@ -43,3 +43,31 @@ describe('keys for where you are', () => {
     expect(section('Everything else').textContent).toContain('Today: back to today');
   });
 });
+
+describe('keys for where you are: fixes from the audit of 2026-10-14', () => {
+  it("a sheet without keys of its own lists none as Here, not the page's behind it", async () => {
+    seedState({ people: [{ id: 'm', name: 'Morgan', emoji: '🙂', layer: 1, overall: 10, goals: [], dims: {} }] });
+    const { user } = renderApp();
+    await user.click(nav('Today'));
+    await user.keyboard('n11'); // the quick log: an interaction, talked
+    await user.keyboard('1{Enter}'); // Morgan
+    await user.keyboard('r'); // Rate each part: no keys list of its own
+    expect(dialog('How did each part go?')).toBeTruthy();
+    await user.keyboard('?');
+    const sheet = dialog('Keyboard shortcuts');
+    expect(within(sheet).queryByRole('region', { name: /^Here/ })).toBeNull();
+    expect(section('Everywhere')).toBeTruthy();
+  });
+
+  it("Your week (W on Today) has its keys listed: 1-5, the weeks, and Enter", async () => {
+    seedState();
+    const { user } = renderApp();
+    await user.click(nav('Today'));
+    await user.keyboard('w');
+    expect(dialog('Your week')).toBeTruthy();
+    await user.keyboard('?');
+    const here = section('Here: Your week');
+    expect(here.textContent).toContain('Your week: plan next week');
+    expect(here.textContent).toContain('Your week: the week before or after');
+  });
+});

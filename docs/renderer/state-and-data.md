@@ -648,7 +648,9 @@ so another device's copy can be merged with this one. The OneDrive sync file
 - **`deleted`**: a record that's gone since the last save is added (`{ id, kind, at }`);
   one that comes back (Undo) is taken off. Kept for 90 days (`KEEP_DELETED_DAYS`).
 - **`mergeData(mine, theirs)`** brings two copies together record by record: the one
-  changed last wins (a tie, or no times, keeps this computer's); a person's goals are
+  changed last wins (a tie, or no times, is settled by comparing the two copies, so
+  every device picks the same one; until the audit of 2026-10-14 each kept its own, and
+  two devices with different copies rewrote the sync file back and forth); a person's goals are
   merged one by one, so a goal moved on the phone and a note changed on the laptop both
   survive (their other lists follow whichever copy of the person changed last); a
   deletion wins over changes before it and loses to changes after it; skills keep the

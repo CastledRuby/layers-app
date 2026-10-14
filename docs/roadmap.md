@@ -915,6 +915,9 @@ clicked through, and the installed app checked. Each fix has a test.
   Sync now) could send this laptop's data from before as changes made here: someone added
   on your other device was sent back deleted, and a change made there was put back. It
   now starts from what came in.
+- Two devices with different copies of something changed at the same moment (or older
+  records with no time) each kept their own, so they'd rewrite the sync file back and
+  forth; now both pick the same copy.
 
 **Your data**
 - Start over that cleared people but kept your skills, achievements and own goals kept
@@ -935,6 +938,14 @@ clicked through, and the installed app checked. Each fix has a test.
 - Something new keeps what you typed when you close it with Esc, or Enter after a pick.
 - After Claude's review is added to a log, Coach opened again starts afresh, so it can't
   replace that review; a log deleted meanwhile is said to be gone.
+- Tab stays in the sheet on top (it went on to the page behind), and leaving a text box
+  with Tab or Esc stays in the sheet too.
+- ? over a sheet without keys of its own no longer lists the page's keys behind it as
+  Here; the keys list now has an open plan's E, L and ↵, the day popup's, Your week's
+  and the log's steps.
+- Esc leaves Me's Find box. Going somewhere from Ctrl+K closes a question, the sync
+  sheet or a review left open, and Tell Claude what was said closes a sheet opened since.
+- Messages are read out by screen readers.
 
 **Chats**
 - An Instagram or Messenger message that only sounds like a notice ("omg my mum changed
