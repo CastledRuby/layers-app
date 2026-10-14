@@ -125,6 +125,12 @@ describe('a conversation in person', () => {
     expect(after.map(j => j.meaningfulness).sort()).toEqual([3, 4]); // your own ratings stand
     after.forEach(j => expect(j.analysis).toMatchObject({ inPerson: 'hangout', chat: 'What they shared:\nChloe is moving' }));
     expect(within(add).getByText('✓ Added to your log')).toBeTruthy();
+    // Coach again later starts afresh: those notes reopened could replace the
+    // review just added (audit 2026-10-14).
+    await user.click(nav('Today'));
+    await user.click(nav('Coach'));
+    expect(screen.queryByLabelText('What did they share?')).toBeNull();
+    expect(screen.queryByLabelText('Add to your log')).toBeNull();
   });
 
   it('the Journal offers it on a conversation in person logged without a review, for everyone in that log', async () => {

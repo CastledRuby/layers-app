@@ -77,8 +77,10 @@ can't be kept, and the notice says so (`copyKept`). Before 1.0.27, unreadable da
 silently replaced by the sample people, and the next save overwrote it for good.
 
 `persistState` returns `false` when a write fails (storage full or disabled). The persist
-effect in `LayersApp` then shows one toast suggesting a backup export. It stays quiet
-for later failures until a save has worked again (the `saveFailed` ref).
+effect in `LayersApp` then shows a message (`role="alert"`, with **Export**) that stays
+up until a save works again (`saveProblem`; the `saveFailed` ref). Before the audit of
+2026-10-14 it was a toast shown once for a few seconds, and every later change went
+unsaved without a word.
 
 ### UI-only state (not persisted)
 
@@ -284,7 +286,10 @@ The helpers are in [`lib/progress.js`](../../src/lib/progress.js) and unit-teste
 
 **Logging an interaction** (`handleLogSubmit`, which applies `applyLog`: the next people,
 skills and Journal entries worked out without setting anything, so the chat queue's
-Log all can apply several in turn). The log sheet always sends the people, type, the
+Log all can apply several in turn). A log made before the one before it is shown (two
+notification ratings taken together at startup, quick adds in a row) builds on that
+one's result (the `logBase` ref), not on the data from before, which lost the first
+one's progress until the audit of 2026-10-14. The log sheet always sends the people, type, the
 note (`summary`), the picked date and `each`: each person's own part of it (decided
 2026-10-12), `{ [personId]: { meaningfulness, ratings, activeListening, notes,
 askedAbout? } }`, so in a log with several people how it went with one doesn't move
@@ -577,7 +582,9 @@ page while Layers runs. Neither hook runs before onboarding.
 `achievementProgress(people, journal, skills)` returns `{ done, have, need, unit }` for
 each one, and `progressText` words it for a locked card ("2 of 5 conversations", "40% of
 75%"). "Active Listener" counts conversations with at least one active-listening tick, as
-its description says. It used to count ticks.
+its description says. It used to count ticks. A log with several people is one
+conversation (its entries share a `logId`); before 2026-10-14 each entry counted, for
+"Active Listener" and "First meaningful" alike.
 
 Once reached, an achievement is recorded in the `achievements` state with the day:
 `{ firstMeaningful: '2026-10-04' }`. An effect in `LayersApp` calls
@@ -841,7 +848,9 @@ said here.
   to your log** (L): it puts the review and your notes on every entry of that log
   (`handleAttachReview`, by `logId`) and keeps the ratings you gave it, rather than
   logging it again. Every log's entries share a `logId` (from 2026-10-14; older ones get
-  just the entry tapped).
+  just the entry tapped). Once added, the notes are marked `used`, and Coach opened
+  again starts afresh; leaving for another tab drops them too. If that log has been
+  deleted meanwhile it says so instead of claiming the review was added.
 
 ### Skills over time
 

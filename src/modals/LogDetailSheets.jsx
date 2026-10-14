@@ -243,11 +243,14 @@ export function NewInfoSheet({ people, itemsBy, setItemsFor, category, setCatego
     setText('');
     return true;
   }
-  // Anything typed but not added yet stays with the person it was typed for.
+  // Anything typed but not added yet stays with the person it was typed for,
+  // and closing (Esc, Enter, Done) adds it, as picks are (audit 2026-10-14:
+  // Esc, or Enter after picking, dropped it).
   function moveTo(i) { add(); setWho(i); }
+  function close() { add(); onClose(); }
   function onKey(e) {
     if (e.ctrlKey || e.metaKey || e.altKey) return;
-    if (enterCloses(e, onClose)) return;
+    if (enterCloses(e, close)) return;
     if (switchPerson(e, people.length, who, moveTo)) return;
     if (!isTyping() && !e.ctrlKey && !e.metaKey && !e.altKey && (e.key === 'n' || e.key === 'N')) { e.preventDefault(); if (textRef.current) textRef.current.focus(); return; }
     const i = Number(e.key) - 1;
@@ -255,7 +258,7 @@ export function NewInfoSheet({ people, itemsBy, setItemsFor, category, setCatego
   }
   const openGroup = INTEREST_GROUPS.find(g => g.key === group);
   return (
-    <Sheet title={`Something new about ${person.name}?`} onClose={onClose} onKey={onKey} footer={<DoneButton onClick={() => { add(); onClose(); }} />}>
+    <Sheet title={`Something new about ${person.name}?`} onClose={close} onKey={onKey} footer={<DoneButton onClick={close} />}>
       <PersonTabs people={people} at={who} onPick={moveTo} doneFor={p => (itemsBy[p.id] || []).length > 0} />
       <p className="text-xs mb-3" style={{ color: COLORS.inkSoft }}>Tap what's new. It's added to {people.length > 1 ? `${person.name}'s` : 'their'} profile when you save the log.</p>
       <div className="flex flex-wrap gap-1.5 mb-4">

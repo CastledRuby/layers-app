@@ -92,10 +92,13 @@ export function LogInteractionModal({ people, defaultPersonId, prefill, onClose,
   const startPerson = defaultPersonId && people.some(p => p.id === defaultPersonId) ? defaultPersonId : null;
   // With someone already picked (their profile, Ctrl+K), it's an interaction,
   // so it starts at what you did (Backspace still reaches "Plan something").
-  const [step, setStep] = useState(prefill ? 'details' : startPerson ? 'type' : 'kind'); // kind -> type -> who -> details
+  const [personIds, setPersonIds] = useState(() => prefill ? (prefill.personIds || []).filter(id => people.some(p => p.id === id)) : startPerson ? [startPerson] : []);
+  // A prefill with nobody in Layers ("log deep" in Ctrl+K, or a plan whose
+  // people have gone) asks who first; its details had no one to rate, and
+  // R or L there crashed (audit 2026-10-14).
+  const [step, setStep] = useState(prefill ? (personIds.length ? 'details' : 'who') : startPerson ? 'type' : 'kind'); // kind -> type -> who -> details
   const [dir, setDir] = useState(null); // 'in' | 'back': the slide for the step just shown
   const [type, setType] = useState(prefill ? prefill.type || 'other' : null);
-  const [personIds, setPersonIds] = useState(() => prefill ? (prefill.personIds || []).filter(id => people.some(p => p.id === id)) : startPerson ? [startPerson] : []);
   // How meaningful it was with each person: { [personId]: 1-5 }. One person
   // starts at 3; with several, each starts unrated unless the log was typed
   // with a rating (Ctrl+K), which is theirs.
@@ -213,8 +216,8 @@ export function LogInteractionModal({ people, defaultPersonId, prefill, onClose,
     : loggedPerson && alOf(loggedPerson) ? `${alOf(loggedPerson)} ticked` : '';
   const newCount = loggedPeople.reduce((n, p) => n + (newInfoBy[p.id] || []).length, 0);
   const extras = [
-    { key: 'rate', letter: 'R', Icon: Gauge, label: 'Rate each part', summary: rateSummary || null },
-    { key: 'listening', letter: 'L', Icon: Ear, label: 'Active listening', summary: alSummary || null },
+    loggedPeople.length > 0 && { key: 'rate', letter: 'R', Icon: Gauge, label: 'Rate each part', summary: rateSummary || null },
+    loggedPeople.length > 0 && { key: 'listening', letter: 'L', Icon: Ear, label: 'Active listening', summary: alSummary || null },
     loggedPeople.length > 0 && { key: 'new', letter: 'I', Icon: Sparkles, label: 'Something new', summary: newCount ? `${newCount} added` : null },
     (goalsInLog.length > 0 || (onCreateGoal && loggedPeople.length > 0)) && { key: 'goals', letter: 'G', Icon: Target, label: goalsInLog.length ? 'Goals moved' : 'Add a goal', summary: untickedGoals.length ? `${goalsInLog.length - untickedGoals.length} of ${goalsInLog.length}` : null },
     { key: 'reflect', letter: 'F', Icon: PenLine, label: 'How it felt', summary: reflectionTags.length ? `${reflectionTags.length} picked${reflection.trim() ? ', written' : ''}` : reflection.trim() ? 'written' : null },
@@ -390,8 +393,8 @@ export function LogInteractionModal({ people, defaultPersonId, prefill, onClose,
               </div>
             </div>
 
-            {extra === 'rate' && <RateSheet people={loggedPeople} day={day} ratingsBy={ratingsBy} setRating={setRating} answersBy={answersBy} setAnswer={setAnswer} at={rateAt} setAt={setRateAt} onClose={() => setExtra(null)} />}
-            {extra === 'listening' && <ListeningSheet people={loggedPeople} alBy={alBy} toggle={toggleAl} onClose={() => setExtra(null)} />}
+            {extra === 'rate' && loggedPeople.length > 0 && <RateSheet people={loggedPeople} day={day} ratingsBy={ratingsBy} setRating={setRating} answersBy={answersBy} setAnswer={setAnswer} at={rateAt} setAt={setRateAt} onClose={() => setExtra(null)} />}
+            {extra === 'listening' && loggedPeople.length > 0 && <ListeningSheet people={loggedPeople} alBy={alBy} toggle={toggleAl} onClose={() => setExtra(null)} />}
             {extra === 'new' && loggedPeople.length > 0 && <NewInfoSheet people={loggedPeople} itemsBy={newInfoBy} setItemsFor={setNewInfoFor} category={newInfoCat} setCategory={setNewInfoCat} text={newInfoText} setText={setNewInfoText} onClose={() => setExtra(null)} />}
             {extra === 'goals' && <GoalsSheet goals={goalsInLog} unticked={untickedGoals} toggle={(id) => toggleIn(setUntickedGoals, id)} showNames={personIds.length > 1} onNewGoal={onCreateGoal ? () => setNewGoal(true) : undefined} onClose={() => setExtra(null)} />}
             {extra === 'goals' && newGoal && (

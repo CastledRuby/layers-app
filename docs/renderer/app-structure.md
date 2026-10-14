@@ -225,14 +225,15 @@ so only one thing is asked at a time:
 
 | Chip | Key | Sheet | Shown |
 |---|---|---|---|
-| Rate each part | R | "How did each part go?": a 1–5 scale for each dimension, asked in that person's own words ([`lib/logQuestions.js`](../../src/lib/logQuestions.js)): their first name, and what the part means at their layer ("How far past small talk did you get with Sam?" at Layer 1, "How much did you and Sam talk about what really matters?" at Layer 4). Parts a goal with them is about come first, marked "Your goal: …", and their weakest part is marked. Then "Did you ask Sam about …?" (yes or no, Y or N) for what's saved about them worth asking after (`followUps`: important things from the last 30 days or with a day within two weeks, and plans whose day was in the last two weeks; the newest two). A yes ticks Remembered in their active listening and is kept on their entry (`askedAbout`). Type a number per row, top to bottom, or click; Backspace steps back; ↑ ↓ move. With several people, the last row of one moves on to the next. | always |
-| Active listening | L | "Did you practise active listening?": the four practices, ticked with 1–4 (each person's own) | always |
+| Rate each part | R | "How did each part go?": a 1–5 scale for each dimension, asked in that person's own words ([`lib/logQuestions.js`](../../src/lib/logQuestions.js)): their first name, and what the part means at their layer ("How far past small talk did you get with Sam?" at Layer 1, "How much did you and Sam talk about what really matters?" at Layer 4). Parts a goal with them is about come first, marked "Your goal: …", and their weakest part is marked. Then "Did you ask Sam about …?" (yes or no, Y or N) for what's saved about them worth asking after (`followUps`: important things from the last 30 days or with a day within two weeks, and plans whose day was in the last two weeks; the newest two). A yes ticks Remembered in their active listening and is kept on their entry (`askedAbout`). Type a number per row, top to bottom, or click; Backspace steps back; ↑ ↓ move. With several people, the last row of one moves on to the next. | when someone's picked |
+| Active listening | L | "Did you practise active listening?": the four practices, ticked with 1–4 (each person's own) | when someone's picked |
 | Something new | I | "Something new about …?": tap suggestions for the category (1–5 picks it): topic lists for interests, `INFO_TEMPLATES` for the rest. Typing is optional. Saved to that person's profile. | when someone's picked |
 | Goals moved (or Add a goal) | G | "Goals this moved": every active goal is ticked; untick the ones it didn't help. **+ New goal** (`+`) starts one with them in `QuickGoalSheet`, and it comes back ticked. | when someone's picked |
 | How it felt | F | "How did it feel?": tap phrases for how it went and what to try next time (`REFLECTION_TEMPLATES`), plus optional typing. The saved reflection is the phrases, then the text. | always |
 
 The sheets edit the log's own state as you go, so Done, Enter or Esc just closes them,
-and nothing is lost. Once something is filled in, its chip shows a tick and a summary
+and nothing is lost. Something new adds anything typed in its box when it closes, as
+Done always did (Esc dropped it before the audit of 2026-10-14). Once something is filled in, its chip shows a tick and a summary
 ("Rate each part · 3 of 6"). [state-and-data.md](state-and-data.md#progression-model)
 says what each one changes.
 
@@ -240,7 +241,11 @@ Moving between steps slides forward or back (`step-in` / `step-back`), and every
 except the first has a back arrow in the title bar.
 
 `prefill` (logging a plan: `{ eventId, day, personIds, type, note, goalIds }`) opens it
-straight on the details, filled in from the plan, with only its linked goal ticked.
+straight on the details, filled in from the plan, with only its linked goal ticked. A
+prefill with nobody in Layers (the quick-add box's open in full for "talked yesterday",
+or a plan whose people have gone) opens on who instead; on the details with no one,
+Rate each part and Active listening crashed it before the audit of 2026-10-14, and they
+only show once someone's picked.
 Saving it ticks the plan off for that day. With nobody in your circle the modal still
 opens: *Interaction* is disabled and says to add someone first, and plans can be made
 without people.
@@ -361,6 +366,10 @@ sheets that were open before going somewhere; an action like Dark mode leaves th
 
 `handleStartOver` clears the parts picked. If people went, Layers goes back to onboarding
 (with your name filled in if settings were kept); otherwise it stays in Me with a toast.
+With progress kept, finishing onboarding keeps your skills and own goals too (it
+remembers in `localStorage['layers-start-over-kept']`, `KEPT_KEY`; before the audit of
+2026-10-14 it cleared them). The progress row counts only your own goals; people's go
+with them.
 
 ## Keyboard shortcuts
 

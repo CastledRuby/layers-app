@@ -328,7 +328,7 @@ export function CoachView({ people, journal, initialPersonId, initialTab, initia
     const analysis = analysisToKeep(scenario, { model: ownModel, chat: ownChat && (ownChat.notes ? notesText(ownChat.notes) : ownChat.text) });
     if (ownChat && ownChat.attach) {
       if (!onAttachReview) return;
-      onAttachReview(ownChat.attach.entryIds, analysis);
+      if (onAttachReview(ownChat.attach.entryIds, analysis) === false) return; // that log is gone
       setAttach(null);
     } else {
       if (!onLogChat) return;

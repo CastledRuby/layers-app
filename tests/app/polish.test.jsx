@@ -180,6 +180,25 @@ describe('Less typing: tap-to-add templates', () => {
     expect(morgan.plans.map(p => p.text)).toEqual(['Moving house']);
   });
 
+  it('"Something new" keeps what you typed when it closes with Esc, or Enter after a pick (audit 2026-10-14)', async () => {
+    seedState({ people: [person('Morgan')] });
+    const { user } = renderApp();
+    await toDetails(user);
+    await user.keyboard('i');
+    await user.type(within(dialog('Something new about Morgan?')).getByLabelText('Something new'), 'Loves bouldering');
+    await user.keyboard('{Escape}'); // out of the box
+    await user.keyboard('{Escape}'); // and the sheet
+    expect(queryDialog('Something new about Morgan?')).toBeNull();
+    await user.keyboard('i');
+    const sheet = dialog('Something new about Morgan?');
+    await user.type(within(sheet).getByLabelText('Something new'), 'Hates mornings');
+    await user.click(within(sheet).getByRole('button', { name: /Sports/ }));
+    await user.keyboard('{Enter}'); // not in the box: closes
+    expect(queryDialog('Something new about Morgan?')).toBeNull();
+    await user.keyboard('{Enter}');
+    expect(savedState().people[0].interests.map(i => i.text).sort()).toEqual(['Hates mornings', 'Loves bouldering']);
+  });
+
   it('"How did it feel?" builds the reflection from tapped phrases, then any typing', async () => {
     seedState({ people: [person('Morgan')] });
     const { user } = renderApp();

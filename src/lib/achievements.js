@@ -8,8 +8,11 @@ import { ACHIEVEMENTS, CATEGORIES } from '../data/constants.js';
 // { key: { done, have, need, unit } } for every achievement.
 export function achievementProgress(people, journal, skills) {
   const savedInfo = people.reduce((sum, p) => sum + CATEGORIES.reduce((s, c) => s + (p[c.key] || []).length, 0), 0);
-  const listened = journal.filter(j => (j.activeListening || []).length > 0).length;
-  const meaningful = journal.filter(j => j.meaningfulness >= 4).length;
+  // Conversations, not entries: a log with several people has an entry each,
+  // sharing a logId, and counts once (audit 2026-10-14).
+  const conversations = (list) => new Set(list.map(j => j.logId || j.id)).size;
+  const listened = conversations(journal.filter(j => (j.activeListening || []).length > 0));
+  const meaningful = conversations(journal.filter(j => j.meaningfulness >= 4));
   const closer = people.filter(p => p.layer >= 3).length;
   const reciprocity = skills && skills.reciprocity ? skills.reciprocity.current : 0;
   const rows = {

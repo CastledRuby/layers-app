@@ -916,6 +916,26 @@ clicked through, and the installed app checked. Each fix has a test.
   on your other device was sent back deleted, and a change made there was put back. It
   now starts from what came in.
 
+**Your data**
+- Start over that cleared people but kept your skills, achievements and own goals kept
+  them only until you'd set up again; now they stay. Its progress row counts only your
+  own goals (people's go with them).
+- A save that fails (storage full) says so until saving works again, with Export; it was
+  a toast shown once, and later changes went unsaved without a word.
+- Two ratings from notifications waiting when Layers starts (or quick adds in a row) both
+  count; the second used to undo the first one's progress.
+- Remove the sample people, Add samples, and Undo after a delete work from the data as it
+  is when you confirm, so a sync that came in while the question was open isn't undone.
+- Achievements count a log with several people as one conversation.
+- Editing a Journal entry has Undo. Remove person no longer says it can't be undone.
+
+**Screens**
+- A log opened with nobody in it (from the quick-add box, or a plan whose people have
+  gone) asks who first; pressing R or L on it crashed Layers.
+- Something new keeps what you typed when you close it with Esc, or Enter after a pick.
+- After Claude's review is added to a log, Coach opened again starts afresh, so it can't
+  replace that review; a log deleted meanwhile is said to be gone.
+
 ### Conversations in person (not released yet)
 
 More chats, step 1 (picked 2026-10-14: in person, then Messenger; Discord for your
