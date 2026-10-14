@@ -50,4 +50,14 @@ describe('fetching a calendar', () => {
     expect(await fetchFeed(ADDRESS, { fetchImpl: answer(200, '<html>sign in</html>') })).toMatchObject({ error: expect.stringMatching(/secret address/) });
     expect(await fetchFeed(ADDRESS, { fetchImpl: async () => { throw new TypeError('offline'); } })).toMatchObject({ error: expect.stringMatching(/online/) });
   });
+
+  it('refuses a redirect off https, and stops reading once a file passes 5 MB (audit 2026-10-14)', async () => {
+    const redirected = async () => ({ ok: true, status: 200, url: 'http://example.com/cal.ics', text: async () => 'BEGIN:VCALENDAR' });
+    expect(await fetchFeed(ADDRESS, { fetchImpl: redirected })).toMatchObject({ error: expect.stringMatching(/secret address/) });
+    let read = 0;
+    const chunk = new Uint8Array(1024 * 1024);
+    const huge = async () => ({ ok: true, status: 200, url: ADDRESS, body: { getReader: () => ({ read: async () => { read++; return read > 50 ? { done: true } : { done: false, value: chunk }; } }) } });
+    expect(await fetchFeed(ADDRESS, { fetchImpl: huge })).toMatchObject({ error: expect.stringMatching(/too large/) });
+    expect(read).toBe(6); // stopped just past 5 MB, not after all 50
+  });
 });

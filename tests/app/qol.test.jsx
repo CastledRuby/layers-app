@@ -4,7 +4,7 @@
 import { act, screen, within } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { toISODate } from '../../src/lib/dates.js';
-import { dialog, nav, person, renderApp, savedState, seedState, toasts, wait, openMe } from './harness.jsx';
+import { dialog, person, renderApp, savedState, seedState, toasts, wait, openMe } from './harness.jsx';
 
 const day = (n) => { const d = new Date(); d.setDate(d.getDate() + n); return toISODate(d); };
 const TODAY = day(0);
@@ -121,6 +121,21 @@ describe('rating a plan from its notification', () => {
     expect(screen.queryByRole('dialog')).toBeNull();
     await bridge.press(`layers://rate?e=c&d=${TODAY}&r=4`); // pressed twice: logged once
     expect(savedState().journal).toHaveLength(1);
+  });
+
+  it("only rates or ticks a plan on a recent day it's really on: a layers:// link from a web page can't do more (audit 2026-10-14)", async () => {
+    const morgan = person('Morgan');
+    const bridge = fakeBridge();
+    seedState({ people: [morgan], events: [{ id: 'c', title: 'Coffee with Morgan', kind: 'oneoff', date: TODAY, time: 0, duration: 60, personIds: [morgan.id], template: 'coffee' }] });
+    renderApp();
+    await wait(50);
+    await bridge.press(`layers://rate?e=c&d=${day(-20)}&r=5`); // a day long gone
+    await bridge.press(`layers://rate?e=c&d=${TOMORROW}&r=5`); // not yet
+    await bridge.press(`layers://done?e=c&d=${day(-1)}`); // a day it isn't on
+    expect(savedState().journal).toEqual([]);
+    expect(savedState().events[0]).not.toHaveProperty('doneAt');
+    await bridge.press(`layers://done?e=c&d=${TODAY}`);
+    expect(savedState().events[0].doneAt).toBe(TODAY);
   });
 });
 

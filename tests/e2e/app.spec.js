@@ -5,6 +5,7 @@ import { expect, test } from '@playwright/test';
 import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
+import { pathToFileURL } from 'node:url';
 import zlib from 'node:zlib';
 import { EXE, launch, mainWindowState, onboard, quit, runExe, tempDataDir } from './helpers.js';
 import { writeBackup } from '../fakeIPhoneBackup.cjs';
@@ -131,6 +132,30 @@ test('the page reloads by itself if its process crashes', async () => {
   await quit(app);
 });
 
+test("only Layers' own page runs in its window: another page (a dropped file or link) is refused, so are new windows, and pages get no camera", async () => {
+  const dataDir = tempDataDir();
+  const { app, page } = await launch(dataDir);
+  await onboard(page);
+  const home = page.url();
+  // Dropping a file or link on a window navigates it there unless refused.
+  const other = path.join(dataDir, 'dropped.html');
+  fs.writeFileSync(other, '<p>not Layers</p>');
+  expect(await page.evaluate(() => window.open('file:///C:/nothing.html') === null)).toBe(true);
+  expect(app.windows()).toHaveLength(1);
+  expect(await page.evaluate(() => navigator.permissions.query({ name: 'camera' }).then(p => p.state))).toBe('denied');
+  // Playwright waits for a navigation that never finishes, so ask the main
+  // process what the window shows.
+  page.evaluate((url) => { window.location.href = url; }, pathToFileURL(other).href).catch(() => {});
+  await new Promise(r => setTimeout(r, 1000));
+  const shown = await app.evaluate(async ({ BrowserWindow }) => {
+    const wc = BrowserWindow.getAllWindows()[0].webContents;
+    return { url: wc.getURL(), text: await wc.executeJavaScript('document.body.innerText') };
+  });
+  expect(shown.url).toBe(home);
+  expect(shown.text).toMatch(/Good (morning|afternoon|evening), Sam/);
+  await quit(app);
+});
+
 test('the exe identifies itself as Layers, not Electron', async () => {
   test.skip(process.platform !== 'win32', 'Windows file metadata');
   const out = execFileSync('powershell', ['-NoProfile', '-Command', `(Get-Item -LiteralPath '${EXE.replace(/'/g, "''")}').VersionInfo | Select-Object ProductName,FileDescription,CompanyName | ConvertTo-Json`], { encoding: 'utf8' });
@@ -158,10 +183,15 @@ test('a plan is handed to Windows with buttons, and a pressed button reaches Lay
   expect(toast.xml).toContain(`arguments="layers://snooze?e=${ev.id}&amp;d=${ev.date}&amp;m=10"`);
   expect(toast.xml).not.toContain('layers://done');
 
-  // Pressing a button (here "Just tick it") launches Layers.exe with the link;
-  // the running app takes it.
+  // Pressing a button (here the reminder's "10 min") launches Layers.exe with
+  // the link; the running app takes it, and hands Windows the snoozed one.
+  expect(await runExe(dataDir, [`layers://snooze?e=${ev.id}&d=${ev.date}&m=10`])).toBe(0);
+  await expect.poll(() => JSON.parse(fs.readFileSync(dump, 'utf8')).some(n => n.tag.startsWith('s:') && n.xml.includes(`e=${ev.id}`)), { timeout: 15000 }).toBe(true);
+  // Ticking a plan off that hasn't happened isn't something a notification
+  // does, so a link that tries it is ignored (audit 2026-10-14).
   expect(await runExe(dataDir, [`layers://done?e=${ev.id}&d=${ev.date}`])).toBe(0);
-  await expect.poll(() => page.evaluate(() => JSON.parse(localStorage.getItem('layers-app-state-v1')).events[0].doneAt || null)).toBe(ev.date);
+  await page.waitForTimeout(800);
+  expect(await page.evaluate(() => JSON.parse(localStorage.getItem('layers-app-state-v1')).events[0].doneAt || null)).toBeNull();
   await quit(app);
 });
 

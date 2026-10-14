@@ -90,9 +90,16 @@ function centralEntries(cd, count) {
   return entries;
 }
 
+// The central directory has to lie inside the file, so a damaged or crafted
+// zip can't make Layers set aside more memory than the file itself.
+function checkEnd(end, fileSize) {
+  if (end.offset + end.size > fileSize) throw new Error('That zip is damaged.');
+  return end;
+}
+
 // A zip in memory.
 function zipEntries(buf) {
-  const end = zipEnd(buf.subarray(Math.max(0, buf.length - 22 - 65535)));
+  const end = checkEnd(zipEnd(buf.subarray(Math.max(0, buf.length - 22 - 65535))), buf.length);
   return centralEntries(buf.subarray(end.offset, end.offset + end.size), end.count);
 }
 
@@ -103,7 +110,7 @@ function zipEntriesOfFile(file, size) {
   try {
     const tail = Buffer.alloc(Math.min(size, 22 + 65535));
     fs.readSync(fd, tail, 0, tail.length, size - tail.length);
-    const end = zipEnd(tail);
+    const end = checkEnd(zipEnd(tail), size);
     const cd = Buffer.alloc(end.size);
     fs.readSync(fd, cd, 0, end.size, end.offset);
     return centralEntries(cd, end.count);
@@ -112,15 +119,25 @@ function zipEntriesOfFile(file, size) {
   }
 }
 
-// One file from a zip, unpacked.
-function zipEntryData(buf, entry) {
-  if (entry.size > MAX_ENTRY) throw new Error('A file in that zip is too big to read.');
+// One file from a zip, unpacked: no more than `room` bytes of it (audit
+// 2026-10-14: what's actually unpacked counts, not the size the zip claims,
+// so a small crafted zip can't unpack to more than the limits).
+function zipEntryData(buf, entry, room = MAX_ENTRY) {
+  const most = Math.min(MAX_ENTRY, room);
+  const tooBig = () => new Error(room < MAX_ENTRY ? 'That download is too big to read. Choose fewer things, or a shorter date range.' : 'A file in that zip is too big to read.');
+  if (entry.size > most) throw tooBig();
   const p = entry.offset;
-  if (buf.readUInt32LE(p) !== 0x04034b50) throw new Error('That zip is damaged.');
+  if (p + 30 > buf.length || buf.readUInt32LE(p) !== 0x04034b50) throw new Error('That zip is damaged.');
   const start = p + 30 + buf.readUInt16LE(p + 26) + buf.readUInt16LE(p + 28);
+  if (start + entry.compressedSize > buf.length) throw new Error('That zip is damaged.');
   const data = buf.subarray(start, start + entry.compressedSize);
-  if (entry.method === 0) return data;
-  if (entry.method === 8) return zlib.inflateRawSync(data, { maxOutputLength: MAX_ENTRY });
+  if (entry.method === 0) { if (data.length > most) throw tooBig(); return data; }
+  if (entry.method === 8) {
+    try { return zlib.inflateRawSync(data, { maxOutputLength: most }); } catch (e) {
+      if (e && (e.code === 'ERR_BUFFER_TOO_LARGE' || e instanceof RangeError)) throw tooBig();
+      throw new Error('That zip is damaged.');
+    }
+  }
   throw new Error("That zip is packed in a way Layers can't read.");
 }
 
@@ -148,7 +165,7 @@ function whatsAppTitle(name) {
 }
 
 function isDir(p) {
-  try { return fs.statSync(p).isDirectory(); } catch { return false; }
+  try { return fs.lstatSync(p).isDirectory(); } catch { return false; } // a link or junction is not followed
 }
 
 // How far down the folders in the Layers chats folder are looked through,
@@ -184,12 +201,18 @@ function findExports(dir) {
   (function walk(folder, rel, depth) {
     let entries = [];
     try { entries = fs.readdirSync(folder, { withFileTypes: true }); } catch { return; }
-    if (rel && isSnapchatDownload(folder, new Set(entries.map(e => e.name)))) { found.push({ name: rel, snapchat: folder }); return; }
+    // An unzipped Snapchat download, and anything else saved beside it.
+    const snapchat = rel && isSnapchatDownload(folder, new Set(entries.map(e => e.name)));
+    if (snapchat) found.push({ name: rel, snapchat: folder });
     entries.forEach(e => {
       if (e.name.startsWith('.')) return;
+      if (snapchat && (e.name === 'json' || e.name === 'html')) return;
+      // Shortcuts and junctions are never followed, so nothing outside the
+      // folder is read (audit 2026-10-14).
+      if (e.isSymbolicLink()) return;
       const full = path.join(folder, e.name);
       const name = rel ? `${rel}/${e.name}` : e.name;
-      if (!(e.isDirectory() || (e.isSymbolicLink() && isDir(full)))) {
+      if (!e.isDirectory()) {
         if (/\.(zip|txt)$/i.test(e.name)) found.push({ name, file: full });
         return;
       }
@@ -224,7 +247,7 @@ function messagesFiles(messages, facebook) {
         if (!/^message_\d+\.json$/.test(name)) return;
         const file = path.join(messages, sub, thread, name);
         try {
-          const stat = fs.statSync(file);
+          const stat = fs.lstatSync(file);
           if (stat.isFile()) files.push({ path: `messages/${sub}/${thread}/${name}`, file, size: stat.size, modified: stat.mtimeMs });
         } catch { /* gone since it was listed */ }
       });
@@ -241,7 +264,7 @@ function snapchatFiles(folder) {
   ['chat_history.json', 'friends.json'].forEach(name => {
     const file = path.join(folder, 'json', name);
     try {
-      const stat = fs.statSync(file);
+      const stat = fs.lstatSync(file);
       if (stat.isFile()) files.push({ path: `json/${name}`, file, size: stat.size, modified: stat.mtimeMs });
     } catch { /* not in this download */ }
   });
@@ -261,11 +284,11 @@ function discordFiles(messages) {
   const files = [];
   const add = (rel) => {
     const file = path.join(messages, ...rel.split('/'));
-    try { const stat = fs.statSync(file); if (stat.isFile()) files.push({ path: `messages/${rel}`, file, size: stat.size, modified: stat.mtimeMs }); } catch { /* not there */ }
+    try { const stat = fs.lstatSync(file); if (stat.isFile()) files.push({ path: `messages/${rel}`, file, size: stat.size, modified: stat.mtimeMs }); } catch { /* not there */ }
   };
   add('index.json');
   let indexText = '';
-  try { indexText = fs.readFileSync(path.join(messages, 'index.json'), 'utf8'); } catch { /* no index: nothing to read */ }
+  try { const index = path.join(messages, 'index.json'); if (fs.lstatSync(index).isFile()) indexText = fs.readFileSync(index, 'utf8'); } catch { /* no index: nothing to read */ }
   let channels = [];
   try { channels = fs.readdirSync(messages).filter(n => /^c?\d+$/.test(n)); } catch { /* none */ }
   const names = channels.flatMap(c => ['messages.json', 'messages.csv'].map(f => `messages/${c}/${f}`));
@@ -284,7 +307,7 @@ function unzippedFiles(found) {
 
 // A zip or .txt found in the folder: { stat }, or it throws.
 function statOf(file) {
-  const stat = fs.statSync(file);
+  const stat = fs.lstatSync(file); // a link is not a file here
   if (!stat.isFile()) throw new Error("That file isn't in the Layers chats folder.");
   if (stat.size > MAX_FILE) throw new Error('That file is too big to read.');
   return stat;
@@ -354,11 +377,14 @@ function readExport(dir, name) {
       : kind === 'snapchat' ? entries.filter(e => SNAPCHAT_JSON.test(e.name))
         : kind === 'discord' ? discordEntries(buf, entries)
           : entries.filter(e => /(^|\/)[^/]*\.txt$/i.test(e.name) && !e.name.startsWith('__MACOSX')).slice(0, 1);
+    // Two entries sharing their data would unpack the same bytes again and again.
+    if (new Set(wanted.map(e => e.offset)).size !== wanted.length) throw new Error('That zip is damaged.');
     let total = 0;
     const files = wanted.map(e => {
-      total += e.size;
-      if (total > MAX_TOTAL) throw new Error('That download is too big to read. Choose fewer things, or a shorter date range.');
-      return { path: e.name, text: zipEntryData(buf, e).toString('utf8') };
+      if (total + e.size > MAX_TOTAL) throw new Error('That download is too big to read. Choose fewer things, or a shorter date range.');
+      const data = zipEntryData(buf, e, MAX_TOTAL - total);
+      total += data.length; // what it really unpacked to, whatever the zip claims
+      return { path: e.name, text: data.toString('utf8') };
     });
     return { kind, title: kind === 'whatsapp' ? whatsAppTitle(base) : null, files };
   } catch (e) {
@@ -380,4 +406,4 @@ function watchExports(dir, onChange, wait = 1500) {
   return () => { clearTimeout(timer); if (watcher) watcher.close(); };
 }
 
-module.exports = { chatsDir, listExports, readExport, watchExports, whatsAppTitle, zipEntries };
+module.exports = { chatsDir, listExports, readExport, watchExports, whatsAppTitle, zipEntries, zipEntryData };

@@ -855,6 +855,24 @@ its own. Changes made while building are marked.
 
 ## History
 
+### Fixes from the audit of 2026-10-14 (not released yet)
+
+A full audit: the code read in six areas (data and saving, the calendar, Claude and
+privacy, chat files, screens and keys, the Electron shell and builds), a fresh start
+clicked through, and the installed app checked. Each fix has a test.
+
+**Security**
+- Only Layers' own page runs in its windows: a file or link dropped on the window (or a
+  link followed) used to replace it, and that page would have had the bridge to your data,
+  backups and key. New windows and permissions (camera, microphone) are refused too.
+- A daily backup is only taken for a day near today, so nothing can push real backups out.
+- A crafted zip in the chats folder can't unpack to more than the limits (what's really
+  unpacked counts, not what the zip claims), and shortcuts or junctions in the folder are
+  never followed out of it. Anything saved beside an unzipped Snapchat download is found.
+- A calendar address can't redirect off https, and a huge calendar stops downloading at
+  5 MB.
+- A `layers://` link from a web page can only rate or tick a plan on a recent day it's on.
+
 ### Conversations in person (not released yet)
 
 More chats, step 1 (picked 2026-10-14: in person, then Messenger; Discord for your

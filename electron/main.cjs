@@ -2,6 +2,7 @@ const { app, BrowserWindow, Tray, Menu, dialog, nativeImage, nativeTheme, ipcMai
 const { execFileSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
+const { fileURLToPath } = require('url');
 const windowStateKeeper = require('electron-window-state');
 const { createScheduler } = require('./toasts.cjs');
 const { backupDir, backupsInfo, saveDailyBackup } = require('./backups.cjs');
@@ -264,6 +265,30 @@ function setupThemeSync() {
   });
 }
 
+// Only Layers' own page runs in its windows (audit 2026-10-14). A file or
+// link dropped on the window, or a link the page follows, would otherwise
+// replace it, and that page would get the preload's bridge to your data,
+// backups and API key. Links open in your browser instead (https only), and
+// pages get no permissions beyond copying and notifications.
+const APP_FILE = path.join(__dirname, 'app', 'index.html');
+const ALLOWED_PERMISSIONS = new Set(['clipboard-sanitized-write', 'notifications']);
+function isAppPage(url) {
+  try { return path.resolve(fileURLToPath(String(url).split('#')[0].split('?')[0])).toLowerCase() === path.resolve(APP_FILE).toLowerCase(); } catch { return false; }
+}
+function lockDown(win) {
+  const contents = win.webContents;
+  const guard = (event, url) => { if (!isAppPage(url)) event.preventDefault(); };
+  contents.on('will-navigate', guard);
+  contents.on('will-redirect', guard);
+  contents.setWindowOpenHandler(({ url }) => {
+    if (/^https:\/\//i.test(url)) shell.openExternal(url).catch(() => {});
+    return { action: 'deny' };
+  });
+  const allowed = (wc, permission) => ALLOWED_PERMISSIONS.has(permission) && wc && isAppPage(wc.getURL());
+  contents.session.setPermissionRequestHandler((wc, permission, callback) => callback(allowed(wc, permission)));
+  contents.session.setPermissionCheckHandler((wc, permission) => allowed(wc, permission));
+}
+
 function createWindow() {
   // The size it would have un-maximised; Layers itself is always maximised
   // (below), so it isn't maximised from here: maximize() would show a window
@@ -297,6 +322,7 @@ function createWindow() {
   });
 
   windowState.manage(mainWindow);
+  lockDown(mainWindow);
 
   // Layers always fills the screen: it opens maximised (a login launch waits
   // in the tray, and showWindow() maximises it then), and the title bar's
@@ -472,6 +498,7 @@ function createQuickWindow() {
       preload: path.join(__dirname, 'preload.cjs'),
     },
   });
+  lockDown(quickWindow);
   quickWindow.loadFile(path.join(__dirname, 'app', 'index.html'), { hash: 'quick' });
   quickWindow.on('blur', hideQuickAdd);
   quickWindow.on('close', (event) => { if (!isQuitting) { event.preventDefault(); hideQuickAdd(); } });

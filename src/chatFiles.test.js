@@ -6,7 +6,7 @@ import os from 'os';
 import path from 'path';
 import zlib from 'zlib';
 import { afterEach, describe, expect, it } from 'vitest';
-import { chatsDir, listExports, readExport, watchExports, whatsAppTitle } from '../electron/chatfiles.cjs';
+import { chatsDir, listExports, readExport, watchExports, whatsAppTitle, zipEntries, zipEntryData } from '../electron/chatfiles.cjs';
 
 // A zip of { name: text }, deflated (or stored with { store: true }).
 function zip(files, { store = false } = {}) {
@@ -223,6 +223,49 @@ describe('the Layers chats folder', () => {
     expect(listExports(dir).map(f => [f.name, f.kind]).sort()).toEqual([['discord/package', 'discord'], ['package.zip', 'discord']]);
     expect(readExport(dir, 'package.zip').files.map(f => f.path)).toEqual(['messages/index.json', 'messages/c111/messages.json', 'messages/333/messages.csv']);
     expect(readExport(dir, 'discord/package').files.map(f => f.path)).toEqual(['messages/index.json', 'messages/c111/messages.json']);
+  });
+
+  it("counts what a zip really unpacks to, not what it claims, and refuses entries sharing their data (audit 2026-10-14)", () => {
+    // A crafted zip: several entries point at the same deflated block and say it's 1 byte.
+    const json = JSON.stringify({ title: 'x', participants: [], messages: [] }) + ' '.repeat(5000);
+    const one = zip({ 'messages/inbox/a_1/message_1.json': json });
+    const lying = Buffer.from(one);
+    lying.writeUInt32LE(1, one.length - 22 - (46 + 'messages/inbox/a_1/message_1.json'.length) + 24); // its central entry's size
+    const shared = (() => {
+      const name = (i) => `messages/inbox/t${i}/message_1.json`;
+      const names = [0, 1, 2].map(name);
+      const raw = Buffer.from(json); const data = zlib.deflateRawSync(raw);
+      const local = Buffer.alloc(30); local.writeUInt32LE(0x04034b50, 0); local.writeUInt16LE(8, 8);
+      local.writeUInt32LE(data.length, 18); local.writeUInt32LE(raw.length, 22); local.writeUInt16LE(Buffer.byteLength(names[0]), 26);
+      const body = Buffer.concat([local, Buffer.from(names[0]), data]);
+      const heads = names.map(n => { const h = Buffer.alloc(46); h.writeUInt32LE(0x02014b50, 0); h.writeUInt16LE(8, 10); h.writeUInt32LE(data.length, 20); h.writeUInt32LE(1, 24); h.writeUInt16LE(Buffer.byteLength(n), 28); h.writeUInt32LE(0, 42); return Buffer.concat([h, Buffer.from(n)]); });
+      const cd = Buffer.concat(heads);
+      const end = Buffer.alloc(22); end.writeUInt32LE(0x06054b50, 0); end.writeUInt16LE(3, 8); end.writeUInt16LE(3, 10); end.writeUInt32LE(cd.length, 12); end.writeUInt32LE(body.length, 16);
+      return Buffer.concat([body, cd, end]);
+    })();
+    const badEnd = Buffer.from(one); badEnd.writeUInt32LE(0x7fffffff, one.length - 22 + 12); // a directory far bigger than the file
+    // What it really unpacks to is held to the room left, whatever it claims.
+    const [entry] = zipEntries(lying);
+    expect(entry.size).toBe(1);
+    expect(() => zipEntryData(lying, entry, 100)).toThrow(/too big to read/);
+    expect(zipEntryData(lying, entry).length).toBe(Buffer.byteLength(json));
+    const dir = folder({ 'shared.zip': shared, 'bad-end.zip': badEnd });
+    expect(readExport(dir, 'shared.zip').error).toMatch(/damaged/);
+    expect(readExport(dir, 'bad-end.zip').error).toMatch(/damaged/);
+    expect(listExports(dir).map(f => f.name)).toEqual(['shared.zip']); // listed (only its directory is read then), refused when opened; the bad end isn't listed
+  });
+
+  it("never follows a shortcut or junction out of the folder, and finds what's saved beside an unzipped Snapchat download (audit 2026-10-14)", () => {
+    const outside = folder({ 'secret.txt': CHAT, 'WhatsApp Chat - Mum.txt': CHAT });
+    const dir = folder({});
+    const put = (rel, data) => { const file = path.join(dir, ...rel.split('/')); fs.mkdirSync(path.dirname(file), { recursive: true }); fs.writeFileSync(file, data); };
+    let linked = true;
+    try { fs.symlinkSync(outside, path.join(dir, 'elsewhere'), 'junction'); } catch { linked = false; }
+    put('Snapchat/json/chat_history.json', '{"a":[]}');
+    put('Snapchat/WhatsApp Chat - Amelie.zip', zip({ '_chat.txt': CHAT }));
+    const names = listExports(dir).map(f => f.name).sort();
+    expect(names).toEqual(['Snapchat', 'Snapchat/WhatsApp Chat - Amelie.zip']);
+    if (linked) expect(readExport(dir, 'elsewhere/WhatsApp Chat - Mum.txt').error).toMatch(/isn't in the Layers chats folder/);
   });
 
   it('notices a new export arriving', async () => {

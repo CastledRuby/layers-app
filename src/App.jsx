@@ -15,7 +15,7 @@ import { backfillJournalDates, backfillPeopleDates, backfillSkillDates, formatAb
 import { achievementProgress, newlyUnlocked } from './lib/achievements.js';
 import { advanceLayer, advanceSkillGoals, bumpSkills, chartDay, computeOverall, dimBumps, dimsEqual, goalBumpFor, keepDimsInLayer, makePerson, migrateDimsToLayers, movePerson, placeOnLayers, raisedSkills } from './lib/progress.js';
 import { MAX_BACKUP_BYTES, createBackup, validateBackup } from './lib/backup.js';
-import { NOTIFY_DEFAULTS, dayNudge, isDoneOn, notifySettings, parseActionUrl, repeatText, snoozeUntil, templateFor, timeOn } from './lib/calendar.js';
+import { NOTIFY_DEFAULTS, dayNudge, isDoneOn, notifySettings, occursOn, parseActionUrl, repeatText, snoozeUntil, templateFor, timeOn } from './lib/calendar.js';
 import { useCalendarNotifications, useChatBatch, useDailyBackup, useDailyCheckIn, useSlideAcross, useSystemDark, useToday, useWide } from './lib/hooks.js';
 import { waiting } from './lib/chatBatch.js';
 import { followUpEvent, markDone, markMissed } from './lib/reminders.js';
@@ -1182,8 +1182,18 @@ function LayersApp() {
   function handleCalendarAction(link) {
     const a = parseActionUrl(link);
     if (!a) return;
-    const ev = a.eventId ? events.find(e => e.id === a.eventId) : null;
     const day = a.day || today;
+    // Done, snooze and rate happen without showing Layers, so they're only
+    // taken for a plan that's on that day, near today, as a notification's
+    // own would be: done and rate after it (in the last few days), snooze
+    // before it too (a reminder the day before). A layers:// link on a web
+    // page can't tick or rate anything else (audit 2026-10-14).
+    const quiet = a.action === 'done' || a.action === 'snooze' || a.action === 'rate';
+    const found = a.eventId ? events.find(e => e.id === a.eventId) : null;
+    const t = parseISODay(today);
+    const near = (n) => toISODate(new Date(t.getFullYear(), t.getMonth(), t.getDate() + n));
+    const latest = a.action === 'snooze' ? near(2) : today;
+    const ev = found && (!quiet || (day >= near(-3) && day <= latest && occursOn(found, day))) ? found : null;
     if (a.action === 'done' && ev) handleMarkEventDone(ev.id, day);
     else if (a.action === 'snooze' && ev) handleSnooze(ev.id, day, a.minutes);
     else if (a.action === 'log' && ev) { switchTab('today'); setSelectedDay(day === today ? null : day); openLogFromEvent(ev, day); }

@@ -57,6 +57,23 @@ function feedStore(file, safeStorage) {
   };
 }
 
+// A response's text, stopping (and giving null) once it passes `max` bytes
+// rather than downloading all of it first.
+async function readUpTo(res, max, controller) {
+  if (!res.body || typeof res.body.getReader !== 'function') { const text = await res.text(); return Buffer.byteLength(text) > max ? null : text; }
+  const reader = res.body.getReader();
+  const chunks = [];
+  let size = 0;
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    size += value.length;
+    if (size > max) { controller.abort(); return null; }
+    chunks.push(Buffer.from(value));
+  }
+  return Buffer.concat(chunks).toString('utf8');
+}
+
 // Downloads one calendar's file: { text } or { error }. `fetchImpl` is
 // replaced in tests.
 async function fetchFeed(url, { fetchImpl = globalThis.fetch, timeoutMs = 20000 } = {}) {
@@ -64,9 +81,11 @@ async function fetchFeed(url, { fetchImpl = globalThis.fetch, timeoutMs = 20000 
   const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
     const res = await fetchImpl(url, { signal: controller.signal, redirect: 'follow', headers: { Accept: 'text/calendar, */*' } });
+    // A redirect may only lead to another https address (audit 2026-10-14).
+    if (res.url && !/^https:\/\//i.test(res.url)) return { error: "That address doesn't give a calendar. Use the secret address in iCal format." };
     if (!res.ok) return { error: res.status === 404 || res.status === 403 || res.status === 401 ? 'That address no longer works (it may have been reset in Google Calendar).' : `The calendar couldn't be fetched (${res.status}).` };
-    const text = await res.text();
-    if (text.length > MAX_BYTES) return { error: 'That calendar is too large.' };
+    const text = await readUpTo(res, MAX_BYTES, controller);
+    if (text === null) return { error: 'That calendar is too large.' };
     if (!/BEGIN:VCALENDAR/i.test(text)) return { error: "That address doesn't give a calendar. Use the secret address in iCal format." };
     return { text };
   } catch (e) {

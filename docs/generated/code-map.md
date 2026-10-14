@@ -4,14 +4,14 @@
 > Run `npm run docs:map` after changing anything under `src/`, `electron/*.cjs` or `package.json` scripts.
 > Hand-written explanations live in the other files under [`docs/`](../README.md).
 
-Package: `layers-web` v1.0.40 · `src/`: 99 files, 17619 lines, 125 components, 493 top-level functions, 245 constants.
+Package: `layers-web` v1.0.40 · `src/`: 99 files, 17629 lines, 125 components, 493 top-level functions, 245 constants.
 
 ## Source files
 
 | File | Lines | Declares | Imports from |
 |---|---|---|---|
 | [main.jsx](../../src/main.jsx) | 20 | quick | — |
-| [App.jsx](../../src/App.jsx) | 1880 | sampleData, SAMPLE_PERSON_IDS, SAMPLE_GOAL_IDS, skillsCameWithSamples, allSkillsZero, listNames, unlinkMissingPeople, addNotes, applyLog, namesText, … (+3) | `components/BottomNav`, `components/ErrorBoundary`, `components/PageTransition`, `components/sheetLayer`, `data/constants`, `data/seed`, `lib/dates`, `lib/achievements`, `lib/progress`, `lib/backup`, `lib/calendar`, `lib/hooks`, `lib/chatBatch`, `lib/reminders`, `lib/analysis`, `lib/storage`, `lib/replies`, `lib/chatImport`, `lib/chatBatch`, `lib/drills`, `lib/util`, `modals/AddInfoModal`, `modals/AddPersonModal`, `modals/ConfirmDialog`, `modals/EditEntryModal`, `modals/EditPersonModal`, `modals/EditProfileModal`, `modals/EventSheet`, `modals/GoalModal`, `modals/KeyDateSheet`, `modals/LogInteractionModal`, `modals/PlanSheet`, `modals/PhotoFolderSheet`, `lib/sync`, `lib/syncFile`, `modals/SyncSheet`, `lib/ics`, `lib/summary`, `modals/QuickAddInterestModal`, `modals/ShortcutsModal`, `modals/StartOverSheet`, `modals/DaySheet`, `modals/JumpSheet`, `lib/sentence`, `modals/TemplatePickerModal`, `modals/ChatReviewSheet`, `modals/WeekReviewSheet`, `theme`, `views/CoachView`, `views/GoalsView`, `views/JournalView`, `views/MeView`, `views/OnboardingView`, `views/PeopleView`, `views/PersonProfile`, `components/ClosenessQuiz`, `views/TodayView` |
+| [App.jsx](../../src/App.jsx) | 1890 | sampleData, SAMPLE_PERSON_IDS, SAMPLE_GOAL_IDS, skillsCameWithSamples, allSkillsZero, listNames, unlinkMissingPeople, addNotes, applyLog, namesText, … (+3) | `components/BottomNav`, `components/ErrorBoundary`, `components/PageTransition`, `components/sheetLayer`, `data/constants`, `data/seed`, `lib/dates`, `lib/achievements`, `lib/progress`, `lib/backup`, `lib/calendar`, `lib/hooks`, `lib/chatBatch`, `lib/reminders`, `lib/analysis`, `lib/storage`, `lib/replies`, `lib/chatImport`, `lib/chatBatch`, `lib/drills`, `lib/util`, `modals/AddInfoModal`, `modals/AddPersonModal`, `modals/ConfirmDialog`, `modals/EditEntryModal`, `modals/EditPersonModal`, `modals/EditProfileModal`, `modals/EventSheet`, `modals/GoalModal`, `modals/KeyDateSheet`, `modals/LogInteractionModal`, `modals/PlanSheet`, `modals/PhotoFolderSheet`, `lib/sync`, `lib/syncFile`, `modals/SyncSheet`, `lib/ics`, `lib/summary`, `modals/QuickAddInterestModal`, `modals/ShortcutsModal`, `modals/StartOverSheet`, `modals/DaySheet`, `modals/JumpSheet`, `lib/sentence`, `modals/TemplatePickerModal`, `modals/ChatReviewSheet`, `modals/WeekReviewSheet`, `theme`, `views/CoachView`, `views/GoalsView`, `views/JournalView`, `views/MeView`, `views/OnboardingView`, `views/PeopleView`, `views/PersonProfile`, `components/ClosenessQuiz`, `views/TodayView` |
 | [theme.js](../../src/theme.js) | 424 | THEME_LIGHT, THEME_DARK, COLORS, cssVarBlock, EASE, GRAIN, DEPTH_LIGHT, DEPTH_DARK, CSS | `fonts` |
 | [data/avatars.js](../../src/data/avatars.js) | 203 | AVATAR_COLS, AVATAR_GROUPS, findAvatars, INITIAL_COLORS, INITIALS_GROUP, isInitials, PHOTO_SIZE, PHOTO_GROUP, PHOTO_SRC, isPhoto, … (+16) | — |
 | [data/constants.js](../../src/data/constants.js) | 352 | LAYERS, getLayer, DIM_ORDER, DIM_LABELS, DIM_COLORS, LAYER_BASE_DIMS, CATEGORIES, categoryMeta, TABS, SHORTCUTS, … (+28) | `theme` |
@@ -994,52 +994,52 @@ Package: `layers-web` v1.0.40 · `src/`: 99 files, 17619 lines, 125 components, 
 
 | Channel | Direction | Defined |
 |---|---|---|
-| `update-status` | main → renderer push | [main.cjs:144](../../electron/main.cjs#L144) |
-| `open-download-page` | invoke → handle | [main.cjs:170](../../electron/main.cjs#L170) |
-| `check-for-updates` | invoke → handle | [main.cjs:182](../../electron/main.cjs#L182) |
-| `quit-and-install` | send → on | [main.cjs:183](../../electron/main.cjs#L183) |
-| `check-for-updates` | invoke → handle | [main.cjs:207](../../electron/main.cjs#L207) |
-| `quit-and-install` | send → on | [main.cjs:218](../../electron/main.cjs#L218) |
-| `set-theme` | send → on | [main.cjs:253](../../electron/main.cjs#L253) |
-| `get-app-version` | invoke → handle | [main.cjs:392](../../electron/main.cjs#L392) |
-| `show-window` | send → on | [main.cjs:398](../../electron/main.cjs#L398) |
-| `get-auto-launch` | invoke → handle | [main.cjs:411](../../electron/main.cjs#L411) |
-| `set-auto-launch` | invoke → handle | [main.cjs:421](../../electron/main.cjs#L421) |
-| `get-shortcut-status` | invoke → handle | [main.cjs:438](../../electron/main.cjs#L438) |
-| `quick-add-show` | main → renderer push | [main.cjs:495](../../electron/main.cjs#L495) |
-| `quick-add` | send → on | [main.cjs:513](../../electron/main.cjs#L513) |
-| `quick-add` | main → renderer push | [main.cjs:532](../../electron/main.cjs#L532) |
-| `calendar-action` | main → renderer push | [main.cjs:554](../../electron/main.cjs#L554) |
-| `save-daily-backup` | invoke → handle | [main.cjs:562](../../electron/main.cjs#L562) |
-| `backups-info` | invoke → handle | [main.cjs:565](../../electron/main.cjs#L565) |
-| `open-backups-folder` | invoke → handle | [main.cjs:566](../../electron/main.cjs#L566) |
-| `find-faces` | invoke → handle | [main.cjs:577](../../electron/main.cjs#L577) |
-| `sync-info` | invoke → handle | [main.cjs:587](../../electron/main.cjs#L587) |
-| `sync-read` | invoke → handle | [main.cjs:588](../../electron/main.cjs#L588) |
-| `sync-write` | invoke → handle | [main.cjs:589](../../electron/main.cjs#L589) |
-| `sync-remove-copies` | invoke → handle | [main.cjs:590](../../electron/main.cjs#L590) |
-| `sync-set-aside` | invoke → handle | [main.cjs:591](../../electron/main.cjs#L591) |
-| `sync-passphrase-get` | invoke → handle | [main.cjs:592](../../electron/main.cjs#L592) |
-| `sync-passphrase-set` | invoke → handle | [main.cjs:593](../../electron/main.cjs#L593) |
-| `sync-passphrase-clear` | invoke → handle | [main.cjs:594](../../electron/main.cjs#L594) |
-| `sync-open-folder` | invoke → handle | [main.cjs:595](../../electron/main.cjs#L595) |
-| `feeds-list` | invoke → handle | [main.cjs:606](../../electron/main.cjs#L606) |
-| `feeds-add` | invoke → handle | [main.cjs:607](../../electron/main.cjs#L607) |
-| `feeds-remove` | invoke → handle | [main.cjs:614](../../electron/main.cjs#L614) |
-| `feeds-fetch` | invoke → handle | [main.cjs:615](../../electron/main.cjs#L615) |
-| `export-summary` | invoke → handle | [main.cjs:626](../../electron/main.cjs#L626) |
-| `analysis-key-status` | invoke → handle | [main.cjs:656](../../electron/main.cjs#L656) |
-| `analysis-key-set` | invoke → handle | [main.cjs:657](../../electron/main.cjs#L657) |
-| `analysis-key-clear` | invoke → handle | [main.cjs:663](../../electron/main.cjs#L663) |
-| `analysis-run` | invoke → handle | [main.cjs:664](../../electron/main.cjs#L664) |
-| `chats-info` | invoke → handle | [main.cjs:673](../../electron/main.cjs#L673) |
-| `chats-list` | invoke → handle | [main.cjs:674](../../electron/main.cjs#L674) |
-| `chats-read` | invoke → handle | [main.cjs:675](../../electron/main.cjs#L675) |
-| `chats-open-folder` | invoke → handle | [main.cjs:676](../../electron/main.cjs#L676) |
-| `chats-changed` | main → renderer push | [main.cjs:680](../../electron/main.cjs#L680) |
-| `imessage-read` | invoke → handle | [main.cjs:689](../../electron/main.cjs#L689) |
-| `schedule-notifications` | invoke → handle | [main.cjs:694](../../electron/main.cjs#L694) |
-| `calendar-ready` | invoke → handle | [main.cjs:695](../../electron/main.cjs#L695) |
+| `update-status` | main → renderer push | [main.cjs:145](../../electron/main.cjs#L145) |
+| `open-download-page` | invoke → handle | [main.cjs:171](../../electron/main.cjs#L171) |
+| `check-for-updates` | invoke → handle | [main.cjs:183](../../electron/main.cjs#L183) |
+| `quit-and-install` | send → on | [main.cjs:184](../../electron/main.cjs#L184) |
+| `check-for-updates` | invoke → handle | [main.cjs:208](../../electron/main.cjs#L208) |
+| `quit-and-install` | send → on | [main.cjs:219](../../electron/main.cjs#L219) |
+| `set-theme` | send → on | [main.cjs:254](../../electron/main.cjs#L254) |
+| `get-app-version` | invoke → handle | [main.cjs:418](../../electron/main.cjs#L418) |
+| `show-window` | send → on | [main.cjs:424](../../electron/main.cjs#L424) |
+| `get-auto-launch` | invoke → handle | [main.cjs:437](../../electron/main.cjs#L437) |
+| `set-auto-launch` | invoke → handle | [main.cjs:447](../../electron/main.cjs#L447) |
+| `get-shortcut-status` | invoke → handle | [main.cjs:464](../../electron/main.cjs#L464) |
+| `quick-add-show` | main → renderer push | [main.cjs:522](../../electron/main.cjs#L522) |
+| `quick-add` | send → on | [main.cjs:540](../../electron/main.cjs#L540) |
+| `quick-add` | main → renderer push | [main.cjs:559](../../electron/main.cjs#L559) |
+| `calendar-action` | main → renderer push | [main.cjs:581](../../electron/main.cjs#L581) |
+| `save-daily-backup` | invoke → handle | [main.cjs:589](../../electron/main.cjs#L589) |
+| `backups-info` | invoke → handle | [main.cjs:592](../../electron/main.cjs#L592) |
+| `open-backups-folder` | invoke → handle | [main.cjs:593](../../electron/main.cjs#L593) |
+| `find-faces` | invoke → handle | [main.cjs:604](../../electron/main.cjs#L604) |
+| `sync-info` | invoke → handle | [main.cjs:614](../../electron/main.cjs#L614) |
+| `sync-read` | invoke → handle | [main.cjs:615](../../electron/main.cjs#L615) |
+| `sync-write` | invoke → handle | [main.cjs:616](../../electron/main.cjs#L616) |
+| `sync-remove-copies` | invoke → handle | [main.cjs:617](../../electron/main.cjs#L617) |
+| `sync-set-aside` | invoke → handle | [main.cjs:618](../../electron/main.cjs#L618) |
+| `sync-passphrase-get` | invoke → handle | [main.cjs:619](../../electron/main.cjs#L619) |
+| `sync-passphrase-set` | invoke → handle | [main.cjs:620](../../electron/main.cjs#L620) |
+| `sync-passphrase-clear` | invoke → handle | [main.cjs:621](../../electron/main.cjs#L621) |
+| `sync-open-folder` | invoke → handle | [main.cjs:622](../../electron/main.cjs#L622) |
+| `feeds-list` | invoke → handle | [main.cjs:633](../../electron/main.cjs#L633) |
+| `feeds-add` | invoke → handle | [main.cjs:634](../../electron/main.cjs#L634) |
+| `feeds-remove` | invoke → handle | [main.cjs:641](../../electron/main.cjs#L641) |
+| `feeds-fetch` | invoke → handle | [main.cjs:642](../../electron/main.cjs#L642) |
+| `export-summary` | invoke → handle | [main.cjs:653](../../electron/main.cjs#L653) |
+| `analysis-key-status` | invoke → handle | [main.cjs:683](../../electron/main.cjs#L683) |
+| `analysis-key-set` | invoke → handle | [main.cjs:684](../../electron/main.cjs#L684) |
+| `analysis-key-clear` | invoke → handle | [main.cjs:690](../../electron/main.cjs#L690) |
+| `analysis-run` | invoke → handle | [main.cjs:691](../../electron/main.cjs#L691) |
+| `chats-info` | invoke → handle | [main.cjs:700](../../electron/main.cjs#L700) |
+| `chats-list` | invoke → handle | [main.cjs:701](../../electron/main.cjs#L701) |
+| `chats-read` | invoke → handle | [main.cjs:702](../../electron/main.cjs#L702) |
+| `chats-open-folder` | invoke → handle | [main.cjs:703](../../electron/main.cjs#L703) |
+| `chats-changed` | main → renderer push | [main.cjs:707](../../electron/main.cjs#L707) |
+| `imessage-read` | invoke → handle | [main.cjs:716](../../electron/main.cjs#L716) |
+| `schedule-notifications` | invoke → handle | [main.cjs:721](../../electron/main.cjs#L721) |
+| `calendar-ready` | invoke → handle | [main.cjs:722](../../electron/main.cjs#L722) |
 
 ### Preload bridges (what the renderer can call)
 

@@ -34,10 +34,17 @@ function backupsInfo(dir) {
   return { dir, count: files.length, latest: files.length ? files[0].match(NAME)[1] : null };
 }
 
+// A day as 'YYYY-MM-DD', this computer's own.
+const isoDay = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+
 // Saves `json` as the backup for `day` ('YYYY-MM-DD') unless that day has one,
 // then removes all but the newest `keep`. Returns { saved, ...backupsInfo }.
-function saveDailyBackup(dir, day, json, keep = KEEP) {
+// Only a day within two of today counts (audit 2026-10-14): backups are kept
+// newest by name, so far-off days could otherwise push the real ones out.
+function saveDailyBackup(dir, day, json, keep = KEEP, now = new Date()) {
   if (typeof day !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(day)) return { error: 'bad day' };
+  const near = [-2, -1, 0, 1, 2].map(n => isoDay(new Date(now.getFullYear(), now.getMonth(), now.getDate() + n)));
+  if (!near.includes(day)) return { error: 'bad day' };
   if (typeof json !== 'string' || json.length > MAX_BYTES) return { error: 'bad backup' };
   try { JSON.parse(json); } catch { return { error: 'not JSON' }; }
   fs.mkdirSync(dir, { recursive: true });
