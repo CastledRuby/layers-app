@@ -397,10 +397,11 @@ function LayersApp() {
   }
   function applySynced(m) {
     stamper.adopt(m);
-    // Until it's shown, a sync waiting behind this one starts from what came
-    // in, not the data from before: stamped, that read as changes made here,
-    // and deleted what came in (audit 2026-10-14).
-    syncLocal.current = () => m;
+    // A sync asked for meanwhile starts straight after this one, before React
+    // shows the merge: it starts from the merge, not the data from before
+    // (which the stamper would now count as changed here, and its missing
+    // records as deleted).
+    syncLocal.current = () => ({ ...stamper.stamp(m, new Date().toISOString()), skills: m.skills, achievements: m.achievements });
     syncData.current = [m.people, m.journal, m.events, m.generalGoals, m.profile, m.skills, m.achievements];
     syncRun.current.fromSync = true;
     quietAchievements.current = true;

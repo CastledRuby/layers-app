@@ -911,10 +911,9 @@ clicked through, and the installed app checked. Each fix has a test.
   both days together when the calendar's weeks start on Sunday (Google's do).
 
 **Sync**
-- A sync asked for while another brought changes in (the window shown, a change made,
-  Sync now) could send this laptop's data from before as changes made here: someone added
-  on your other device was sent back deleted, and a change made there was put back. It
-  now starts from what came in.
+- A sync straight after one that brought changes in no longer undoes them: found here
+  too, and fixed the same day in another session (see "A sync straight after another no
+  longer undoes it" below). This audit's test of it stays beside that one's.
 - Two devices with different copies of something changed at the same moment (or older
   records with no time) each kept their own, so they'd rewrite the sync file back and
   forth; now both pick the same copy.
@@ -1037,6 +1036,16 @@ A click-through of a fresh install, and the tests run many times over:
   yet against Anthropic: the first real chat analysed is the live check.
 - The sync file's test no longer fails when the random ciphertext happens to spell "kai"
   (about one run in 40).
+### A sync straight after another no longer undoes it (next release)
+
+Found on 2026-10-12 from a sync app test that failed now and then on a busy laptop. When
+a sync was asked for while another was running (Sync now, the one on start, the window
+showing) and the first brought in another device's changes, the second started before
+the app had shown them. It sent this laptop's old copy to the sync file, stamped as
+changed just now, and counted records only the other device had as deleted. So the other
+device's newer edits were overwritten and its new records deleted there too. Now the
+second sync starts from the merge. `coverage-sync.test.jsx` holds the first sync
+mid-read to make it happen every time.
 
 ### Each person in a group log on their own (1.0.40)
 
