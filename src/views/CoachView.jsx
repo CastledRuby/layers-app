@@ -11,7 +11,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Check, ImagePlus, Plus, X } from 'lucide-react';
 import { Avatar, ConvStateBadge, Kbd, LabeledBar, LayerBadge } from '../components/atoms.jsx';
 import { hasOpenSheet, isTyping } from '../components/sheetLayer.js';
-import { ANALYSIS_MODELS, analysisCost, analysisModel, analysisRequest, analysisResult, analysisToKeep, DEFAULT_ANALYSIS_MODEL, detectPeople, hasNotes, IN_PERSON_KINDS, lastTipFor, MAX_SCREENSHOTS, NOTE_FIELDS, notesText, otherSpeakers, recordSpend, typicalCost } from '../lib/analysis.js';
+import { ANALYSIS_MODELS, analysisCost, analysisModel, analysisRequest, analysisResult, analysisToKeep, DEFAULT_ANALYSIS_MODEL, detectPeople, hasNotes, IN_PERSON_KINDS, lastTipFor, MAX_SCREENSHOTS, NOTE_FIELDS, notesText, othersFor, recordSpend, typicalCost } from '../lib/analysis.js';
 import { chatNumbers } from '../lib/chatNumbers.js';
 import { ChatNumbers, EachLog, MarkedTranscript, MomentList, TipCheck } from '../components/AnalysisExtras.jsx';
 import { DateDropdown } from '../components/pickers.jsx';
@@ -262,16 +262,16 @@ export function CoachView({ people, journal, initialPersonId, initialTab, initia
     setAskingNotes(!!chat.notes);
     setStep('asking');
     const request = chat.notes
-      ? analysisRequest({ people: chat.people, yourName, notes: chat.notes, kind: chat.kind, model: withModel, journal })
-      : analysisRequest({ people: chat.people, yourName, text: chat.text, images: chat.images, model: withModel, journal });
+      ? analysisRequest({ people: chat.people, everyone: people, yourName, notes: chat.notes, kind: chat.kind, model: withModel, journal })
+      : analysisRequest({ people: chat.people, everyone: people, yourName, text: chat.text, images: chat.images, model: withModel, journal });
     const answer = await Promise.resolve(onAnalyse(request)).catch(() => null);
     if (answer && answer.usage) recordSpend(answer.usage, answer.model || withModel); // charged, whatever happens next
     if (ticket !== ownTicket.current) return false;
     if (!answer || answer.error) { setOwnError((answer && answer.error) || "Couldn't analyse that chat."); setStep(backTo); return false; }
     const used = analysisModel(answer.model || withModel).id;
     const result = chat.notes
-      ? analysisResult(answer.result, chat.people, { inPerson: chat.kind, lastTip: lastTipFor(chat.people, journal) })
-      : analysisResult(answer.result, chat.people, { others: otherSpeakers(chat.text, chat.people, yourName), numbers: chat.text ? chatNumbers(chat.text, { yourName }) : null, lastTip: lastTipFor(chat.people, journal) });
+      ? analysisResult(answer.result, chat.people, { inPerson: chat.kind, others: othersFor({ people: chat.people, everyone: people, yourName }), lastTip: lastTipFor(chat.people, journal) })
+      : analysisResult(answer.result, chat.people, { others: othersFor({ people: chat.people, everyone: people, text: chat.text, yourName }), numbers: chat.text ? chatNumbers(chat.text, { yourName }) : null, lastTip: lastTipFor(chat.people, journal) });
     if (chat.source) result.log.date = chat.source.day; // the export's own times
     if (chat.notes) result.log.date = toISODate(chat.date); // the day you picked
     setOwnChat(chat);

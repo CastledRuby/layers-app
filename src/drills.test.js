@@ -35,7 +35,7 @@ describe('the request and the answer', () => {
     const req = drillRequest({ drill, reply: 'yes!! maybe the climbing gym with Sam?', everyone: [sam], yourName: 'Liam', samples: ['haha yeah'], style: 'lowercase, lots of haha' });
     expect(req.content[0].text).toContain('Kai, a friend, texts:\n"we should hang out sometime!"');
     expect(req.content[0].text).toContain('turn it into a real plan');
-    expect(req.content[0].text).toContain('"yes!! maybe the climbing gym with [someone]?"');
+    expect(req.content[0].text).toContain('"yes!! maybe the climbing gym with [someone 1]?"');
     expect(req.system).toContain('- haha yeah');
     expect(req.system).toContain('"lowercase, lots of haha"');
     expect(JSON.stringify(req)).not.toMatch(/Sam|Liam/);

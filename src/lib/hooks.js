@@ -7,7 +7,7 @@ import { toISODate } from './dates.js';
 import { plannedNotifications } from './calendar.js';
 import { addNotifiedReminder, getLastNotifiedDate, getNotifiedReminders, setLastNotifiedDate } from './storage.js';
 import { checkInReminder } from './text.js';
-import { analysisDollars, analysisModel, analysisRequest, analysisResult, lastTipFor, otherSpeakers, recordSpend, spendSummary } from './analysis.js';
+import { analysisDollars, analysisModel, analysisRequest, analysisResult, lastTipFor, othersFor, recordSpend, spendSummary } from './analysis.js';
 import { chatNumbers } from './chatNumbers.js';
 import { batchDollars, pruneQueue, readLimit, readQueue, saveQueue } from './chatBatch.js';
 import { readChatProgress, saveChatProgress } from './chatImport.js';
@@ -254,15 +254,19 @@ export function useChatBatch({ analyse, people, yourName, journal = [], onDone }
         const group = item.ids.map(id => everyone.find(p => p.id === id)).filter(Boolean);
         if (group.length) {
           sending.current.add(item.id);
-          const answer = await Promise.resolve(send(analysisRequest({ people: group, yourName: you, text: item.text, model, journal: logs }))).catch(() => null);
+          const answer = await Promise.resolve(send(analysisRequest({ people: group, everyone, yourName: you, text: item.text, model, journal: logs }))).catch(() => null);
           sending.current.delete(item.id);
           if (answer && answer.usage) recordSpend(answer.usage, answer.model || model);
           const used = analysisModel((answer && answer.model) || model).id;
           const base = { id: item.id, chatKey: item.chatKey, title: item.title, source: item.source, day: item.day, personIds: group.map(p => p.id), model: used, chat: item.text, messages: item.messages };
-          if (!answer || (answer.error && !answer.usage)) { stopped = `Stopped: ${(answer && answer.error) || "Couldn't reach Claude."}`; break; }
-          if (answer.error) { add({ ...base, error: answer.error }); failed += 1; }
+          // Turned down before reaching Claude (nothing charged) because of the
+          // conversation itself: that one's put aside to skip, and the rest go
+          // on, rather than every later run stopping at it (audit 2026-10-14).
+          const refused = answer && answer.error && !answer.usage && /isn.t one Layers makes/.test(answer.error);
+          if (!refused && (!answer || (answer.error && !answer.usage))) { stopped = `Stopped: ${(answer && answer.error) || "Couldn't reach Claude."}`; break; }
+          if (answer.error) { add({ ...base, error: refused ? 'Layers couldn’t send this one to Claude (it may be too long).' : answer.error }); failed += 1; }
           else {
-            const result = analysisResult(answer.result, group, { others: otherSpeakers(item.text, group, you), numbers: chatNumbers(item.text, { yourName: you }), lastTip: lastTipFor(group, logs) });
+            const result = analysisResult(answer.result, group, { others: othersFor({ people: group, everyone, text: item.text, yourName: you }), numbers: chatNumbers(item.text, { yourName: you }), lastTip: lastTipFor(group, logs) });
             result.log.date = item.day; // the export's own times
             add({ ...base, result, cost: analysisDollars(answer.usage, used) });
             answered += 1;

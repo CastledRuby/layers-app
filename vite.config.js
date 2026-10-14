@@ -1,4 +1,5 @@
 import react from '@vitejs/plugin-react'
+import os from 'node:os'
 import { fileURLToPath } from 'node:url'
 import { defineConfig, normalizePath } from 'vite'
 import { configDefaults } from 'vitest/config'
@@ -31,6 +32,9 @@ export default defineConfig({
     setupFiles: ['tests/setup.js'],
     // The app tests drive the whole app, and a busy laptop (a game running,
     // say) can slow one past Vitest's 5 s default without anything being wrong.
-    testTimeout: 15000,
+    // On half the cores, each test has more to itself when something else is
+    // busy too (2026-10-14: flaky at 15 s on every core under load).
+    testTimeout: 30000,
+    maxWorkers: Math.max(2, Math.floor(os.cpus().length / 2)),
   },
 })

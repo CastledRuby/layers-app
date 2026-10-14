@@ -58,6 +58,10 @@ pressing keys. Then they check what's on screen and what was saved to
 `localStorage`. They catch bugs that only show up when screens, sheets and state
 interact.
 
+Each test has 30 seconds, and Vitest uses half the cores (`vite.config.js`), because a
+busy laptop (a game running, say) slowed whole-app tests past a shorter limit, a
+different one each run, without anything being wrong (2026-10-14).
+
 - `smoke.test.jsx`
   - onboarding, both "start fresh" and "explore with samples"
   - every tab, with zero people and with the sample people

@@ -52,13 +52,18 @@ function keyStore(file, safeStorage) {
   };
 }
 
-// What the page sends: text and screenshots only, within limits.
+// What the page sends: text and screenshots only, within limits (audit
+// 2026-10-14: in all, not just each block, so nothing can run up big bills).
+const MAX_BLOCKS = MAX_IMAGES + 2;
+const MAX_SYSTEM_CHARS = 40000;
+const MAX_SCHEMA_CHARS = 20000;
 function cleanContent(content) {
-  if (!Array.isArray(content) || !content.length) return null;
+  if (!Array.isArray(content) || !content.length || content.length > MAX_BLOCKS) return null;
   let images = 0;
+  let chars = 0;
   const out = [];
   for (const block of content) {
-    if (block && block.type === 'text' && typeof block.text === 'string' && block.text.length <= MAX_TEXT_CHARS) out.push({ type: 'text', text: block.text });
+    if (block && block.type === 'text' && typeof block.text === 'string' && (chars += block.text.length) <= MAX_TEXT_CHARS) out.push({ type: 'text', text: block.text });
     else if (block && block.type === 'image' && block.source && block.source.type === 'base64'
       && ['image/jpeg', 'image/png', 'image/webp', 'image/gif'].includes(block.source.media_type)
       && typeof block.source.data === 'string' && block.source.data.length <= MAX_IMAGE_CHARS && ++images <= MAX_IMAGES) {
@@ -100,7 +105,8 @@ function errorText(e, { images = false } = {}) {
 // `client` is replaced in tests.
 async function runAnalysis(request, { apiKey, client = null } = {}) {
   const content = cleanContent(request && request.content);
-  if (!content || typeof request.system !== 'string' || !request.schema || typeof request.schema !== 'object') return { error: 'That request isn’t one Layers makes.' };
+  if (!content || typeof request.system !== 'string' || request.system.length > MAX_SYSTEM_CHARS || !request.schema || typeof request.schema !== 'object'
+    || JSON.stringify(request.schema).length > MAX_SCHEMA_CHARS) return { error: 'That request isn’t one Layers makes.' };
   if (!apiKey && !client) return { error: 'Add your Anthropic API key in Me first.' };
   const model = MODELS.includes(request.model) ? request.model : MODEL;
   const anthropic = client || new Client({ apiKey, timeout: 300000, maxRetries: 2 });

@@ -19,7 +19,7 @@ import { NOTIFY_DEFAULTS, dayNudge, isDoneOn, notifySettings, occursOn, parseAct
 import { useCalendarNotifications, useChatBatch, useDailyBackup, useDailyCheckIn, useSlideAcross, useSystemDark, useToday, useWide } from './lib/hooks.js';
 import { waiting } from './lib/chatBatch.js';
 import { followUpEvent, markDone, markMissed } from './lib/reminders.js';
-import { analysisToKeep, DEFAULT_ANALYSIS_MODEL, IN_PERSON_KINDS, recordSpend, spendSummary } from './lib/analysis.js';
+import { analysisToKeep, DEFAULT_ANALYSIS_MODEL, IN_PERSON_KINDS, othersFor, recordSpend, spendSummary } from './lib/analysis.js';
 import { getFeedCache, setFeedCache, getNudge, getSyncSettings, setNudge, setSyncSettings, getSnoozes, loadSavedState, persistState, setSnoozes } from './lib/storage.js';
 import { openerRequest, openerResult, yourSamples } from './lib/replies.js';
 import { loadChatExports } from './lib/chatImport.js';
@@ -803,12 +803,16 @@ function LayersApp() {
       .sort((a, b) => String(b.at || '').localeCompare(String(a.at || ''))).map(it => it.text);
     const recent = logs.filter(j => j.personId === person.id && j.summary).sort((a, b) => String(b.at || '').localeCompare(String(a.at || ''))).slice(0, 3).map(j => `${j.at}: ${j.summary}`);
     setWritingOpener(nudgeKey);
-    const request = openerRequest({ person, everyone, yourName: me.name, reason: n.text, details, recent, samples: yourSamples({ journal: logs, yourName: me.name, people: everyone, layer: person.layer }), style: me.style || '', model: DEFAULT_ANALYSIS_MODEL });
+    const others = othersFor({ people: [person], everyone, yourName: me.name });
+    const request = openerRequest({ person, everyone, yourName: me.name, reason: n.text, details, recent, samples: yourSamples({ journal: logs, yourName: me.name, people: everyone, layer: person.layer }), style: me.style || '', model: DEFAULT_ANALYSIS_MODEL, others });
     Promise.resolve(analysisBridge.runAnalysis(request)).then(answer => {
       if (answer && answer.usage) recordSpend(answer.usage, answer.model || DEFAULT_ANALYSIS_MODEL);
-      const text = answer && answer.result ? openerResult(answer.result, person) : '';
+      const text = answer && answer.result ? openerResult(answer.result, person, others) : '';
       const latest = nudgeLatest.current.nudgeDay;
-      if (text && latest.day === nudgeKey.slice(0, 10)) { const next = { ...latest, opener: { personId: person.id, text } }; setNudgeSaved(next); setNudge(next); }
+      // Only while they're still today's person: an opener for someone put off
+      // meanwhile mustn't replace the next one's (audit 2026-10-14).
+      const still = nudgeLatest.current.nudge && nudgeLatest.current.nudge.person.id === person.id;
+      if (text && still && latest.day === nudgeKey.slice(0, 10)) { const next = { ...latest, opener: { personId: person.id, text } }; setNudgeSaved(next); setNudge(next); }
     }).catch(() => {}).finally(() => setWritingOpener(w => (w === nudgeKey ? null : w)));
   }, [nudgeKey, openerText, analysisBridge, hasAnalysisKey, chatsBridge, chatsRead]);
   // Messaged: the quick log, filled in; the card's done for the day.

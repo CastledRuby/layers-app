@@ -46,7 +46,7 @@ async function openInPerson(user, name) {
 }
 
 describe('a conversation in person', () => {
-  it('sends your notes (names hidden), shows them with the review, and logs it as that kind, keeping your notes', async () => {
+  it('sends your notes (names hidden), shows them with the review, and logs it as that kind, keeping your notes', { timeout: 40000 }, async () => {
     const bridge = fakeBridge();
     seedState({ profile: { name: 'Liam', focus: 'mix' }, people: [person('Amelie Smith', { layer: 2 })] });
     const { user } = renderApp();

@@ -4,14 +4,14 @@
 > Run `npm run docs:map` after changing anything under `src/`, `electron/*.cjs` or `package.json` scripts.
 > Hand-written explanations live in the other files under [`docs/`](../README.md).
 
-Package: `layers-web` v1.0.40 · `src/`: 99 files, 17629 lines, 125 components, 493 top-level functions, 245 constants.
+Package: `layers-web` v1.0.40 · `src/`: 99 files, 17726 lines, 125 components, 500 top-level functions, 249 constants.
 
 ## Source files
 
 | File | Lines | Declares | Imports from |
 |---|---|---|---|
 | [main.jsx](../../src/main.jsx) | 20 | quick | — |
-| [App.jsx](../../src/App.jsx) | 1890 | sampleData, SAMPLE_PERSON_IDS, SAMPLE_GOAL_IDS, skillsCameWithSamples, allSkillsZero, listNames, unlinkMissingPeople, addNotes, applyLog, namesText, … (+3) | `components/BottomNav`, `components/ErrorBoundary`, `components/PageTransition`, `components/sheetLayer`, `data/constants`, `data/seed`, `lib/dates`, `lib/achievements`, `lib/progress`, `lib/backup`, `lib/calendar`, `lib/hooks`, `lib/chatBatch`, `lib/reminders`, `lib/analysis`, `lib/storage`, `lib/replies`, `lib/chatImport`, `lib/chatBatch`, `lib/drills`, `lib/util`, `modals/AddInfoModal`, `modals/AddPersonModal`, `modals/ConfirmDialog`, `modals/EditEntryModal`, `modals/EditPersonModal`, `modals/EditProfileModal`, `modals/EventSheet`, `modals/GoalModal`, `modals/KeyDateSheet`, `modals/LogInteractionModal`, `modals/PlanSheet`, `modals/PhotoFolderSheet`, `lib/sync`, `lib/syncFile`, `modals/SyncSheet`, `lib/ics`, `lib/summary`, `modals/QuickAddInterestModal`, `modals/ShortcutsModal`, `modals/StartOverSheet`, `modals/DaySheet`, `modals/JumpSheet`, `lib/sentence`, `modals/TemplatePickerModal`, `modals/ChatReviewSheet`, `modals/WeekReviewSheet`, `theme`, `views/CoachView`, `views/GoalsView`, `views/JournalView`, `views/MeView`, `views/OnboardingView`, `views/PeopleView`, `views/PersonProfile`, `components/ClosenessQuiz`, `views/TodayView` |
+| [App.jsx](../../src/App.jsx) | 1894 | sampleData, SAMPLE_PERSON_IDS, SAMPLE_GOAL_IDS, skillsCameWithSamples, allSkillsZero, listNames, unlinkMissingPeople, addNotes, applyLog, namesText, … (+3) | `components/BottomNav`, `components/ErrorBoundary`, `components/PageTransition`, `components/sheetLayer`, `data/constants`, `data/seed`, `lib/dates`, `lib/achievements`, `lib/progress`, `lib/backup`, `lib/calendar`, `lib/hooks`, `lib/chatBatch`, `lib/reminders`, `lib/analysis`, `lib/storage`, `lib/replies`, `lib/chatImport`, `lib/chatBatch`, `lib/drills`, `lib/util`, `modals/AddInfoModal`, `modals/AddPersonModal`, `modals/ConfirmDialog`, `modals/EditEntryModal`, `modals/EditPersonModal`, `modals/EditProfileModal`, `modals/EventSheet`, `modals/GoalModal`, `modals/KeyDateSheet`, `modals/LogInteractionModal`, `modals/PlanSheet`, `modals/PhotoFolderSheet`, `lib/sync`, `lib/syncFile`, `modals/SyncSheet`, `lib/ics`, `lib/summary`, `modals/QuickAddInterestModal`, `modals/ShortcutsModal`, `modals/StartOverSheet`, `modals/DaySheet`, `modals/JumpSheet`, `lib/sentence`, `modals/TemplatePickerModal`, `modals/ChatReviewSheet`, `modals/WeekReviewSheet`, `theme`, `views/CoachView`, `views/GoalsView`, `views/JournalView`, `views/MeView`, `views/OnboardingView`, `views/PeopleView`, `views/PersonProfile`, `components/ClosenessQuiz`, `views/TodayView` |
 | [theme.js](../../src/theme.js) | 424 | THEME_LIGHT, THEME_DARK, COLORS, cssVarBlock, EASE, GRAIN, DEPTH_LIGHT, DEPTH_DARK, CSS | `fonts` |
 | [data/avatars.js](../../src/data/avatars.js) | 203 | AVATAR_COLS, AVATAR_GROUPS, findAvatars, INITIAL_COLORS, INITIALS_GROUP, isInitials, PHOTO_SIZE, PHOTO_GROUP, PHOTO_SRC, isPhoto, … (+16) | — |
 | [data/constants.js](../../src/data/constants.js) | 352 | LAYERS, getLayer, DIM_ORDER, DIM_LABELS, DIM_COLORS, LAYER_BASE_DIMS, CATEGORIES, categoryMeta, TABS, SHORTCUTS, … (+28) | `theme` |
@@ -19,7 +19,7 @@ Package: `layers-web` v1.0.40 · `src/`: 99 files, 17629 lines, 125 components, 
 | [data/seed.js](../../src/data/seed.js) | 176 | INITIAL_PEOPLE, INITIAL_GENERAL_GOALS, INITIAL_JOURNAL, INITIAL_SKILLS, EMPTY_SKILLS | — |
 | [lib/achievements.js](../../src/lib/achievements.js) | 37 | achievementProgress, newlyUnlocked, progressText | `data/constants` |
 | [lib/activity.js](../../src/lib/activity.js) | 48 | ACTIVITY_WEEKS, activityLevel, activityGrid | `lib/dates` |
-| [lib/analysis.js](../../src/lib/analysis.js) | 517 | ANALYSIS_MODELS, DEFAULT_ANALYSIS_MODEL, analysisModel, MAX_SCREENSHOTS, THEM, YOU, tokensFor, STAMP, chatSpeakers, detectPeople, … (+44) | `data/constants`, `lib/dates`, `lib/chatNumbers` |
+| [lib/analysis.js](../../src/lib/analysis.js) | 571 | ANALYSIS_MODELS, DEFAULT_ANALYSIS_MODEL, analysisModel, MAX_SCREENSHOTS, MAX_SENT, THEM, YOU, tokensFor, STAMP, digitsIn, … (+52) | `data/constants`, `lib/dates`, `lib/chatNumbers` |
 | [lib/backup.js](../../src/lib/backup.js) | 283 | BACKUP_VERSION, MAX_BACKUP_BYTES, createBackup, isObject, isText, isISODay, num, count, cleanHistory, cleanGoal, … (+9) | `lib/calendar`, `data/constants`, `data/seed`, `data/avatars`, `lib/util`, `lib/sync`, `lib/analysis` |
 | [lib/calendar.js](../../src/lib/calendar.js) | 539 | WEEKDAY_NAMES, DEFAULT_DURATION, EVENT_TEMPLATES, templateFor, DATE_KINDS, dateKind, NOTIFY_DEFAULTS, notifySettings, dayDate, addDays, … (+38) | `lib/dates` |
 | [lib/chatBatch.js](../../src/lib/chatBatch.js) | 117 | TINY, batchPlan, batchDollars, QUEUE_KEY, isText, cleanItem, readQueue, saveQueue, waiting, pruneQueue, … (+7) | `lib/analysis`, `lib/chatImport` |
@@ -28,17 +28,17 @@ Package: `layers-web` v1.0.40 · `src/`: 99 files, 17629 lines, 125 components, 
 | [lib/chatTrend.js](../../src/lib/chatTrend.js) | 50 | TREND_LINES, chatTrend, trendChange | `lib/dates` |
 | [lib/closeness.js](../../src/lib/closeness.js) | 64 | QUIZ, ANSWERS, REACHED, inLayer, share, nextQuestion, quizPlacement | — |
 | [lib/dates.js](../../src/lib/dates.js) | 319 | parseDaysAgo, startOfDay, WEEKDAY_SHORT, WEEKDAY_FULL, formatWeekdays, MONTH_NAMES, MONTH_WORDS, readDayMonth, dayMonthToDate, dateToRelativeLabel, … (+26) | `data/constants` |
-| [lib/drills.js](../../src/lib/drills.js) | 114 | DRILLS, drillByKey, drillFor, nextDrill, DRILL_SCHEMA, drillRequest, drillResult, KEY, isDay, readDrills, … (+1) | `lib/analysis`, `lib/replies`, `lib/dates` |
-| [lib/hooks.js](../../src/lib/hooks.js) | 291 | useToday, useDailyBackup, WIDE_QUERY, useWide, useSlideAcross, useSystemDark, useDailyCheckIn, notify, SCHEDULE_DAYS, LATE_MINUTES, … (+2) | `lib/dates`, `lib/calendar`, `lib/storage`, `lib/text`, `lib/analysis`, `lib/chatNumbers`, `lib/chatBatch`, `lib/chatImport` |
+| [lib/drills.js](../../src/lib/drills.js) | 116 | DRILLS, drillByKey, drillFor, nextDrill, DRILL_SCHEMA, drillRequest, drillResult, KEY, isDay, readDrills, … (+1) | `lib/analysis`, `lib/replies`, `lib/dates` |
+| [lib/hooks.js](../../src/lib/hooks.js) | 295 | useToday, useDailyBackup, WIDE_QUERY, useWide, useSlideAcross, useSystemDark, useDailyCheckIn, notify, SCHEDULE_DAYS, LATE_MINUTES, … (+2) | `lib/dates`, `lib/calendar`, `lib/storage`, `lib/text`, `lib/analysis`, `lib/chatNumbers`, `lib/chatBatch`, `lib/chatImport` |
 | [lib/ics.js](../../src/lib/ics.js) | 211 | lines, unescape, readTime, readDuration, parseCalendar, zoneOffset, toInstant, pad, isoOf, wallDay, … (+7) | — |
 | [lib/jump.js](../../src/lib/jump.js) | 140 | MAX_ROWS, PAGES, ACTIONS, VERBS, PERSON_ACTIONS, addDays, shortDate, matchScore, personRow, personActionRows, … (+3) | `data/constants`, `lib/calendar`, `lib/dates`, `lib/sentence` |
 | [lib/logQuestions.js](../../src/lib/logQuestions.js) | 98 | firstName, QUESTIONS, dimQuestion, rateRows, followUps | `data/constants`, `lib/dates` |
 | [lib/offline.js](../../src/lib/offline.js) | 12 | shouldCacheOffline, cacheOffline | — |
 | [lib/photo.js](../../src/lib/photo.js) | 72 | MAX_PHOTO_BYTES, loadPhoto, shrinkForAnalysis, renderPhoto | `data/avatars` |
-| [lib/practice.js](../../src/lib/practice.js) | 118 | str, obj, SITUATIONS, situation, LINE, theirSamples, TURN_SCHEMA, turnRequest, turnResult, practicePartner, … (+6) | `data/constants`, `lib/analysis`, `lib/replies`, `lib/dates` |
+| [lib/practice.js](../../src/lib/practice.js) | 119 | str, obj, SITUATIONS, situation, LINE, theirSamples, TURN_SCHEMA, turnRequest, turnResult, practicePartner, … (+6) | `data/constants`, `lib/analysis`, `lib/replies`, `lib/dates` |
 | [lib/progress.js](../../src/lib/progress.js) | 241 | layerForOverall, advanceLayer, computeOverall, dimsEqual, placeOnLayers, progressDelta, chartDay, dimsPoint, closenessTrend, movePerson, … (+12) | `data/constants`, `lib/dates`, `lib/util` |
 | [lib/reminders.js](../../src/lib/reminders.js) | 47 | markDone, markMissed, followUpEvent | `lib/dates` |
-| [lib/replies.js](../../src/lib/replies.js) | 175 | str, obj, STYLE_MAX, MARK, LINE, styleSamples, COMMON_CAPS, ONE_WORD, namesSomeone, usable, … (+14) | `data/constants`, `lib/analysis`, `lib/chatImport` |
+| [lib/replies.js](../../src/lib/replies.js) | 197 | str, obj, STYLE_MAX, LINE, styleSamples, COMMON_CAPS, STARTERS, SENTENCE_END, NOT_AN_END, namesSomeone, … (+17) | `data/constants`, `lib/analysis`, `lib/chatImport` |
 | [lib/sentence.js](../../src/lib/sentence.js) | 355 | WEEKDAYS, MONTHS, RATING_WORDS, COUNT_WORDS, NTHS, TEMPLATE_WORDS, MEAL_TIMES, PART_TIMES, LOG_VERBS, LOG_NOUNS, … (+14) | `lib/calendar`, `lib/dates` |
 | [lib/storage.js](../../src/lib/storage.js) | 179 | STORAGE_KEY, DATA_VERSION, UNREADABLE_PREFIX, keepCopy, loadSavedState, persistState, LAST_NOTIFIED_KEY, getLastNotifiedDate, setLastNotifiedDate, NOTIFIED_REMINDERS_KEY, … (+14) | `lib/backup`, `lib/progress` |
 | [lib/summary.js](../../src/lib/summary.js) | 96 | LAYER_NAMES, esc, longDay, layerColor, layerDeep, layerTint, avatar, section, summaryHtml, summaryFileName | `data/constants`, `data/avatars`, `lib/activity`, `lib/calendar`, `lib/dates`, `lib/text`, `theme` |
@@ -47,7 +47,7 @@ Package: `layers-web` v1.0.40 · `src/`: 99 files, 17629 lines, 125 components, 
 | [lib/text.js](../../src/lib/text.js) | 171 | summaryFor, updateStatusText, homeGoalTitle, generateSuggestions, getCheckInSuggestions, checkInReminder, HOOKS, buildPotentialHooks, focusSuggestion | `data/constants`, `lib/dates` |
 | [lib/tips.js](../../src/lib/tips.js) | 47 | SOON_DAYS, addDays, datesAround, planTips | `data/constants`, `lib/calendar`, `lib/dates`, `lib/text` |
 | [lib/util.js](../../src/lib/util.js) | 9 | clamp, uidCounter, uid | — |
-| [lib/weekRead.js](../../src/lib/weekRead.js) | 79 | str, obj, DAYS, MAX_LOGS, WEEK_SCHEMA, weekReadRequest, weekReadResult, KEY, readWeekReads, saveWeekRead | `data/constants`, `lib/analysis`, `lib/replies`, `lib/dates` |
+| [lib/weekRead.js](../../src/lib/weekRead.js) | 80 | str, obj, DAYS, MAX_LOGS, WEEK_SCHEMA, weekReadRequest, weekReadResult, KEY, readWeekReads, saveWeekRead | `data/constants`, `lib/analysis`, `lib/replies`, `lib/dates` |
 | [components/ActivityCalendar.jsx](../../src/components/ActivityCalendar.jsx) | 51 | CELL, GAP, shade, ActivityCalendar | `lib/activity`, `lib/dates`, `theme` |
 | [components/AnalysisExtras.jsx](../../src/components/AnalysisExtras.jsx) | 112 | card, EachLog, MomentNote, MarkedTranscript, MomentList, ROWS, ChatNumbers, TipCheck | `components/atoms`, `data/constants`, `lib/chatNumbers`, `lib/dates`, `theme` |
 | [components/atoms.jsx](../../src/components/atoms.jsx) | 167 | CircularProgress, ProgressBar, LabeledBar, Avatar, LayerBadge, ChatBubble, Timeline, ConvStateBadge, KEY_ICONS, keyContent, … (+2) | `data/constants`, `data/avatars`, `lib/dates`, `lib/util`, `theme` |
@@ -60,7 +60,7 @@ Package: `layers-web` v1.0.40 · `src/`: 99 files, 17629 lines, 125 components, 
 | [components/ClosenessChart.jsx](../../src/components/ClosenessChart.jsx) | 98 | tick, tipStyle, ClosenessChart, LayersChart, DimsChart | `data/constants`, `lib/progress`, `theme` |
 | [components/closenessKeys.js](../../src/components/closenessKeys.js) | 40 | useCloseness, quizKey | `lib/closeness` |
 | [components/ClosenessQuiz.jsx](../../src/components/ClosenessQuiz.jsx) | 129 | ANSWER_EMOJI, QuizDots, QuizQuestion, QuizResult, QuizSheet | `components/Sheet`, `components/sheetLayer`, `components/atoms`, `data/constants`, `components/closenessKeys`, `lib/closeness`, `theme` |
-| [components/Drill.jsx](../../src/components/Drill.jsx) | 88 | card, Drill | `components/atoms`, `lib/analysis`, `lib/drills`, `lib/practice`, `lib/replies`, `lib/dates`, `theme` |
+| [components/Drill.jsx](../../src/components/Drill.jsx) | 89 | card, Drill | `components/atoms`, `lib/analysis`, `lib/drills`, `lib/practice`, `lib/replies`, `lib/dates`, `theme` |
 | [components/ErrorBoundary.jsx](../../src/components/ErrorBoundary.jsx) | 39 | — | `theme` |
 | [components/illustrations.jsx](../../src/components/illustrations.jsx) | 41 | LAYER, TINT, RingsEmpty, RingsWelcome | `theme` |
 | [components/PageTransition.jsx](../../src/components/PageTransition.jsx) | 18 | PageTransition | — |
@@ -69,7 +69,7 @@ Package: `layers-web` v1.0.40 · `src/`: 99 files, 17629 lines, 125 components, 
 | [components/pickers.jsx](../../src/components/pickers.jsx) | 142 | DateDropdown, TimeDropdown | `components/Sheet`, `lib/dates`, `theme` |
 | [components/planDrag.js](../../src/components/planDrag.js) | 24 | TYPE, canDragPlan, startPlanDrag, isPlanDrag, readPlanDrag | — |
 | [components/Practice.jsx](../../src/components/Practice.jsx) | 192 | card, Practice | `components/atoms`, `data/constants`, `lib/analysis`, `components/Drill`, `lib/drills`, `lib/practice`, `lib/dates`, `theme` |
-| [components/ReplyIdeas.jsx](../../src/components/ReplyIdeas.jsx) | 142 | KINDS, RECENT, fromChat, ReplyIdeas | `components/atoms`, `components/sheetLayer`, `data/constants`, `lib/analysis`, `lib/chatImport`, `lib/replies`, `theme` |
+| [components/ReplyIdeas.jsx](../../src/components/ReplyIdeas.jsx) | 150 | KINDS, RECENT, fromChat, ReplyIdeas | `components/atoms`, `components/sheetLayer`, `data/constants`, `lib/analysis`, `lib/chatImport`, `lib/replies`, `theme` |
 | [components/rows.jsx](../../src/components/rows.jsx) | 94 | GoalRow, InfoItemRow | `components/atoms`, `data/constants`, `lib/dates`, `theme` |
 | [components/Sheet.jsx](../../src/components/Sheet.jsx) | 99 | SheetPortal, CLOSE_MS, animate, Sheet | `components/sheetLayer`, `components/atoms`, `theme` |
 | [components/sheetLayer.js](../../src/components/sheetLayer.js) | 89 | SheetLayerContext, openSheets, registerSheet, topSheet, hasOpenSheet, useOpenSheet, returnFocus, tabbing, isTabbedToButton, isTyping, … (+1) | — |
@@ -282,46 +282,52 @@ Package: `layers-web` v1.0.40 · `src/`: 99 files, 17629 lines, 125 components, 
 | `activityLevel` | [activity.js:12](../../src/lib/activity.js#L12) | ✓ | ✓ |
 | `activityGrid` | [activity.js:20](../../src/lib/activity.js#L20) | ✓ | ✓ |
 | `analysisModel` | [analysis.js:29](../../src/lib/analysis.js#L29) | ✓ |  |
-| `tokensFor` | [analysis.js:36](../../src/lib/analysis.js#L36) | ✓ |  |
-| `chatSpeakers` | [analysis.js:47](../../src/lib/analysis.js#L47) | ✓ | ✓ |
-| `detectPeople` | [analysis.js:63](../../src/lib/analysis.js#L63) | ✓ | ✓ |
-| `firstName` | [analysis.js:73](../../src/lib/analysis.js#L73) |  |  |
-| `isYou` | [analysis.js:75](../../src/lib/analysis.js#L75) | ✓ |  |
-| `namesOf` | [analysis.js:82](../../src/lib/analysis.js#L82) | ✓ | ✓ |
-| `otherSpeakers` | [analysis.js:87](../../src/lib/analysis.js#L87) | ✓ | ✓ |
-| `personNamed` | [analysis.js:96](../../src/lib/analysis.js#L96) | ✓ | ✓ |
-| `str` | [analysis.js:105](../../src/lib/analysis.js#L105) |  |  |
-| `int` | [analysis.js:106](../../src/lib/analysis.js#L106) |  |  |
-| `obj` | [analysis.js:107](../../src/lib/analysis.js#L107) |  |  |
-| `orNull` | [analysis.js:108](../../src/lib/analysis.js#L108) |  |  |
-| `list` | [analysis.js:109](../../src/lib/analysis.js#L109) |  |  |
-| `tones` | [analysis.js:110](../../src/lib/analysis.js#L110) |  |  |
-| `analysisSchema` | [analysis.js:121](../../src/lib/analysis.js#L121) | ✓ | ✓ |
-| `writesDayFirst` | [analysis.js:153](../../src/lib/analysis.js#L153) |  |  |
-| `hasNotes` | [analysis.js:169](../../src/lib/analysis.js#L169) | ✓ | ✓ |
-| `notesText` | [analysis.js:171](../../src/lib/analysis.js#L171) | ✓ | ✓ |
-| `analysisSystem` | [analysis.js:179](../../src/lib/analysis.js#L179) | ✓ | ✓ |
-| `escapeRe` | [analysis.js:232](../../src/lib/analysis.js#L232) |  |  |
-| `nameParts` | [analysis.js:234](../../src/lib/analysis.js#L234) |  |  |
-| `signedAs` | [analysis.js:244](../../src/lib/analysis.js#L244) |  |  |
-| `hideNames` | [analysis.js:255](../../src/lib/analysis.js#L255) | ✓ | ✓ |
-| `restoreNames` | [analysis.js:276](../../src/lib/analysis.js#L276) | ✓ | ✓ |
-| `analysisContext` | [analysis.js:296](../../src/lib/analysis.js#L296) | ✓ | ✓ |
-| `lastTipFor` | [analysis.js:309](../../src/lib/analysis.js#L309) | ✓ |  |
-| `knownFor` | [analysis.js:312](../../src/lib/analysis.js#L312) |  |  |
-| `notesRequest` | [analysis.js:323](../../src/lib/analysis.js#L323) |  |  |
-| `analysisRequest` | [analysis.js:342](../../src/lib/analysis.js#L342) | ✓ | ✓ |
-| `analysisResult` | [analysis.js:380](../../src/lib/analysis.js#L380) | ✓ | ✓ |
-| `analysisToKeep` | [analysis.js:453](../../src/lib/analysis.js#L453) | ✓ | ✓ |
-| `analysisDollars` | [analysis.js:472](../../src/lib/analysis.js#L472) | ✓ |  |
-| `dollarsText` | [analysis.js:476](../../src/lib/analysis.js#L476) | ✓ | ✓ |
-| `analysisCost` | [analysis.js:478](../../src/lib/analysis.js#L478) | ✓ | ✓ |
-| `monthOf` | [analysis.js:489](../../src/lib/analysis.js#L489) |  |  |
-| `readSpend` | [analysis.js:490](../../src/lib/analysis.js#L490) | ✓ |  |
-| `addSpend` | [analysis.js:494](../../src/lib/analysis.js#L494) | ✓ | ✓ |
-| `recordSpend` | [analysis.js:500](../../src/lib/analysis.js#L500) | ✓ |  |
-| `spendSummary` | [analysis.js:506](../../src/lib/analysis.js#L506) | ✓ | ✓ |
-| `typicalCost` | [analysis.js:514](../../src/lib/analysis.js#L514) | ✓ | ✓ |
+| `tokensFor` | [analysis.js:38](../../src/lib/analysis.js#L38) | ✓ |  |
+| `digitsIn` | [analysis.js:49](../../src/lib/analysis.js#L49) |  |  |
+| `isPhone` | [analysis.js:50](../../src/lib/analysis.js#L50) | ✓ |  |
+| `maskNumbers` | [analysis.js:53](../../src/lib/analysis.js#L53) | ✓ |  |
+| `chatSpeakers` | [analysis.js:63](../../src/lib/analysis.js#L63) | ✓ | ✓ |
+| `detectPeople` | [analysis.js:80](../../src/lib/analysis.js#L80) | ✓ | ✓ |
+| `firstName` | [analysis.js:90](../../src/lib/analysis.js#L90) |  |  |
+| `nameFits` | [analysis.js:95](../../src/lib/analysis.js#L95) | ✓ |  |
+| `isYou` | [analysis.js:103](../../src/lib/analysis.js#L103) | ✓ |  |
+| `namesOf` | [analysis.js:109](../../src/lib/analysis.js#L109) | ✓ | ✓ |
+| `otherSpeakers` | [analysis.js:116](../../src/lib/analysis.js#L116) | ✓ | ✓ |
+| `othersFor` | [analysis.js:123](../../src/lib/analysis.js#L123) | ✓ | ✓ |
+| `personNamed` | [analysis.js:133](../../src/lib/analysis.js#L133) | ✓ | ✓ |
+| `str` | [analysis.js:142](../../src/lib/analysis.js#L142) |  |  |
+| `int` | [analysis.js:143](../../src/lib/analysis.js#L143) |  |  |
+| `obj` | [analysis.js:144](../../src/lib/analysis.js#L144) |  |  |
+| `orNull` | [analysis.js:145](../../src/lib/analysis.js#L145) |  |  |
+| `list` | [analysis.js:146](../../src/lib/analysis.js#L146) |  |  |
+| `tones` | [analysis.js:147](../../src/lib/analysis.js#L147) |  |  |
+| `analysisSchema` | [analysis.js:158](../../src/lib/analysis.js#L158) | ✓ | ✓ |
+| `writesDayFirst` | [analysis.js:190](../../src/lib/analysis.js#L190) |  |  |
+| `hasNotes` | [analysis.js:206](../../src/lib/analysis.js#L206) | ✓ | ✓ |
+| `notesText` | [analysis.js:208](../../src/lib/analysis.js#L208) | ✓ | ✓ |
+| `analysisSystem` | [analysis.js:216](../../src/lib/analysis.js#L216) | ✓ | ✓ |
+| `escapeRe` | [analysis.js:269](../../src/lib/analysis.js#L269) |  |  |
+| `nameParts` | [analysis.js:271](../../src/lib/analysis.js#L271) |  |  |
+| `signedAs` | [analysis.js:281](../../src/lib/analysis.js#L281) |  |  |
+| `partsOf` | [analysis.js:296](../../src/lib/analysis.js#L296) |  |  |
+| `hideNames` | [analysis.js:297](../../src/lib/analysis.js#L297) | ✓ | ✓ |
+| `restoreNames` | [analysis.js:320](../../src/lib/analysis.js#L320) | ✓ | ✓ |
+| `analysisContext` | [analysis.js:340](../../src/lib/analysis.js#L340) | ✓ | ✓ |
+| `lastTipFor` | [analysis.js:353](../../src/lib/analysis.js#L353) | ✓ |  |
+| `knownFor` | [analysis.js:356](../../src/lib/analysis.js#L356) |  |  |
+| `notesRequest` | [analysis.js:367](../../src/lib/analysis.js#L367) |  |  |
+| `analysisRequest` | [analysis.js:389](../../src/lib/analysis.js#L389) | ✓ | ✓ |
+| `analysisResult` | [analysis.js:434](../../src/lib/analysis.js#L434) | ✓ | ✓ |
+| `analysisToKeep` | [analysis.js:507](../../src/lib/analysis.js#L507) | ✓ | ✓ |
+| `analysisDollars` | [analysis.js:526](../../src/lib/analysis.js#L526) | ✓ |  |
+| `dollarsText` | [analysis.js:530](../../src/lib/analysis.js#L530) | ✓ | ✓ |
+| `analysisCost` | [analysis.js:532](../../src/lib/analysis.js#L532) | ✓ | ✓ |
+| `monthOf` | [analysis.js:543](../../src/lib/analysis.js#L543) |  |  |
+| `readSpend` | [analysis.js:544](../../src/lib/analysis.js#L544) | ✓ |  |
+| `addSpend` | [analysis.js:548](../../src/lib/analysis.js#L548) | ✓ | ✓ |
+| `recordSpend` | [analysis.js:554](../../src/lib/analysis.js#L554) | ✓ |  |
+| `spendSummary` | [analysis.js:560](../../src/lib/analysis.js#L560) | ✓ | ✓ |
+| `typicalCost` | [analysis.js:568](../../src/lib/analysis.js#L568) | ✓ | ✓ |
 | `createBackup` | [backup.js:20](../../src/lib/backup.js#L20) | ✓ | ✓ |
 | `isObject` | [backup.js:24](../../src/lib/backup.js#L24) |  |  |
 | `isText` | [backup.js:25](../../src/lib/backup.js#L25) |  |  |
@@ -482,10 +488,10 @@ Package: `layers-web` v1.0.40 · `src/`: 99 files, 17629 lines, 125 components, 
 | `drillFor` | [drills.js:47](../../src/lib/drills.js#L47) | ✓ | ✓ |
 | `nextDrill` | [drills.js:54](../../src/lib/drills.js#L54) | ✓ | ✓ |
 | `drillRequest` | [drills.js:69](../../src/lib/drills.js#L69) | ✓ | ✓ |
-| `drillResult` | [drills.js:83](../../src/lib/drills.js#L83) | ✓ | ✓ |
-| `isDay` | [drills.js:96](../../src/lib/drills.js#L96) |  |  |
-| `readDrills` | [drills.js:97](../../src/lib/drills.js#L97) | ✓ | ✓ |
-| `saveDrill` | [drills.js:108](../../src/lib/drills.js#L108) | ✓ | ✓ |
+| `drillResult` | [drills.js:85](../../src/lib/drills.js#L85) | ✓ | ✓ |
+| `isDay` | [drills.js:98](../../src/lib/drills.js#L98) |  |  |
+| `readDrills` | [drills.js:99](../../src/lib/drills.js#L99) | ✓ | ✓ |
+| `saveDrill` | [drills.js:110](../../src/lib/drills.js#L110) | ✓ | ✓ |
 | `useToday` | [hooks.js:18](../../src/lib/hooks.js#L18) | ✓ |  |
 | `useDailyBackup` | [hooks.js:34](../../src/lib/hooks.js#L34) | ✓ |  |
 | `useWide` | [hooks.js:55](../../src/lib/hooks.js#L55) | ✓ |  |
@@ -532,13 +538,13 @@ Package: `layers-web` v1.0.40 · `src/`: 99 files, 17629 lines, 125 components, 
 | `situation` | [practice.js:26](../../src/lib/practice.js#L26) | ✓ | ✓ |
 | `theirSamples` | [practice.js:31](../../src/lib/practice.js#L31) | ✓ | ✓ |
 | `turnRequest` | [practice.js:52](../../src/lib/practice.js#L52) | ✓ | ✓ |
-| `turnResult` | [practice.js:73](../../src/lib/practice.js#L73) | ✓ | ✓ |
-| `practicePartner` | [practice.js:80](../../src/lib/practice.js#L80) | ✓ |  |
-| `practiceText` | [practice.js:84](../../src/lib/practice.js#L84) | ✓ | ✓ |
-| `num` | [practice.js:95](../../src/lib/practice.js#L95) |  |  |
-| `readPractice` | [practice.js:96](../../src/lib/practice.js#L96) | ✓ | ✓ |
-| `addPractice` | [practice.js:102](../../src/lib/practice.js#L102) | ✓ | ✓ |
-| `practiceTrend` | [practice.js:112](../../src/lib/practice.js#L112) | ✓ | ✓ |
+| `turnResult` | [practice.js:74](../../src/lib/practice.js#L74) | ✓ | ✓ |
+| `practicePartner` | [practice.js:81](../../src/lib/practice.js#L81) | ✓ |  |
+| `practiceText` | [practice.js:85](../../src/lib/practice.js#L85) | ✓ | ✓ |
+| `num` | [practice.js:96](../../src/lib/practice.js#L96) |  |  |
+| `readPractice` | [practice.js:97](../../src/lib/practice.js#L97) | ✓ | ✓ |
+| `addPractice` | [practice.js:103](../../src/lib/practice.js#L103) | ✓ | ✓ |
+| `practiceTrend` | [practice.js:113](../../src/lib/practice.js#L113) | ✓ | ✓ |
 | `layerForOverall` | [progress.js:7](../../src/lib/progress.js#L7) | ✓ | ✓ |
 | `advanceLayer` | [progress.js:13](../../src/lib/progress.js#L13) | ✓ |  |
 | `computeOverall` | [progress.js:26](../../src/lib/progress.js#L26) | ✓ | ✓ |
@@ -566,20 +572,21 @@ Package: `layers-web` v1.0.40 · `src/`: 99 files, 17629 lines, 125 components, 
 | `followUpEvent` | [reminders.js:29](../../src/lib/reminders.js#L29) | ✓ | ✓ |
 | `str` | [replies.js:10](../../src/lib/replies.js#L10) |  |  |
 | `obj` | [replies.js:11](../../src/lib/replies.js#L11) |  |  |
-| `styleSamples` | [replies.js:20](../../src/lib/replies.js#L20) | ✓ | ✓ |
-| `namesSomeone` | [replies.js:50](../../src/lib/replies.js#L50) |  |  |
-| `usable` | [replies.js:60](../../src/lib/replies.js#L60) |  |  |
-| `chatStyleSamples` | [replies.js:65](../../src/lib/replies.js#L65) | ✓ | ✓ |
-| `yourSamples` | [replies.js:89](../../src/lib/replies.js#L89) | ✓ | ✓ |
-| `cleanStyle` | [replies.js:96](../../src/lib/replies.js#L96) | ✓ | ✓ |
-| `hide` | [replies.js:100](../../src/lib/replies.js#L100) |  |  |
-| `hideCircle` | [replies.js:108](../../src/lib/replies.js#L108) | ✓ |  |
-| `styleNotes` | [replies.js:110](../../src/lib/replies.js#L110) | ✓ |  |
-| `closeness` | [replies.js:117](../../src/lib/replies.js#L117) |  |  |
-| `replyRequest` | [replies.js:125](../../src/lib/replies.js#L125) | ✓ | ✓ |
-| `replyResult` | [replies.js:142](../../src/lib/replies.js#L142) | ✓ | ✓ |
-| `openerRequest` | [replies.js:152](../../src/lib/replies.js#L152) | ✓ | ✓ |
-| `openerResult` | [replies.js:171](../../src/lib/replies.js#L171) | ✓ | ✓ |
+| `styleSamples` | [replies.js:19](../../src/lib/replies.js#L19) | ✓ | ✓ |
+| `namesSomeone` | [replies.js:60](../../src/lib/replies.js#L60) |  |  |
+| `usable` | [replies.js:74](../../src/lib/replies.js#L74) |  |  |
+| `nameWords` | [replies.js:81](../../src/lib/replies.js#L81) |  |  |
+| `chatStyleSamples` | [replies.js:82](../../src/lib/replies.js#L82) | ✓ | ✓ |
+| `yourSamples` | [replies.js:107](../../src/lib/replies.js#L107) | ✓ | ✓ |
+| `cleanStyle` | [replies.js:114](../../src/lib/replies.js#L114) | ✓ | ✓ |
+| `hide` | [replies.js:121](../../src/lib/replies.js#L121) |  |  |
+| `hideCircle` | [replies.js:126](../../src/lib/replies.js#L126) | ✓ |  |
+| `styleNotes` | [replies.js:128](../../src/lib/replies.js#L128) | ✓ |  |
+| `closeness` | [replies.js:135](../../src/lib/replies.js#L135) |  |  |
+| `replyRequest` | [replies.js:145](../../src/lib/replies.js#L145) | ✓ | ✓ |
+| `replyResult` | [replies.js:163](../../src/lib/replies.js#L163) | ✓ | ✓ |
+| `openerRequest` | [replies.js:173](../../src/lib/replies.js#L173) | ✓ | ✓ |
+| `openerResult` | [replies.js:193](../../src/lib/replies.js#L193) | ✓ | ✓ |
 | `addDays` | [sentence.js:50](../../src/lib/sentence.js#L50) |  |  |
 | `weekdayOf` | [sentence.js:51](../../src/lib/sentence.js#L51) |  |  |
 | `nextWeekday` | [sentence.js:53](../../src/lib/sentence.js#L53) |  |  |
@@ -653,9 +660,9 @@ Package: `layers-web` v1.0.40 · `src/`: 99 files, 17629 lines, 125 components, 
 | `str` | [weekRead.js:13](../../src/lib/weekRead.js#L13) |  |  |
 | `obj` | [weekRead.js:14](../../src/lib/weekRead.js#L14) |  |  |
 | `weekReadRequest` | [weekRead.js:23](../../src/lib/weekRead.js#L23) | ✓ | ✓ |
-| `weekReadResult` | [weekRead.js:61](../../src/lib/weekRead.js#L61) | ✓ | ✓ |
-| `readWeekReads` | [weekRead.js:70](../../src/lib/weekRead.js#L70) | ✓ | ✓ |
-| `saveWeekRead` | [weekRead.js:73](../../src/lib/weekRead.js#L73) | ✓ | ✓ |
+| `weekReadResult` | [weekRead.js:62](../../src/lib/weekRead.js#L62) | ✓ | ✓ |
+| `readWeekReads` | [weekRead.js:71](../../src/lib/weekRead.js#L71) | ✓ | ✓ |
+| `saveWeekRead` | [weekRead.js:74](../../src/lib/weekRead.js#L74) | ✓ | ✓ |
 | `shade` | [ActivityCalendar.jsx:13](../../src/components/ActivityCalendar.jsx#L13) |  |  |
 | `card` | [AnalysisExtras.jsx:14](../../src/components/AnalysisExtras.jsx#L14) |  |  |
 | `keyContent` | [atoms.jsx:140](../../src/components/atoms.jsx#L140) |  |  |
@@ -806,16 +813,18 @@ Package: `layers-web` v1.0.40 · `src/`: 99 files, 17629 lines, 125 components, 
 | `ANALYSIS_MODELS` | [analysis.js:21](../../src/lib/analysis.js#L21) |
 | `DEFAULT_ANALYSIS_MODEL` | [analysis.js:28](../../src/lib/analysis.js#L28) |
 | `MAX_SCREENSHOTS` | [analysis.js:30](../../src/lib/analysis.js#L30) |
-| `THEM` | [analysis.js:31](../../src/lib/analysis.js#L31) |
-| `YOU` | [analysis.js:32](../../src/lib/analysis.js#L32) |
-| `STAMP` | [analysis.js:43](../../src/lib/analysis.js#L43) |
-| `ANALYSIS_SCHEMA` | [analysis.js:150](../../src/lib/analysis.js#L150) |
-| `WEEKDAYS` | [analysis.js:156](../../src/lib/analysis.js#L156) |
-| `NOTE_FIELDS` | [analysis.js:161](../../src/lib/analysis.js#L161) |
-| `IN_PERSON` | [analysis.js:167](../../src/lib/analysis.js#L167) |
-| `IN_PERSON_KINDS` | [analysis.js:168](../../src/lib/analysis.js#L168) |
-| `KEPT_CHAT` | [analysis.js:452](../../src/lib/analysis.js#L452) |
-| `SPEND_KEY` | [analysis.js:488](../../src/lib/analysis.js#L488) |
+| `MAX_SENT` | [analysis.js:32](../../src/lib/analysis.js#L32) |
+| `THEM` | [analysis.js:33](../../src/lib/analysis.js#L33) |
+| `YOU` | [analysis.js:34](../../src/lib/analysis.js#L34) |
+| `STAMP` | [analysis.js:45](../../src/lib/analysis.js#L45) |
+| `ANALYSIS_SCHEMA` | [analysis.js:187](../../src/lib/analysis.js#L187) |
+| `WEEKDAYS` | [analysis.js:193](../../src/lib/analysis.js#L193) |
+| `NOTE_FIELDS` | [analysis.js:198](../../src/lib/analysis.js#L198) |
+| `IN_PERSON` | [analysis.js:204](../../src/lib/analysis.js#L204) |
+| `IN_PERSON_KINDS` | [analysis.js:205](../../src/lib/analysis.js#L205) |
+| `WORD_NAMES` | [analysis.js:294](../../src/lib/analysis.js#L294) |
+| `KEPT_CHAT` | [analysis.js:506](../../src/lib/analysis.js#L506) |
+| `SPEND_KEY` | [analysis.js:542](../../src/lib/analysis.js#L542) |
 | `BACKUP_VERSION` | [backup.js:15](../../src/lib/backup.js#L15) |
 | `MAX_BACKUP_BYTES` | [backup.js:17](../../src/lib/backup.js#L17) |
 | `GRADES` | [backup.js:111](../../src/lib/backup.js#L111) |
@@ -864,7 +873,7 @@ Package: `layers-web` v1.0.40 · `src/`: 99 files, 17629 lines, 125 components, 
 | `MONTH_WORDS` | [dates.js:50](../../src/lib/dates.js#L50) |
 | `DRILLS` | [drills.js:13](../../src/lib/drills.js#L13) |
 | `DRILL_SCHEMA` | [drills.js:62](../../src/lib/drills.js#L62) |
-| `KEY` | [drills.js:95](../../src/lib/drills.js#L95) |
+| `KEY` | [drills.js:97](../../src/lib/drills.js#L97) |
 | `WIDE_QUERY` | [hooks.js:54](../../src/lib/hooks.js#L54) |
 | `SCHEDULE_DAYS` | [hooks.js:151](../../src/lib/hooks.js#L151) |
 | `LATE_MINUTES` | [hooks.js:152](../../src/lib/hooks.js#L152) |
@@ -880,15 +889,17 @@ Package: `layers-web` v1.0.40 · `src/`: 99 files, 17629 lines, 125 components, 
 | `SITUATIONS` | [practice.js:17](../../src/lib/practice.js#L17) |
 | `LINE` | [practice.js:30](../../src/lib/practice.js#L30) |
 | `TURN_SCHEMA` | [practice.js:48](../../src/lib/practice.js#L48) |
-| `KEY` | [practice.js:94](../../src/lib/practice.js#L94) |
+| `KEY` | [practice.js:95](../../src/lib/practice.js#L95) |
 | `STYLE_MAX` | [replies.js:12](../../src/lib/replies.js#L12) |
-| `MARK` | [replies.js:13](../../src/lib/replies.js#L13) |
-| `LINE` | [replies.js:19](../../src/lib/replies.js#L19) |
-| `COMMON_CAPS` | [replies.js:43](../../src/lib/replies.js#L43) |
-| `ONE_WORD` | [replies.js:49](../../src/lib/replies.js#L49) |
-| `VOICE` | [replies.js:118](../../src/lib/replies.js#L118) |
-| `REPLY_SCHEMA` | [replies.js:121](../../src/lib/replies.js#L121) |
-| `OPENER_SCHEMA` | [replies.js:149](../../src/lib/replies.js#L149) |
+| `LINE` | [replies.js:18](../../src/lib/replies.js#L18) |
+| `COMMON_CAPS` | [replies.js:44](../../src/lib/replies.js#L44) |
+| `STARTERS` | [replies.js:52](../../src/lib/replies.js#L52) |
+| `SENTENCE_END` | [replies.js:58](../../src/lib/replies.js#L58) |
+| `NOT_AN_END` | [replies.js:59](../../src/lib/replies.js#L59) |
+| `ADDRESS` | [replies.js:70](../../src/lib/replies.js#L70) |
+| `VOICE` | [replies.js:136](../../src/lib/replies.js#L136) |
+| `REPLY_SCHEMA` | [replies.js:139](../../src/lib/replies.js#L139) |
+| `OPENER_SCHEMA` | [replies.js:170](../../src/lib/replies.js#L170) |
 | `WEEKDAYS` | [sentence.js:22](../../src/lib/sentence.js#L22) |
 | `MONTHS` | [sentence.js:23](../../src/lib/sentence.js#L23) |
 | `RATING_WORDS` | [sentence.js:24](../../src/lib/sentence.js#L24) |
@@ -924,7 +935,7 @@ Package: `layers-web` v1.0.40 · `src/`: 99 files, 17629 lines, 125 components, 
 | `DAYS` | [weekRead.js:15](../../src/lib/weekRead.js#L15) |
 | `MAX_LOGS` | [weekRead.js:16](../../src/lib/weekRead.js#L16) |
 | `WEEK_SCHEMA` | [weekRead.js:18](../../src/lib/weekRead.js#L18) |
-| `KEY` | [weekRead.js:69](../../src/lib/weekRead.js#L69) |
+| `KEY` | [weekRead.js:70](../../src/lib/weekRead.js#L70) |
 | `CELL` | [ActivityCalendar.jsx:11](../../src/components/ActivityCalendar.jsx#L11) |
 | `GAP` | [ActivityCalendar.jsx:12](../../src/components/ActivityCalendar.jsx#L12) |
 | `ROWS` | [AnalysisExtras.jsx:79](../../src/components/AnalysisExtras.jsx#L79) |
@@ -1028,18 +1039,18 @@ Package: `layers-web` v1.0.40 · `src/`: 99 files, 17629 lines, 125 components, 
 | `feeds-remove` | invoke → handle | [main.cjs:641](../../electron/main.cjs#L641) |
 | `feeds-fetch` | invoke → handle | [main.cjs:642](../../electron/main.cjs#L642) |
 | `export-summary` | invoke → handle | [main.cjs:653](../../electron/main.cjs#L653) |
-| `analysis-key-status` | invoke → handle | [main.cjs:683](../../electron/main.cjs#L683) |
-| `analysis-key-set` | invoke → handle | [main.cjs:684](../../electron/main.cjs#L684) |
-| `analysis-key-clear` | invoke → handle | [main.cjs:690](../../electron/main.cjs#L690) |
-| `analysis-run` | invoke → handle | [main.cjs:691](../../electron/main.cjs#L691) |
-| `chats-info` | invoke → handle | [main.cjs:700](../../electron/main.cjs#L700) |
-| `chats-list` | invoke → handle | [main.cjs:701](../../electron/main.cjs#L701) |
-| `chats-read` | invoke → handle | [main.cjs:702](../../electron/main.cjs#L702) |
-| `chats-open-folder` | invoke → handle | [main.cjs:703](../../electron/main.cjs#L703) |
-| `chats-changed` | main → renderer push | [main.cjs:707](../../electron/main.cjs#L707) |
-| `imessage-read` | invoke → handle | [main.cjs:716](../../electron/main.cjs#L716) |
-| `schedule-notifications` | invoke → handle | [main.cjs:721](../../electron/main.cjs#L721) |
-| `calendar-ready` | invoke → handle | [main.cjs:722](../../electron/main.cjs#L722) |
+| `analysis-key-status` | invoke → handle | [main.cjs:684](../../electron/main.cjs#L684) |
+| `analysis-key-set` | invoke → handle | [main.cjs:685](../../electron/main.cjs#L685) |
+| `analysis-key-clear` | invoke → handle | [main.cjs:691](../../electron/main.cjs#L691) |
+| `analysis-run` | invoke → handle | [main.cjs:692](../../electron/main.cjs#L692) |
+| `chats-info` | invoke → handle | [main.cjs:701](../../electron/main.cjs#L701) |
+| `chats-list` | invoke → handle | [main.cjs:702](../../electron/main.cjs#L702) |
+| `chats-read` | invoke → handle | [main.cjs:703](../../electron/main.cjs#L703) |
+| `chats-open-folder` | invoke → handle | [main.cjs:704](../../electron/main.cjs#L704) |
+| `chats-changed` | main → renderer push | [main.cjs:708](../../electron/main.cjs#L708) |
+| `imessage-read` | invoke → handle | [main.cjs:717](../../electron/main.cjs#L717) |
+| `schedule-notifications` | invoke → handle | [main.cjs:722](../../electron/main.cjs#L722) |
+| `calendar-ready` | invoke → handle | [main.cjs:723](../../electron/main.cjs#L723) |
 
 ### Preload bridges (what the renderer can call)
 

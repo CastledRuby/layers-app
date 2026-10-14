@@ -873,6 +873,27 @@ clicked through, and the installed app checked. Each fix has a test.
   5 MB.
 - A `layers://` link from a web page can only rate or tick a plan on a recent day it's on.
 
+**Privacy: what reaches Claude**
+- Everyone else in your circle is hidden in analyses, notes and saved details too, as
+  `[someone 1]`, `[someone 2]`…, and their names come back in the answer (reply ideas,
+  the opener, drills, Practise and the week's read used one `[someone]` for everyone, which
+  could end up in a reply you copied).
+- Phone numbers are masked, and an unsaved contact signing with their number is hidden
+  like a name. Reply ideas now hide group members who aren't in Layers, as Analyse does.
+- Someone who only shares a first name with them, or with you, is no longer taken for
+  them (their surname used to go, and their messages were scored as yours).
+- Style samples are stricter: no line naming anyone (a capitalised first word too, or
+  the chat's other people in lower case), no phone numbers, addresses or links, and the
+  same for samples from logged chats.
+- A name that's an everyday word (Will, May) is only hidden with a capital, so "I will"
+  isn't garbled.
+- The app's wording says what's actually sent, the day's opener and week's read included.
+- A chat too long once names are tags loses its earliest messages instead of being
+  turned down; Analyse all new puts a conversation it can't send aside and carries on,
+  rather than stopping at it every run. The main process holds a request's size in all.
+- A reply idea for messages you've changed since asking, or an opener for someone you've
+  put off meanwhile, is dropped rather than shown.
+
 ### Conversations in person (not released yet)
 
 More chats, step 1 (picked 2026-10-14: in person, then Messenger; Discord for your

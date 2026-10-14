@@ -68,7 +68,7 @@ export function WeekReviewSheet({ day: startDay, people, journal, events, genera
     if (answer && answer.usage) recordSpend(answer.usage, answer.model || built.request.model);
     setReading(r => (r === from ? null : r));
     if (!answer || answer.error || !answer.result) { setReadError((answer && answer.error) || "Couldn't read the week."); return; }
-    setReads(saveWeekRead(from, weekReadResult(answer.result, built.who)));
+    setReads(saveWeekRead(from, weekReadResult(answer.result, built.who, built.others)));
   }
   useEffect(() => {
     const today = toISODate(new Date());

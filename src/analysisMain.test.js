@@ -112,6 +112,20 @@ describe('asking Claude', () => {
     expect(await runAnalysis(request, claude(reply('not json')))).toMatchObject({ error: expect.stringMatching(/couldn't be read/), ...used });
   });
 
+  it('holds a request to limits in all: its text, blocks, instructions and format, which every request Layers makes fits (audit 2026-10-14)', async () => {
+    const { client, create } = claude(reply('{}'));
+    const run = (r) => runAnalysis(r, { client });
+    expect((await run({ ...request, system: 'x'.repeat(40001) })).error).toMatch(/isn.t one Layers makes/);
+    expect((await run({ ...request, schema: { type: 'object', description: 'x'.repeat(20001) } })).error).toMatch(/isn.t one Layers makes/);
+    expect((await run({ ...request, content: Array.from({ length: 3 }, () => ({ type: 'text', text: 'x'.repeat(25000) })) })).error).toMatch(/isn.t one Layers makes/);
+    expect(cleanContent(Array.from({ length: 9 }, () => ({ type: 'text', text: 'hi' })))).toBeNull();
+    expect(create).not.toHaveBeenCalled();
+    const { analysisRequest } = await import('./lib/analysis.js');
+    const group = [{ id: 'a', name: 'Amelie', layer: 4 }, { id: 'c', name: 'Chloe', layer: 3 }];
+    const big = analysisRequest({ people: group, yourName: 'Liam', text: 'Amelie: hi\n'.repeat(9000) });
+    expect((await run(big)).error).toBeUndefined();
+  });
+
   it('puts what went wrong in words', async () => {
     const h = new Headers();
     const cases = [

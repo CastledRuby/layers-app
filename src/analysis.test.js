@@ -4,7 +4,7 @@
 import { describe, expect, it } from 'vitest';
 import { CATEGORIES } from './data/constants.js';
 import { MODELS } from '../electron/analysis.cjs';
-import { addSpend, ANALYSIS_MODELS, ANALYSIS_SCHEMA, analysisContext, analysisCost, analysisRequest, analysisResult, analysisSchema, analysisSystem, analysisToKeep, chatSpeakers, DEFAULT_ANALYSIS_MODEL, detectPeople, dollarsText, hasNotes, hideNames, notesText, otherSpeakers, restoreNames, spendSummary, typicalCost } from './lib/analysis.js';
+import { addSpend, ANALYSIS_MODELS, ANALYSIS_SCHEMA, analysisContext, analysisCost, analysisRequest, analysisResult, analysisSchema, analysisSystem, analysisToKeep, chatSpeakers, DEFAULT_ANALYSIS_MODEL, detectPeople, dollarsText, hasNotes, hideNames, notesText, othersFor, otherSpeakers, restoreNames, spendSummary, typicalCost } from './lib/analysis.js';
 
 const priya = { id: 'p1', name: 'Priya Shah', layer: 2 };
 const amelie = { id: 'a', name: 'Amelie', layer: 4, interests: [{ text: 'Reading' }] };
@@ -72,6 +72,53 @@ describe('names', () => {
     expect(hideNames('Sam Tan: hi', { theirName: 'Sam Lee', yourName: '' })).toBe('[them] Tan: hi');
     const sent = analysisRequest({ person: { ...priya, name: 'Priya' }, yourName: 'Sam', text: 'Priya Shah: guess what\nSam: what', today: TODAY }).content[0].text;
     expect(sent).not.toMatch(/Shah|Priya|Sam/);
+  });
+
+  it('hides an unsaved contact signing with a phone number, and masks numbers, leaving dates and times (audit 2026-10-14)', () => {
+    const text = '[2026-10-12 10:01] +64 21 555 9876: who is this\n[2026-10-12 10:02] Amelie: hey, ring me on 021 555 1234\n[2026-10-12 10:03] Liam: on it, 9:41 on 6/10/26 for 2019-2023';
+    const req = analysisRequest({ people: [amelie], yourName: 'Liam', text, today: TODAY });
+    const sent = req.content.at(-1).text;
+    expect(sent).toContain('Also in this chat, and not who it\'s about: [someone 1].');
+    expect(sent).toContain('[2026-10-12 10:01] [someone 1]: who is this');
+    expect(sent).toContain('[them]: hey, ring me on [number]');
+    expect(sent).toContain('[you]: on it, 9:41 on 6/10/26 for 2019-2023');
+    expect(sent).not.toMatch(/555/);
+    expect(analysisResult({ wentWell: ['[someone 1] asked who you are'] }, amelie, { others: othersFor({ people: [amelie], text, yourName: 'Liam' }) }).wentWell).toEqual(['+64 21 555 9876 asked who you are']);
+  });
+
+  it("someone who shares only a first name with them, or with you, is someone else (audit 2026-10-14)", () => {
+    const samLee = { id: 's', name: 'Sam Lee', layer: 2 };
+    const text = 'Sam Tan: yo\nSam Lee: hey\nSam L: same\nLiam Smith: hi all\nLiam: hey';
+    expect(otherSpeakers(text, [samLee], 'Liam Wong')).toEqual(['Sam Tan', 'Liam Smith']);
+    const sent = analysisRequest({ people: [samLee], yourName: 'Liam Wong', text, today: TODAY }).content.at(-1).text;
+    expect(sent).toContain('[someone 1]: yo\n[them]: hey\n[them] L: same\n[someone 2]: hi all\n[you]: hey'); // an initial is left
+    expect(sent).not.toMatch(/Tan|Smith/);
+  });
+
+  it("hides everyone else in your circle too, in saved details, notes and the chat, and puts them back (audit 2026-10-14)", () => {
+    const kate = { id: 'k', name: 'Kate Morrison', layer: 2 };
+    const amelieKnown = { ...amelie, experiences: [{ text: 'Her sister Kate Morrison is visiting', at: '2026-10-01' }] };
+    const req = analysisRequest({ people: [amelieKnown], everyone: [amelieKnown, kate, chloe], yourName: 'Liam', text: 'Amelie: Kate says hi\nLiam: tell Chloe too', today: TODAY });
+    expect(JSON.stringify(req)).not.toMatch(/Kate|Morrison|Chloe/);
+    const notes = analysisRequest({ people: [amelie], everyone: [amelie, kate], yourName: 'Liam', notes: { talked: 'Kate and her dad Graham' }, today: TODAY });
+    expect(notes.content[0].text).toContain('[someone 1] and her dad Graham');
+    const others = othersFor({ people: [amelie], everyone: [amelie, kate, chloe] });
+    expect(analysisResult({ opportunity: 'Ask [them] about [someone 1]' }, amelie, { others }).opportunity).toBe('Ask Amelie about Kate Morrison');
+  });
+
+  it('only hides a name that is an everyday word where it has a capital (audit 2026-10-14)', () => {
+    const will = { id: 'w', name: 'Will', layer: 2 };
+    const may = { id: 'm', name: 'May', layer: 2 };
+    const sent = analysisRequest({ people: [will], everyone: [will, may], yourName: 'Liam', text: 'Will: I will bring May flowers, she may like them', today: TODAY }).content.at(-1).text;
+    expect(sent).toContain('[them]: I will bring [someone 1] flowers, she may like them');
+  });
+
+  it("fits a very long chat into what the main process takes, leaving out its earliest messages (audit 2026-10-14)", () => {
+    const long = Array.from({ length: 4000 }, (_, i) => `${i % 2 ? 'Liam' : 'Amelie'}: message number ${i} here`).join('\n');
+    const text = analysisRequest({ people: [amelie], yourName: 'Liam', text: long, today: TODAY }).content.at(-1).text;
+    expect(text.length).toBeLessThanOrEqual(58000);
+    expect(text).toContain('(Earlier messages left out.)');
+    expect(text).toContain('message number 3999 here');
   });
 
   it('puts their first name back throughout the answer, and "you" for you', () => {

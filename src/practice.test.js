@@ -18,14 +18,15 @@ describe('a turn', () => {
     expect(r.content[0].text).toBe('Start the conversation with the first message from Maya.');
     expect(TURN_SCHEMA.required).toEqual(['reply']);
     const next = turnRequest({ situationKey: 'bad-news', everyone: [amelie, chloe], yourName: 'Liam', messages: [{ who: 'them', text: 'didnt get it' }, { who: 'you', text: 'oh no, Amelie said you were sure. so sorry' }] });
-    expect(next.content[0].text).toBe("The conversation so far:\n\nMaya: didnt get it\n[you]: oh no, [someone] said you were sure. so sorry\n\nWrite Maya's next message.");
+    expect(next.content[0].text).toBe("The conversation so far:\n\nMaya: didnt get it\n[you]: oh no, [someone 1] said you were sure. so sorry\n\nWrite Maya's next message.");
     expect(JSON.stringify(next)).not.toMatch(/Amelie|Liam/);
   });
 
   it('with one of your people: their layer, what you know and how they write, every name hidden, and theirs put back', () => {
     const r = turnRequest({ situationKey: 'hangout', person: amelie, everyone: [amelie, chloe], yourName: 'Liam', details: ['Plays netball with Chloe'], samples: ['omg yesss'], messages: [{ who: 'you', text: 'hey Mel' }] });
     expect(r.system).toMatch(/You are \[them\], in Layer 4/);
-    expect(r.system).toContain('- Plays netball with [someone]');
+    expect(r.system).toContain('- Plays netball with [someone 1]');
+    expect(turnResult({ reply: 'is [someone 1] coming too??' }, amelie, ['Chloe'])).toBe('is Chloe coming too??'); // names put back (audit 2026-10-14)
     expect(r.system).toContain('- omg yesss');
     expect(r.content[0].text).toContain('[you]: hey [them]');
     expect(JSON.stringify(r)).not.toMatch(/Amelie|Mel\b|Chloe|Liam/);

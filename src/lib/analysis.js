@@ -3,7 +3,7 @@
 // is asked to look for, the shape of its answer (like the sample chats in
 // data/scenarios.js, so Coach shows both the same way, plus a log filled in
 // on Layers' own scales), and keeping names out of pasted text. The main
-// process sends it (electron/analysis.cjs), only when you press Analyse.
+// process sends it (electron/analysis.cjs) when the page asks.
 
 import { AL_ITEMS, CATEGORIES, CONV_STATES, DIM_ORDER, LAYERS } from '../data/constants.js';
 import { parseISODay, toISODate } from './dates.js';
@@ -28,6 +28,8 @@ export const ANALYSIS_MODELS = [
 export const DEFAULT_ANALYSIS_MODEL = ANALYSIS_MODELS[0].id;
 export const analysisModel = (id) => ANALYSIS_MODELS.find(m => m.id === id) || ANALYSIS_MODELS[0];
 export const MAX_SCREENSHOTS = 6;
+// Most text one request's message carries; the main process takes 60,000.
+export const MAX_SENT = 58000;
 export const THEM = '[them]';
 export const YOU = '[you]';
 
@@ -42,12 +44,27 @@ export function tokensFor(count) {
 // "[7/10/26, 3:45:12 pm] " or "7/10/26, 3:45 pm - ".
 const STAMP = /^\s*(?:\[[^\]\n]{4,40}\]\s*|\d{1,4}[/.-]\d{1,2}[/.-]\d{2,4},?\s+\d{1,2}[:.]\d{2}(?:[:.]\d{2})?\s*(?:[ap]\.?\s?m\.?)?\s*[-–]\s*)?/i;
 
+// A phone number, as an unsaved contact signs their messages ("+64 21 555
+// 9876") or as written in a message: seven digits or more.
+const digitsIn = (s) => (String(s).match(/\d/g) || []).length;
+export const isPhone = (s) => /^\+?[\d\s().-]+$/.test(String(s || '').trim()) && digitsIn(s) >= 7;
+// Phone numbers in text as [number] (audit 2026-10-14): nothing sent to
+// Claude needs them. Dates and times are left alone.
+export function maskNumbers(text) {
+  return String(text || '').replace(/\+?\(?\d[\d\s().-]{5,}\d/g, (m) => {
+    if (/\d{4}-\d{1,2}-\d{1,2}|\d{1,2}[-.]\d{1,2}[-.]\d{2,4}/.test(m) || /^\d{4}\s*-\s*\d{2,4}$/.test(m.trim()) || digitsIn(m) < 7) return m;
+    return '[number]';
+  });
+}
+
 // The names messages are signed with in a pasted chat ("Amelie: hi"), in the
-// order they first speak.
+// order they first speak. An unsaved contact's phone number counts, so they
+// can be hidden like anyone else.
 export function chatSpeakers(text) {
   const out = [];
   String(text || '').split(/\r?\n/).forEach(line => {
     const m = line.replace(STAMP, '').match(/^([^:\n]{1,40}?):(?:\s|$)/);
+    if (m && isPhone(m[1])) { const n = m[1].trim(); if (!out.includes(n)) out.push(n); return; }
     if (!m || /\d/.test(m[1])) return; // "10:30" is a time, not a name
     const name = m[1].replace(/[^\p{L}\p{M}\s'.-]/gu, ' ').replace(/\s+/g, ' ').trim();
     if (!name || name.split(' ').length > 4) return;
@@ -71,11 +88,21 @@ export function detectPeople(text, people = [], yourName = '') {
 }
 
 const firstName = (s) => String(s || '').trim().split(/\s+/)[0].toLowerCase();
-// Whether a name on a message is you: your name or its first part, "you", "me".
+// Whether a name on a message can be someone called `full` (audit
+// 2026-10-14): the same first name, and no other part that differs ("Sam"
+// and "Sam L" are Sam Lee, so is "Amelie Rose" for an Amelie with no surname
+// saved; "Sam Tan" isn't Sam Lee). An initial matches the part it starts.
+export function nameFits(name, full) {
+  const a = String(name || '').trim().toLowerCase().split(/\s+/).filter(Boolean);
+  const b = String(full || '').trim().toLowerCase().split(/\s+/).filter(Boolean);
+  if (!a.length || !b.length || a[0] !== b[0]) return false;
+  return a.every((w, i) => i >= b.length || w === b[i] || (w.replace(/\.$/, '').length === 1 && b[i].startsWith(w[0])));
+}
+// Whether a name on a message is you: your name, or a shorter form of it
+// ("Liam" for Liam Wong, but not "Liam Smith"), "you", "me".
 export function isYou(name, yourName = '') {
   const s = String(name || '').trim().toLowerCase();
-  const me = String(yourName || '').trim().toLowerCase();
-  return s === 'you' || s === 'me' || (!!me && (s === me || firstName(s) === firstName(me)));
+  return s === 'you' || s === 'me' || (!!String(yourName || '').trim() && nameFits(name, yourName));
 }
 // Everything a person is called: their name, then any nicknames ("Also
 // known as" on their profile).
@@ -84,9 +111,19 @@ export const namesOf = (p) => [p.name, ...(Array.isArray(p.aka) ? p.aka : [])];
 // Everyone else who signs messages in a chat: not one of `people` (by any of
 // their names) and not you. In a group chat with someone who isn't in Layers,
 // they're hidden as [someone 1], [someone 2]… like everyone else.
+// Someone who only shares a first name with them, or with you, is someone
+// else ("Sam Tan" in a chat with Sam Lee).
 export function otherSpeakers(text, people = [], yourName = '') {
-  const known = new Set([...people.flatMap(namesOf), yourName, 'Me', 'You'].flatMap(nameParts).map(s => s.toLowerCase()));
-  return chatSpeakers(text).filter(n => !nameParts(n).some(part => known.has(part.toLowerCase())));
+  return chatSpeakers(text).filter(n => !isYou(n, yourName) && !people.some(p => namesOf(p).some(full => nameFits(n, full))));
+}
+// Everyone a request hides as [someone 1], [someone 2]… (audit 2026-10-14):
+// whoever else signs the chat's messages, then everyone else in your circle by
+// every name they go by. The answer gets them back from the same list
+// (analysisResult's `others`).
+export function othersFor({ people = [], everyone = [], text = '', yourName = '' } = {}) {
+  const circle = everyone.filter(p => !people.some(x => x.id === p.id));
+  const speakers = text ? otherSpeakers(text, people, yourName).filter(n => !circle.some(p => namesOf(p).some(full => nameFits(n, full)))) : [];
+  return [...speakers, ...circle.flatMap(namesOf)];
 }
 
 // The person a chat name means: the same full name or nickname, or the same
@@ -252,22 +289,29 @@ function signedAs(names, speakers) {
 // [someone 2]…. A fuller name the chat signs them or you with is hidden too
 // (signedAs). Whole words, any case; longer names first, and a part two
 // people share goes to the first.
+// A name that's also an everyday word is only hidden where it's written with a
+// capital ("May said", not "I may"), so the text isn't garbled.
+const WORD_NAMES = new Set(['will', 'may', 'june', 'april', 'august', 'mark', 'bill', 'rose', 'grace', 'hope', 'joy', 'faith', 'sky', 'summer', 'autumn', 'dawn', 'pat', 'sue', 'frank', 'art', 'rich', 'guy', 'ray', 'max', 'amber', 'ruby', 'jade', 'pearl', 'ivy', 'holly', 'daisy', 'lily', 'violet', 'iris', 'river', 'storm', 'brook', 'drew', 'chase', 'hunter', 'grant', 'lance', 'miles', 'nick', 'gene', 'jack', 'sunny', 'honey', 'angel', 'chance', 'royal', 'cash', 'king', 'rocky', 'sandy', 'misty', 'penny', 'robin', 'wren', 'jay', 'kit', 'bo', 'al', 'ed', 'tom', 'don']);
+// A phone number is hidden only as a whole; a name in its parts too.
+const partsOf = (n) => (isPhone(n) ? [String(n).trim()] : nameParts(n));
 export function hideNames(text, { names, theirName, yourName, others = [] }) {
   const speakers = chatSpeakers(text);
   const theirs = (names || (theirName ? [theirName] : [])).map(n => [...[].concat(n), ...signedAs([].concat(n), speakers)]);
   const yours = yourName ? [yourName, ...signedAs([yourName], speakers)] : [];
   const tokens = tokensFor(theirs.length);
   const pairs = [...theirs.flatMap((n, i) => n.flatMap(nameParts).map(part => [part, `[${tokens[i]}]`])), ...yours.flatMap(nameParts).map(part => [part, YOU]),
-    ...others.flatMap((n, i) => nameParts(n).map(part => [part, `[someone ${i + 1}]`]))]
+    ...others.flatMap((n, i) => partsOf(n).map(part => [part, `[someone ${i + 1}]`]))]
     .sort((a, b) => b[0].length - a[0].length);
   const done = new Set();
   let out = String(text || '');
   pairs.forEach(([part, tag]) => {
     if (done.has(part.toLowerCase())) return;
     done.add(part.toLowerCase());
-    out = out.replace(new RegExp(`(?<![\\p{L}\\d])${escapeRe(part)}(?![\\p{L}\\d])`, 'giu'), tag);
+    const word = WORD_NAMES.has(part.toLowerCase());
+    const shown = word ? part.charAt(0).toUpperCase() + part.slice(1).toLowerCase() : part;
+    out = out.replace(new RegExp(`(?<![\\p{L}\\d])${escapeRe(shown)}(?![\\p{L}\\d])`, word ? 'gu' : 'giu'), tag);
   });
-  return out;
+  return maskNumbers(out);
 }
 
 // First names back into everything Claude wrote ([them] or [them 2] -> the
@@ -319,9 +363,10 @@ function knownFor(group, journal, hide) {
 }
 
 // A conversation in person: what Layers knows, then your notes under their
-// headings, names hidden as in a chat.
-function notesRequest({ group, yourName, notes, kind, model, today, journal }) {
-  const hide = (t) => hideNames(t, { names: group.map(namesOf), yourName });
+// headings, names hidden as in a chat (everyone else in your circle too).
+function notesRequest({ group, everyone, yourName, notes, kind, model, today, journal }) {
+  const others = othersFor({ people: group, everyone, yourName });
+  const hide = (t) => hideNames(t, { names: group.map(namesOf), yourName, others });
   const known = knownFor(group, journal, hide);
   const theirs = group.length > 1 ? 'What they shared' : 'What [them] shared';
   const body = NOTE_FIELDS.filter(([k]) => String(notes[k] || '').trim())
@@ -338,21 +383,30 @@ function notesRequest({ group, yourName, notes, kind, model, today, journal }) {
 
 // journal: for what Layers already knows about them (analysisContext).
 // notes ({ talked, theyShared, youShared, ended }) and kind: a conversation
-// in person, your notes sent instead of a chat (NOTE_FIELDS).
-export function analysisRequest({ people, person, yourName, text, images = [], model = DEFAULT_ANALYSIS_MODEL, today = new Date(), dayFirst, journal = [], notes = null, kind = 'talked' }) {
+// in person, your notes sent instead of a chat (NOTE_FIELDS). everyone: your
+// whole circle, whose names are hidden too (othersFor; the answer gets them
+// back from the same list).
+export function analysisRequest({ people, person, everyone = [], yourName, text, images = [], model = DEFAULT_ANALYSIS_MODEL, today = new Date(), dayFirst, journal = [], notes = null, kind = 'talked' }) {
   const group = people || (person ? [person] : []);
-  if (notes) return notesRequest({ group, yourName, notes, kind, model, today, journal });
+  if (notes) return notesRequest({ group, everyone, yourName, notes, kind, model, today, journal });
   const pasted = String(text || '').trim();
-  const others = otherSpeakers(pasted, group, yourName);
+  const others = othersFor({ people: group, everyone, text: pasted, yourName });
+  const speaking = chatSpeakers(pasted).filter(n => others.includes(n));
   const hide = (t) => hideNames(t, { names: group.map(namesOf), yourName, others });
-  const alsoIn = others.length ? `Also in this chat, and not who it's about: ${others.map((_, i) => `[someone ${i + 1}]`).join(', ')}.\n\n` : '';
+  const alsoIn = speaking.length ? `Also in this chat, and not who it's about: ${speaking.map(n => `[someone ${others.indexOf(n) + 1}]`).join(', ')}.\n\n` : '';
   const known = knownFor(group, journal, hide);
   const numbers = pasted ? chatNumbers(pasted, { yourName }) : null;
   const before = [
     known.length ? `WHAT LAYERS ALREADY KNOWS\n${known.join('\n\n')}` : '',
     numbers ? `THE NUMBERS, counted exactly from the chat (use them for reciprocity and balance, and don't contradict them): ${numbersFacts(numbers, { group: group.length > 1 })}` : '',
   ].filter(Boolean).join('\n\n');
-  const chat = pasted ? `${alsoIn}The chat:\n\n${hide(pasted)}` : `The chat is in the ${images.length === 1 ? 'screenshot' : 'screenshots'} above.`;
+  // Tags are longer than names, so a long chat can pass what the main process
+  // takes (60,000 characters): its earliest messages are left out to fit
+  // (audit 2026-10-14), rather than the request being turned down.
+  let hidden = pasted ? hide(pasted) : '';
+  const room = MAX_SENT - before.length - alsoIn.length - 200;
+  if (hidden.length > room) hidden = `(Earlier messages left out.)\n${hidden.slice(-Math.max(0, room)).replace(/^[^\n]*\n/, '')}`;
+  const chat = pasted ? `${alsoIn}The chat:\n\n${hidden}` : `The chat is in the ${images.length === 1 ? 'screenshot' : 'screenshots'} above.`;
   const content = [
     ...images.slice(0, MAX_SCREENSHOTS).map(im => ({ type: 'image', source: { type: 'base64', media_type: im.mediaType, data: im.data } })),
     { type: 'text', text: before ? `${before}\n\n${chat}` : chat },

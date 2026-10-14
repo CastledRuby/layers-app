@@ -46,7 +46,7 @@ describe("today's drill", () => {
     expect(card().textContent).toContain('✓ Friendly, and you kept it open.');
     const sent = bridge.runAnalysis.mock.calls[0][0];
     expect(sent.content[0].text).toContain(drill.text);
-    expect(sent.content[0].text).toContain('"yes!! with [someone] too?"');
+    expect(sent.content[0].text).toContain('"yes!! with [someone 1] too?"');
     expect(sent.system).toContain('"lowercase"');
     expect(JSON.stringify(sent)).not.toMatch(/Rowan|Liam/);
     expect(JSON.parse(window.localStorage.getItem('layers-practice'))).toEqual([{ at: TODAY, situation: 'drill', drill: drill.key, grading: { overall: 64, depth: null, activeListening: null, reciprocity: null, naturalness: null } }]);

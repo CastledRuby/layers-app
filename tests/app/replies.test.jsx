@@ -4,7 +4,7 @@
 // chat in Analyse), and Claude suggests three replies in your style, from
 // your own messages in logged chats and the line in Me. Q, W, E copy them.
 // The main process (the key and Claude) is stood in for.
-import { screen, waitFor, within } from '@testing-library/react';
+import { act, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { nav, person, renderApp, savedState, seedState, openMe } from './harness.jsx';
 
@@ -118,6 +118,23 @@ describe('What to say', () => {
     const toPriya = await ask('Priya: hows ur week');
     expect(toPriya).toContain('- omg same 😭 love u');
     expect(toPriya).not.toContain('anything I should bring');
+  });
+
+  it("drops an answer for messages you've changed since asking, rather than showing it under the new ones (audit 2026-10-14)", async () => {
+    let answer;
+    const bridge = fakeBridge({ runAnalysis: vi.fn(() => new Promise(resolve => { answer = resolve; })) });
+    seed();
+    const { user } = renderApp();
+    await user.click(nav('Coach'));
+    await user.keyboard('3');
+    const card = await screen.findByLabelText('Reply ideas');
+    await user.type(within(card).getByLabelText('Their latest messages'), 'Priya: are you coming sat??');
+    await user.keyboard('{Control>}{Enter}{/Control}');
+    expect(bridge.runAnalysis).toHaveBeenCalledTimes(1);
+    await user.clear(within(card).getByLabelText('Their latest messages'));
+    await user.type(within(card).getByLabelText('Their latest messages'), 'Amelie: did you see my text');
+    await act(async () => { answer({ result: REPLIES, usage: { input: 1, output: 1 }, model: 'claude-haiku-5-5' }); });
+    expect(screen.queryByLabelText('Replies')).toBeNull();
   });
 
   it('keeps how you text, written in Me', async () => {

@@ -10,7 +10,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Avatar, ChatBubble, ConvStateBadge, Kbd, LabeledBar } from './atoms.jsx';
 import { DIM_COLORS, getLayer } from '../data/constants.js';
-import { analysisModel, analysisRequest, analysisResult, recordSpend } from '../lib/analysis.js';
+import { analysisModel, analysisRequest, analysisResult, othersFor, recordSpend } from '../lib/analysis.js';
 import { Drill } from './Drill.jsx';
 import { drillByKey, drillFor, nextDrill, readDrills } from '../lib/drills.js';
 import { addPractice, practicePartner, practiceText, situation, SITUATIONS, theirSamples, turnRequest, turnResult } from '../lib/practice.js';
@@ -54,7 +54,7 @@ export function Practice({ people, journal, yourName = '', style = '', ready = '
     const answer = await send(turnRequest({ situationKey, person, everyone: people, yourName, details, samples: person ? theirSamples(journal, person, yourName) : [], messages: so, model }));
     if (ticket !== run.current) return;
     setAsking(false);
-    const reply = answer && answer.result ? turnResult(answer.result, person) : '';
+    const reply = answer && answer.result ? turnResult(answer.result, person, othersFor({ people: person ? [person] : [], everyone: people, yourName })) : '';
     if (!reply) { setError((answer && answer.error) || "Couldn't get their reply. Try sending again."); return; }
     setMessages([...so, { who: 'them', text: reply }]);
   }
@@ -80,7 +80,7 @@ export function Practice({ people, journal, yourName = '', style = '', ready = '
     if (ticket !== run.current) return;
     setAsking(false);
     if (!answer || answer.error || !answer.result) { setError((answer && answer.error) || "Couldn't get feedback."); return; }
-    const result = analysisResult(answer.result, [partner]);
+    const result = analysisResult(answer.result, [partner], { others: othersFor({ people: person ? [person] : [], everyone: people }) });
     addPractice({ at: toISODate(new Date()), situation: situationKey, personId: person ? person.id : null, grading: result.grading });
     setFeedback(result); setStep('feedback');
   }
@@ -121,7 +121,7 @@ export function Practice({ people, journal, yourName = '', style = '', ready = '
         </div>
         <p className="text-xs mt-2.5" style={{ color: COLORS.inkSoft }}>
           {person
-            ? `Claude plays ${person.name} from what Layers knows: their saved details and a few of their own messages from chats you've logged, with every name swapped for a tag.`
+            ? `Claude plays ${person.name} from what Layers knows: their saved details and a few of their own messages from chats you've logged, with your people's names and any numbers swapped for tags.`
             : `Claude plays ${s.name}, made up. Nothing about your people is sent.`}
           {' '}Each message and the feedback go to Anthropic for {analysisModel(model).name}: a few cents a practice.
         </p>

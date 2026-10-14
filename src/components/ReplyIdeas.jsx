@@ -5,12 +5,12 @@
 // is sent until you press Suggest replies. Keys: Ctrl+Enter in the box asks;
 // Q, W and E copy the natural, playful and deeper reply.
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Check, Copy, Plus, X } from 'lucide-react';
 import { Avatar, Kbd } from './atoms.jsx';
 import { hasOpenSheet, isTyping } from './sheetLayer.js';
 import { getLayer } from '../data/constants.js';
-import { analysisModel, detectPeople, recordSpend } from '../lib/analysis.js';
+import { analysisModel, detectPeople, othersFor, recordSpend } from '../lib/analysis.js';
 import { chatPeople, conversationLabel, conversationText, sourceLabel } from '../lib/chatImport.js';
 import { replyRequest, replyResult, yourSamples } from '../lib/replies.js';
 import { COLORS } from '../theme.js';
@@ -41,6 +41,10 @@ export function ReplyIdeas({ people, journal, yourName = '', style = '', ready =
   const withPeople = (withIds || detectPeople(text, people, yourName)).map(id => people.find(p => p.id === id)).filter(Boolean);
   const canAsk = ready === 'ready' && withPeople.length > 0 && text.trim() && !asking;
 
+  // Moves on whenever the messages or who they're with change, so an answer
+  // for a chat you've moved on from is dropped (audit 2026-10-14).
+  const asked = useRef(0);
+  useEffect(() => { asked.current += 1; }, [text, withIds]);
   function pick(chat, conv, owner) {
     const f = fromChat({ chat, conv, owner }, people, yourName);
     setText(f.text); setWithIds(f.ids.length ? f.ids : null); setSource(f.label); setResult(null); setError(null);
@@ -50,12 +54,16 @@ export function ReplyIdeas({ people, journal, yourName = '', style = '', ready =
     setAsking(true); setError(null);
     // Your style with someone this close: the closest one in the chat.
     const layer = Math.max(...withPeople.map(p => p.layer || 1));
-    const request = replyRequest({ people: withPeople, everyone: people, yourName, text, samples: yourSamples({ journal, yourName, people, layer }), style, model });
+    const others = othersFor({ people: withPeople, everyone: people, text, yourName });
+    const ticket = asked.current;
+    const request = replyRequest({ people: withPeople, everyone: people, yourName, text, samples: yourSamples({ journal, yourName, people, layer }), style, model, others });
     const answer = await Promise.resolve(onAnalyse(request)).catch(() => null);
     if (answer && answer.usage) recordSpend(answer.usage, answer.model || model);
     setAsking(false);
+    // Another chat was picked meanwhile: this answer is for the old one.
+    if (ticket !== asked.current) return;
     if (!answer || answer.error || !answer.result) { setError((answer && answer.error) || "Couldn't get reply ideas."); return; }
-    setResult(replyResult(answer.result, withPeople));
+    setResult(replyResult(answer.result, withPeople, others));
     setCopied(null);
     // Out of the box, so Q, W and E copy straight away.
     if (document.activeElement && document.activeElement.tagName === 'TEXTAREA') document.activeElement.blur();
@@ -116,7 +124,7 @@ export function ReplyIdeas({ people, journal, yourName = '', style = '', ready =
         <textarea value={text} onChange={e => { setText(e.target.value); setResult(null); setError(null); }} onKeyDown={e => { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); ask(); } }}
           aria-label="Their latest messages" rows={source ? 7 : 4} placeholder={'Paste the last few messages ("Amelie: are you coming sat??"), or pick a chat above.'}
           className="w-full text-sm rounded-xl px-3 py-2.5 mt-2" style={{ border: `1px solid ${COLORS.line}`, resize: 'vertical' }} />
-        <p className="text-xs mt-2" style={{ color: COLORS.inkSoft }}>Suggest replies sends these messages to Anthropic for {analysisModel(model).name} (under a cent), names swapped for tags, with a few of your own messages from chats you've logged{style ? ' and how you said you text' : ''}, so the replies sound like you.</p>
+        <p className="text-xs mt-2" style={{ color: COLORS.inkSoft }}>Suggest replies sends these messages to Anthropic for {analysisModel(model).name} (under a cent), names and numbers swapped for tags, with a few of your own messages from your chats{style ? ' and how you said you text' : ''}, so the replies sound like you.</p>
         {error && <p className="text-xs mt-2 font-semibold" role="alert" style={{ color: COLORS.alert }}>{error}</p>}
         <button type="button" onClick={ask} disabled={!canAsk} className="w-full flex items-center justify-center gap-1.5 text-sm font-semibold rounded-full py-2.5 mt-3" style={{ background: COLORS.accent, color: COLORS.onAccent, opacity: canAsk ? 1 : 0.5 }}>{asking ? `${analysisModel(model).short} is writing…` : 'Suggest replies'} {!asking && <Kbd onAccent>Ctrl+↵</Kbd>}</button>
       </div>

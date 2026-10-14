@@ -2,6 +2,7 @@
 // logged chats, and the requests for reply ideas and the daily opener, with
 // every name in your circle hidden and theirs put back in the answer.
 import { describe, expect, it } from 'vitest';
+import { othersFor } from './lib/analysis.js';
 import { chatStyleSamples, cleanStyle, openerRequest, REPLY_SCHEMA, replyRequest, replyResult, openerResult, styleSamples, yourSamples } from './lib/replies.js';
 
 const amelie = { id: 'a', name: 'Amelie Smith', layer: 4, aka: ['Mel'] };
@@ -59,6 +60,16 @@ describe('your style', () => {
     expect(yourSamples({ journal, yourName: 'Liam', people: everyone, layer: 2, chats: [], progress: {} })).toEqual(styleSamples(journal, 'Liam'));
   });
 
+  it("never sends a sample naming someone, or with a number, address or link, from your chats or logged ones (audit 2026-10-14)", () => {
+    const lines = ['Kate is coming tonight btw', 'ask tom if hes in', 'Mrs. Patel was so mean', 'my number is 021 555 1234', 'call +64 21 555 1234', 'my address is 22 karaka road',
+      'Sounds good, is there anything I should bring?', 'Lucky lol', 'Strict parents?', 'perfect lmk'];
+    const group = { key: 'w:g', source: 'whatsapp', title: 'Noah', participants: ['Noah', 'tom', 'Liam'], messages: lines.map((t, i) => ({ at: i, sender: 'Liam', text: t })) };
+    const got = chatStyleSamples([group], { people: everyone, yourName: 'Liam', layer: 2, max: 20 });
+    expect(got.sort()).toEqual(['Lucky lol', 'Sounds good, is there anything I should bring?', 'Strict parents?', 'perfect lmk']);
+    const logged = [{ id: 'j', personId: 'n', at: '2026-10-01', analysis: { chat: 'Noah: hi\nLiam: https://maps.app/xyz\nLiam: ring 021 555 1234\nLiam: Josh and Kate are coming\nLiam: sweet see u then' } }];
+    expect(styleSamples(logged, 'Liam')).toEqual(['sweet see u then']);
+  });
+
   it('tidies the line you wrote in Me', () => {
     expect(cleanStyle('  lowercase,\n  lots of emoji ')).toBe('lowercase, lots of emoji');
     expect(cleanStyle('x'.repeat(300))).toHaveLength(200);
@@ -67,11 +78,13 @@ describe('your style', () => {
 
 describe('reply ideas', () => {
   const request = replyRequest({ people: [amelie], everyone, yourName: 'Liam', text: 'Mel: are you coming sat?? chloe said noah is\nLiam: maybe', samples: ['omg yes noah coming too?'], style: 'lowercase, lots of emoji' });
-  it("hides every name in your circle: theirs as [them], yours as [you], anyone else's as [someone]", () => {
+  it("hides every name in your circle: theirs as [them], yours as [you], anyone else's as [someone N], put back in the answer (audit 2026-10-14)", () => {
     const sent = JSON.stringify(request);
     expect(sent).not.toMatch(/Amelie|Mel\b|Liam|Chloe|chloe|Noah|noah/);
-    expect(request.content[0].text).toBe('The latest messages:\n\n[them]: are you coming sat?? [someone] said [someone] is\n[you]: maybe');
-    expect(request.system).toContain('- omg yes [someone] coming too?');
+    expect(request.content[0].text).toBe('The latest messages:\n\n[them]: are you coming sat?? [someone 1] said [someone 2] is\n[you]: maybe');
+    expect(request.system).toContain('- omg yes [someone 2] coming too?');
+    const others = othersFor({ people: [amelie], everyone, text: 'Mel: are you coming sat?? chloe said noah is\nLiam: maybe', yourName: 'Liam' });
+    expect(replyResult({ read: 'x', natural: 'yeah [someone 2] is coming, [them]!', playful: '', deeper: '' }, [amelie], others).natural).toBe('yeah Noah is coming, Amelie!');
     expect(request.system).toContain('How the user describes their texting style: "lowercase, lots of emoji"');
     expect(request.system).toMatch(/Layer 4/);
     expect(request.model).toBe('claude-haiku-5-5');
@@ -93,8 +106,8 @@ describe("the daily nudge's opener", () => {
     const request = openerRequest({ person: amelie, everyone, yourName: 'Liam', reason: 'Ask how "Amelie starts at the library" went', details: ['Her sister Mia is visiting', 'Loves Noah\'s band'], recent: ['Pizza with Chloe'], style: 'short' });
     const text = request.content[0].text;
     expect(text).toContain('Why message today: Ask how "[them] starts at the library" went');
-    expect(text).toContain("- Loves [someone]'s band");
-    expect(text).toContain('- Pizza with [someone]');
+    expect(text).toContain("- Loves [someone 2]'s band");
+    expect(text).toContain('- Pizza with [someone 1]');
     expect(JSON.stringify(request)).not.toMatch(/Amelie|Liam|Chloe|Noah/);
     expect(openerResult({ opener: ' how was day one at the library [them]?? ' }, amelie)).toBe('how was day one at the library Amelie??');
     expect(openerResult(null, amelie)).toBe('');

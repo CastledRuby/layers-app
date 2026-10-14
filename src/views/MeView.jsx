@@ -76,7 +76,7 @@ function AnalysisKeyCard({ analysisKey, onSave, onRemove, style = '', onSaveStyl
       <p className="text-sm font-semibold" style={{ color: COLORS.ink }}>Chat analysis (Claude)</p>
       <p className="text-xs mt-1.5" style={{ color: COLORS.inkSoft }}>
         {analysisKey.hasKey
-          ? 'Ready: Coach → Analyse a chat sends a chat you choose to Claude, only when you press Analyse, from your Anthropic credit. It uses Claude Haiku 5.5, the cheapest (under a cent a chat); pick a bigger model there to compare, until Layers is next started.'
+          ? 'Ready: Coach → Analyse a chat sends a chat you choose to Claude when you press Analyse, from your Anthropic credit. Each day’s opener and your week’s read are sent by themselves, within your monthly limit. Names and phone numbers are swapped for tags first. It uses Claude Haiku 5.5, the cheapest (under a cent a chat); pick a bigger model there to compare, until Layers is next started.'
           : 'Analyse your own chats in Coach with Claude. Make an API key at console.anthropic.com (API keys), add a few dollars of credit there (under a cent a chat with Claude Haiku 5.5, the cheapest), then paste the key here. Layers keeps it on this laptop, protected by Windows.'}
       </p>
       {(spend.thisMonth.chats > 0 || spend.lastMonth.chats > 0) && (
@@ -92,7 +92,7 @@ function AnalysisKeyCard({ analysisKey, onSave, onRemove, style = '', onSaveStyl
           <input type="text" defaultValue={style} maxLength={STYLE_MAX} onBlur={e => { if (cleanStyle(e.target.value) !== style) onSaveStyle(cleanStyle(e.target.value)); }} onKeyDown={e => { if (e.key === 'Enter') e.currentTarget.blur(); }}
             aria-label="How you text" placeholder="e.g. lowercase, short, lots of emoji, says 'haha'"
             className="w-full text-xs rounded-xl px-3 py-2.5 mt-1.5" style={{ border: `1px solid ${COLORS.line}` }} />
-          <span className="text-xs mt-1 block" style={{ color: COLORS.inkSoft }}>Reply ideas and openers are written like you: from your own messages in chats you've logged, and this.</span>
+          <span className="text-xs mt-1 block" style={{ color: COLORS.inkSoft }}>Reply ideas, openers and drills are written like you: from your own messages in your chats with people as close (lines naming anyone, or with a number, link or address, left out), and this.</span>
         </label>
       )}
       {analysisKey.hasKey && (

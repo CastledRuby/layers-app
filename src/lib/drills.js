@@ -4,7 +4,7 @@
 // Practise beside the role-play. The messages are written here, so picking one
 // is free; only your reply goes to Claude (anyone in your circle named in it
 // hidden), through the same main-process call as Analyse (analysis-run).
-import { analysisModel, DEFAULT_ANALYSIS_MODEL } from './analysis.js';
+import { analysisModel, DEFAULT_ANALYSIS_MODEL, othersFor, restoreNames } from './analysis.js';
 import { hideCircle, styleNotes } from './replies.js';
 import { parseISODay } from './dates.js';
 
@@ -66,22 +66,24 @@ export const DRILL_SCHEMA = {
 // The request: { system, content, schema, model }. everyone: your people, so
 // any of them named in your reply are hidden; samples and style: how you
 // write (lib/replies.js), for the better reply.
-export function drillRequest({ drill, reply, everyone = [], yourName = '', samples = [], style = '', model = DEFAULT_ANALYSIS_MODEL }) {
+export function drillRequest({ drill, reply, everyone = [], yourName = '', samples = [], style = '', model = DEFAULT_ANALYSIS_MODEL, others: given }) {
+  const others = given || othersFor({ everyone, yourName });
   return {
     system: [
       'You coach the user, [you], on texting, inside Layers, a private app for getting better at conversation. [you] is practising one tricky message with a made-up person. Names of people the user knows have been swapped for tags.',
       'Score the reply from 0 to 100 for how well it does what it should here, the way a warm, socially skilled friend would judge it: natural, kind, specific, and keeping the conversation open. Most decent replies land between 50 and 80; save 90+ for ones you would not change.',
       'worked: one short sentence on what the reply does well (or the closest it gets). better: a reply [you] could send instead, one text message in their own style (their usual length, capitals, punctuation, emoji and slang), ready to send, no quotes. why: one short sentence on why that lands better. Speak to the user as "you".',
-      styleNotes({ samples, style, yourName, everyone }),
+      styleNotes({ samples, style, yourName, everyone, others }),
     ].filter(Boolean).join('\n\n'),
-    content: [{ type: 'text', text: `${drill.name}, ${drill.who}, texts:\n"${drill.text}"\n\nWhat a good reply does here: ${drill.aim}.\n\nThe user's reply:\n"${hideCircle(String(reply || '').trim(), { everyone, yourName })}"` }],
+    content: [{ type: 'text', text: `${drill.name}, ${drill.who}, texts:\n"${drill.text}"\n\nWhat a good reply does here: ${drill.aim}.\n\nThe user's reply:\n"${hideCircle(String(reply || '').trim(), { everyone, yourName, others })}"` }],
     schema: DRILL_SCHEMA,
     model: analysisModel(model).id,
   };
 }
-// Claude's answer, tidied: { score, worked, better, why }, or null without a better reply.
-export function drillResult(raw) {
-  const r = raw || {};
+// Claude's answer, tidied: { score, worked, better, why }, or null without a
+// better reply. others: who your reply's names were hidden as (othersFor), put back.
+export function drillResult(raw, others = []) {
+  const r = restoreNames(raw || {}, ['them'], others);
   const text = (s) => (typeof s === 'string' ? s.replace(/\[you\]/gi, 'you').trim() : '');
   const better = text(r.better).replace(/^"(.*)"$/s, '$1');
   if (!better) return null;

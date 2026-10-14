@@ -7,7 +7,7 @@
 import { forwardRef, useState } from 'react';
 import { Check } from 'lucide-react';
 import { ChatBubble, Kbd } from './atoms.jsx';
-import { analysisModel, recordSpend } from '../lib/analysis.js';
+import { analysisModel, othersFor, recordSpend } from '../lib/analysis.js';
 import { drillRequest, drillResult, saveDrill } from '../lib/drills.js';
 import { addPractice } from '../lib/practice.js';
 import { yourSamples } from '../lib/replies.js';
@@ -32,10 +32,11 @@ export const Drill = forwardRef(function Drill({ drill, title, people = [], jour
     setAsking(true); setError(null);
     // Your style with someone like them: a close friend, or a newer one.
     const samples = yourSamples({ journal, yourName, people, layer: /close/.test(drill.who || '') ? 4 : 2 });
-    const answer = await Promise.resolve(onAnalyse(drillRequest({ drill, reply, everyone: people, yourName, samples, style, model }))).catch(() => null);
+    const others = othersFor({ everyone: people, yourName });
+    const answer = await Promise.resolve(onAnalyse(drillRequest({ drill, reply, everyone: people, yourName, samples, style, model, others }))).catch(() => null);
     if (answer && answer.usage) recordSpend(answer.usage, answer.model || model);
     setAsking(false);
-    const r = answer && answer.result ? drillResult(answer.result) : null;
+    const r = answer && answer.result ? drillResult(answer.result, others) : null;
     if (!r) { setError((answer && answer.error) || "Couldn't get feedback. Try sending it again."); return; }
     const day = toISODate(new Date());
     if (r.score !== null) addPractice({ at: day, situation: 'drill', drill: drill.key, grading: { overall: r.score } });

@@ -48,7 +48,7 @@ describe('Practise', () => {
     expect(within(chat).getByRole('button', { name: /End, and feedback/ }).disabled).toBe(true);
     await user.type(within(chat).getByLabelText('Your message'), 'oh no Priya, im so sorry{Enter}');
     expect(await within(chat).findByText('yeah. kinda gutted')).toBeTruthy();
-    expect(bridge.runAnalysis.mock.calls[1][0].content[0].text).toContain('[you]: oh no [someone], im so sorry'); // your people's names hidden
+    expect(bridge.runAnalysis.mock.calls[1][0].content[0].text).toContain('[you]: oh no [someone 1], im so sorry'); // your people's names hidden
     await user.type(within(chat).getByLabelText('Your message'), 'that sucks. want to talk about it?{Enter}');
     await within(chat).findByText('thanks, that helps');
     await user.keyboard('{Control>}{Enter}{/Control}');
@@ -58,7 +58,7 @@ describe('Practise', () => {
     expect(within(feedback).getByText(/You let Maya be upset without fixing it/)).toBeTruthy();
     const sent = bridge.runAnalysis.mock.calls.at(-1)[0];
     expect(sent.content.at(-1).text).toContain("THE NUMBERS, counted exactly from the chat");
-    expect(sent.content.at(-1).text.split('\n\nThe chat:\n\n')[1]).toBe("[them]: didnt get the job\n[you]: oh no [someone], im so sorry\n[them]: yeah. kinda gutted\n[you]: that sucks. want to talk about it?\n[them]: thanks, that helps");
+    expect(sent.content.at(-1).text.split('\n\nThe chat:\n\n')[1]).toBe("[them]: didnt get the job\n[you]: oh no [someone 1], im so sorry\n[them]: yeah. kinda gutted\n[you]: that sucks. want to talk about it?\n[them]: thanks, that helps");
     expect(JSON.parse(window.localStorage.getItem('layers-practice'))).toEqual([expect.objectContaining({ situation: 'bad-news', grading: expect.objectContaining({ overall: 72 }) })]);
     expect(savedState().journal).toEqual([]);
 
@@ -80,7 +80,7 @@ describe('Practise', () => {
     await screen.findByText('didnt get the job');
     const sent = bridge.runAnalysis.mock.calls[0][0];
     expect(sent.system).toMatch(/You are \[them\], in Layer 3/);
-    expect(sent.system).toContain('- Climbing with [someone]');
+    expect(sent.system).toContain('- Climbing with [someone 1]');
     expect(JSON.stringify(sent)).not.toMatch(/Priya|Noah|Liam/);
   });
 });

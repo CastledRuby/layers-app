@@ -70,8 +70,9 @@ export function turnRequest({ situationKey, person = null, everyone = [], yourNa
   };
 }
 // Their message from Claude's answer, names back ('' if there's none).
-export function turnResult(raw, person = null) {
-  const r = person ? restoreNames(raw || {}, person.name) : raw || {};
+// others: who the request hid as [someone 1]… (othersFor, audit 2026-10-14).
+export function turnResult(raw, person = null, others = []) {
+  const r = person ? restoreNames(raw || {}, person.name, others) : restoreNames(raw || {}, ['them'], others);
   return typeof r.reply === 'string' ? r.reply.trim() : '';
 }
 
@@ -79,8 +80,8 @@ export function turnResult(raw, person = null) {
 // one (Layer 2, as for someone you're getting to know).
 export const practicePartner = (situationKey, person = null) => person || { id: 'practice', name: situation(situationKey).name, layer: 2 };
 // The practice as a chat for Analyse: "Name: text" lines, you under your name.
-// Anyone else in your circle (everyone) mentioned is [someone] already, as in
-// each turn; Analyse hides the two of you.
+// Anyone else in your circle (everyone) mentioned is [someone 1]… already, as
+// in each turn; Analyse hides the two of you.
 export function practiceText(messages, { situationKey, person = null, yourName = '', everyone = [] }) {
   const them = practicePartner(situationKey, person).name;
   const text = (t) => (everyone.length ? hideCircle(t, { people: person ? [person] : [], everyone }) : t);

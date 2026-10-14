@@ -694,7 +694,16 @@ will be sent.
   Layers has Amelie) is hidden too, so a surname only in the chat doesn't go
   (`signedAs`). Anyone else who signs messages and isn't in Layers (a group
   member, `otherSpeakers`) is `[someone 1]`, `[someone 2]`…, said so at the top, and their
-  names come back in the answer (`analysisResult`'s `others`). Of each person, only
+  names come back in the answer (`analysisResult`'s `others`). Since the audit of
+  2026-10-14: everyone else in your circle (`everyone`, by every name they go by) is
+  `[someone N]` too, in the chat, saved details and notes alike (`othersFor` gives the
+  one list both the request and the answer use); an unsaved contact signing with a phone
+  number is hidden like a name, and any other phone number is `[number]`
+  (`maskNumbers`); someone who only shares a first name with them, or with you, is
+  someone else (`nameFits`: "Sam Tan" isn't Sam Lee, "Liam Smith" isn't you); a name
+  that's an everyday word (Will, May) is only hidden where it has a capital; and a chat
+  too long for the main process once its names are tags loses its earliest messages to
+  fit (`MAX_SENT`), rather than being turned down. Of each person, only
   their layer is sent, so the advice fits how
   close you are, plus today's date (so "Yesterday 9:41 pm" can be dated) and whether
   this computer writes dates day first. Screenshots go as they are, so a name in one is
@@ -1052,9 +1061,12 @@ written by Claude in your style ([`lib/replies.js`](../../src/lib/replies.js),
   chats with people as close as the one it's for: Layers 1–2 for someone you're not close
   to, 3–4 for someone close (`chatStyleSamples`). Chats with nobody in Layers are left
   out, because they mix strangers with people you're close to. The newest of yours from
-  each chat in turn, up to 12. A line that names someone (a capitalised word mid-sentence
-  that isn't a day, month or "I"), has a link, an email or a long number, or is a photo
-  or a reaction, is skipped, so nobody else's name or details go with them. Fewer than
+  each chat in turn, up to 12. A line that names someone (a capitalised word that isn't a
+  day, a month, "I" or, starting a sentence, a common word; or any part of the chat's
+  other people's names, in any case), has a link, an email, a phone number or a street
+  address, or is a photo or a reaction, is skipped, so nobody else's name or details go
+  with them (tightened in the audit of 2026-10-14, and applied to the logged-chat top-up
+  too). Fewer than
   six? It's topped up from chats you've analysed and logged (`styleSamples`: lines signed
   with your name, "You" or "Me", newest first, each chat once). Reply ideas use the
   closest person in the chat, the opener the person it's for (it waits for the chats to

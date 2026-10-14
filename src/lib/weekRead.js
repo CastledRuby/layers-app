@@ -6,7 +6,7 @@
 // reach out to. Asked once a week, through the same main-process call as
 // Analyse, and kept on this laptop.
 import { ML_LABELS, TYPE_META } from '../data/constants.js';
-import { analysisModel, DEFAULT_ANALYSIS_MODEL, restoreNames, tokensFor } from './analysis.js';
+import { analysisModel, DEFAULT_ANALYSIS_MODEL, othersFor, restoreNames, tokensFor } from './analysis.js';
 import { hideCircle } from './replies.js';
 import { parseISODay } from './dates.js';
 
@@ -26,10 +26,11 @@ export function weekReadRequest({ from, to, people = [], journal = [], quiet = [
   const ids = [...new Set([...logs.map(j => j.personId), ...quiet.map(q => q.person.id)])];
   const who = ids.map(id => people.find(p => p.id === id)).filter(Boolean);
   const tokens = tokensFor(who.length);
-  const tag = (id) => { const i = who.findIndex(p => p.id === id); return i < 0 ? '[someone]' : `[${tokens[i]}]`; };
   // Names in notes and reviews: the week's people as their tags, yours as
-  // [you], anyone else as [someone].
-  const hide = (t) => hideCircle(String(t || ''), { people: who, everyone: people, yourName });
+  // [you], anyone else as [someone 1]… (put back from `others`).
+  const others = othersFor({ people: who, everyone: people, yourName });
+  const tag = (id) => { const i = who.findIndex(p => p.id === id); return i < 0 ? '[someone]' : `[${tokens[i]}]`; };
+  const hide = (t) => hideCircle(String(t || ''), { people: who, everyone: people, yourName, others });
   const line = (j) => {
     const d = parseISODay(j.at);
     const a = j.analysis;
@@ -55,11 +56,11 @@ export function weekReadRequest({ from, to, people = [], journal = [], quiet = [
     model: analysisModel(model).id,
     deep: true,
   };
-  return { request, who };
+  return { request, who, others };
 }
 // Claude's read with names back: { headline, wentWell, pattern, tryThisWeek, reachOut }.
-export function weekReadResult(raw, who = []) {
-  const r = restoreNames(raw || {}, who.length ? who.map(p => p.name) : ['them']);
+export function weekReadResult(raw, who = [], others = []) {
+  const r = restoreNames(raw || {}, who.length ? who.map(p => p.name) : ['them'], others);
   const s = (v) => (typeof v === 'string' ? v.trim() : '');
   return { headline: s(r.headline), wentWell: s(r.wentWell), pattern: s(r.pattern), tryThisWeek: s(r.tryThisWeek), reachOut: s(r.reachOut) };
 }

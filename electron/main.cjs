@@ -677,7 +677,8 @@ function setupSummary() {
 
 // --- Chat analysis with Claude (analysis.cjs) ------------------------------
 // Your Anthropic API key stays here, encrypted by Windows; a chat goes to
-// Claude only when you press Analyse in Coach.
+// Claude when the page asks (Analyse, reply ideas, Practise, the day's opener and
+// the week's read; the last two by themselves, within the monthly limit).
 function setupAnalysis() {
   const store = keyStore(path.join(app.getPath('userData'), 'anthropic-key.bin'), safeStorage);
   ipcMain.handle('analysis-key-status', () => ({ hasKey: Boolean(store.get()) }));
