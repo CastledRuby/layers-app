@@ -48,6 +48,12 @@ describe('repeating events', () => {
     expect(items(cal(ev(['UID:w', 'SUMMARY:Club', 'DTSTART;TZID=Pacific/Auckland:20261002T180000', 'RRULE:FREQ=WEEKLY;INTERVAL=2']))).map(i => i.date)).toEqual(['2026-10-02', '2026-10-16', '2026-10-30']);
   });
 
+  it('every other week on two days, with the week starting on the day WKST says (audit 2026-10-14)', () => {
+    const rule = (wkst) => items(cal(ev(['UID:f', 'SUMMARY:Club', 'DTSTART;TZID=Pacific/Auckland:20261004T180000', `RRULE:FREQ=WEEKLY;INTERVAL=2;BYDAY=SU,MO${wkst}`]))).map(i => i.date);
+    expect(rule(';WKST=SU')).toEqual(['2026-10-04', '2026-10-05', '2026-10-18', '2026-10-19']); // Sunday and Monday one week
+    expect(rule('')).toEqual(['2026-10-04', '2026-10-12', '2026-10-18', '2026-10-26']); // Monday first: Sunday ends a week
+  });
+
   it('an occurrence moved or cancelled on its own', () => {
     const list = items(cal(
       ev(['UID:m', 'SUMMARY:Maths', 'DTSTART;TZID=Pacific/Auckland:20261005T091000', 'DURATION:PT50M', 'RRULE:FREQ=WEEKLY;COUNT=3']),

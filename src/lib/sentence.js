@@ -35,6 +35,7 @@ const TEMPLATE_WORDS = {
 };
 const MEAL_TIMES = { breakfast: 9 * 60, brunch: 10 * 60 + 30, lunch: 12 * 60 + 30 };
 const PART_TIMES = { morning: 9 * 60, noon: 12 * 60, midday: 12 * 60, afternoon: 15 * 60, evening: 19 * 60, tonight: 19 * 60 };
+const EVENING_WORDS = new Set(['dinner', 'supper', 'tonight', 'evening', 'night', 'drinks']);
 // Past-tense words that make it a log, and the interaction type they mean.
 const LOG_VERBS = {
   talked: 'talked', chatted: 'talked', spoke: 'talked', caughtup: 'talked',
@@ -116,6 +117,12 @@ export function readSentence(text, { people = [], today, now = new Date() } = {}
   let logWord = false; let rating = null; let partOfDay = false;
   let rollable = false; // a date said without a year ("12 oct"), which a plan reads as the next one
   let mealWord = null;
+  const bare = []; // weekdays said on their own ("tue thu fri")
+  let weekdayDay = null; // the day the last weekday said on its own gave
+  let guessed = false; // the time is an hour said without am or pm ("at 8")
+  // "last fri" is a monthly rule only when a month is said ("of the month",
+  // "monthly"); otherwise it's the Friday just gone.
+  const monthSaid = t.some(x => x.low === 'monthly' || x.low === 'month');
 
   const isLog = low(0) === 'log';
   if (isLog) take(0);
@@ -146,6 +153,9 @@ export function readSentence(text, { people = [], today, now = new Date() } = {}
     // Monthly: "monthly", "every month", "first fri of the month", "the last
     // sunday of every month", "on the 15th every month", "monthly on the 15th".
     if (w === 'monthly' || (w === 'every' && n === 'month')) { repeat = 'monthly'; take(i); if (w === 'every') take(i + 1); continue; }
+    if (w === 'last' && n in WEEKDAYS && repeat !== 'monthly' && !monthSaid) {
+      day = lastWeekday(addDays(day0, -1), WEEKDAYS[n]); take(i, i + 1); i++; continue;
+    }
     if (w in NTHS && n in WEEKDAYS) {
       repeat = 'monthly'; monthly = { nth: NTHS[w], weekday: WEEKDAYS[n] };
       take(i, i + 1); i = takeOfMonth(i + 2); continue;
@@ -172,7 +182,8 @@ export function readSentence(text, { people = [], today, now = new Date() } = {}
       i = j - 1;
       continue;
     }
-    if (/s$/.test(w) && w.slice(0, -1) in WEEKDAYS && w.length > 4) { repeat = 'weekly'; weekdays = [...new Set([...(weekdays || []), WEEKDAYS[w.slice(0, -1)]])].sort((a, b) => a - b); take(i); continue; }
+    // "mondays", but not "thurs" or "tues", which are one day.
+    if (/s$/.test(w) && !(w in WEEKDAYS) && w.slice(0, -1) in WEEKDAYS && w.length > 4) { repeat = 'weekly'; weekdays = [...new Set([...(weekdays || []), WEEKDAYS[w.slice(0, -1)]])].sort((a, b) => a - b); take(i); continue; }
 
     // Days.
     if (w === 'today') { day = day0; take(i); continue; }
@@ -190,7 +201,7 @@ export function readSentence(text, { people = [], today, now = new Date() } = {}
       day = addDays(day0, Number(n) * (low(i + 2).startsWith('week') ? 7 : 1)); take(i, i + 1, i + 2); i += 2; continue;
     }
     if (w === 'in' && n === 'a' && low(i + 2) === 'week') { day = addDays(day0, 7); take(i, i + 1, i + 2); i += 2; continue; }
-    if (w in WEEKDAYS) { day = isLog ? null : nextWeekday(day0, WEEKDAYS[w]); t[i].weekday = WEEKDAYS[w]; take(i); continue; }
+    if (w in WEEKDAYS) { day = isLog ? null : nextWeekday(day0, WEEKDAYS[w]); weekdayDay = day; bare.push(WEEKDAYS[w]); t[i].weekday = WEEKDAYS[w]; take(i); continue; }
     // "12/10", "12/10/2026"
     let m = w.match(/^(\d{1,2})\/(\d{1,2})(?:\/(\d{2}|\d{4}))?$/);
     if (m) {
@@ -211,13 +222,13 @@ export function readSentence(text, { people = [], today, now = new Date() } = {}
 
     // Times: "10am", "7:30pm", "19:00", "10 am", "at 7", "noon", "evening".
     m = w.match(/^(\d{1,2})(?::(\d{2}))?(am|pm|a|p)$/);
-    if (m) { const v = clock(Number(m[1]), Number(m[2] || 0), m[3].startsWith('a') ? 'am' : 'pm'); if (v !== null) { time = v; take(i); continue; } }
+    if (m) { const v = clock(Number(m[1]), Number(m[2] || 0), m[3].startsWith('a') ? 'am' : 'pm'); if (v !== null) { time = v; guessed = false; take(i); continue; } }
     m = w.match(/^(\d{1,2})(?::(\d{2}))?$/);
-    if (m && (n === 'am' || n === 'pm')) { const v = clock(Number(m[1]), Number(m[2] || 0), n); if (v !== null) { time = v; take(i, i + 1); i++; continue; } }
+    if (m && (n === 'am' || n === 'pm')) { const v = clock(Number(m[1]), Number(m[2] || 0), n); if (v !== null) { time = v; guessed = false; take(i, i + 1); i++; continue; } }
     m = w.match(/^(\d{1,2}):(\d{2})$/);
-    if (m) { const h = Number(m[1]); const v = clock(h >= 13 || h === 0 ? h : guessHour(h), Number(m[2]), null); if (v !== null) { time = v; take(i); continue; } }
-    if (w === 'at' && /^\d{1,2}$/.test(n) && Number(n) >= 1 && Number(n) <= 12) { time = guessHour(Number(n)) * 60; take(i, i + 1); i++; continue; }
-    if (w in PART_TIMES && w !== 'tonight') { if (time === null || partOfDay) { time = PART_TIMES[w]; partOfDay = true; } take(i); continue; }
+    if (m) { const h = Number(m[1]); const v = clock(h >= 13 || h === 0 ? h : guessHour(h), Number(m[2]), null); if (v !== null) { time = v; guessed = h > 0 && h < 13; take(i); continue; } }
+    if (w === 'at' && /^\d{1,2}$/.test(n) && Number(n) >= 1 && Number(n) <= 12) { time = guessHour(Number(n)) * 60; guessed = true; take(i, i + 1); i++; continue; }
+    if (w in PART_TIMES && w !== 'tonight') { if (time === null || partOfDay) { time = PART_TIMES[w]; guessed = false; partOfDay = true; } take(i); continue; }
 
     // How long: "2h", "90m", "1.5 hours", "for an hour", "half an hour".
     m = w.match(/^(\d+(?:\.\d+)?)(h|hr|hrs|hour|hours|m|min|mins|minutes)$/);
@@ -231,6 +242,18 @@ export function readSentence(text, { people = [], today, now = new Date() } = {}
     if (/^[1-5]$/.test(w) && (isLog || logWordAt(t))) { rating = Number(w); take(i); continue; }
 
     if (w in LOG_VERBS || w === 'caughtup') logWord = true;
+  }
+
+  // An hour without am or pm is the evening's for dinner or tonight ("dinner
+  // at 8", "tonight at 9"), though 8 to 11 are otherwise the morning's.
+  if (guessed && time !== null && time < 12 * 60 && t.some(x => EVENING_WORDS.has(x.low))) time += 12 * 60;
+  // Weekdays said on their own in a plan: two or more repeat weekly ("gym tue
+  // thu fri"), and with a repeat said ("fortnightly tue thu") they're its days,
+  // starting on the first one still to come.
+  if (!isLog && !logWord && bare.length && (repeat === 'weekly' || (repeat === 'once' && new Set(bare).size > 1))) {
+    repeat = 'weekly';
+    weekdays = [...new Set([...(weekdays || []), ...bare])].sort((a, b) => a - b);
+    if (day === weekdayDay) day = null;
   }
 
   // People: full names first ("isla b"), then first names, closest first when
@@ -307,6 +330,9 @@ export function readSentence(text, { people = [], today, now = new Date() } = {}
   else title = cap(words.map(tok => (tok.person ? tok.person.name : tok.raw)).join(' '));
 
   const startTime = time !== null ? time : mealWord ? MEAL_TIMES[mealWord] : tWord ? template.time : null;
+  // Today's weekday, said with a time already gone, is next week's ("coffee
+  // mon 10am" on a Monday afternoon).
+  if (repeat === 'once' && day && day === weekdayDay && day === day0 && time !== null && time <= nowMin) day = addDays(day0, 7);
   let start = day;
   // With no day said, a plan starts on the first day it can still happen:
   // a time already gone today means the next one.

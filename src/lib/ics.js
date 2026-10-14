@@ -122,6 +122,7 @@ function starts(ev, last) {
   const past = (t) => (until && (until.allDay ? wallDay(t) > wallDay(until) : toInstant(t).getTime() > untilAt)) || wallDay(t) > last;
   const out = [];
   const byDay = freq === 'WEEKLY' && r.BYDAY ? r.BYDAY.split(',').map(x => DAYS[x.slice(-2).toUpperCase()]).filter(x => x !== undefined) : null;
+  const wkst = DAYS[(r.WKST || 'MO').toUpperCase()] ?? 1;
   // Monthly by weekday: "1FR" is the first Friday, "-1FR" the last, "FR" every Friday.
   const byWeekdayInMonth = freq === 'MONTHLY' && r.BYDAY ? r.BYDAY.split(',').map(x => {
     const m = /^([+-]?\d{1,2})?(SU|MO|TU|WE|TH|FR|SA)$/i.exec(x.trim());
@@ -132,8 +133,9 @@ function starts(ev, last) {
       let days;
       if (freq === 'WEEKLY') {
         // Week i (from the start's week, Monday first unless WKST says), each day picked.
-        const weekStart = shift(first, { days: i * 7 * interval - ((weekday(first) + 6) % 7) });
-        days = byDay.map(wd => shift(weekStart, { days: (wd + 6) % 7 }));
+        // (With every 2+ weeks, which week a day falls in matters: audit 2026-10-14.)
+        const weekStart = shift(first, { days: i * 7 * interval - ((weekday(first) - wkst + 7) % 7) });
+        days = byDay.map(wd => shift(weekStart, { days: (wd - wkst + 7) % 7 }));
       } else {
         // Month i, each picked weekday found in it.
         const monthStart = shift({ ...first, d: 1 }, { months: i * interval });

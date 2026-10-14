@@ -4,7 +4,7 @@
 > Run `npm run docs:map` after changing anything under `src/`, `electron/*.cjs` or `package.json` scripts.
 > Hand-written explanations live in the other files under [`docs/`](../README.md).
 
-Package: `layers-web` v1.0.40 · `src/`: 99 files, 17761 lines, 125 components, 502 top-level functions, 249 constants.
+Package: `layers-web` v1.0.40 · `src/`: 99 files, 17789 lines, 125 components, 502 top-level functions, 250 constants.
 
 ## Source files
 
@@ -30,7 +30,7 @@ Package: `layers-web` v1.0.40 · `src/`: 99 files, 17761 lines, 125 components, 
 | [lib/dates.js](../../src/lib/dates.js) | 319 | parseDaysAgo, startOfDay, WEEKDAY_SHORT, WEEKDAY_FULL, formatWeekdays, MONTH_NAMES, MONTH_WORDS, readDayMonth, dayMonthToDate, dateToRelativeLabel, … (+26) | `data/constants` |
 | [lib/drills.js](../../src/lib/drills.js) | 116 | DRILLS, drillByKey, drillFor, nextDrill, DRILL_SCHEMA, drillRequest, drillResult, KEY, isDay, readDrills, … (+1) | `lib/analysis`, `lib/replies`, `lib/dates` |
 | [lib/hooks.js](../../src/lib/hooks.js) | 295 | useToday, useDailyBackup, WIDE_QUERY, useWide, useSlideAcross, useSystemDark, useDailyCheckIn, notify, SCHEDULE_DAYS, LATE_MINUTES, … (+2) | `lib/dates`, `lib/calendar`, `lib/storage`, `lib/text`, `lib/analysis`, `lib/chatNumbers`, `lib/chatBatch`, `lib/chatImport` |
-| [lib/ics.js](../../src/lib/ics.js) | 211 | lines, unescape, readTime, readDuration, parseCalendar, zoneOffset, toInstant, pad, isoOf, wallDay, … (+7) | — |
+| [lib/ics.js](../../src/lib/ics.js) | 213 | lines, unescape, readTime, readDuration, parseCalendar, zoneOffset, toInstant, pad, isoOf, wallDay, … (+7) | — |
 | [lib/jump.js](../../src/lib/jump.js) | 140 | MAX_ROWS, PAGES, ACTIONS, VERBS, PERSON_ACTIONS, addDays, shortDate, matchScore, personRow, personActionRows, … (+3) | `data/constants`, `lib/calendar`, `lib/dates`, `lib/sentence` |
 | [lib/logQuestions.js](../../src/lib/logQuestions.js) | 98 | firstName, QUESTIONS, dimQuestion, rateRows, followUps | `data/constants`, `lib/dates` |
 | [lib/offline.js](../../src/lib/offline.js) | 12 | shouldCacheOffline, cacheOffline | — |
@@ -39,7 +39,7 @@ Package: `layers-web` v1.0.40 · `src/`: 99 files, 17761 lines, 125 components, 
 | [lib/progress.js](../../src/lib/progress.js) | 241 | layerForOverall, advanceLayer, computeOverall, dimsEqual, placeOnLayers, progressDelta, chartDay, dimsPoint, closenessTrend, movePerson, … (+12) | `data/constants`, `lib/dates`, `lib/util` |
 | [lib/reminders.js](../../src/lib/reminders.js) | 48 | markDone, markMissed, followUpEvent | `lib/dates` |
 | [lib/replies.js](../../src/lib/replies.js) | 197 | str, obj, STYLE_MAX, LINE, styleSamples, COMMON_CAPS, STARTERS, SENTENCE_END, NOT_AN_END, namesSomeone, … (+17) | `data/constants`, `lib/analysis`, `lib/chatImport` |
-| [lib/sentence.js](../../src/lib/sentence.js) | 355 | WEEKDAYS, MONTHS, RATING_WORDS, COUNT_WORDS, NTHS, TEMPLATE_WORDS, MEAL_TIMES, PART_TIMES, LOG_VERBS, LOG_NOUNS, … (+14) | `lib/calendar`, `lib/dates` |
+| [lib/sentence.js](../../src/lib/sentence.js) | 381 | WEEKDAYS, MONTHS, RATING_WORDS, COUNT_WORDS, NTHS, TEMPLATE_WORDS, MEAL_TIMES, PART_TIMES, EVENING_WORDS, LOG_VERBS, … (+15) | `lib/calendar`, `lib/dates` |
 | [lib/storage.js](../../src/lib/storage.js) | 179 | STORAGE_KEY, DATA_VERSION, UNREADABLE_PREFIX, keepCopy, loadSavedState, persistState, LAST_NOTIFIED_KEY, getLastNotifiedDate, setLastNotifiedDate, NOTIFIED_REMINDERS_KEY, … (+14) | `lib/backup`, `lib/progress` |
 | [lib/summary.js](../../src/lib/summary.js) | 96 | LAYER_NAMES, esc, longDay, layerColor, layerDeep, layerTint, avatar, section, summaryHtml, summaryFileName | `data/constants`, `data/avatars`, `lib/activity`, `lib/calendar`, `lib/dates`, `lib/text`, `theme` |
 | [lib/sync.js](../../src/lib/sync.js) | 181 | KINDS, KEEP_DELETED_DAYS, COLLECTIONS, DAY_MS, prune, createStamper, cleanDeleted, stampOf, mergeList, mergeSkills, … (+3) | — |
@@ -515,7 +515,7 @@ Package: `layers-web` v1.0.40 · `src/`: 99 files, 17761 lines, 125 components, 
 | `weekday` | [ics.js:102](../../src/lib/ics.js#L102) |  |  |
 | `sameOccurrence` | [ics.js:105](../../src/lib/ics.js#L105) |  |  |
 | `starts` | [ics.js:113](../../src/lib/ics.js#L113) |  |  |
-| `calendarItems` | [ics.js:176](../../src/lib/ics.js#L176) | ✓ | ✓ |
+| `calendarItems` | [ics.js:178](../../src/lib/ics.js#L178) | ✓ | ✓ |
 | `addDays` | [jump.js:53](../../src/lib/jump.js#L53) |  |  |
 | `shortDate` | [jump.js:54](../../src/lib/jump.js#L54) | ✓ |  |
 | `matchScore` | [jump.js:57](../../src/lib/jump.js#L57) | ✓ | ✓ |
@@ -587,18 +587,18 @@ Package: `layers-web` v1.0.40 · `src/`: 99 files, 17761 lines, 125 components, 
 | `replyResult` | [replies.js:163](../../src/lib/replies.js#L163) | ✓ | ✓ |
 | `openerRequest` | [replies.js:173](../../src/lib/replies.js#L173) | ✓ | ✓ |
 | `openerResult` | [replies.js:193](../../src/lib/replies.js#L193) | ✓ | ✓ |
-| `addDays` | [sentence.js:50](../../src/lib/sentence.js#L50) |  |  |
-| `weekdayOf` | [sentence.js:51](../../src/lib/sentence.js#L51) |  |  |
-| `nextWeekday` | [sentence.js:53](../../src/lib/sentence.js#L53) |  |  |
-| `lastWeekday` | [sentence.js:54](../../src/lib/sentence.js#L54) |  |  |
-| `cap` | [sentence.js:55](../../src/lib/sentence.js#L55) |  |  |
-| `listNames` | [sentence.js:56](../../src/lib/sentence.js#L56) |  |  |
-| `guessHour` | [sentence.js:59](../../src/lib/sentence.js#L59) |  |  |
-| `clock` | [sentence.js:64](../../src/lib/sentence.js#L64) |  |  |
-| `tokenize` | [sentence.js:71](../../src/lib/sentence.js#L71) |  |  |
-| `readSentence` | [sentence.js:90](../../src/lib/sentence.js#L90) | ✓ | ✓ |
-| `logWordAt` | [sentence.js:339](../../src/lib/sentence.js#L339) |  |  |
-| `planFieldsOf` | [sentence.js:342](../../src/lib/sentence.js#L342) | ✓ | ✓ |
+| `addDays` | [sentence.js:51](../../src/lib/sentence.js#L51) |  |  |
+| `weekdayOf` | [sentence.js:52](../../src/lib/sentence.js#L52) |  |  |
+| `nextWeekday` | [sentence.js:54](../../src/lib/sentence.js#L54) |  |  |
+| `lastWeekday` | [sentence.js:55](../../src/lib/sentence.js#L55) |  |  |
+| `cap` | [sentence.js:56](../../src/lib/sentence.js#L56) |  |  |
+| `listNames` | [sentence.js:57](../../src/lib/sentence.js#L57) |  |  |
+| `guessHour` | [sentence.js:60](../../src/lib/sentence.js#L60) |  |  |
+| `clock` | [sentence.js:65](../../src/lib/sentence.js#L65) |  |  |
+| `tokenize` | [sentence.js:72](../../src/lib/sentence.js#L72) |  |  |
+| `readSentence` | [sentence.js:91](../../src/lib/sentence.js#L91) | ✓ | ✓ |
+| `logWordAt` | [sentence.js:365](../../src/lib/sentence.js#L365) |  |  |
+| `planFieldsOf` | [sentence.js:368](../../src/lib/sentence.js#L368) | ✓ | ✓ |
 | `keepCopy` | [storage.js:14](../../src/lib/storage.js#L14) |  |  |
 | `loadSavedState` | [storage.js:38](../../src/lib/storage.js#L38) | ✓ |  |
 | `persistState` | [storage.js:72](../../src/lib/storage.js#L72) | ✓ |  |
@@ -910,10 +910,11 @@ Package: `layers-web` v1.0.40 · `src/`: 99 files, 17761 lines, 125 components, 
 | `TEMPLATE_WORDS` | [sentence.js:28](../../src/lib/sentence.js#L28) |
 | `MEAL_TIMES` | [sentence.js:36](../../src/lib/sentence.js#L36) |
 | `PART_TIMES` | [sentence.js:37](../../src/lib/sentence.js#L37) |
-| `LOG_VERBS` | [sentence.js:39](../../src/lib/sentence.js#L39) |
-| `LOG_NOUNS` | [sentence.js:46](../../src/lib/sentence.js#L46) |
-| `FILLERS` | [sentence.js:47](../../src/lib/sentence.js#L47) |
-| `PREPOSITIONS` | [sentence.js:48](../../src/lib/sentence.js#L48) |
+| `EVENING_WORDS` | [sentence.js:38](../../src/lib/sentence.js#L38) |
+| `LOG_VERBS` | [sentence.js:40](../../src/lib/sentence.js#L40) |
+| `LOG_NOUNS` | [sentence.js:47](../../src/lib/sentence.js#L47) |
+| `FILLERS` | [sentence.js:48](../../src/lib/sentence.js#L48) |
+| `PREPOSITIONS` | [sentence.js:49](../../src/lib/sentence.js#L49) |
 | `STORAGE_KEY` | [storage.js:6](../../src/lib/storage.js#L6) |
 | `DATA_VERSION` | [storage.js:9](../../src/lib/storage.js#L9) |
 | `UNREADABLE_PREFIX` | [storage.js:12](../../src/lib/storage.js#L12) |

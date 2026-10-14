@@ -490,9 +490,11 @@ phone later. It's unit-tested in `src/calendar.test.js`.
   "Movie with Sam") (coffee, call, dinner or
   lunch, hang out, study, check in, game or movie), days (today, tomorrow, a weekday,
   "next fri", "in 3 days", "12 oct", "12/10" day first; a date gone by this year means
-  next year), times ("10am", "7:30pm", "19:00", "at 7" for 7 PM, noon, evening), how long
-  ("2h", "half an hour") and repeats ("every mon wed", "weekdays", "mondays", "every
-  day"). Other words stay in the title. Past-tense words ("talked", "called"), "log" or a
+  next year; today's weekday with its time gone is next week's; "last fri" is the one
+  just gone), times ("10am", "7:30pm", "19:00", "at 7" for 7 PM, "at 8" for 8 PM with
+  dinner or tonight, noon, evening), how long ("2h", "half an hour") and repeats ("every
+  mon wed", "weekdays", "mondays", "every day", and two or more weekdays on their own,
+  "gym tue thu fri"; "thurs" and "tues" are one day). Other words stay in the title. Past-tense words ("talked", "called"), "log" or a
   day gone by make it a log, with a rating word (brief to deep) or 1–5. It returns what it
   understood with `unknown` names and `missing` ('when', 'who', 'rating');
   `planFieldsOf` turns a plan into PlanSheet's saved fields.
@@ -656,7 +658,7 @@ Windows ([electron.md](../electron.md)); the page gets the files.
   `calendarItems` lists events between two days in this computer's time, handling a
   time zone (`TZID`, through `Intl`), UTC and all-day events, repeats (`RRULE`: daily,
   weekly on chosen days, monthly by date or by weekday such as the first or last Friday,
-  yearly; `INTERVAL`, `COUNT`, `UNTIL`), days taken out (`EXDATE`), occurrences moved or
+  yearly; `INTERVAL`, `COUNT`, `UNTIL`, and `WKST` for which week a day is in), days taken out (`EXDATE`), occurrences moved or
   changed (`RECURRENCE-ID`), and cancelled events (left out). A repeat it doesn't know
   (hourly, say) shows its first time only. An all-day event over several days shows on each (up to two weeks).
 - **When**: on start and every 30 minutes (and a new day), for 30 days back and 120

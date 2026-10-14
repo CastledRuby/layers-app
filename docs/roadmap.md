@@ -903,6 +903,12 @@ clicked through, and the installed app checked. Each fix has a test.
 - A plan that replaces a repeating one on a day follows the repeat, monthly ones too.
 - The day-before alert and Snooze until tomorrow keep the time when the clocks change.
 - A day at a time of its own hasn't started until then, so it doesn't ask yet.
+- Typed plans: "gym tue thu fri 7am" repeats on all three days (it made one Friday),
+  "fortnightly tue thu" keeps both, "thurs" is one Thursday (it repeated weekly), "dinner
+  at 8" is 8 PM, "saw Sam last fri" is the Friday just gone (it was a monthly rule), and
+  "coffee mon 10am" on a Monday afternoon is next Monday.
+- A calendar you follow with something every other week on a Sunday and Monday shows
+  both days together when the calendar's weeks start on Sunday (Google's do).
 
 **Sync**
 - A sync asked for while another brought changes in (the window shown, a change made,

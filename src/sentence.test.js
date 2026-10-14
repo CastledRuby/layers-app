@@ -88,6 +88,43 @@ it('reads nothing from an empty sentence', () => {
   expect(read('   ')).toBeNull();
 });
 
+describe('fixes from the audit of 2026-10-14', () => {
+  it('weekdays said on their own repeat weekly, or are the days of a repeat said', () => {
+    expect(read('gym tue thu fri 7am')).toMatchObject({ repeat: 'weekly', interval: 1, weekdays: [2, 4, 5], day: '2026-10-06', time: at(7) });
+    expect(read('football fortnightly on tue and thu 6pm')).toMatchObject({ repeat: 'weekly', interval: 2, weekdays: [2, 4], day: '2026-10-06' });
+    expect(read('swim weekly mon wed 5pm')).toMatchObject({ repeat: 'weekly', weekdays: [1, 3], day: '2026-10-05' });
+    expect(read('coffee with priya fri 10am')).toMatchObject({ repeat: 'once', day: '2026-10-09' });
+    expect(read('called sam mon and tue')).toMatchObject({ kind: 'log' }); // a log isn't a repeat
+  });
+
+  it('"thurs" and "tues" are one day, not every week', () => {
+    expect(read('coffee thurs 10am')).toMatchObject({ repeat: 'once', day: '2026-10-08' });
+    expect(read('swim tues 6pm')).toMatchObject({ repeat: 'once', day: '2026-10-06' });
+    expect(read('swim thursdays 6pm')).toMatchObject({ repeat: 'weekly', weekdays: [4] });
+  });
+
+  it('an hour without am or pm is the evening for dinner or tonight', () => {
+    expect(read('dinner with sam at 8')).toMatchObject({ time: at(20), day: '2026-10-05' });
+    expect(read('tonight at 9 drinks')).toMatchObject({ time: at(21), day: '2026-10-05' });
+    expect(read('dinner fri 8:30')).toMatchObject({ time: at(20, 30), day: '2026-10-09' });
+    expect(read('breakfast at 8 tomorrow')).toMatchObject({ time: at(8) });
+    expect(read('dinner fri 8am').time).toBe(at(8)); // said, so kept
+  });
+
+  it('"last fri" is the one just gone, unless a month is said', () => {
+    expect(read('saw sam last fri')).toMatchObject({ kind: 'log', day: '2026-10-02' });
+    expect(read('dinner with sam last mon good')).toMatchObject({ kind: 'log', day: '2026-09-28', meaningfulness: 3 });
+    expect(read('drinks monthly last fri 6pm')).toMatchObject({ repeat: 'monthly', monthly: { nth: -1, weekday: 5 } });
+    expect(read('dinner last sunday of every month')).toMatchObject({ repeat: 'monthly', monthly: { nth: -1, weekday: 0 } });
+  });
+
+  it("today's weekday with its time gone is next week's", () => {
+    expect(read('coffee mon 10am').day).toBe('2026-10-12');
+    expect(read('coffee mon 5pm').day).toBe('2026-10-05');
+    expect(read('coffee today 10am').day).toBe('2026-10-05'); // today said, so today
+  });
+});
+
 describe('every few weeks, and monthly (2026-10-11)', () => {
   it('reads fortnightly, every other tue, and every 2 weeks on a day', () => {
     expect(read('football fortnightly sat 9am')).toMatchObject({ repeat: 'weekly', interval: 2, weekdays: [6], day: '2026-10-10', time: at(9) });
