@@ -969,6 +969,17 @@ clicked through, and the installed app checked. Each fix has a test.
 - The phone web app keeps only a page that loaded properly for offline. The iPhone
   build's workflow can only read the code.
 
+**Left open** (proposals need the owner's OK; the rest are small or rare):
+- Proposals: a key for the log's date (← → on its details); what Enter does on an open
+  plan that has started (it ticks it off, while L logs it); the contrast of a picked
+  rating's text.
+- Small: a first name that's also a month ("coffee with may 12" reads as 12 May);
+  iMessage shows a person's SMS and iMessage threads as two chats; long analyses can hit
+  the answer's length limit, and an overloaded Claude isn't retried; a person changed
+  on two devices keeps one copy's details (only goals merge one by one); Ctrl+K's
+  results aren't announced as you move through them; big chat exports are slow to read
+  the first time each session.
+
 ### Conversations in person (not released yet)
 
 More chats, step 1 (picked 2026-10-14: in person, then Messenger; Discord for your
