@@ -184,8 +184,8 @@ type Event = {                                // a plan on the calendar; see The
   defaultMeaningfulness?: number;
   goalId?: string;                            // one of its people's goals; logging the reminder moves only that goal
   doneAt?: string;                            // one-off: the day it was marked done. It's finished for good.
-  doneDays?: string[];                        // recurring: recent days marked done or skipped (last 14; older saves have one doneOn)
-  missedDays?: string[];                      // days it didn't happen (last 14): nothing logged, not done, not asked about again
+  doneDays?: string[];                        // recurring: every day marked done or skipped (all kept since 2026-10-14; older saves have one doneOn)
+  missedDays?: string[];                      // every day it didn't happen: nothing logged, not done, not asked about again
   createdAt: string;                          // 'YYYY-MM-DD' ('Today' before 1.0.27)
 };
 
@@ -507,11 +507,11 @@ phone later. It's unit-tested in `src/calendar.test.js`.
   they are: 35 days for Layer 1, 21 for Layer 2, 14 for Layer 3, 7 for Layer 4. Only
   people with nothing planned in the next week.
 - **`markDone(ev, day)`** (`lib/reminders.js`): a one-off gets `doneAt` and is finished
-  for good; a repeating one adds the day to `doneDays` (the last 14). Logging a plan
+  for good; a repeating one adds the day to `doneDays` (every one kept). Logging a plan
   ticks it off for that day, and only its linked goal (`goalId`) moves. Done after all
   takes the day back out of `missedDays`.
 - **`markMissed(ev, day)`**: it didn't happen. The day goes in `missedDays` (either
-  kind of plan; the last 14), and `isMissedOn` keeps it apart from done: nothing is
+  kind of plan; every one kept), and `isMissedOn` keeps it apart from done: nothing is
   logged, it isn't counted as done, "How did it go?" stops asking, and it no longer
   clashes, gets reminders or counts as planned for ideas. Today and the day popup show it
   struck through with ✕ and "Didn't happen".
@@ -553,7 +553,7 @@ in a time window, oldest first. Each has a `tag` (unique per plan and day), a ti
   ([electron.md](../electron.md#notifications)).
   - A reminder (before a plan, or as it starts) only has snooze buttons (10 minutes,
     1 hour, Tomorrow). There's nothing to log or tick off until it has happened.
-  - "How did it go?" has **Log it** and **Just tick it**.
+  - "How did it go?" is rated right there (**Casual**, **Good**, **Personal**, **Deep**) or has **Log it**; for a plan with several people, **Log it** and **Just tick it** (one rating would be everyone's).
   - Clicking a notification itself opens that day.
 - **In a browser** it shows each one itself while Layers is open, within 15 minutes of its
   time, once (the tags are kept in `localStorage['layers-notified-reminders']`, the
@@ -1160,7 +1160,10 @@ devices ([electron.md](../electron.md) has the file side).
   and Redo are cleared (they'd undo them too), and a message says "Synced: changes from
   your other device". If something changed here while the sync was running, its merge
   isn't taken (it would undo that change); the sync runs again straight after, merging
-  both.
+  both. A sync waiting behind one that brought changes in starts from those changes
+  (`applySynced` points `syncLocal` at them until they're shown). Before the audit of
+  2026-10-14 it started from the data from before, which the stamper read as changes
+  made here: what came in was sent back deleted, or put back as it was.
 - **Data replaced wholesale** (finishing setting up, **Start over**, restoring a backup)
   isn't counted as deleted (`createStamper().forget`), so it never wipes other devices.
   Start over and restoring a backup also turn sync off on this computer (the import's

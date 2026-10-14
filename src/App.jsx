@@ -390,6 +390,11 @@ function LayersApp() {
   }
   function applySynced(m) {
     stamper.adopt(m);
+    // Until it's shown, a sync waiting behind this one starts from what came
+    // in, not the data from before: stamped, that read as changes made here,
+    // and deleted what came in (audit 2026-10-14).
+    syncLocal.current = () => m;
+    syncData.current = [m.people, m.journal, m.events, m.generalGoals, m.profile, m.skills, m.achievements];
     syncRun.current.fromSync = true;
     quietAchievements.current = true;
     setPeople(m.people); setJournal(m.journal); setEvents(m.events); setGeneralGoals(m.generalGoals);

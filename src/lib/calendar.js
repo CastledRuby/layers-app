@@ -421,7 +421,9 @@ export function plannedNotifications(state, settings, from, to, snoozes = [], nu
         const start = it.start === null ? 9 * 60 : it.start;
         const who = withWho(it.ev);
         out.push({
-          tag: `a:${it.ev.id}:${day}`, at: at(day, start) - alert * 60000, kind: 'alert', eventId: it.ev.id, day,
+          // A day before is the same time the day before, whatever daylight
+          // saving does in between (audit 2026-10-14: it was 24 hours).
+          tag: `a:${it.ev.id}:${day}`, at: alert === 1440 ? at(toISODate(addDays(d, -1)), start) : at(day, start) - alert * 60000, kind: 'alert', eventId: it.ev.id, day,
           title: it.ev.title,
           body: [it.start === null ? 'All day' : `${alertWhen(alert)} · ${clock(start)}`, who && `with ${who}`].filter(Boolean).join(' · '),
         });
@@ -511,7 +513,8 @@ export function plannedNotifications(state, settings, from, to, snoozes = [], nu
 // A snooze for an event's occurrence: 10 or 60 minutes from now, or the same
 // time tomorrow ('tomorrow').
 export function snoozeUntil(minutes, now = new Date()) {
-  if (minutes === 'tomorrow') return now.getTime() + 24 * 3600 * 1000;
+  // The same time tomorrow on the clock, across a daylight saving change too.
+  if (minutes === 'tomorrow') return new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, now.getHours(), now.getMinutes(), now.getSeconds()).getTime();
   return now.getTime() + Number(minutes) * 60000;
 }
 

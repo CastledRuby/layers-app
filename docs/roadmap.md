@@ -894,6 +894,22 @@ clicked through, and the installed app checked. Each fix has a test.
 - A reply idea for messages you've changed since asking, or an opener for someone you've
   put off meanwhile, is dropped rather than shown.
 
+**The calendar**
+- A repeating plan keeps every day you ticked or skipped; only the last 14 were kept, so
+  an older one was asked about again.
+- Editing a plan keeps what it had: days at a time of their own, the 31st on a month's
+  last day (it became the 30th), and the day it started from.
+- Every 2, 3 or 4 weeks on days after today starts that week, not a week late.
+- A plan that replaces a repeating one on a day follows the repeat, monthly ones too.
+- The day-before alert and Snooze until tomorrow keep the time when the clocks change.
+- A day at a time of its own hasn't started until then, so it doesn't ask yet.
+
+**Sync**
+- A sync asked for while another brought changes in (the window shown, a change made,
+  Sync now) could send this laptop's data from before as changes made here: someone added
+  on your other device was sent back deleted, and a change made there was put back. It
+  now starts from what came in.
+
 ### Conversations in person (not released yet)
 
 More chats, step 1 (picked 2026-10-14: in person, then Messenger; Discord for your

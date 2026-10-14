@@ -39,7 +39,7 @@ import { AvatarStack, PeopleGrid } from '../components/PersonPick.jsx';
 import { usePeopleKeys } from '../components/peopleKeys.js';
 import { DateDropdown, TimeDropdown } from '../components/pickers.jsx';
 import { QuickGoalSheet } from './QuickGoalSheet.jsx';
-import { DEFAULT_DURATION, EVENT_TEMPLATES, alertOf, clashesOn, durationOf, isDaily, ordinal, recentPlans, repeatText, templateFor, timesText } from '../lib/calendar.js';
+import { DEFAULT_DURATION, EVENT_TEMPLATES, alertOf, clashesOn, durationOf, isDaily, occursOn, ordinal, recentPlans, repeatText, templateFor, timesText } from '../lib/calendar.js';
 import { formatCalendarDate, formatTime12, parseISODay, toISODate, WEEKDAY_FULL, WEEKDAY_SHORT } from '../lib/dates.js';
 import { COLORS } from '../theme.js';
 
@@ -61,6 +61,13 @@ function monthlyChoices(day) {
   return out;
 }
 const monthlyRule = (day, by) => { const list = monthlyChoices(day); return (list.find(c => c.by === by) || list[0]).rule; };
+// The first day on or after `from` that a weekly repeat falls on.
+function firstDayOn(shape, from) {
+  if (shape.monthly || !shape.weekdays.length) return from;
+  for (let i = 0; i < 7; i++) { const d = addDaysTo(from, i); if (shape.weekdays.includes(parseISODay(d).getDay())) return d; }
+  return from;
+}
+const addDaysTo = (day, n) => { const d = parseISODay(day); return toISODate(new Date(d.getFullYear(), d.getMonth(), d.getDate() + n)); };
 const MON_FRI = [1, 2, 3, 4, 5];
 const WEEKENDS = [0, 6];
 // The week as the day chips show it, Monday first: 1-7 toggle these.
@@ -115,6 +122,11 @@ function freshForm(start, people, today, defaultAlert) {
         : start.day || today;
   const personIds = (source ? source.personIds || [] : start.personIds || []).filter(id => people.some(p => p.id === id));
   const recurring = source && source.kind === 'recurring';
+  // Days at times of their own show under "On certain days", so a plan
+  // that has them opens there, every day or Mon-Fri included (audit
+  // 2026-10-14: editing one used to drop them).
+  const hasTimes = !!(recurring && source.times && Object.keys(source.times).length);
+  const monthlyBy = source && source.monthly ? (typeof source.monthly.day === 'number' ? 'date' : source.monthly.nth === -1 ? 'last' : 'nth') : 'date';
   return {
     template,
     personIds,
@@ -127,11 +139,16 @@ function freshForm(start, people, today, defaultAlert) {
     allDay: source ? !!source.allDay : false,
     time: source && typeof source.time === 'number' ? source.time : template ? template.time : 18 * 60,
     duration: source ? durationOf(source) : template ? template.duration : DEFAULT_DURATION,
-    repeat: !recurring ? 'once' : source.monthly ? 'monthly' : source.interval > 1 ? 'weekly' : isDaily(source) ? 'daily' : isMonFri(source.weekdays) ? 'weekdays' : 'weekly',
-    weekdays: recurring && !source.monthly && (!isDaily(source) || source.interval > 1) ? source.weekdays : [parseISODay(day).getDay()],
+    repeat: !recurring ? 'once' : source.monthly ? 'monthly' : source.interval > 1 || hasTimes ? 'weekly' : isDaily(source) ? 'daily' : isMonFri(source.weekdays) ? 'weekdays' : 'weekly',
+    weekdays: recurring && !source.monthly && (!isDaily(source) || source.interval > 1 || hasTimes) ? source.weekdays : [parseISODay(day).getDay()],
     // Every 2-4 weeks, which day of the month, and days at times of their own (2026-10-11).
     interval: recurring && source.interval > 1 ? source.interval : 1,
-    monthlyBy: source && source.monthly ? (typeof source.monthly.day === 'number' ? 'date' : source.monthly.nth === -1 ? 'last' : 'nth') : 'date',
+    monthlyBy,
+    // A monthly plan's own rule (the 31st, say) is kept while its day and
+    // choice stay as they opened: opened on the 30 Nov occurrence, it used to
+    // become "the 30th" (audit 2026-10-14).
+    keptMonthly: source && source.monthly ? { rule: source.monthly, day, by: monthlyBy } : null,
+    startDay: day, // the day it opened on, to tell a Starting day changed
     ownTimes: !!(recurring && source.times && Object.keys(source.times).length),
     times: recurring && source.times ? { ...source.times } : {},
     alert: source ? alertOf(source) : defaultAlert,
@@ -191,9 +208,14 @@ export function PlanSheet({ people, events = [], today, prefill = {}, defaultAle
   // Editing one of several copies into a repeat: the copies on the days it
   // now covers (from its first day) go when it's saved, so it isn't on any
   // day twice. Copies already ticked off stay.
-  const replaced = useMemo(() => (editing && repeatDays
-    ? events.filter(ev => !ev.source && isCopyOf(ev, editing) && !ev.doneAt && ev.date >= day && repeatDays.includes(parseISODay(ev.date).getDay()))
-    : []), [events, editing, repeatDays, day]);
+  // Each copy is checked against how it will really repeat (every 2-4 weeks,
+  // monthly), not just its weekdays (audit 2026-10-14).
+  const replaced = useMemo(() => {
+    if (!editing || !(repeatDays || repeat === 'monthly')) return [];
+    const kept = form.keptMonthly && form.keptMonthly.day === day && form.keptMonthly.by === form.monthlyBy ? form.keptMonthly.rule : null;
+    const shape = { kind: 'recurring', from: day, weekdays: repeat === 'monthly' ? [] : [...(repeatDays || [])], interval: repeat === 'weekly' && form.interval > 1 ? form.interval : null, monthly: repeat === 'monthly' ? kept || monthlyRule(day, form.monthlyBy) : null };
+    return events.filter(ev => !ev.source && isCopyOf(ev, editing) && !ev.doneAt && ev.date >= day && occursOn(shape, ev.date));
+  }, [events, editing, repeat, repeatDays, day, form.interval, form.monthlyBy, form.keptMonthly]);
   // Plans already on the day (or days) that this one would overlap. A copy
   // of the plan being edited is the same plan twice, so it's said that way.
   const clashes = useMemo(() => (allDay ? [] : (repeat === 'several' ? days : [day])
@@ -207,7 +229,7 @@ export function PlanSheet({ people, events = [], today, prefill = {}, defaultAle
     kind: 'recurring',
     weekdays: repeat === 'monthly' ? [] : [...(repeatDays || [])],
     interval: repeat === 'weekly' && form.interval > 1 ? form.interval : null,
-    monthly: repeat === 'monthly' ? monthlyRule(day, form.monthlyBy) : null,
+    monthly: repeat === 'monthly' ? (form.keptMonthly && form.keptMonthly.day === day && form.keptMonthly.by === form.monthlyBy ? form.keptMonthly.rule : monthlyRule(day, form.monthlyBy)) : null,
   };
   // Days at times of their own: only those that differ from the plan's time.
   const ownTimes = repeat === 'weekly' && form.ownTimes && !allDay
@@ -283,8 +305,11 @@ export function PlanSheet({ people, events = [], today, prefill = {}, defaultAle
       interval: kind === 'recurring' ? repeatShape.interval : null,
       monthly: kind === 'recurring' ? repeatShape.monthly : null,
       times: kind === 'recurring' && Object.keys(ownTimes).length ? ownTimes : null,
-      // A monthly plan starts on its first day; others keep the start they had.
-      from: kind === 'recurring' ? (editing && editing.from && editing.from < day && repeat !== 'monthly' ? editing.from : day) : undefined,
+      // Editing keeps the start it had (so every 2-4 weeks keeps its weeks, and
+      // a monthly plan its earlier days and ticks) unless Starting was changed;
+      // a new start is the first day it's on from there, so every 2-4 weeks
+      // doesn't skip its first week (audit 2026-10-14).
+      from: kind === 'recurring' ? (editing && editing.from && day === form.startDay ? editing.from : firstDayOn(repeatShape, day)) : undefined,
       allDay,
       time: allDay ? null : time,
       duration: allDay ? null : duration,
@@ -519,7 +544,7 @@ export function PlanSheet({ people, events = [], today, prefill = {}, defaultAle
               )}
               {repeat === 'monthly' && (
                 <span className="w-full flex flex-wrap items-center gap-1.5 mt-1.5" role="group" aria-label="Each month">
-                  {monthlyChoices(day).map(c => <Choice key={c.by} on={monthlyChoices(day).some(x => x.by === form.monthlyBy) ? form.monthlyBy === c.by : c.by === 'date'} onClick={() => set({ monthlyBy: c.by })}>{c.label}</Choice>)}
+                  {monthlyChoices(day).map(c => <Choice key={c.by} on={monthlyChoices(day).some(x => x.by === form.monthlyBy) ? form.monthlyBy === c.by : c.by === 'date'} onClick={() => set({ monthlyBy: c.by })}>{c.by === 'date' && form.keptMonthly && form.keptMonthly.day === day && form.keptMonthly.by === 'date' && typeof form.keptMonthly.rule.day === 'number' ? `On the ${ordinal(form.keptMonthly.rule.day)}` : c.label}</Choice>)}
                   <Kbd>E</Kbd>
                 </span>
               )}

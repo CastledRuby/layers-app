@@ -3,13 +3,14 @@
 import { parseISODay, toISODate } from './dates.js';
 
 // What "done" means: a one-off is finished for good; a repeating plan is
-// done (or skipped) for that day only. Each day is kept, so skipping next
-// Wednesday doesn't undo today; only the last 14 are kept.
+// done (or skipped) for that day only. Every day is kept, so skipping next
+// Wednesday doesn't undo today (audit 2026-10-14: only the last 14 were, so
+// an older tick was lost and "How did it go?" asked about it again).
 // Done (or logged) after all takes back "didn't happen" for that day.
 export function markDone(ev, day) {
   const base = ev.missedDays ? { ...ev, missedDays: ev.missedDays.filter(d => d !== day) } : ev;
   if (base.kind === 'oneoff') return { ...base, doneAt: day };
-  const days = [...new Set([...(base.doneDays || []), ...(base.doneOn ? [base.doneOn] : []), day])].sort().slice(-14);
+  const days = [...new Set([...(base.doneDays || []), ...(base.doneOn ? [base.doneOn] : []), day])].sort();
   const next = { ...base, doneDays: days };
   delete next.doneOn;
   return next;
@@ -17,9 +18,9 @@ export function markDone(ev, day) {
 
 // It didn't happen: nothing is logged, it isn't counted as done, and
 // "How did it go?" stops asking. A repeating plan is marked for that day only;
-// the last 14 are kept, as with done.
+// every day is kept, as with done.
 export function markMissed(ev, day) {
-  return { ...ev, missedDays: [...new Set([...(ev.missedDays || []), day])].sort().slice(-14) };
+  return { ...ev, missedDays: [...new Set([...(ev.missedDays || []), day])].sort() };
 }
 
 // A "remind me to follow up" for something time-sensitive you noted about

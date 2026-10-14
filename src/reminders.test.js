@@ -1,7 +1,7 @@
 // Plans' done state and follow-ups (lib/reminders.js).
 import { describe, expect, it } from 'vitest';
 import { isDoneOn } from './lib/calendar.js';
-import { followUpEvent, markDone } from './lib/reminders.js';
+import { followUpEvent, markDone, markMissed } from './lib/reminders.js';
 
 // Sunday 4 Oct 2026, 9:05 AM local
 const NOW = new Date(2026, 9, 4, 9, 5);
@@ -22,6 +22,13 @@ describe('markDone', () => {
   it('reads the single doneOn of older saves', () => {
     expect(isDoneOn(weekly([0], { doneOn: '2026-10-04' }), '2026-10-04')).toBe(true);
     expect(markDone(weekly([0], { doneOn: '2026-10-04' }), '2026-10-05')).toEqual(expect.objectContaining({ doneDays: ['2026-10-04', '2026-10-05'] }));
+  });
+  it('keeps every day, done or not, however many (audit 2026-10-14: only 14 were)', () => {
+    const days = Array.from({ length: 20 }, (_, i) => `2026-09-${String(i + 1).padStart(2, '0')}`);
+    const done = days.reduce((ev, d) => markDone(ev, d), weekly([0, 1, 2, 3, 4, 5, 6]));
+    expect(done.doneDays).toEqual(days);
+    expect(isDoneOn(done, '2026-09-01')).toBe(true);
+    expect(days.reduce((ev, d) => markMissed(ev, d), weekly([0])).missedDays).toEqual(days);
   });
 });
 

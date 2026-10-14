@@ -28,7 +28,8 @@ function Row({ Icon, children }) {
 // or today once its time has come.
 function hasStarted(ev, day, today, now = new Date()) {
   if (day !== today) return day < today;
-  return ev.allDay || typeof ev.time !== 'number' || ev.time <= now.getHours() * 60 + now.getMinutes();
+  const t = timeOn(ev, day); // a day at its own time (audit 2026-10-14)
+  return ev.allDay || typeof t !== 'number' || t <= now.getHours() * 60 + now.getMinutes();
 }
 
 export function EventSheet({ ev, day, today, people, goals, journal = [], generalGoals = [], onClose, onLog, onDone, onMissed, onEdit, onCopy, onDelete, onPrepare }) {

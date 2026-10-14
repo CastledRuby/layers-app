@@ -140,6 +140,16 @@ describe('notification actions', () => {
     expect(snoozeUntil('10', now)).toBe(local(DAY, 9, 55));
     expect(snoozeUntil('tomorrow', now)).toBe(local('2026-10-05', 9, 45));
   });
+
+  // Audit 2026-10-14: these added 24 hours, an hour out on the day the clocks
+  // change (in New Zealand, 27 September 2026). Elsewhere it checks the same.
+  it('tomorrow and the day before are calendar days, whatever the clocks do', () => {
+    expect(snoozeUntil('tomorrow', new Date(local('2026-09-26', 10)))).toBe(local('2026-09-27', 10));
+    const swim = { id: 'w', title: 'Swim', kind: 'oneoff', date: '2026-09-27', time: 600, duration: 60, alert: 1440, personIds: [] };
+    const quiet = { morningSummary: false, eveningHeadsUp: false, askAfter: false, keyDateReminders: false, weeklyReview: false };
+    const list = plannedNotifications({ events: [swim] }, quiet, local('2026-09-26', 0), local('2026-09-27', 23, 59));
+    expect(list.map(n => [n.kind, n.at])).toEqual([['alert', local('2026-09-26', 10)]]);
+  });
 });
 
 describe('planning helpers', () => {

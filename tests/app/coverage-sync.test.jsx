@@ -76,6 +76,30 @@ describe('sync through OneDrive, once it is on', { timeout: 60000 }, () => {
     await waitFor(() => expect(within(screen.getByLabelText('Sync')).getByRole('status').textContent).toMatch(/^On\. Last synced just now/), LONG);
   });
 
+  // Audit 2026-10-14: a sync asked for while one ran started the moment that one
+  // brought changes in, before they were shown, so it sent this laptop's data
+  // from before as changes made here: Sam deleted, Riley back on layer 1.
+  it('a sync waiting behind one that brings changes in sends the merged data, not the data from before', async () => {
+    const bridge = fakeBridge({ 'layers-sync.json': await fileWith({ people: [person('Riley', { id: 'p-riley', layer: 3, updatedAt: T3 }), person('Sam', { id: 'p-sam', layer: 2, updatedAt: T2 })] }) });
+    let release;
+    const gate = new Promise(r => { release = r; });
+    const read = bridge.readSyncFiles;
+    bridge.readSyncFiles = async () => { await gate; return read(); };
+    syncOn();
+    seedState({ people: [person('Riley', { id: 'p-riley', layer: 1, updatedAt: T1 })] });
+    const { user } = renderApp();
+    await syncNow(user); // held at reading the file
+    document.dispatchEvent(new Event('visibilitychange')); // another, waiting behind it
+    release();
+    await waitFor(() => expect(savedState().people.map(p => [p.name, p.layer])).toEqual([['Riley', 3], ['Sam', 2]]), LONG);
+    await waitFor(() => expect(within(screen.getByLabelText('Sync')).getByRole('status').textContent).toMatch(/^On\. Last synced just now/), LONG);
+    await new Promise(r => setTimeout(r, 500)); // the waiting one has run too
+    const { payload } = await openSyncFile(bridge.files['layers-sync.json'], PASS);
+    expect(payload.people.map(p => [p.name, p.layer])).toEqual([['Riley', 3], ['Sam', 2]]);
+    expect(payload.deleted).toEqual([]);
+    expect(savedState().people.map(p => [p.name, p.layer])).toEqual([['Riley', 3], ['Sam', 2]]);
+  });
+
   it("takes on another device's deletions, unless the record changed here after", async () => {
     const bridge = fakeBridge({ 'layers-sync.json': await fileWith({
       people: [],
@@ -151,7 +175,7 @@ describe('sync through OneDrive, once it is on', { timeout: 60000 }, () => {
     await user.click(nav('Me'));
     const backup = createBackup({ people: [person('Sam', { id: 'p-sam', updatedAt: T1 })], journal: [], generalGoals: [], events: [], skills: {}, profile: { name: 'Tester', focus: null }, achievements: {} });
     await user.upload(document.querySelector('input[type="file"][accept="application/json"]'), new File([JSON.stringify(backup)], 'layers-backup.json', { type: 'application/json' }));
-    expect(await screen.findByText(/Sync turns off on this laptop, so your other devices don't undo it/)).toBeTruthy();
+    expect(await screen.findByText(/Sync turns off on this laptop, so your other devices don't undo it/, {}, LONG)).toBeTruthy();
     await user.click(screen.getByRole('button', { name: 'Import' }));
     await waitFor(() => expect(JSON.parse(window.localStorage.getItem('layers-sync')).on).toBe(false), LONG);
     expect(bridge.passphrase).toBe(null);
