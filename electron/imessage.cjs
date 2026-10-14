@@ -154,13 +154,14 @@ function readMessages(sqlite, file, contacts, now) {
 // error } | { none: true }. knownAt: when the backup the page already has
 // was made; if it's still the newest, { backup, same: true } (nothing re-read).
 // sqlite is node:sqlite (passed in, so a test can use its own Node's).
-async function readIMessages({ roots, knownAt = null, now = Date.now(), sqlite = require('node:sqlite') } = {}) {
+async function readIMessages({ roots, knownAt = null, now = Date.now(), sqlite = require('node:sqlite'), tmpRoot = os.tmpdir() } = {}) {
   const backup = newestBackup(roots);
   if (!backup) return { none: true };
   const info = { name: backup.name, at: backup.at };
   if (backup.encrypted) return { backup: info, error: "Your iPhone backup is encrypted, so Layers can't read its messages. In Apple Devices, untick Encrypt local backup and back up again." };
   if (knownAt === backup.at) return { backup: info, same: true };
-  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'layers-imessage-'));
+  sweepCopies(tmpRoot);
+  const tmp = fs.mkdtempSync(path.join(tmpRoot, 'layers-imessage-'));
   try {
     const sms = await copyOut(sqlite, backup, SMS_DB, tmp);
     if (!sms) return { backup: info, error: 'That iPhone backup has no messages in it.' };
@@ -169,8 +170,24 @@ async function readIMessages({ roots, knownAt = null, now = Date.now(), sqlite =
   } catch {
     return { backup: info, error: "Couldn't read the messages in your iPhone backup." };
   } finally {
-    fs.rmSync(tmp, { recursive: true, force: true });
+    try { fs.rmSync(tmp, { recursive: true, force: true }); } catch { /* still held open: the next read sweeps it */ }
   }
 }
 
-module.exports = { backupRoots, bodyText, contactKey, newestBackup, readIMessages, DAYS, ME };
+// The copies of your messages a read left behind (it stopped part way, or
+// Windows still held the file when it tried to remove them) are removed
+// before the next read; they used to stay in Temp (audit 2026-10-14). Not
+// one made in the last minute, which may be another read's.
+function sweepCopies(root, now = Date.now()) {
+  let names = [];
+  try { names = fs.readdirSync(root).filter(n => n.startsWith('layers-imessage-')); } catch { return; }
+  names.forEach(n => {
+    const dir = path.join(root, n);
+    try {
+      const stat = fs.lstatSync(dir);
+      if (stat.isDirectory() && now - stat.mtimeMs > 60 * 1000) fs.rmSync(dir, { recursive: true, force: true });
+    } catch { /* gone, or still held: next time */ }
+  });
+}
+
+module.exports = { backupRoots, bodyText, contactKey, newestBackup, readIMessages, sweepCopies, DAYS, ME };

@@ -22,6 +22,7 @@ import { spawn, spawnSync } from 'node:child_process';
 import { readFileSync, writeFileSync, existsSync, mkdirSync, copyFileSync, rmSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { backUpData } from './data-backup.mjs';
 
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const REPO = 'CastledRuby/layers-app';
@@ -57,6 +58,17 @@ const npm = (...a) => run('npm', a, { shell: true });
 const git = (...a) => run('git', a);
 const gitOut = (...a) => output('git', a);
 const readVersion = () => JSON.parse(readFileSync(join(root, 'package.json'), 'utf8')).version;
+// The "Release vX.Y.Z" commit: what the GitHub release points at and what the
+// install stamp records, even when commits have come after it (--publish-only
+// and --install-only used HEAD until the audit of 2026-10-14).
+function releaseCommit(v) {
+  // Exactly that version: "Release v1.0.4" isn't "Release v1.0.41".
+  const sha = gitOut('log', '-1', '--format=%H', '--extended-regexp', `--grep=^Release v${v.replace(/\./g, '[.]')}$`);
+  if (!sha) fail(`There's no "Release v${v}" commit. Run a full "npm run release" instead.`);
+  return sha;
+}
+// GitHub's release for that version, published or a draft, if there is one.
+const hasRelease = (gh, v) => spawnSync(gh, ['release', 'view', `v${v}`, '-R', REPO], { encoding: 'utf8' }).status === 0;
 
 function findGh() {
   const candidates = [
@@ -104,9 +116,10 @@ function releaseNotes(v) {
 
 async function publish(gh, v) {
   checkBuiltFiles(v);
-  if (spawnSync(gh, ['release', 'view', `v${v}`, '-R', REPO], { encoding: 'utf8' }).status === 0) {
-    fail(`GitHub already has a v${v} release. Bump the version instead of overwriting it.`);
-  }
+  if (hasRelease(gh, v)) fail(`GitHub already has a v${v} release (a draft counts too). Bump the version, or delete the draft, instead of overwriting it.`);
+  const sha = releaseCommit(v);
+  git('fetch', 'origin', '--quiet');
+  if (run('git', ['merge-base', '--is-ancestor', sha, 'origin/main'], { allowFail: true }).status !== 0) fail(`The "Release v${v}" commit isn't on GitHub's main yet. Push it first.`);
   const stage = join(releaseDir(v), 'upload');
   rmSync(stage, { recursive: true, force: true });
   mkdirSync(stage, { recursive: true });
@@ -115,7 +128,6 @@ async function publish(gh, v) {
     copyFileSync(join(releaseDir(v), local), dest);
     return dest;
   });
-  const sha = gitOut('rev-parse', 'HEAD');
   log(`Publishing GitHub release v${v} (${sha.slice(0, 7)})…`);
   run(gh, ['release', 'create', `v${v}`, '-R', REPO, '--target', sha, '--title', v, '--notes-file', releaseNotes(v), ...uploads]);
   rmSync(stage, { recursive: true, force: true });
@@ -158,6 +170,9 @@ async function install(v) {
     for (let i = 0; i < 30 && layersRunning(); i++) await sleep(500);
     // Builds before 1.0.25 ignore --quit; the installer closes those itself.
   }
+  // A copy of your data first, as every local install takes.
+  const backup = backUpData(v);
+  if (backup) log(`Backed up your data to ${backup}`);
   log(`Installing Layers ${v} on this computer…`);
   const r = spawnSync(installer, ['/S', '--force-run'], { stdio: 'inherit', timeout: 5 * 60 * 1000 });
   if (r.error || r.status !== 0) {
@@ -171,7 +186,7 @@ async function install(v) {
   // Tell the post-commit install (scripts/install-local.mjs) which commit
   // is installed, so it doesn't rebuild the same code.
   const stamp = resolve(root, gitOut('rev-parse', '--git-common-dir'), 'layers-installed.json');
-  writeFileSync(stamp, JSON.stringify({ commit: gitOut('rev-parse', 'HEAD'), uncommitted: false, version: v, installedAt: new Date().toISOString() }, null, 2) + '\n');
+  writeFileSync(stamp, JSON.stringify({ commit: releaseCommit(v), uncommitted: false, version: v, installedAt: new Date().toISOString() }, null, 2) + '\n');
   for (let i = 0; i < 20 && !layersRunning(); i++) await sleep(500);
   log(layersRunning() ? `Layers ${v} is installed and running.` : `Layers ${v} is installed. Start it from the Start menu.`);
 }
@@ -204,6 +219,11 @@ async function main() {
   if (gitOut('ls-remote', '--tags', 'origin', `v${v}`)) {
     git('checkout', '--', 'package.json', 'package-lock.json');
     fail(`Tag v${v} already exists on GitHub.`);
+  }
+  // A draft release has no tag yet: found now, not after the push.
+  if (hasRelease(gh, v)) {
+    git('checkout', '--', 'package.json', 'package-lock.json');
+    fail(`GitHub already has a v${v} release (a draft, perhaps). Delete it or release the next version.`);
   }
   log(`Releasing ${v}`);
 

@@ -20,6 +20,11 @@ on:
       - '.github/workflows/ios.yml'
   workflow_dispatch:
 
+# It only reads the code (audit 2026-10-14: it had the repository's default,
+# which can include writing to it).
+permissions:
+  contents: read
+
 jobs:
   simulator:
     runs-on: macos-15

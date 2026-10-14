@@ -877,7 +877,10 @@ Coach → Analyse a chat → **From your chats**: chats saved in the **Layers ch
   computer writes month first). A message over several lines stays one; notices
   (encryption, joined, left) are left out, deleted messages too, and attachments become
   "(photo)", "(voice message)" and the like (marked `note`: no words of anyone's). The
-  chat is named from the file.
+  chat is named from the file, or for an unzipped export ("WhatsApp Chat -
+  Amelie/_chat.txt") from its folder, so it joins up with the zip beside it. "<This
+  message was edited>" comes off a message's last line (only a first line's did before
+  the audit of 2026-10-14).
 - **Instagram**: Accounts Centre → Download your information → Messages, as **JSON**,
   saved as the zip or unzipped (a folder), in the chats folder or a folder of your own
   in it. `parseInstagram` reads every chat thread, undoing Instagram's spelling of
@@ -893,7 +896,10 @@ Coach → Analyse a chat → **From your chats**: chats saved in the **Layers ch
     is `(attachment)`. These are all marked `note`.
   - Left out: "Liked a message", reactions sent on their own ("Reacted ❤️ to your
     message"), a call starting, theme, nickname and group changes, empty (unsent)
-    messages, and chats with Meta AI.
+    messages, and chats with Meta AI. A notice is the whole message and starts with who
+    did it ("You", the sender, or a one-word username); before the audit of 2026-10-14
+    any words would do, so "omg my mum changed the theme of the party" was left out.
+    A messages file that isn't the shape it should be is skipped.
 
   A download in HTML is named, with "choose JSON".
 - **Messenger** (decided 2026-10-14): Facebook's download (Accounts Centre, choosing your
@@ -935,10 +941,16 @@ Coach → Analyse a chat → **From your chats**: chats saved in the **Layers ch
   every message once. A WhatsApp chat saved as `chat.txt` (or the zip's own
   `_chat.txt`) is named and keyed by who's in it ("Liam and Mia"), so two chats saved
   under that name never join up. The files are only read; they stay where you saved them.
-- **Which name is you** (`ownerOf`): one you picked before, else your name or its first
-  part, else on Instagram or Messenger the name in every chat of that app
-  (`everywhereNames`: each app by itself, since you may go by different names), else in a
-  two-person chat the one who isn't the chat's name. Otherwise Coach asks "Which of
+  Each is read once until its time or size changes (`loadChatExports`; its size counts
+  since the audit of 2026-10-14, as OneDrive can bring a new export down with the old
+  one's time), and one that can't be read is listed as a problem while the rest show (it
+  used to stop every chat showing).
+- **Which name is you** (`ownerOf`): one you picked before, else your name exactly, else
+  on Instagram or Messenger the name in every chat of that app (`everywhereNames`: each
+  app by itself, since you may go by different names), else your name's first part, else
+  in a two-person chat the one who isn't the chat's name. (A first name came before
+  every chat until the audit of 2026-10-14, so a friend saved as just "Liam" was taken
+  for you.) Otherwise Coach asks "Which of
   these is you?". **Who it's with** (`chatPeople`): the others, matched to your people
   like pasted names (`personNamed`); a two-person WhatsApp chat named after someone is
   them. Chats with nobody from your circle are tucked under "Show chats with people not

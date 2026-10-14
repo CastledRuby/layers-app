@@ -14,7 +14,13 @@ const path = require('path');
 const GROUP = 'layers';
 const MAX_TOASTS = 400;
 
-const esc = (s) => String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+// Characters XML can't hold (control characters, half an emoji cut off) are
+// left out: one in a plan's title stopped Windows reading its toast, and so
+// every toast after it (audit 2026-10-14).
+// eslint-disable-next-line no-control-regex
+const NOT_XML = /[\u0000-\u0008\u000B\u000C\u000E-\u001F￾￿]|[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/g;
+const esc = (s) => String(s == null ? '' : s).replace(NOT_XML, '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+const TIMEOUT_MS = 60 * 1000; // PowerShell stuck this long is stopped, so later schedules aren't held up
 const link = (action, params) => `layers://${action}?${new URLSearchParams(Object.entries(params).filter(([, v]) => v != null && v !== '')).toString()}`;
 
 // One planned notification ({ kind, title, body, eventId?, day? }) as toast XML.
@@ -83,17 +89,20 @@ $notifier = [Windows.UI.Notifications.ToastNotificationManager]::CreateToastNoti
 foreach ($old in @($notifier.GetScheduledToastNotifications())) { if ($old.Group -eq '${GROUP}') { $notifier.RemoveFromSchedule($old) } }
 $items = Get-Content -Raw -Encoding UTF8 $env:LAYERS_TOASTS | ConvertFrom-Json
 $count = 0
+$failed = 0
 foreach ($it in @($items)) {
   if ($null -eq $it) { continue }
-  $doc = [Windows.Data.Xml.Dom.XmlDocument]::new()
-  $doc.LoadXml($it.xml)
-  $toast = [Windows.UI.Notifications.ScheduledToastNotification]::new($doc, [DateTimeOffset]::FromUnixTimeMilliseconds([int64]$it.at))
-  $toast.Tag = $it.tag
-  $toast.Group = '${GROUP}'
-  $notifier.AddToSchedule($toast)
-  $count++
+  try {
+    $doc = [Windows.Data.Xml.Dom.XmlDocument]::new()
+    $doc.LoadXml($it.xml)
+    $toast = [Windows.UI.Notifications.ScheduledToastNotification]::new($doc, [DateTimeOffset]::FromUnixTimeMilliseconds([int64]$it.at))
+    $toast.Tag = $it.tag
+    $toast.Group = '${GROUP}'
+    $notifier.AddToSchedule($toast)
+    $count++
+  } catch { $failed++ }
 }
-Write-Output "scheduled $count"
+Write-Output "scheduled $count failed $failed"
 `;
 
 // Replaces Layers' scheduled toasts with `list`. Resolves { scheduled } or
@@ -116,13 +125,17 @@ function scheduleToasts(list, { aumid, env = process.env } = {}) {
     });
     let out = '';
     let err = '';
+    const timer = setTimeout(() => { child.kill(); }, TIMEOUT_MS);
     child.stdout.on('data', (d) => { out += d; });
     child.stderr.on('data', (d) => { err += d; });
-    child.on('error', (e) => resolve({ error: e.message }));
-    child.on('exit', (code) => {
+    child.on('error', (e) => { clearTimeout(timer); fs.rm(file, { force: true }, () => {}); resolve({ error: e.message }); });
+    child.on('exit', (code, signal) => {
+      clearTimeout(timer);
       fs.rm(file, { force: true }, () => {});
-      const m = out.match(/scheduled (\d+)/);
-      resolve(code === 0 && m ? { scheduled: Number(m[1]) } : { error: (err || out || `exit ${code}`).trim().slice(0, 500) });
+      if (signal) { resolve({ error: 'Windows took too long to schedule the notifications.' }); return; }
+      // One Windows wouldn't take is skipped; the rest are still scheduled.
+      const m = out.match(/scheduled (\d+)(?: failed (\d+))?/);
+      resolve(code === 0 && m ? { scheduled: Number(m[1]), ...(Number(m[2]) ? { failed: Number(m[2]) } : {}) } : { error: (err || out || `exit ${code}`).trim().slice(0, 500) });
     });
   });
 }

@@ -2,6 +2,13 @@ import { describe, expect, it } from 'vitest';
 import { cleanList, toastXml } from '../electron/toasts.cjs';
 
 describe('Windows toasts', () => {
+  it("leaves out characters XML can't hold, keeping whole emoji (audit 2026-10-14)", () => {
+    const bell = String.fromCharCode(7);
+    const halfEmoji = '🎂'.slice(0, 1);
+    const xml = toastXml({ kind: 'alert', title: `Gym${bell} 🎂 cake ${halfEmoji}`, body: `x${String.fromCharCode(0xffff)}`, eventId: 'e1', day: '2026-10-04' });
+    expect(xml).toContain('<text>Gym 🎂 cake </text><text>x</text>');
+  });
+
   it("a reminder only snoozes (it hasn't happened yet, so no Log it or Done), as layers:// links, with text escaped", () => {
     const xml = toastXml({ kind: 'alert', title: 'Fish & chips <with> "Sam"', body: 'In 15 minutes', eventId: 'e1', day: '2026-10-04' });
     expect(xml).toContain('scenario="reminder"');

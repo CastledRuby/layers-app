@@ -103,7 +103,14 @@ GitHub untouched.
   release again.
 - If the upload fails after the push, run `npm run release -- --publish-only`. It
   uploads the files already in `release/x.y.z/` for the current version, then installs.
-- If the install fails, run `npm run release -- --install-only`.
+  The release points at the "Release vX.Y.Z" commit, even if commits came after it, and
+  that commit must be on GitHub's `main` (before the audit of 2026-10-14 it used HEAD).
+- If the install fails, run `npm run release -- --install-only`. The install stamp
+  records the release commit too, so the next commit after it still installs.
+- A draft release of the new version on GitHub stops the release before anything is
+  built or pushed (it used to be found only after the push).
+- Installing a release backs up your data first, as every local install does
+  (`scripts/data-backup.mjs`; releases took no backup before the audit of 2026-10-14).
 
 **Setup on a new computer:** install the GitHub CLI (`winget install GitHub.cli`) and run
 `gh auth login` as an account that can publish to `CastledRuby/layers-app`. No
@@ -137,6 +144,10 @@ does too after `git merge` or `git pull`. To run it yourself: `npm run install:l
    - It runs the installer silently (`/S`), then reads the installed version back.
 4. **Relaunch.** Layers starts with its window if the window was showing, otherwise in
    the tray, and it must still be running 3 seconds later.
+
+Once Layers has been asked to quit, any failure starts the installed one again, so it's
+never left closed. Before the audit of 2026-10-14 only two of those failures did; a
+backup or version check that failed left it closed.
 
 It takes about a minute and a half. One install runs at a time
 (`.git/layers-install.lock`). It's skipped:
@@ -200,7 +211,9 @@ Screen.
 - **Offline**: `public/sw.js`, registered by `src/lib/offline.js` only at an https
   address (never in Layers for Windows, the iPhone project, the dev server or tests),
   keeps the app's files; the page itself is fetched fresh when online, so a release
-  shows the next time it opens.
+  shows the next time it opens. Only a page that loaded properly is kept for offline
+  (a "not found" or error page could take its place before the audit of 2026-10-14).
+  The iPhone build's workflow (`.github/workflows/ios.yml`) only gets to read the code.
 - **Icons**: `public/apple-touch-icon.png` (iPhones need a PNG; it's
   `electron/icon.png`) and `icon.svg`, both in `public/manifest.json`.
 - **Claude** isn't on the phone at first (your choice): with no Windows bridge, those parts

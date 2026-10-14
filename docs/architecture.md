@@ -96,6 +96,7 @@ feature is guarded by `hasUpdater` / `hasSystemBridge` checks in `LayersApp`.
 │   ├── e2e.mjs               npm run test:e2e: packages the app, runs Playwright
 │   ├── install-hooks.mjs     npm install's "prepare": points git at .githooks/
 │   ├── install-local.mjs     npm run install:local: installs the current code on this computer
+│   ├── data-backup.mjs       Copies your data before an install (install-local.mjs and release.mjs)
 │   ├── render-brand.cjs      npm run brand:render: draws the icons from branding/
 │   └── release.mjs           npm run release
 ├── .githooks/

@@ -19,8 +19,10 @@ self.addEventListener('fetch', (event) => {
   const request = event.request;
   if (request.method !== 'GET' || new URL(request.url).origin !== self.location.origin) return;
   if (request.mode === 'navigate') {
+    // Only the page itself is kept: a "not found" or error page saved in its
+    // place was what showed offline (audit 2026-10-14).
     event.respondWith(fetch(request)
-      .then(response => { const copy = response.clone(); caches.open(CACHE).then(cache => cache.put('./index.html', copy)); return response; })
+      .then(response => { if (response.ok) { const copy = response.clone(); caches.open(CACHE).then(cache => cache.put('./index.html', copy)); } return response; })
       .catch(() => caches.match('./index.html')));
     return;
   }

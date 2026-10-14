@@ -4,7 +4,7 @@
 > Run `npm run docs:map` after changing anything under `src/`, `electron/*.cjs` or `package.json` scripts.
 > Hand-written explanations live in the other files under [`docs/`](../README.md).
 
-Package: `layers-web` v1.0.40 · `src/`: 99 files, 17838 lines, 125 components, 502 top-level functions, 251 constants.
+Package: `layers-web` v1.0.40 · `src/`: 99 files, 17874 lines, 125 components, 503 top-level functions, 253 constants.
 
 ## Source files
 
@@ -23,7 +23,7 @@ Package: `layers-web` v1.0.40 · `src/`: 99 files, 17838 lines, 125 components, 
 | [lib/backup.js](../../src/lib/backup.js) | 283 | BACKUP_VERSION, MAX_BACKUP_BYTES, createBackup, isObject, isText, isISODay, num, count, cleanHistory, cleanGoal, … (+9) | `lib/calendar`, `data/constants`, `data/seed`, `data/avatars`, `lib/util`, `lib/sync`, `lib/analysis` |
 | [lib/calendar.js](../../src/lib/calendar.js) | 542 | WEEKDAY_NAMES, DEFAULT_DURATION, EVENT_TEMPLATES, templateFor, DATE_KINDS, dateKind, NOTIFY_DEFAULTS, notifySettings, dayDate, addDays, … (+38) | `lib/dates` |
 | [lib/chatBatch.js](../../src/lib/chatBatch.js) | 117 | TINY, batchPlan, batchDollars, QUEUE_KEY, isText, cleanItem, readQueue, saveQueue, waiting, pruneQueue, … (+7) | `lib/analysis`, `lib/chatImport` |
-| [lib/chatImport.js](../../src/lib/chatImport.js) | 556 | CONVERSATION_GAP_HOURS, MAX_TEXT, PROGRESS_KEY, STAMP, IOS_LINE, ANDROID_LINE, ch, MARKS, MARKED, ODD_SPACES, … (+52) | `lib/analysis` |
+| [lib/chatImport.js](../../src/lib/chatImport.js) | 592 | CONVERSATION_GAP_HOURS, MAX_TEXT, PROGRESS_KEY, STAMP, IOS_LINE, ANDROID_LINE, ch, MARKS, MARKED, ODD_SPACES, … (+55) | `lib/analysis` |
 | [lib/chatNumbers.js](../../src/lib/chatNumbers.js) | 93 | LINE, TIME, timeOf, words, median, chatNumbers, minutesText, numbersFacts, norm, placeMoments | `lib/analysis` |
 | [lib/chatTrend.js](../../src/lib/chatTrend.js) | 50 | TREND_LINES, chatTrend, trendChange | `lib/dates` |
 | [lib/closeness.js](../../src/lib/closeness.js) | 64 | QUIZ, ANSWERS, REACHED, inLayer, share, nextQuestion, quizPlacement | — |
@@ -402,42 +402,43 @@ Package: `layers-web` v1.0.40 · `src/`: 99 files, 17838 lines, 125 components, 
 | `writesDayFirst` | [chatImport.js:66](../../src/lib/chatImport.js#L66) |  |  |
 | `guessDayFirst` | [chatImport.js:74](../../src/lib/chatImport.js#L74) |  |  |
 | `parseWhatsApp` | [chatImport.js:98](../../src/lib/chatImport.js#L98) | ✓ | ✓ |
-| `fixMetaText` | [chatImport.js:129](../../src/lib/chatImport.js#L129) | ✓ | ✓ |
-| `sharedNote` | [chatImport.js:158](../../src/lib/chatImport.js#L158) |  |  |
-| `callNote` | [chatImport.js:168](../../src/lib/chatImport.js#L168) |  |  |
-| `instagramMessage` | [chatImport.js:177](../../src/lib/chatImport.js#L177) |  |  |
-| `instagramReactions` | [chatImport.js:195](../../src/lib/chatImport.js#L195) |  |  |
-| `snapTime` | [chatImport.js:209](../../src/lib/chatImport.js#L209) |  |  |
-| `snapText` | [chatImport.js:215](../../src/lib/chatImport.js#L215) |  |  |
-| `parseSnapchat` | [chatImport.js:226](../../src/lib/chatImport.js#L226) | ✓ | ✓ |
-| `csvRows` | [chatImport.js:269](../../src/lib/chatImport.js#L269) |  |  |
-| `discordMessages` | [chatImport.js:288](../../src/lib/chatImport.js#L288) |  |  |
-| `discordTime` | [chatImport.js:297](../../src/lib/chatImport.js#L297) |  |  |
-| `parseDiscord` | [chatImport.js:298](../../src/lib/chatImport.js#L298) | ✓ |  |
-| `parseInstagram` | [chatImport.js:323](../../src/lib/chatImport.js#L323) | ✓ | ✓ |
-| `chatsFromExport` | [chatImport.js:353](../../src/lib/chatImport.js#L353) | ✓ | ✓ |
-| `mergeChats` | [chatImport.js:379](../../src/lib/chatImport.js#L379) | ✓ | ✓ |
-| `ownerOf` | [chatImport.js:395](../../src/lib/chatImport.js#L395) | ✓ | ✓ |
-| `everywhereName` | [chatImport.js:408](../../src/lib/chatImport.js#L408) | ✓ | ✓ |
-| `everywhereNames` | [chatImport.js:415](../../src/lib/chatImport.js#L415) | ✓ | ✓ |
-| `chatPeople` | [chatImport.js:419](../../src/lib/chatImport.js#L419) | ✓ | ✓ |
-| `splitConversations` | [chatImport.js:430](../../src/lib/chatImport.js#L430) | ✓ | ✓ |
-| `pad` | [chatImport.js:440](../../src/lib/chatImport.js#L440) |  |  |
-| `isoMinute` | [chatImport.js:441](../../src/lib/chatImport.js#L441) |  |  |
-| `isoDayOf` | [chatImport.js:442](../../src/lib/chatImport.js#L442) | ✓ |  |
-| `conversationText` | [chatImport.js:448](../../src/lib/chatImport.js#L448) | ✓ | ✓ |
-| `clock` | [chatImport.js:460](../../src/lib/chatImport.js#L460) |  |  |
-| `conversationLabel` | [chatImport.js:462](../../src/lib/chatImport.js#L462) | ✓ | ✓ |
-| `chatRows` | [chatImport.js:479](../../src/lib/chatImport.js#L479) | ✓ |  |
-| `readChatProgress` | [chatImport.js:493](../../src/lib/chatImport.js#L493) | ✓ |  |
-| `saveChatProgress` | [chatImport.js:496](../../src/lib/chatImport.js#L496) | ✓ |  |
-| `sourceLabel` | [chatImport.js:505](../../src/lib/chatImport.js#L505) | ✓ |  |
-| `cache` | [chatImport.js:510](../../src/lib/chatImport.js#L510) |  |  |
-| `phone` | [chatImport.js:511](../../src/lib/chatImport.js#L511) |  |  |
-| `loaded` | [chatImport.js:515](../../src/lib/chatImport.js#L515) |  |  |
-| `isMessage` | [chatImport.js:516](../../src/lib/chatImport.js#L516) |  |  |
-| `isChat` | [chatImport.js:517](../../src/lib/chatImport.js#L517) |  |  |
-| `loadedChats` | [chatImport.js:555](../../src/lib/chatImport.js#L555) | ✓ | ✓ |
+| `fixMetaText` | [chatImport.js:132](../../src/lib/chatImport.js#L132) | ✓ | ✓ |
+| `isNotice` | [chatImport.js:162](../../src/lib/chatImport.js#L162) |  |  |
+| `sharedNote` | [chatImport.js:173](../../src/lib/chatImport.js#L173) |  |  |
+| `callNote` | [chatImport.js:183](../../src/lib/chatImport.js#L183) |  |  |
+| `instagramMessage` | [chatImport.js:192](../../src/lib/chatImport.js#L192) |  |  |
+| `instagramReactions` | [chatImport.js:210](../../src/lib/chatImport.js#L210) |  |  |
+| `snapTime` | [chatImport.js:224](../../src/lib/chatImport.js#L224) |  |  |
+| `snapText` | [chatImport.js:230](../../src/lib/chatImport.js#L230) |  |  |
+| `parseSnapchat` | [chatImport.js:241](../../src/lib/chatImport.js#L241) | ✓ | ✓ |
+| `csvRows` | [chatImport.js:284](../../src/lib/chatImport.js#L284) |  |  |
+| `discordMessages` | [chatImport.js:303](../../src/lib/chatImport.js#L303) |  |  |
+| `discordTime` | [chatImport.js:312](../../src/lib/chatImport.js#L312) |  |  |
+| `parseDiscord` | [chatImport.js:313](../../src/lib/chatImport.js#L313) | ✓ |  |
+| `parseInstagram` | [chatImport.js:338](../../src/lib/chatImport.js#L338) | ✓ | ✓ |
+| `chatsFromExport` | [chatImport.js:369](../../src/lib/chatImport.js#L369) | ✓ | ✓ |
+| `mergeChats` | [chatImport.js:401](../../src/lib/chatImport.js#L401) | ✓ | ✓ |
+| `ownerOf` | [chatImport.js:420](../../src/lib/chatImport.js#L420) | ✓ | ✓ |
+| `everywhereName` | [chatImport.js:436](../../src/lib/chatImport.js#L436) | ✓ | ✓ |
+| `everywhereNames` | [chatImport.js:443](../../src/lib/chatImport.js#L443) | ✓ | ✓ |
+| `chatPeople` | [chatImport.js:447](../../src/lib/chatImport.js#L447) | ✓ | ✓ |
+| `splitConversations` | [chatImport.js:458](../../src/lib/chatImport.js#L458) | ✓ | ✓ |
+| `pad` | [chatImport.js:468](../../src/lib/chatImport.js#L468) |  |  |
+| `isoMinute` | [chatImport.js:469](../../src/lib/chatImport.js#L469) |  |  |
+| `isoDayOf` | [chatImport.js:470](../../src/lib/chatImport.js#L470) | ✓ |  |
+| `conversationText` | [chatImport.js:476](../../src/lib/chatImport.js#L476) | ✓ | ✓ |
+| `clock` | [chatImport.js:488](../../src/lib/chatImport.js#L488) |  |  |
+| `conversationLabel` | [chatImport.js:490](../../src/lib/chatImport.js#L490) | ✓ | ✓ |
+| `chatRows` | [chatImport.js:507](../../src/lib/chatImport.js#L507) | ✓ |  |
+| `readChatProgress` | [chatImport.js:521](../../src/lib/chatImport.js#L521) | ✓ |  |
+| `saveChatProgress` | [chatImport.js:524](../../src/lib/chatImport.js#L524) | ✓ |  |
+| `sourceLabel` | [chatImport.js:533](../../src/lib/chatImport.js#L533) | ✓ |  |
+| `cache` | [chatImport.js:538](../../src/lib/chatImport.js#L538) |  |  |
+| `phone` | [chatImport.js:539](../../src/lib/chatImport.js#L539) |  |  |
+| `loaded` | [chatImport.js:543](../../src/lib/chatImport.js#L543) |  |  |
+| `isMessage` | [chatImport.js:544](../../src/lib/chatImport.js#L544) |  |  |
+| `isChat` | [chatImport.js:545](../../src/lib/chatImport.js#L545) |  |  |
+| `loadedChats` | [chatImport.js:591](../../src/lib/chatImport.js#L591) | ✓ | ✓ |
 | `timeOf` | [chatNumbers.js:11](../../src/lib/chatNumbers.js#L11) |  |  |
 | `words` | [chatNumbers.js:15](../../src/lib/chatNumbers.js#L15) |  |  |
 | `median` | [chatNumbers.js:16](../../src/lib/chatNumbers.js#L16) |  |  |
@@ -854,16 +855,18 @@ Package: `layers-web` v1.0.40 · `src/`: 99 files, 17838 lines, 125 components, 
 | `MARKED` | [chatImport.js:30](../../src/lib/chatImport.js#L30) |
 | `ODD_SPACES` | [chatImport.js:31](../../src/lib/chatImport.js#L31) |
 | `SYSTEM` | [chatImport.js:32](../../src/lib/chatImport.js#L32) |
-| `IG_NOTICES` | [chatImport.js:140](../../src/lib/chatImport.js#L140) |
-| `IG_ATTACHMENT` | [chatImport.js:152](../../src/lib/chatImport.js#L152) |
-| `IG_SHARED` | [chatImport.js:153](../../src/lib/chatImport.js#L153) |
-| `SNAP_ME` | [chatImport.js:208](../../src/lib/chatImport.js#L208) |
-| `DISCORD_ME` | [chatImport.js:267](../../src/lib/chatImport.js#L267) |
-| `GENERIC_NAME` | [chatImport.js:352](../../src/lib/chatImport.js#L352) |
-| `DAYS` | [chatImport.js:458](../../src/lib/chatImport.js#L458) |
-| `MONTHS` | [chatImport.js:459](../../src/lib/chatImport.js#L459) |
-| `NEW_DAYS` | [chatImport.js:478](../../src/lib/chatImport.js#L478) |
-| `SOURCES` | [chatImport.js:504](../../src/lib/chatImport.js#L504) |
+| `IG_NOTICES` | [chatImport.js:143](../../src/lib/chatImport.js#L143) |
+| `IG_NOTICES_BY` | [chatImport.js:152](../../src/lib/chatImport.js#L152) |
+| `USERNAME` | [chatImport.js:161](../../src/lib/chatImport.js#L161) |
+| `IG_ATTACHMENT` | [chatImport.js:167](../../src/lib/chatImport.js#L167) |
+| `IG_SHARED` | [chatImport.js:168](../../src/lib/chatImport.js#L168) |
+| `SNAP_ME` | [chatImport.js:223](../../src/lib/chatImport.js#L223) |
+| `DISCORD_ME` | [chatImport.js:282](../../src/lib/chatImport.js#L282) |
+| `GENERIC_NAME` | [chatImport.js:368](../../src/lib/chatImport.js#L368) |
+| `DAYS` | [chatImport.js:486](../../src/lib/chatImport.js#L486) |
+| `MONTHS` | [chatImport.js:487](../../src/lib/chatImport.js#L487) |
+| `NEW_DAYS` | [chatImport.js:506](../../src/lib/chatImport.js#L506) |
+| `SOURCES` | [chatImport.js:532](../../src/lib/chatImport.js#L532) |
 | `LINE` | [chatNumbers.js:9](../../src/lib/chatNumbers.js#L9) |
 | `TIME` | [chatNumbers.js:10](../../src/lib/chatNumbers.js#L10) |
 | `TREND_LINES` | [chatTrend.js:9](../../src/lib/chatTrend.js#L9) |

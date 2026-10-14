@@ -65,6 +65,21 @@ describe('iMessage from an iPhone backup', () => {
     expect(fs.readdirSync(dir, { recursive: true }).sort()).toEqual(before);
   });
 
+  it('leaves no copy of your messages behind, and clears ones an earlier read left (audit 2026-10-14)', async () => {
+    const r = root();
+    writeBackup(r, { contacts, chats });
+    const tmpRoot = root();
+    const old = path.join(tmpRoot, 'layers-imessage-old');
+    fs.mkdirSync(old);
+    fs.writeFileSync(path.join(old, 'sms.db'), 'left behind');
+    fs.utimesSync(old, new Date(Date.now() - 5 * 60 * 1000), new Date(Date.now() - 5 * 60 * 1000));
+    const fresh = path.join(tmpRoot, 'layers-imessage-fresh'); // another read's, just made
+    fs.mkdirSync(fresh);
+    const result = await readIMessages({ roots: [r], now: NOW, tmpRoot });
+    expect(result.chats.length).toBeGreaterThan(0);
+    expect(fs.readdirSync(tmpRoot)).toEqual(['layers-imessage-fresh']);
+  });
+
   it('says when there is no backup, or it is encrypted', async () => {
     expect(await readIMessages({ roots: [root(), path.join(os.tmpdir(), 'no-such-folder-layers')], now: NOW })).toEqual({ none: true });
     const r = root();

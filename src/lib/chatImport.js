@@ -108,7 +108,7 @@ export function parseWhatsApp(text, { dayFirst, near } = {}) {
     const colon = rest.indexOf(': ');
     if (colon < 1) { last = null; return; } // a notice with no sender (Android)
     const marked = MARKED.test(line);
-    last = { stamp: m, sender: rest.slice(0, colon).trim(), text: rest.slice(colon + 2).replace(/\s*<This message was edited>$/i, ''), marked };
+    last = { stamp: m, sender: rest.slice(0, colon).trim(), text: rest.slice(colon + 2), marked };
     parsed.push(last);
   });
   // A date that only works one way round decides it; otherwise the export's own times.
@@ -117,6 +117,9 @@ export function parseWhatsApp(text, { dayFirst, near } = {}) {
   const order = first.some(n => n > 12 && n < 32) ? true : second.some(n => n > 12) ? false
     : (parsed.length ? guessDayFirst(parsed, near) : null) ?? dayFirst ?? writesDayFirst();
   return parsed.map(p => {
+    // WhatsApp marks an edited message at its very end, so on its last line
+    // (only the first line's was taken off before the audit of 2026-10-14).
+    p.text = p.text.replace(/\s*<This message was edited>\s*$/i, '');
     const sub = standIn(p.text, p.marked);
     if (sub === '') return null;
     return { at: stampOf(p.stamp, order), sender: p.sender, text: sub ?? p.text.trim(), ...(sub ? { note: true } : {}) };
@@ -140,14 +143,26 @@ export function fixMetaText(s) {
 const IG_NOTICES = [
   /^liked a message$/i,
   /^reacted .+ to (your|a|their|his|her) (message|story)$/i,
-  /^.{1,60} started (an audio call|a video chat)$/i,
-  /^.{1,60} changed the (theme|chat colou?r|emoji|quick reaction)\b/i,
-  /^.{1,60} (set|changed|cleared) (your|their|his|her|the|my) nickname\b/i,
-  /^.{1,60} ((named|renamed) the group|changed the group (name|photo)|left the group)\b/i,
-  /^.{1,60} (added|removed) .+ (to|from) the group\b/i,
-  /^.{1,60} (unsent|pinned) a message\b/i,
-  /^.{1,60} turned (on|off) (vanish mode|disappearing messages)\b/i,
 ];
+// The rest start with who did it, and are the whole message: "You", the
+// sender, or a username (one word: Instagram writes "maddie4suree changed
+// the theme to …" from Maddie). Any words before, and anything after, used
+// to do, so "omg my mum changed the theme of the party" was left out as a
+// notice (audit 2026-10-14).
+const IG_NOTICES_BY = [
+  /^(.{1,60}?) started (an audio call|a video chat)\.?$/i,
+  /^(.{1,60}?) changed the (theme|chat colou?r|emoji|quick reaction)( to .+)?\.?$/i,
+  /^(.{1,60}?) (set|changed|cleared) (your|their|his|her|the|my|own) nickname( to .+| for .+)?\.?$/i,
+  /^(.{1,60}?) ((named|renamed) the group( .+)?|changed the group (name|photo)( to .+)?|left the group)\.?$/i,
+  /^(.{1,60}?) (added|removed) .+ (to|from) the group\.?$/i,
+  /^(.{1,60}?) (unsent|pinned) a message\.?$/i,
+  /^(.{1,60}?) turned (on|off) (vanish mode|disappearing messages)\.?$/i,
+];
+const USERNAME = /^[\w.]{1,30}$/;
+function isNotice(raw, sender) {
+  if (IG_NOTICES.some(re => re.test(raw))) return true;
+  return IG_NOTICES_BY.some(re => { const m = raw.match(re); return Boolean(m) && (m[1] === sender || /^you$/i.test(m[1]) || USERNAME.test(m[1])); });
+}
 // What Instagram writes for a shared reel, post or photo, with no words of yours.
 const IG_ATTACHMENT = /^.{1,60} sent an attachment\.$/i;
 const IG_SHARED = [[/giphy\.com|\.gif(\?|$)/i, 'GIF'], [/instagram\.com\/reels?\//i, 'reel'], [/instagram\.com\/stories\//i, 'story'], [/instagram\.com\/(p|tv)\//i, 'post']];
@@ -176,7 +191,7 @@ function callNote(msg, content) {
 // as "(photo)" or a shared reel) }, or null to leave it out.
 function instagramMessage(msg) {
   const raw = fixMetaText(msg.content || '').trim();
-  if (IG_NOTICES.some(re => re.test(raw))) return null;
+  if (isNotice(raw, fixMetaText(msg.sender_name))) return null;
   if (typeof msg.call_duration === 'number') return { text: callNote(msg, raw), note: true };
   const words = IG_ATTACHMENT.test(raw) || (msg.share && raw === msg.share.link) ? '' : raw;
   const extra = [];
@@ -327,10 +342,11 @@ export function parseInstagram(files = []) {
     if (!m) return;
     let data = null;
     try { data = JSON.parse(text); } catch { return; }
+    if (!data || typeof data !== 'object') return; // "null", or not a messages file
     const t = threads.get(m[1]) || { id: m[1], title: '', participants: [], messages: [] };
     t.title = fixMetaText(data.title || '') || t.title;
-    (data.participants || []).forEach(p => { const n = fixMetaText(p && p.name); if (n && !t.participants.includes(n)) t.participants.push(n); });
-    (data.messages || []).forEach(msg => {
+    (Array.isArray(data.participants) ? data.participants : []).forEach(p => { const n = fixMetaText(p && p.name); if (n && !t.participants.includes(n)) t.participants.push(n); });
+    (Array.isArray(data.messages) ? data.messages : []).forEach(msg => {
       const said = msg && typeof msg.timestamp_ms === 'number' ? instagramMessage(msg) : null;
       if (!said) return;
       const reactions = instagramReactions(msg);
@@ -356,7 +372,13 @@ export function chatsFromExport(file, read, { dayFirst } = {}) {
     const messages = parseWhatsApp((read.files[0] || {}).text, { dayFirst, near: file.modified });
     if (!messages.length) return [];
     const participants = [...new Set(messages.map(m => m.sender))];
-    const named = read.title || String(file.name).split('/').pop().replace(/\.(zip|txt)$/i, ''); // a file in a folder of yours too
+    // A file in a folder of yours too. An unzipped export ("WhatsApp Chat -
+    // Amelie/_chat.txt") is named by its folder, so it joins up with the zip
+    // beside it rather than showing twice (audit 2026-10-14).
+    const parts = String(file.name).split('/');
+    const folder = (parts.length > 1 && parts[parts.length - 2].match(/^WhatsApp Chat (?:-|with) (.+?)(?:\s*\(\d+\)|\s+\d+)?$/i)) || null;
+    const base = parts.pop().replace(/\.(zip|txt)$/i, '');
+    const named = read.title || (folder && GENERIC_NAME.test(base) ? folder[1].trim() : base);
     // Saved as "chat.txt" (or the zip's own "_chat.txt"), it's known by who's
     // in it instead, so two chats saved under that name never join up.
     if (GENERIC_NAME.test(named)) {
@@ -389,17 +411,23 @@ export function mergeChats(chats) {
   return [...byKey.values()];
 }
 
-// Which name in a chat is you: the one an iPhone backup marks, else one you picked before, else your name (or its
-// first part), else on Instagram the name in every one of your chats, else in
-// a two-person chat the one who isn't the chat's name. Null if it can't tell.
+// Which name in a chat is you: the one an iPhone backup marks, else one you
+// picked before, else your name exactly, else on Instagram or Messenger the
+// name in every one of your chats, else your name's first part, else in a
+// two-person chat the one who isn't the chat's name. Null if it can't tell.
+// (A first name came before every chat until the audit of 2026-10-14, so a
+// friend who shares yours could be taken for you.)
 export function ownerOf(chat, { yourName = '', picked, everywhere = [] } = {}) {
   if (chat.me) return chat.me; // iMessage and Snapchat know which messages are yours
   const names = [...new Set([...chat.participants, ...chat.messages.map(m => m.sender)])];
   if (picked && names.includes(picked)) return picked;
-  const byName = names.filter(n => isYou(n, yourName));
-  if (byName.length === 1) return byName[0];
+  const plain = (s) => String(s || '').trim().toLowerCase();
+  const exact = yourName ? names.filter(n => plain(n) === plain(yourName)) : [];
+  if (exact.length === 1) return exact[0];
   const common = names.filter(n => everywhere.includes(n));
   if (common.length === 1) return common[0];
+  const byName = names.filter(n => isYou(n, yourName));
+  if (byName.length === 1) return byName[0];
   if (names.length === 2 && names.includes(chat.title)) return names.find(n => n !== chat.title);
   return null;
 }
@@ -527,13 +555,21 @@ export async function loadChatExports(bridge, { dayFirst } = {}) {
     if (f.kind === 'instagram-html') { problems.push({ name: f.name, error: 'That Instagram download is in HTML. Download it again choosing JSON as the format.' }); continue; }
     if (f.kind === 'messenger-html') { problems.push({ name: f.name, error: 'That Facebook download is in HTML. Download it again choosing JSON as the format.' }); continue; }
     if (f.kind === 'snapchat-html') { problems.push({ name: f.name, error: 'That Snapchat download is only HTML. Request it again with "Export JSON files" turned on.' }); continue; }
+    // Read again when it changes: OneDrive can bring down a new export with
+    // the old one's time, so its size counts too (audit 2026-10-14).
     const hit = cache.get(f.name);
-    if (hit && hit.modified === f.modified) { all.push(...hit.chats); continue; }
-    const read = await bridge.readChatExport(f.name);
-    if (!read || read.error) { problems.push({ name: f.name, error: (read && read.error) || "Couldn't read that file." }); continue; }
-    const chats = chatsFromExport(f, read, { dayFirst });
-    cache.set(f.name, { modified: f.modified, chats });
-    all.push(...chats);
+    if (hit && hit.modified === f.modified && hit.size === f.size) { all.push(...hit.chats); continue; }
+    // One export that can't be read is listed as a problem; it used to stop
+    // every chat showing (audit 2026-10-14).
+    try {
+      const read = await bridge.readChatExport(f.name);
+      if (!read || read.error) { problems.push({ name: f.name, error: (read && read.error) || "Couldn't read that file." }); continue; }
+      const chats = chatsFromExport(f, read, { dayFirst });
+      cache.set(f.name, { modified: f.modified, size: f.size, chats });
+      all.push(...chats);
+    } catch {
+      problems.push({ name: f.name, error: "Couldn't read that file. It may be damaged; export it again." });
+    }
   }
   let iphone = null;
   if (bridge.readIMessages) {

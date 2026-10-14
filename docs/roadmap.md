@@ -936,6 +936,28 @@ clicked through, and the installed app checked. Each fix has a test.
 - After Claude's review is added to a log, Coach opened again starts afresh, so it can't
   replace that review; a log deleted meanwhile is said to be gone.
 
+**Chats**
+- An Instagram or Messenger message that only sounds like a notice ("omg my mum changed
+  the theme of the party") is kept; any words before "changed the theme", "left the
+  group" and the like made it a notice.
+- Someone saved as just your first name is no longer taken for you when the name in all
+  your chats says who you are.
+- An unzipped WhatsApp export beside its zip is one chat, not two.
+- One export that can't be read is listed as a problem; it hid every chat.
+- An export replaced by OneDrive with the old one's time is read again (its size counts).
+- WhatsApp's "edited" mark comes off a message over several lines too.
+- Copies of your iPhone messages a read left in Temp are cleared before the next read.
+
+**Notifications, installs and releases**
+- A plan's title with a character Windows can't show (a control character, half an
+  emoji) no longer stops every notification being scheduled; a toast Windows won't take
+  is skipped, and a stuck scheduling run is stopped after a minute.
+- A failed local install always starts the Layers you had again.
+- A release backs up your data before installing, points at its own release commit
+  (with --publish-only too), and finds a draft release before building.
+- The phone web app keeps only a page that loaded properly for offline. The iPhone
+  build's workflow can only read the code.
+
 ### Conversations in person (not released yet)
 
 More chats, step 1 (picked 2026-10-14: in person, then Messenger; Discord for your

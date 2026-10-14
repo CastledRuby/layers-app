@@ -278,3 +278,62 @@ describe('Snapchat downloads', () => {
     expect(parseSnapchat([{ path: 'json/chat_history.json', text: 'oops' }])).toEqual([]);
   });
 });
+
+describe('fixes from the audit of 2026-10-14', () => {
+  const ig = (messages, extra = {}) => [{ path: 'messages/inbox/maddie_1/message_1.json', text: JSON.stringify({ title: 'Maddie', participants: [{ name: 'Maddie' }, { name: 'Liam M' }], messages, ...extra }) }];
+
+  it("keeps a real message that only sounds like Instagram's notices", () => {
+    const [chat] = parseInstagram(ig([
+      { sender_name: 'Maddie', timestamp_ms: 1, content: 'omg my mum changed the theme of the party' },
+      { sender_name: 'Maddie', timestamp_ms: 2, content: 'Jo left the group chat because of you lol' },
+      { sender_name: 'Maddie', timestamp_ms: 3, content: 'maddie4suree changed the theme to Love' },
+      { sender_name: 'Liam M', timestamp_ms: 4, content: 'You left the group.' },
+      { sender_name: 'Maddie', timestamp_ms: 5, content: 'Maddie unsent a message' },
+    ]));
+    expect(chat.messages.map(m => m.text)).toEqual(['omg my mum changed the theme of the party', 'Jo left the group chat because of you lol']);
+  });
+
+  it("reads a messages file that isn't the shape it should be without stopping", () => {
+    expect(parseInstagram([{ path: 'messages/inbox/a_1/message_1.json', text: 'null' }])).toEqual([]);
+    expect(parseInstagram(ig({ oops: true }, { participants: 'Maddie' }))).toEqual([]);
+  });
+
+  it("one export that can't be read is a problem, and the rest still show", async () => {
+    const amelie = 'WhatsApp Chat - Amelie.txt';
+    const bridge = {
+      listChatExports: async () => [{ name: 'broken.zip', kind: 'instagram', modified: 1, size: 1 }, { name: amelie, kind: 'whatsapp', modified: 1, size: 10 }],
+      readChatExport: async (name) => { if (name === 'broken.zip') throw new Error('boom'); return { kind: 'whatsapp', title: 'Amelie', files: [{ text: IOS }] }; },
+    };
+    const { chats, problems } = await loadChatExports(bridge);
+    expect(chats.map(c => c.key)).toEqual(['whatsapp:amelie']);
+    expect(problems).toEqual([{ name: 'broken.zip', error: expect.stringMatching(/Couldn't read that file/) }]);
+  });
+
+  it('reads an export again when its size changes, though its time is the same', async () => {
+    let size = 10;
+    let text = IOS;
+    const bridge = { listChatExports: async () => [{ name: 'WhatsApp Chat - Zoe.txt', kind: 'whatsapp', modified: 5, size }], readChatExport: async () => ({ kind: 'whatsapp', title: 'Zoe', files: [{ text }] }) };
+    expect((await loadChatExports(bridge)).chats[0].messages).toHaveLength(4);
+    text = `${IOS}\n[14/10/26, 8:00:00${NNBSP}am] Liam: and day two?`;
+    size = 11;
+    expect((await loadChatExports(bridge)).chats[0].messages).toHaveLength(5);
+  });
+
+  it("an unzipped WhatsApp export is named by its folder, so it joins up with the zip", () => {
+    const fromFolder = chatsFromExport({ name: 'WhatsApp Chat - Amelie/_chat.txt' }, { kind: 'whatsapp', title: null, files: [{ text: IOS }] });
+    const fromZip = chatsFromExport({ name: 'WhatsApp Chat - Amelie.zip' }, { kind: 'whatsapp', title: 'Amelie', files: [{ text: IOS }] });
+    expect(fromFolder[0].key).toBe('whatsapp:amelie');
+    expect(mergeChats([...fromFolder, ...fromZip])).toHaveLength(1);
+  });
+
+  it("takes off WhatsApp's edited mark from a message over several lines", () => {
+    const msgs = parseWhatsApp(`[6/10/26, 9:41:03${NNBSP}pm] Amelie: first line\nsecond line <This message was edited>`);
+    expect(msgs.map(m => m.text)).toEqual(['first line\nsecond line']);
+  });
+
+  it('your name exactly, then the name in every chat, before a first name you share with someone', () => {
+    const chat = { participants: ['Liam', 'liamc_99'], messages: [{ sender: 'Liam', text: 'hey', at: 1 }, { sender: 'liamc_99', text: 'yo', at: 2 }], title: 'Group' };
+    expect(ownerOf(chat, { yourName: 'Liam Campbell', everywhere: ['liamc_99'] })).toBe('liamc_99');
+    expect(ownerOf(chat, { yourName: 'Liam', everywhere: ['liamc_99'] })).toBe('Liam'); // your name exactly
+  });
+});

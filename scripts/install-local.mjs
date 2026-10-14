@@ -23,17 +23,15 @@
 // (LAYERS_RELEASING; the release installs its own build), during a rebase,
 // and off Windows.
 import { spawn, spawnSync } from 'node:child_process';
-import { closeSync, cpSync, existsSync, openSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
+import { closeSync, existsSync, openSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { dirname, join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { backUpData } from './data-backup.mjs';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const INSTALL_DIR = join(process.env.LOCALAPPDATA || '', 'Programs', 'Layers');
 const INSTALLED_EXE = join(INSTALL_DIR, 'Layers.exe');
 const INSTALLED_ASAR = join(INSTALL_DIR, 'resources', 'app.asar');
-const DATA_DIR = join(process.env.APPDATA || '', 'layers-web');
-const BACKUPS_DIR = join(DATA_DIR, 'Install backups');
-const KEEP_BACKUPS = 10;
 const OUT = join(root, 'dist-install');
 const GENERATED = 'electron/app/index.html';
 // Paths that don't end up in the app: changing only these needs no install.
@@ -43,7 +41,12 @@ const APP_CODE = ['.', ':(exclude)docs', ':(exclude)tests', ':(exclude)scripts',
 const ifChanged = process.argv.includes('--if-changed');
 const sleep = (ms) => new Promise(r => setTimeout(r, ms));
 const log = (msg) => console.log(`[install] ${msg}`);
+// Once the running Layers has been asked to quit, any failure starts the
+// installed one again, so it's never left closed (audit 2026-10-14: only two
+// of the failures after quitting did).
+let restartOnFail = null;
 function fail(msg) {
+  if (restartOnFail) { try { restartOnFail(); } catch { /* nothing more to try */ } }
   console.error(`[install] ✗ ${msg}`);
   process.exit(1);
 }
@@ -170,19 +173,6 @@ function windowShowing() {
   return Number((r.stdout || '').trim()) > 0;
 }
 
-function backUpData(label) {
-  const source = join(DATA_DIR, 'Local Storage');
-  if (!existsSync(source)) return null;
-  const now = new Date();
-  const pad = (n) => String(n).padStart(2, '0');
-  const when = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())} ${pad(now.getHours())}-${pad(now.getMinutes())}-${pad(now.getSeconds())}`;
-  const dest = join(BACKUPS_DIR, `${when} before ${label}`);
-  cpSync(source, join(dest, 'Local Storage'), { recursive: true });
-  const all = readdirSync(BACKUPS_DIR).sort();
-  for (const old of all.slice(0, Math.max(all.length - KEEP_BACKUPS, 0))) rmSync(join(BACKUPS_DIR, old), { recursive: true, force: true });
-  return dest;
-}
-
 async function main() {
   const skip = skipReason();
   if (skip) { if (ifChanged) log(`Not installing: ${skip}.`); else fail(`Can't install: ${skip}.`); return; }
@@ -220,6 +210,7 @@ async function main() {
   }
   const showWindow = layersRunning() && windowShowing();
   if (layersRunning() && existsSync(INSTALLED_EXE)) {
+    restartOnFail = () => { if (existsSync(INSTALLED_EXE) && !layersRunning()) spawn(INSTALLED_EXE, showWindow ? [] : ['--hidden'], { detached: true, stdio: 'ignore', env: appEnv }).unref(); };
     log('Asking the running Layers to quit…');
     spawnSync(INSTALLED_EXE, ['--quit'], { stdio: 'ignore', timeout: 20000, env: appEnv });
     for (let i = 0; i < 40 && layersRunning(); i++) await sleep(500);
