@@ -5,7 +5,7 @@
 // here is sent, through the same main-process call (analysis-run).
 import { LAYERS } from '../data/constants.js';
 import { analysisModel, DEFAULT_ANALYSIS_MODEL, hideNames, isYou, namesOf, restoreNames, tokensFor } from './analysis.js';
-import { chatPeople, everywhereName, loadedChats, ownerOf, readChatProgress } from './chatImport.js';
+import { chatPeople, everywhereNames, loadedChats, ownerOf, readChatProgress } from './chatImport.js';
 
 const str = { type: 'string' };
 const obj = (properties) => ({ type: 'object', additionalProperties: false, required: Object.keys(properties), properties });
@@ -65,7 +65,7 @@ const usable = (t) => t.length > 1
 export function chatStyleSamples(chats = [], { people = [], yourName = '', layer = 1, progress = {}, max = 12 } = {}) {
   const band = layer >= 3 ? [3, 4] : [1, 2];
   const layerOf = (id) => (people.find(p => p.id === id) || {}).layer || 0;
-  const everywhere = everywhereName(chats.filter(c => c.source === 'instagram'));
+  const everywhere = everywhereNames(chats);
   const pools = chats.map(chat => {
     const owner = ownerOf(chat, { yourName, picked: (progress[chat.key] || {}).me, everywhere });
     if (!owner || !chat.messages.length) return null;

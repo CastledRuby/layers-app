@@ -96,7 +96,8 @@ describe('chats from your exports', () => {
     const { user } = renderApp();
     const card = await openAnalyse(user);
     expect(await within(card).findByText(/Save to Files → OneDrive → Documents → Layers chats/)).toBeTruthy();
-    expect(within(card).getByText(/Download your information → just Messages, as JSON.*unzipped is fine too/)).toBeTruthy();
+    expect(within(card).getByText(/^\s*Accounts Centre → .*Download your information → just Messages, as JSON.*unzipped is fine too/)).toBeTruthy(); // Instagram
+    expect(within(card).getByText(/^\s*the same in Accounts Centre, choosing your Facebook profile/)).toBeTruthy(); // Messenger
     expect(within(card).getByText(/Apple Devices → Back up all of the data on your iPhone to this computer/)).toBeTruthy();
     await user.click(within(card).getByRole('button', { name: /Folder/ }));
     expect(bridge.openChatsFolder).toHaveBeenCalled();

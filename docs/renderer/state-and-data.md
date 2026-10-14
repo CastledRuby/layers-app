@@ -876,6 +876,15 @@ Coach → Analyse a chat → **From your chats**: chats saved in the **Layers ch
     messages, and chats with Meta AI.
 
   A download in HTML is named, with "choose JSON".
+- **Messenger** (decided 2026-10-14): Facebook's download (Accounts Centre, choosing your
+  Facebook profile → Download your information → Messages, as JSON), zip or unzipped. It's
+  Instagram's format, so `parseInstagram` reads it too; the main process tells it apart
+  by its name (`facebook-…`) or its `your_facebook_activity` or `profile_information`
+  folders, and its chats are `messenger:` ones, labelled Messenger. Besides the inbox,
+  archived chats (`archived_threads`) and chats from before they were end-to-end
+  encrypted (`e2ee_cutover`, joined to the same chat) are read; message requests and
+  filtered chats aren't. Newer end-to-end encrypted chats may not be in the download. A
+  download in HTML is named, with "choose JSON".
 - **iMessage** (decided 2026-10-10): back up the iPhone to this laptop with Apple Devices
   (not encrypted), and its Messages chats, texts too, from the last three months show
   here as iMessage (read by the main process, [electron.md](../electron.md)), named from
@@ -898,7 +907,8 @@ Coach → Analyse a chat → **From your chats**: chats saved in the **Layers ch
   `_chat.txt`) is named and keyed by who's in it ("Liam and Mia"), so two chats saved
   under that name never join up. The files are only read; they stay where you saved them.
 - **Which name is you** (`ownerOf`): one you picked before, else your name or its first
-  part, else on Instagram the name in every chat (`everywhereName`), else in a
+  part, else on Instagram or Messenger the name in every chat of that app
+  (`everywhereNames`: each app by itself, since you may go by different names), else in a
   two-person chat the one who isn't the chat's name. Otherwise Coach asks "Which of
   these is you?". **Who it's with** (`chatPeople`): the others, matched to your people
   like pasted names (`personNamed`); a two-person WhatsApp chat named after someone is

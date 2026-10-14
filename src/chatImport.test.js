@@ -2,7 +2,7 @@
 // Android write it, Instagram's download, conversations split at long
 // pauses, who's who, and the text sent for analysis.
 import { describe, expect, it } from 'vitest';
-import { chatPeople, chatsFromExport, conversationLabel, conversationText, everywhereName, fixMetaText, mergeChats, ownerOf, parseInstagram, parseSnapchat, parseWhatsApp, splitConversations } from './lib/chatImport.js';
+import { chatPeople, chatsFromExport, conversationLabel, conversationText, everywhereName, everywhereNames, fixMetaText, mergeChats, ownerOf, parseInstagram, parseSnapchat, parseWhatsApp, splitConversations } from './lib/chatImport.js';
 
 const LRM = String.fromCharCode(0x200e);
 const NNBSP = String.fromCharCode(0x202f);
@@ -150,6 +150,24 @@ describe('Instagram downloads', () => {
     expect(chats.map(c => c.key)).toEqual(['instagram:amelie_123', 'instagram:chloe_9']);
     expect(everywhereName(chats)).toEqual(['Liam']);
     expect(ownerOf(chats[0], { yourName: 'Sam', everywhere: ['Liam'] })).toBe('Liam');
+  });
+
+  it("reads Facebook's download as Messenger, archived and older chats joined to the same chat, and tells you apart in each app (2026-10-14)", () => {
+    const thread = (who, text, at) => JSON.stringify({ title: who, participants: [{ name: who }, { name: 'Liam Ward' }], messages: [{ sender_name: 'Liam Ward', timestamp_ms: at + 1, content: 'hey' }, { sender_name: who, timestamp_ms: at, content: text }] });
+    const fb = [
+      { path: 'your_facebook_activity/messages/inbox/amelie_1/message_1.json', text: thread('Amelie', 'new', 2000) },
+      { path: 'your_facebook_activity/messages/e2ee_cutover/amelie_1/message_1.json', text: thread('Amelie', 'older', 1000) },
+      { path: 'your_facebook_activity/messages/archived_threads/zoe_2/message_1.json', text: thread('Zoe', 'archived', 500) },
+    ];
+    const messenger = chatsFromExport({ name: 'facebook-liam.zip' }, { kind: 'messenger', files: fb });
+    expect(messenger.map(c => [c.key, c.source, c.title, c.messages.map(m => m.text)])).toEqual([
+      ['messenger:amelie_1', 'messenger', 'Amelie', ['older', 'hey', 'new', 'hey']],
+      ['messenger:zoe_2', 'messenger', 'Zoe', ['archived', 'hey']],
+    ]);
+    // On Instagram you're "Liam", on Facebook "Liam Ward": each found in its own app's chats.
+    const instagram = chatsFromExport({ name: 'instagram.zip' }, { kind: 'instagram', files });
+    expect(everywhereNames([...instagram, ...messenger]).sort()).toEqual(['Liam', 'Liam Ward']);
+    expect(everywhereName([...instagram, ...messenger])).toEqual([]); // the two apps mixed would find nobody
   });
 });
 

@@ -105,7 +105,7 @@ describe('the Layers chats folder', () => {
   it("says why it can't read something, and reads nothing outside the folder", () => {
     const dir = folder({ 'html.zip': zip({ 'messages/inbox/a_1/message_1.html': 'x' }), 'photos.zip': zip({ 'a.jpg': 'x' }), 'bad.zip': 'nope' });
     expect(readExport(dir, 'html.zip').error).toMatch(/choosing JSON/);
-    expect(readExport(dir, 'photos.zip').error).toMatch(/doesn't have a WhatsApp, Instagram or Snapchat chat/);
+    expect(readExport(dir, 'photos.zip').error).toMatch(/doesn't have a WhatsApp, Instagram, Messenger or Snapchat chat/);
     expect(readExport(dir, 'bad.zip').error).toMatch(/isn't a zip/);
     fs.writeFileSync(path.join(path.dirname(dir), 'outside.txt'), CHAT);
     expect(readExport(dir, '../outside.txt').error).toMatch(/isn't in the Layers chats folder/);
@@ -172,6 +172,42 @@ describe('the Layers chats folder', () => {
     for (const name of ['holiday', '..', 'instagram-liam-2026-10-09', '../outside.txt', 'Mia (Oli’s Sister)/chat.md', 'a/b/c/d/e/f/g/too deep.txt']) {
       expect(readExport(dir, name).error).toMatch(/isn't in the Layers chats folder/);
     }
+  });
+
+  it("reads Facebook's download as Messenger, with archived and older (e2ee_cutover) chats, but not message requests (2026-10-14)", () => {
+    const dir = folder({
+      'facebook-liam-2026-10-14.zip': zip({
+        'your_facebook_activity/messages/inbox/chloe_9/message_1.json': INSTA,
+        'your_facebook_activity/messages/archived_threads/max_4/message_1.json': INSTA,
+        'your_facebook_activity/messages/e2ee_cutover/chloe_9/message_1.json': INSTA,
+        'your_facebook_activity/messages/message_requests/spam_1/message_1.json': INSTA,
+      }),
+      'renamed.zip': zip({ 'profile_information/profile_information.json': '{}', 'messages/inbox/zoe_2/message_1.json': INSTA }), // an older Facebook layout
+      'facebook-html.zip': zip({ 'your_facebook_activity/messages/inbox/a_1/message_1.html': '<html>' }),
+    });
+    const put = (rel, data) => { const file = path.join(dir, ...rel.split('/')); fs.mkdirSync(path.dirname(file), { recursive: true }); fs.writeFileSync(file, data); };
+    put('facebook-liam-2026-09/your_facebook_activity/messages/inbox/amy_3/message_1.json', INSTA); // unzipped
+    put('facebook-liam-2026-09/your_facebook_activity/messages/archived_threads/old_5/message_1.json', INSTA);
+    put('old fb/profile_information/profile_information.json', '{}');
+    put('old fb/messages/inbox/ben_6/message_1.json', INSTA);
+
+    expect(listExports(dir).map(f => [f.name, f.kind]).sort()).toEqual([
+      ['facebook-html.zip', 'messenger-html'],
+      ['facebook-liam-2026-09', 'messenger'],
+      ['facebook-liam-2026-10-14.zip', 'messenger'],
+      ['old fb', 'messenger'],
+      ['renamed.zip', 'messenger'],
+    ]);
+    const read = readExport(dir, 'facebook-liam-2026-10-14.zip');
+    expect(read.kind).toBe('messenger');
+    expect(read.files.map(f => f.path).sort()).toEqual([
+      'your_facebook_activity/messages/archived_threads/max_4/message_1.json',
+      'your_facebook_activity/messages/e2ee_cutover/chloe_9/message_1.json',
+      'your_facebook_activity/messages/inbox/chloe_9/message_1.json',
+    ]);
+    expect(readExport(dir, 'facebook-liam-2026-09').files.map(f => f.path).sort()).toEqual(['messages/archived_threads/old_5/message_1.json', 'messages/inbox/amy_3/message_1.json']);
+    expect(readExport(dir, 'old fb').kind).toBe('messenger');
+    expect(readExport(dir, 'facebook-html.zip').error).toMatch(/Facebook download is in HTML/);
   });
 
   it('notices a new export arriving', async () => {

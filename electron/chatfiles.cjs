@@ -1,7 +1,7 @@
 // Chat exports for Coach (docs/electron.md, "Chat exports"): the "Layers
 // chats" folder in Documents (OneDrive on this laptop), where you save a
-// WhatsApp chat export from your phone (its zip, or the .txt), Instagram's
-// "Download your information" or Snapchat's "My Data" (its zip, or the
+// WhatsApp chat export from your phone (its zip, or the .txt), Instagram's or
+// Facebook's (Messenger) "Download your information" or Snapchat's "My Data" (its zip, or the
 // folder it was unzipped to), straight in it or in folders of your own. Only
 // reads: what's there, and the text of one export's chat. A zip is opened
 // here (Node's own inflate, nothing bundled); the page reads the chat itself
@@ -14,9 +14,23 @@ const zlib = require('zlib');
 const MAX_FILE = 300 * 1024 * 1024; // a zip or .txt
 const MAX_ENTRY = 60 * 1024 * 1024; // one file inside a zip, unpacked
 const MAX_TOTAL = 200 * 1024 * 1024; // everything read from one zip
-// Instagram's messages, in either layout of its download.
-const INSTAGRAM_JSON = /(?:^|\/)messages\/inbox\/[^/]+\/message_\d+\.json$/;
-const INSTAGRAM_HTML = /(?:^|\/)messages\/inbox\/[^/]+\/message_\d+\.html$/;
+// Instagram's and Messenger's messages (Meta's downloads share a format), in
+// either layout of a download: the inbox, and Messenger's archived chats and
+// its chats from before they were end-to-end encrypted (e2ee_cutover).
+// Message requests and filtered chats are left out.
+const META_FOLDERS = ['inbox', 'archived_threads', 'e2ee_cutover'];
+const META_JSON = /(?:^|\/)messages\/(?:inbox|archived_threads|e2ee_cutover)\/[^/]+\/message_\d+\.json$/;
+const META_HTML = /(?:^|\/)messages\/(?:inbox|archived_threads|e2ee_cutover)\/[^/]+\/message_\d+\.html$/;
+// A Facebook download rather than Instagram's (decided 2026-10-14): its name
+// ("facebook-liam-2026-10-14.zip"), or folders only Facebook's has.
+const FACEBOOK_PART = /(?:^|\/)(?:your_facebook_activity|profile_information)(?:\/|$)/;
+const isFacebook = (name, entries = []) => /(?:^|\/)facebook-[^/]*$/i.test(name) || entries.some(e => FACEBOOK_PART.test(e.name));
+// Why a download in HTML can't be read.
+const HTML_ERROR = {
+  'instagram-html': 'That Instagram download is in HTML. Download it again choosing JSON as the format.',
+  'messenger-html': 'That Facebook download is in HTML. Download it again choosing JSON as the format.',
+  'snapchat-html': 'That Snapchat download is only HTML. Request it again with "Export JSON files" turned on.',
+};
 // Snapchat's chats (json/chat_history.json) and its friends list (display names).
 const SNAPCHAT_JSON = /(?:^|\/)json\/(chat_history|friends)\.json$/;
 const SNAPCHAT_HTML = /(?:^|\/)html\/chat_history(\.html|\/)/;
@@ -98,13 +112,14 @@ function zipEntryData(buf, entry) {
 }
 
 // What an export is, from its name and (for a zip) what's in it:
-// 'whatsapp', 'instagram', 'snapchat', 'instagram-html' or 'snapchat-html'
-// (downloaded as HTML), or null.
+// 'whatsapp', 'instagram', 'messenger', 'snapchat', or 'instagram-html',
+// 'messenger-html' or 'snapchat-html' (downloaded as HTML), or null.
 function kindOf(name, entries) {
   if (/\.txt$/i.test(name)) return 'whatsapp';
   if (!entries) return null;
-  if (entries.some(e => INSTAGRAM_JSON.test(e.name))) return 'instagram';
-  if (entries.some(e => INSTAGRAM_HTML.test(e.name))) return 'instagram-html';
+  const meta = isFacebook(name, entries) ? 'messenger' : 'instagram';
+  if (entries.some(e => META_JSON.test(e.name))) return meta;
+  if (entries.some(e => META_HTML.test(e.name))) return `${meta}-html`;
   if (entries.some(e => /(?:^|\/)json\/chat_history\.json$/.test(e.name))) return 'snapchat';
   if (entries.some(e => SNAPCHAT_HTML.test(e.name))) return 'snapchat-html';
   if (entries.some(e => /(^|\/)[^/]*\.txt$/i.test(e.name) && !e.name.startsWith('__MACOSX'))) return 'whatsapp';
@@ -127,11 +142,12 @@ function isDir(p) {
 const MAX_DEPTH = 6;
 const MEDIA_DIR = /^(photos|videos|audio|gifs|files|media|stickers_used|__MACOSX)$/i;
 
-// Where an unzipped Instagram download starts, from the path of its
-// messages folder: above messages and your_instagram_activity.
+// Where an unzipped Instagram or Facebook download starts, from the path of
+// its messages folder: above messages and your_instagram_activity (or
+// your_facebook_activity).
 function downloadName(rel) {
   const up = rel.replace(/(^|\/)messages$/, '');
-  return up.replace(/(^|\/)your_instagram_activity$/, '') || up || rel;
+  return up.replace(/(^|\/)your_(?:instagram|facebook)_activity$/, '') || up || rel;
 }
 
 // Whether a folder is an unzipped Snapchat "My Data" download: it has
@@ -144,10 +160,11 @@ function isSnapchatDownload(folder, names) {
 // Every chat export in the folder and the folders in it (however you've
 // arranged them, up to MAX_DEPTH down), each named by its path from the
 // folder ("Instagram/instagram-liam.zip"): [{ name, file }] for a zip or
-// .txt, [{ name, inbox }] for an unzipped Instagram download (named from
-// where it starts, since Windows' Extract All adds a folder of the same name
-// and newer downloads put messages under your_instagram_activity), and [{
-// name, snapchat }] for an unzipped Snapchat download.
+// .txt, [{ name, messages, facebook }] for an unzipped Instagram or Facebook
+// download (named from where it starts, since Windows' Extract All adds a
+// folder of the same name and newer downloads put messages under
+// your_instagram_activity or your_facebook_activity), and [{ name, snapchat
+// }] for an unzipped Snapchat download.
 function findExports(dir) {
   const found = [];
   (function walk(folder, rel, depth) {
@@ -162,37 +179,44 @@ function findExports(dir) {
         if (/\.(zip|txt)$/i.test(e.name)) found.push({ name, file: full });
         return;
       }
-      if (e.name === 'messages' && isDir(path.join(full, 'inbox'))) { found.push({ name: downloadName(name), inbox: path.join(full, 'inbox') }); return; }
+      if (e.name === 'messages' && META_FOLDERS.some(f => isDir(path.join(full, f)))) {
+        const facebook = /(?:^|\/)(?:your_facebook_activity|facebook-[^/]*)\//i.test(`${name}/`) || isDir(path.join(folder, 'profile_information'));
+        found.push({ name: downloadName(name), messages: full, facebook });
+        return;
+      }
       if (depth < MAX_DEPTH && (depth === 0 || !MEDIA_DIR.test(e.name))) walk(full, name, depth + 1);
     });
   })(dir, '', 0);
   return found;
 }
 
-// An unzipped Instagram download's messages files, each named as it is in
-// the zip so the page reads it the same way: { kind ('instagram', or
-// 'instagram-html' if downloaded as HTML), files: [{ path, file, size,
-// modified }] }, or null if there are none.
-function inboxFiles(inbox) {
+// An unzipped Instagram or Facebook download's messages files, each named as
+// it is in the zip so the page reads it the same way: { kind ('instagram' or
+// 'messenger', or with -html if downloaded as HTML), files: [{ path, file,
+// size, modified }] }, or null if there are none.
+function messagesFiles(messages, facebook) {
+  const kind = facebook ? 'messenger' : 'instagram';
   const files = [];
   let html = false;
-  let threads = [];
-  try { threads = fs.readdirSync(inbox); } catch { return null; }
-  threads.forEach(thread => {
-    let names = [];
-    try { names = fs.readdirSync(path.join(inbox, thread)); } catch { return; }
-    names.forEach(name => {
-      if (/^message_\d+\.html$/.test(name)) html = true;
-      if (!/^message_\d+\.json$/.test(name)) return;
-      const file = path.join(inbox, thread, name);
-      try {
-        const stat = fs.statSync(file);
-        if (stat.isFile()) files.push({ path: `messages/inbox/${thread}/${name}`, file, size: stat.size, modified: stat.mtimeMs });
-      } catch { /* gone since it was listed */ }
+  META_FOLDERS.forEach(sub => {
+    let threads = [];
+    try { threads = fs.readdirSync(path.join(messages, sub)); } catch { return; }
+    threads.forEach(thread => {
+      let names = [];
+      try { names = fs.readdirSync(path.join(messages, sub, thread)); } catch { return; }
+      names.forEach(name => {
+        if (/^message_\d+\.html$/.test(name)) html = true;
+        if (!/^message_\d+\.json$/.test(name)) return;
+        const file = path.join(messages, sub, thread, name);
+        try {
+          const stat = fs.statSync(file);
+          if (stat.isFile()) files.push({ path: `messages/${sub}/${thread}/${name}`, file, size: stat.size, modified: stat.mtimeMs });
+        } catch { /* gone since it was listed */ }
+      });
     });
   });
-  if (files.length) return { kind: 'instagram', files };
-  return html ? { kind: 'instagram-html', files } : null;
+  if (files.length) return { kind, files };
+  return html ? { kind: `${kind}-html`, files } : null;
 }
 
 // An unzipped Snapchat download's chats and friends list, named as in its
@@ -212,7 +236,7 @@ function snapchatFiles(folder) {
 // What's in an unzipped download that was found ({ kind, files }), or null
 // for a zip or .txt.
 function unzippedFiles(found) {
-  if (found.inbox) return inboxFiles(found.inbox) || { kind: 'instagram', files: [] };
+  if (found.messages) return messagesFiles(found.messages, found.facebook) || { kind: found.facebook ? 'messenger' : 'instagram', files: [] };
   if (found.snapchat) return snapchatFiles(found.snapchat);
   return null;
 }
@@ -238,7 +262,7 @@ function listExports(dir) {
       const unzipped = unzippedFiles(found);
       if (unzipped) {
         if (!unzipped.files.length && !/-html$/.test(unzipped.kind)) return;
-        const modified = unzipped.files.length ? Math.max(...unzipped.files.map(f => f.modified)) : fs.statSync(found.inbox || found.snapchat).mtimeMs;
+        const modified = unzipped.files.length ? Math.max(...unzipped.files.map(f => f.modified)) : fs.statSync(found.messages || found.snapchat).mtimeMs;
         out.push({ name: found.name, kind: unzipped.kind, title: null, size: unzipped.files.reduce((n, f) => n + f.size, 0), modified });
         return;
       }
@@ -253,8 +277,7 @@ function listExports(dir) {
 
 // An unzipped download's chat files, as from its zip.
 function readUnzipped(found) {
-  if (found.kind === 'instagram-html') return { error: 'That Instagram download is in HTML. Download it again choosing JSON as the format.' };
-  if (found.kind === 'snapchat-html') return { error: 'That Snapchat download is only HTML. Request it again with "Export JSON files" turned on.' };
+  if (HTML_ERROR[found.kind]) return { error: HTML_ERROR[found.kind] };
   if (!found.files.length) return { error: "That download doesn't have any messages in it." };
   let total = 0;
   const files = found.files.map(f => {
@@ -283,10 +306,9 @@ function readExport(dir, name) {
     if (/\.txt$/i.test(base)) return { kind: 'whatsapp', title: whatsAppTitle(base), files: [{ path: base, text: buf.toString('utf8') }] };
     const entries = zipEntries(buf);
     const kind = kindOf(base, entries);
-    if (kind === 'instagram-html') return { error: 'That Instagram download is in HTML. Download it again choosing JSON as the format.' };
-    if (kind === 'snapchat-html') return { error: 'That Snapchat download is only HTML. Request it again with "Export JSON files" turned on.' };
-    if (!kind) return { error: "That zip doesn't have a WhatsApp, Instagram or Snapchat chat in it." };
-    const wanted = kind === 'instagram' ? entries.filter(e => INSTAGRAM_JSON.test(e.name))
+    if (HTML_ERROR[kind]) return { error: HTML_ERROR[kind] };
+    if (!kind) return { error: "That zip doesn't have a WhatsApp, Instagram, Messenger or Snapchat chat in it." };
+    const wanted = kind === 'instagram' || kind === 'messenger' ? entries.filter(e => META_JSON.test(e.name))
       : kind === 'snapchat' ? entries.filter(e => SNAPCHAT_JSON.test(e.name))
         : entries.filter(e => /(^|\/)[^/]*\.txt$/i.test(e.name) && !e.name.startsWith('__MACOSX')).slice(0, 1);
     let total = 0;

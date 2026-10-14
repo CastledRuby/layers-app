@@ -871,6 +871,10 @@ style). Most conversations happen face to face, where there's no chat for Claude
   its "Logged time with …" message, and on such logs in the Journal: Analyse opens on In
   person with who, what and when filled in, and **Add to your log** puts the review and
   your notes on that log, keeping your own ratings, instead of logging it twice.
+- **Messenger**: Facebook's "Download your information" (Messages, as JSON), saved in the
+  Layers chats folder like Instagram's, shows its chats as Messenger, archived ones and
+  those from before end-to-end encryption included, to analyse, reply to and learn your
+  style from. Newer end-to-end encrypted chats may not be in Facebook's download.
 
 ### Your style with people you're not close to (not released yet)
 

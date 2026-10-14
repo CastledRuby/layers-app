@@ -1,6 +1,7 @@
 // Chats from your exports, for Coach's Analyse (docs/renderer/state-and-data.md,
 // "Chats from your exports"): WhatsApp's "Export chat" (a .txt, usually in a
-// zip) and Instagram's "Download your information" (Messages, as JSON), saved
+// zip) and Instagram's or Facebook's (Messenger) "Download your information"
+// (Messages, as JSON), saved
 // in the Layers chats folder, which the main process reads
 // (electron/chatfiles.cjs). Here each chat is read into messages, split into
 // conversations, matched to your people, and written out as text for
@@ -259,10 +260,12 @@ export function parseSnapchat(files = []) {
 // Instagram's messages files ({ path, text }), as chats: [{ id, title,
 // participants, messages: [{ at, sender, text, note?, reactions? }] }], each
 // chat's messages in order. Chats with Meta AI are left out.
+// Messenger's download (Facebook's) is the same format, with archived chats
+// and those from before end-to-end encryption in folders of their own.
 export function parseInstagram(files = []) {
   const threads = new Map();
   files.forEach(({ path, text }) => {
-    const m = String(path).match(/messages\/inbox\/([^/]+)\/message_\d+\.json$/);
+    const m = String(path).match(/messages\/(?:inbox|archived_threads|e2ee_cutover)\/([^/]+)\/message_\d+\.json$/);
     if (!m) return;
     let data = null;
     try { data = JSON.parse(text); } catch { return; }
@@ -305,8 +308,9 @@ export function chatsFromExport(file, read, { dayFirst } = {}) {
     return [{ key: `whatsapp:${named.toLowerCase()}`, source: 'whatsapp', title: named, participants, messages }];
   }
   if (read.kind === 'snapchat') return parseSnapchat(read.files);
-  if (read.kind === 'instagram') {
-    return parseInstagram(read.files).map(t => ({ key: `instagram:${t.id}`, source: 'instagram', title: t.title || t.participants.join(', '), participants: t.participants, messages: t.messages }));
+  if (read.kind === 'instagram' || read.kind === 'messenger') {
+    const source = read.kind;
+    return parseInstagram(read.files).map(t => ({ key: `${source}:${t.id}`, source, title: t.title || t.participants.join(', '), participants: t.participants, messages: t.messages }));
   }
   return [];
 }
@@ -347,6 +351,9 @@ export function everywhereName(chats) {
   const [firstChat, ...rest] = chats.map(c => new Set([...c.participants, ...c.messages.map(m => m.sender)]));
   return [...firstChat].filter(n => rest.every(s => s.has(n)));
 }
+// Your name in each of Meta's apps, told apart the same way: Instagram's and
+// Messenger's chats each by themselves (you may go by different names).
+export const everywhereNames = (chats) => ['instagram', 'messenger'].flatMap(source => everywhereName(chats.filter(c => c.source === source)));
 
 // Who in your circle a chat is with: { ids, nameFor } (nameFor gives the
 // name a message is shown with: theirs in Layers, so it's hidden properly).
@@ -411,7 +418,7 @@ export function conversationLabel(conv) {
 // for a chat Layers hasn't seen before, if it's from the last `newDays`.
 export const NEW_DAYS = 14;
 export function chatRows(chats, { people = [], yourName = '', progress = {}, now = Date.now(), newDays = NEW_DAYS } = {}) {
-  const everywhere = everywhereName(chats.filter(c => c.source === 'instagram'));
+  const everywhere = everywhereNames(chats);
   return chats.map(chat => {
     const mine = progress[chat.key] || {};
     const owner = ownerOf(chat, { yourName, picked: mine.me, everywhere });
@@ -435,7 +442,7 @@ export function saveChatProgress(key, change) {
 }
 
 // Where a chat came from, in words.
-const SOURCES = { whatsapp: 'WhatsApp', instagram: 'Instagram', imessage: 'iMessage', snapchat: 'Snapchat' };
+const SOURCES = { whatsapp: 'WhatsApp', instagram: 'Instagram', messenger: 'Messenger', imessage: 'iMessage', snapchat: 'Snapchat' };
 export const sourceLabel = (source) => SOURCES[source] || 'Chat';
 
 // --- Reading the folder --------------------------------------------------------------
@@ -459,6 +466,7 @@ export async function loadChatExports(bridge, { dayFirst } = {}) {
   const problems = [];
   for (const f of files || []) {
     if (f.kind === 'instagram-html') { problems.push({ name: f.name, error: 'That Instagram download is in HTML. Download it again choosing JSON as the format.' }); continue; }
+    if (f.kind === 'messenger-html') { problems.push({ name: f.name, error: 'That Facebook download is in HTML. Download it again choosing JSON as the format.' }); continue; }
     if (f.kind === 'snapchat-html') { problems.push({ name: f.name, error: 'That Snapchat download is only HTML. Request it again with "Export JSON files" turned on.' }); continue; }
     const hit = cache.get(f.name);
     if (hit && hit.modified === f.modified) { all.push(...hit.chats); continue; }
