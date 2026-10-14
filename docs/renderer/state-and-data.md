@@ -794,6 +794,33 @@ will be sent.
 - Only in the desktop app: the browser preview has nowhere safe for a key, so it shows
   the samples only.
 
+### A conversation in person
+
+Decided 2026-10-14. The same card's **Chat | In person** switch (I) takes your notes on a
+conversation face to face instead of a chat. Claude reads them like a chat, and
+everything after it is the same (the review, details to save, the log), except as
+said here.
+
+- **What you write**: four short questions, each optional (`NOTE_FIELDS` in
+  `lib/analysis.js`): what you talked about, what they shared ("What did Amelie
+  share?" with one person), what you shared, and how it ended. Above them, what you did
+  (Talked, Hung out, Activity, Called: `IN_PERSON_KINDS`) and the day (today unless
+  changed). Ctrl+Enter in any box analyses them. Windows dictation (Win+H) works in each.
+- **What's sent** (`analysisRequest` with `notes` and `kind`): what Layers already
+  knows about them, then the notes under their headings, names hidden the same way
+  (`[them]`, `[you]`); the questions you skipped aren't sent. The system prompt says it's
+  the user's notes on a conversation in person, not a chat. It says what to look for
+  in notes (depth, listening, what each shared, how it flowed and ended), to score only
+  what the notes show, never to invent what anyone said, and that "what to say next" is
+  a message to send them after.
+- **The result** (`analysisResult` with `inPerson`): `inPerson` set, no transcript (any
+  Claude writes is dropped) and no numbers. It shows **Your notes**, with Claude's
+  moments quoted from them, in place of the reconstructed conversation, and **What to
+  send them after**. The log is that kind (`log.type`), on the day you picked. **Log this
+  conversation** (L) keeps the review and your notes on the entry (`analysisToKeep`:
+  `inPerson`, and the notes as `chat`, `notesText`), checked like a backup. The
+  Journal's review is titled **Review**, shows **Your notes**, and has no numbers.
+
 ### Skills over time
 
 From the chats you analysed and logged (journal entries with `analysis.grading`):

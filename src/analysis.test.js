@@ -4,7 +4,7 @@
 import { describe, expect, it } from 'vitest';
 import { CATEGORIES } from './data/constants.js';
 import { MODELS } from '../electron/analysis.cjs';
-import { addSpend, ANALYSIS_MODELS, ANALYSIS_SCHEMA, analysisContext, analysisCost, analysisRequest, analysisResult, analysisSchema, analysisSystem, analysisToKeep, chatSpeakers, DEFAULT_ANALYSIS_MODEL, detectPeople, dollarsText, hideNames, otherSpeakers, restoreNames, spendSummary, typicalCost } from './lib/analysis.js';
+import { addSpend, ANALYSIS_MODELS, ANALYSIS_SCHEMA, analysisContext, analysisCost, analysisRequest, analysisResult, analysisSchema, analysisSystem, analysisToKeep, chatSpeakers, DEFAULT_ANALYSIS_MODEL, detectPeople, dollarsText, hasNotes, hideNames, notesText, otherSpeakers, restoreNames, spendSummary, typicalCost } from './lib/analysis.js';
 
 const priya = { id: 'p1', name: 'Priya Shah', layer: 2 };
 const amelie = { id: 'a', name: 'Amelie', layer: 4, interests: [{ text: 'Reading' }] };
@@ -121,6 +121,23 @@ describe('the request', () => {
     expect(analysisSystem({ today: TODAY, dayFirst: false })).not.toContain('day first');
   });
 
+  it('for a conversation in person: your notes under their headings, names hidden, skipped ones left out, and Claude told it is notes (2026-10-14)', () => {
+    const req = analysisRequest({ people: [amelie], yourName: 'Liam', notes: { talked: 'Amelie and I talked about her job', theyShared: '', youShared: 'my exam, Liam the nerd', ended: '' }, kind: 'called', today: TODAY });
+    expect(req.content).toEqual([{ type: 'text', text: expect.stringContaining("THE USER'S NOTES, written after:\n\nWhat you talked about:\n[them] and I talked about her job\n\nWhat the user shared:\nmy exam, [you] the nerd") }]);
+    expect(req.content[0].text).not.toContain('What [them] shared');
+    expect(req.system).toContain('One conversation on a call between [you] and [them]');
+    expect(req.system).toContain('never invent what anyone said');
+    expect(req.system).not.toContain('THE CHAT.');
+    expect(req.system).toContain('FOR NOTES, NOT A CHAT');
+    expect(req.deep).toBe(true);
+    const group = analysisRequest({ people: [amelie, chloe], yourName: 'Liam', notes: { theyShared: 'Chloe is moving' }, kind: 'nonsense', today: TODAY });
+    expect(group.content[0].text).toContain('What they shared:\n[them 2] is moving');
+    expect(group.system).toContain('face to face'); // an unknown kind is talking
+    expect(analysisSystem({ layers: [3], today: TODAY })).not.toContain('FOR NOTES');
+    expect(notesText({ talked: ' work ', ended: 'hugged' })).toBe('What you talked about:\nwork\n\nHow it ended:\nhugged');
+    expect(hasNotes({ talked: '  ' })).toBe(false);
+  });
+
   it('says where the chat is when there are only screenshots, and sends six at most', () => {
     const images = Array.from({ length: 8 }, (_, i) => ({ mediaType: 'image/jpeg', data: `I${i}` }));
     const req = analysisRequest({ person: priya, yourName: 'Sam', text: '', images });
@@ -209,6 +226,14 @@ describe('the answer', () => {
     });
     // One person's chat has no each.
     expect(analysisResult({ ...answer, log: { ...answer.log, each: [{ about: 'them', meaningfulness: 1, ratings: {} }] } }, amelie, { today: TODAY }).log).not.toHaveProperty('each');
+  });
+
+  it('for a conversation in person: says so, shows no chat or numbers, logs it as that kind, and keeps the kind (2026-10-14)', () => {
+    const r = analysisResult(answer, amelie, { today: TODAY, inPerson: 'hangout', numbers: { you: {} } });
+    expect(r).toMatchObject({ inPerson: 'hangout', title: 'Your conversation', transcript: [], numbers: null });
+    expect(r.log).toMatchObject({ type: 'hangout', date: null }); // the day you picked, not a chat's times
+    expect(analysisToKeep(r, { chat: 'What you talked about:\nher job' })).toMatchObject({ inPerson: 'hangout', chat: 'What you talked about:\nher job' });
+    expect(analysisResult(answer, amelie, { today: TODAY, inPerson: 'messaged' })).not.toHaveProperty('inPerson');
   });
 
   it("only takes the chat's day when it's a real day, not in the future, and within the year", () => {

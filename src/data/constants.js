@@ -84,6 +84,7 @@ export const SHORTCUTS = [
   { keys: ['R'], desc: 'Coach, Prepare: practise talking with them first (Practise: ↵ sends, Shift+↵ a new line, Ctrl+↵ ends it for feedback)', where: ['coach'] },
   { keys: ['Q', 'W', 'E'], or: true, desc: 'Coach, What to say: copy the natural, playful or deeper reply (Ctrl+↵ in the box asks for them)', where: ['coach'] },
   { keys: ['S', 'L'], or: true, desc: 'Coach, an analysed chat: Save every detail found, Log it (Ctrl+↵ in the chat box analyses it)', where: ['coach'] },
+  { keys: ['I'], desc: 'Coach, Analyse: a conversation in person instead of a chat, your notes under four short questions (Ctrl+↵ in any of them analyses them; I again goes back to a chat)', where: ['coach'] },
   { keys: ['A', 'R'], or: true, desc: 'Coach, Analyse: Analyse all new chats from your exports, or Review the answers ready (then ↵ logs one, X skips it, E the full review, B reminders, 1–9 leave a detail out, ⇧↵ logs them all)', where: ['coach', 'queue'] },
   { keys: ['1–5', 'F'], or: true, desc: 'Me: switch sections (You, Calendar, Claude, App, Your data), or find a setting', where: ['me'] },
   { keys: ['/'], desc: 'Jump to search (People or Journal)', where: ['people', 'journal'] },

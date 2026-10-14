@@ -404,7 +404,8 @@ are first (`keysHere`: the top sheet's `keysFor`, else a profile or the tab), th
   the icon, T temporary, Enter; `EditProfileModal` N your name, 1–4 your focus, Enter.
   Coach's Prepare (`CoachView`'s own listener, while no sheet is open) has ← → for who
   you're about to talk to, L log, A analyse, O their profile, and 1 and 2 for Prepare
-  and Analyse. `ChatQueueSheet` (Ready to review): Enter logs one, X skips it, E its
+  and Analyse; on Analyse, I switches between a chat and a conversation in person (your
+  notes; Ctrl+Enter in any box analyses them). `ChatQueueSheet` (Ready to review): Enter logs one, X skips it, E its
   full review, B its reminders, 1–9 leave a detail out, ← → the one before or after,
   and Shift+Enter logs them all.
 - **`PhotoFolderSheet`**: U (or Enter) chooses a folder (`<input webkitdirectory>`;

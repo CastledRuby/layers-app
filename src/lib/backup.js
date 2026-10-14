@@ -10,7 +10,7 @@ import { EMPTY_SKILLS } from '../data/seed.js';
 import { cleanAvatar } from '../data/avatars.js';
 import { clamp, uid } from './util.js';
 import { cleanDeleted } from './sync.js';
-import { KEPT_CHAT } from './analysis.js';
+import { IN_PERSON_KINDS, KEPT_CHAT } from './analysis.js';
 
 export const BACKUP_VERSION = 1;
 // Far beyond any real backup; stops a wrong file (a video, say) being read into memory.
@@ -119,6 +119,7 @@ function cleanAnalysis(a) {
   };
   if (typeof out.grading.overall !== 'number') return null;
   if (isText(a.model)) out.model = a.model;
+  if (IN_PERSON_KINDS.includes(a.inPerson)) out.inPerson = a.inPerson; // your notes on a conversation in person (2026-10-14)
   if (typeof a.chat === 'string') out.chat = a.chat.slice(-(KEPT_CHAT + 40));
   if (isObject(a.review)) {
     const r = a.review;

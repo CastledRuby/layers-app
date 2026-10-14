@@ -855,6 +855,19 @@ its own. Changes made while building are marked.
 
 ## History
 
+### Conversations in person (not released yet)
+
+More chats, step 1 (picked 2026-10-14: in person, then Messenger; Discord for your
+style). Most conversations happen face to face, where there's no chat for Claude to read.
+
+- **Coach → Analyse → In person** (I): what you did (Talked, Hung out, Activity, Called),
+  the day, and four short questions, each optional: what you talked about, what they
+  shared, what you shared, how it ended. Claude reads your notes like a chat: what went
+  well, what to try, the details worth remembering to save, moments quoted from your
+  notes, and what to send them after. It never makes up what anyone said.
+- **Log this conversation** logs it as what you did, keeping the review and your notes,
+  to read again from the Journal.
+
 ### Your style with people you're not close to (not released yet)
 
 Asked for on 2026-10-11, "Layers learns it" picked; read on 2026-10-13 with your

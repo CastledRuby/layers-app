@@ -22,8 +22,9 @@ function fakeBridge({ hasKey = true } = {}) {
 }
 afterEach(() => { delete window.layersSystem; });
 
-const sam = person('Sam Lee', { layer: 3 });
-const seed = () => seedState({ profile: { name: 'Liam', focus: 'mix', style: 'lowercase' }, people: [sam] });
+// Rowan: a name no drill's made-up person has, so finding it in what's sent means a leak.
+const rowan = person('Rowan Lee', { layer: 3 });
+const seed = () => seedState({ profile: { name: 'Liam', focus: 'mix', style: 'lowercase' }, people: [rowan] });
 const card = () => screen.queryByLabelText("Today's drill");
 
 describe("today's drill", () => {
@@ -39,7 +40,7 @@ describe("today's drill", () => {
 
     await app.user.keyboard('r');
     expect(document.activeElement).toBe(within(card()).getByLabelText('Your reply'));
-    await app.user.keyboard('yes!! with Sam too?{Enter}');
+    await app.user.keyboard('yes!! with Rowan too?{Enter}');
     await waitFor(() => expect(within(card()).getByLabelText('Better reply').textContent).toBe('sat arvo? climbing gym, 2pm'));
     expect(within(card()).getByLabelText('Score').textContent).toBe('64');
     expect(card().textContent).toContain('✓ Friendly, and you kept it open.');
@@ -47,7 +48,7 @@ describe("today's drill", () => {
     expect(sent.content[0].text).toContain(drill.text);
     expect(sent.content[0].text).toContain('"yes!! with [someone] too?"');
     expect(sent.system).toContain('"lowercase"');
-    expect(JSON.stringify(sent)).not.toMatch(/Sam|Liam/);
+    expect(JSON.stringify(sent)).not.toMatch(/Rowan|Liam/);
     expect(JSON.parse(window.localStorage.getItem('layers-practice'))).toEqual([{ at: TODAY, situation: 'drill', drill: drill.key, grading: { overall: 64, depth: null, activeListening: null, reciprocity: null, naturalness: null } }]);
 
     const again = relaunch(app);

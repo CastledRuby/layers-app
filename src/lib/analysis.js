@@ -155,10 +155,28 @@ function writesDayFirst() {
 }
 const WEEKDAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
+// A conversation in person (decided 2026-10-14): your notes, written after,
+// under these headings ([them] is the person, or "they" in a group), read
+// like a chat. Which kind it was is the log's type.
+export const NOTE_FIELDS = [
+  ['talked', 'What did you talk about?', 'What you talked about'],
+  ['theyShared', 'What did they share?', 'What they shared'],
+  ['youShared', 'What did you share?', 'What you shared'],
+  ['ended', 'How did it end?', 'How it ended'],
+];
+const IN_PERSON = { talked: 'face to face', hangout: 'while hanging out', activity: 'while doing something together', called: 'on a call' };
+export const IN_PERSON_KINDS = Object.keys(IN_PERSON);
+export const hasNotes = (notes) => NOTE_FIELDS.some(([k]) => String((notes || {})[k] || '').trim());
+// Your notes as one text, to keep on the log (the Journal's review).
+export function notesText(notes = {}) {
+  return NOTE_FIELDS.filter(([k]) => String(notes[k] || '').trim()).map(([k, , label]) => `${label}:\n${String(notes[k]).trim()}`).join('\n\n');
+}
+
 // What Claude is told: who's who (only how close each person is, from their
 // layer), what to look for and how to score it, and what to write. Nothing
-// else about anyone is sent.
-export function analysisSystem({ layers = [1], today = new Date(), dayFirst = writesDayFirst() } = {}) {
+// else about anyone is sent. inPerson: the kind of conversation in person
+// ('talked', 'hangout', 'activity', 'called') when it's your notes, not a chat.
+export function analysisSystem({ layers = [1], today = new Date(), dayFirst = writesDayFirst(), inPerson = null } = {}) {
   const tokens = tokensFor(layers.length);
   const group = tokens.length > 1;
   const them = tokens.map((t, i) => {
@@ -168,11 +186,18 @@ export function analysisSystem({ layers = [1], today = new Date(), dayFirst = wr
   return [
     'You are the conversation coach inside Layers, a private app that helps someone be more intentional about their relationships and get better at conversation. You are coaching the user, [you]. Be warm, specific and honest, like a perceptive friend; never preachy, and never judge the other person.',
 
-    `THE CHAT. One conversation between [you] and ${group ? `a group: ${them}` : them}. Real names have been swapped for these tags. Refer to people only by their tags and to the user as "you", even if a screenshot shows a name. In pasted text, a line starting with a tag (perhaps after a timestamp) is that person's message. In screenshots, bubbles on the right are usually the user's. If it's unclear who sent something, decide from the context. Today is ${WEEKDAYS[today.getDay()]} ${toISODate(today)}${dayFirst ? '; dates in the chat are probably written day first (31/12)' : ''}.`,
+    inPerson ? `THE CONVERSATION. One conversation ${IN_PERSON[inPerson] || IN_PERSON.talked} between [you] and ${group ? `a group: ${them}` : them}, not a text chat. All you have is the user's own notes, written afterwards under four headings: what they talked about, what ${group ? 'the others' : '[them]'} shared, what the user shared, and how it ended. Real names have been swapped for these tags. Refer to people only by their tags and to the user as "you". The notes are partial and in the user's own words: judge from what's there, say so when something isn't clear, and never invent what anyone said. Today is ${WEEKDAYS[today.getDay()]} ${toISODate(today)}.`
+      : `THE CHAT. One conversation between [you] and ${group ? `a group: ${them}` : them}. Real names have been swapped for these tags. Refer to people only by their tags and to the user as "you", even if a screenshot shows a name. In pasted text, a line starting with a tag (perhaps after a timestamp) is that person's message. In screenshots, bubbles on the right are usually the user's. If it's unclear who sent something, decide from the context. Today is ${WEEKDAYS[today.getDay()]} ${toISODate(today)}${dayFirst ? '; dates in the chat are probably written day first (31/12)' : ''}.`,
 
     'BEFORE THE CHAT the message may give WHAT LAYERS ALREADY KNOWS (details saved before this chat, the user\'s goals with them, and LAST TIME\'S TIP) and THE NUMBERS (counted exactly from the chat). Use them: build on what is known, judge the tip, and let the numbers anchor reciprocity and balance.',
 
-    `WHAT TO LOOK FOR. Read the whole chat and work through these before scoring, pointing at specific messages in what you write:
+    inPerson ? `WHAT TO LOOK FOR. Read the notes and work through these before scoring, pointing at what the notes say:
+1. Depth: small talk and logistics, opinions and plans, or feelings, worries and hopes? When someone opened up, did the other meet it (share back, ask more) or move past it?
+2. Listening: did the user ask follow-up questions, come back to something from before, notice how they felt? Or turn to themselves too soon, or let something they said go by?
+3. Reciprocity: compare what they shared with what the user shared. Even, or one side carrying it (an interview, or a monologue)?
+4. How it flowed: relaxed or awkward, who brought up topics, any silences or rushed moments, as far as the notes say.
+5. How it ended: warmly, with a plan to meet again, or trailing off?`
+      : `WHAT TO LOOK FOR. Read the whole chat and work through these before scoring, pointing at specific messages in what you write:
 1. Depth: is it logistics and small talk, opinions and plans, or feelings, worries and hopes? When someone opened up, did the other meet it (share back, ask more) or move past it?
 2. Listening: does the user answer what was actually said? Look for follow-up questions about their words, coming back to details, naming a feeling ("that sounds stressful"), clarifying. Watch for shift responses (turning to themselves too soon: "same, I…") and missed bids (a question, news or feeling the user skipped).
 3. Reciprocity: who asks, who shares, who starts topics, and how long each side's messages are. Balanced, or one side carrying it (an interview, or a monologue)?
@@ -199,7 +224,9 @@ emotionalCues: up to three things ${group ? 'the others' : 'they'} may be feelin
 recommendation: one sentence when the best move is to let it rest (it ended naturally, they're winding down, or the user sent the last messages without a reply); otherwise null.
 extractedInfo: be thorough. Go through the chat message by message and list every detail about ${group ? 'the others (about: whose it is)' : 'them'} that a good friend would remember, said or confirmed by them rather than the user. Look for: people in their life (family, friends, a partner, pets, workmates, with names and how they're related), places (where they live, work, study, go out, have been or are going), work and study (their job, course, subjects, shifts, exams), anything coming up (with when: "Job interview on Thu 15 Oct"), things that have happened to them, what they like and dislike (food, drinks, music, shows, games, sports, hobbies), how they like to do things, worries, wins, and anything they asked the user to remember. One detail per item; don't merge separate details, and don't stop at a few: a long chat often has ten or more. Leave out only what has nothing to remember (greetings, "lol", plans already done with). Categories: interests (things they enjoy), preferences (likes, dislikes, how they like to do things), plans (things coming up), experiences (things that have happened to them, and the people and places in their life), important (time-sensitive things to follow up, like an exam, an interview, being unwell or a worry; temporary true). Short and specific ("Starts a new job at the library on Mon 12 Oct"), only what was actually said. Very sensitive things (health, sexuality, religion, family trouble) only if clearly shared and worth remembering, worded kindly. when: the day it happens as YYYY-MM-DD, for something coming up or time-sensitive whose day is said or clear, worked out from when it was said (the message's date if the chat shows one, otherwise today); empty if there's no day.
 next: ideas for the user's next message, in the slots that fit (null for the rest): continueTopic, shareYourself, changeTopic, dontMessage. Each has text (a one-line idea) and three ready-to-send messages written exactly in the user's own style from this chat (their length, capitals, punctuation, emoji and slang): natural, playful, deeper. Mention something specific from the chat; never generic. Use dontMessage when the chat has wound down or a moment should be left to sit; its three messages are then light, closing ones, in case they still want to say something.`,
-  ].join('\n\n');
+
+    inPerson ? `FOR NOTES, NOT A CHAT (this overrides the above where they differ): transcript is empty. Score only what the notes show: a short note isn't a bad conversation, and naturalness is how relaxed and easy it seems. sharedExperiences counts being together in person. moments quote a few words of the notes themselves, never invented dialogue. encourager is null unless the notes give the user's exact words. conversationState is how ${group ? 'the others' : '[them]'} seemed by the end. recommendation is null unless the notes suggest giving them space. extractedInfo: every detail the notes say ${group ? 'the others' : '[them]'} shared, the same way. activeListening: only what the notes clearly show. chatDate is empty. next: ideas for a message to send ${group ? 'them' : '[them]'} after seeing them (thanks, following up on something they shared, the plan made), in the user's own style.` : '',
+  ].filter(Boolean).join('\n\n');
 }
 
 const escapeRe = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -281,19 +308,45 @@ export function analysisContext(group = [], journal = [], { max = 15 } = {}) {
 // The last tip with anyone in the chat, for the result (analysisResult).
 export const lastTipFor = (group = [], journal = []) => analysisContext(group, journal).map(c => c.lastTip).find(Boolean) || null;
 
-// journal: for what Layers already knows about them (analysisContext).
-export function analysisRequest({ people, person, yourName, text, images = [], model = DEFAULT_ANALYSIS_MODEL, today = new Date(), dayFirst, journal = [] }) {
-  const group = people || (person ? [person] : []);
-  const pasted = String(text || '').trim();
-  const others = otherSpeakers(pasted, group, yourName);
-  const hide = (t) => hideNames(t, { names: group.map(namesOf), yourName, others });
-  const alsoIn = others.length ? `Also in this chat, and not who it's about: ${others.map((_, i) => `[someone ${i + 1}]`).join(', ')}.\n\n` : '';
+// What Layers already knows, as the lines sent before the chat (or notes).
+function knownFor(group, journal, hide) {
   const tokens = tokensFor(group.length);
-  const known = analysisContext(group, journal).map((c, i) => [
+  return analysisContext(group, journal).map((c, i) => [
     c.details.length ? `What [${tokens[i]}] has told the user before (saved already, so don't list these in extractedInfo again; notice when the user builds on them):\n${c.details.map(d => `- ${hide(d)}`).join('\n')}` : '',
     c.goals.length ? `The user's goals with [${tokens[i]}]: ${c.goals.map(hide).join('; ')}.` : '',
     c.lastTip ? `LAST TIME'S TIP for the user with [${tokens[i]}]${c.lastTip.at ? ` (${c.lastTip.at})` : ''}: "${hide(c.lastTip.text)}"` : '',
   ].filter(Boolean).join('\n')).filter(Boolean);
+}
+
+// A conversation in person: what Layers knows, then your notes under their
+// headings, names hidden as in a chat.
+function notesRequest({ group, yourName, notes, kind, model, today, journal }) {
+  const hide = (t) => hideNames(t, { names: group.map(namesOf), yourName });
+  const known = knownFor(group, journal, hide);
+  const theirs = group.length > 1 ? 'What they shared' : 'What [them] shared';
+  const body = NOTE_FIELDS.filter(([k]) => String(notes[k] || '').trim())
+    .map(([k, , label]) => `${k === 'theyShared' ? theirs : k === 'youShared' ? 'What the user shared' : label}:\n${hide(String(notes[k]).trim())}`).join('\n\n');
+  const text = `${known.length ? `WHAT LAYERS ALREADY KNOWS\n${known.join('\n\n')}\n\n` : ''}THE USER'S NOTES, written after:\n\n${body}`;
+  return {
+    system: analysisSystem({ layers: group.map(p => p.layer), today, inPerson: IN_PERSON[kind] ? kind : 'talked' }),
+    content: [{ type: 'text', text }],
+    schema: analysisSchema(tokensFor(group.length)),
+    model: analysisModel(model).id,
+    deep: true,
+  };
+}
+
+// journal: for what Layers already knows about them (analysisContext).
+// notes ({ talked, theyShared, youShared, ended }) and kind: a conversation
+// in person, your notes sent instead of a chat (NOTE_FIELDS).
+export function analysisRequest({ people, person, yourName, text, images = [], model = DEFAULT_ANALYSIS_MODEL, today = new Date(), dayFirst, journal = [], notes = null, kind = 'talked' }) {
+  const group = people || (person ? [person] : []);
+  if (notes) return notesRequest({ group, yourName, notes, kind, model, today, journal });
+  const pasted = String(text || '').trim();
+  const others = otherSpeakers(pasted, group, yourName);
+  const hide = (t) => hideNames(t, { names: group.map(namesOf), yourName, others });
+  const alsoIn = others.length ? `Also in this chat, and not who it's about: ${others.map((_, i) => `[someone ${i + 1}]`).join(', ')}.\n\n` : '';
+  const known = knownFor(group, journal, hide);
   const numbers = pasted ? chatNumbers(pasted, { yourName }) : null;
   const before = [
     known.length ? `WHAT LAYERS ALREADY KNOWS\n${known.join('\n\n')}` : '',
@@ -321,8 +374,10 @@ export function analysisRequest({ people, person, yourName, text, images = [], m
 // their profile are left out.
 // `others`: the names hidden as [someone 1]… (otherSpeakers of the chat sent).
 // `numbers` (lib/chatNumbers.js) and `lastTip` (analysisContext) are worked
-// out here, not by Claude, and shown with it.
-export function analysisResult(raw, people, { today = new Date(), others = [], numbers = null, lastTip = null } = {}) {
+// out here, not by Claude, and shown with it. inPerson: the kind of
+// conversation in person when it was your notes; the result says so
+// (inPerson), has no chat (transcript), and its log has that type.
+export function analysisResult(raw, people, { today = new Date(), others = [], numbers = null, lastTip = null, inPerson = null } = {}) {
   const group = Array.isArray(people) ? people : [people];
   const names = group.map(p => p.name);
   const tokens = tokensFor(group.length);
@@ -349,10 +404,12 @@ export function analysisResult(raw, people, { today = new Date(), others = [], n
   // A detail's day (an interview on Thursday), within a year either way.
   const yearAhead = new Date(today.getFullYear() + 1, today.getMonth(), today.getDate());
   const whenOf = (s) => { const d = parseISODay(s); return d && d >= yearAgo && d <= yearAhead ? toISODate(d) : null; };
+  const kind = IN_PERSON[inPerson] ? inPerson : null;
   return {
-    key: 'own', title: 'Your chat', own: true,
+    key: 'own', title: kind ? 'Your conversation' : 'Your chat', own: true,
+    ...(kind ? { inPerson: kind } : {}),
     personIds: group.map(p => p.id),
-    transcript: listOf(r.transcript).filter(m => m && typeof m.text === 'string' && (m.who === 'you' || tokens.includes(m.who)))
+    transcript: kind ? [] : listOf(r.transcript).filter(m => m && typeof m.text === 'string' && (m.who === 'you' || tokens.includes(m.who)))
       .map(m => (m.who === 'you' ? { who: 'you', text: m.text } : { who: 'them', text: m.text, ...(group.length > 1 ? { name: first(personFor(m.who)) } : {}) })),
     conversationState: CONV_STATES[r.conversationState] ? r.conversationState : 'unclear',
     recommendation: typeof r.recommendation === 'string' && r.recommendation.trim() ? r.recommendation : null,
@@ -364,7 +421,7 @@ export function analysisResult(raw, people, { today = new Date(), others = [], n
     tipFollowed: lastTip && typeof r.tipFollowed === 'string' ? r.tipFollowed.trim() : '',
     moments: listOf(r.moments).filter(m => m && typeof m.quote === 'string' && m.quote.trim() && ['good', 'missed'].includes(m.kind))
       .slice(0, 4).map(m => ({ quote: m.quote.trim().replace(/^["“]|["”]$/g, ''), kind: m.kind, note: typeof m.note === 'string' ? m.note.trim() : '' })),
-    numbers: numbers || null,
+    numbers: kind ? null : numbers || null,
     encourager: r.encourager && typeof r.encourager.line === 'string' ? { type: r.encourager.type === 'good' ? 'good' : 'improve', line: r.encourager.line, why: String(r.encourager.why || '') } : null,
     emotionalCues: listOf(r.emotionalCues).filter(x => x && typeof x.text === 'string').slice(0, 3),
     extractedInfo: listOf(r.extractedInfo)
@@ -374,12 +431,13 @@ export function analysisResult(raw, people, { today = new Date(), others = [], n
     next: { continueTopic: tone(r.next && r.next.continueTopic), shareYourself: tone(r.next && r.next.shareYourself), changeTopic: tone(r.next && r.next.changeTopic), dontMessage: tone(r.next && r.next.dontMessage) },
     log: {
       personIds: group.map(p => p.id),
+      ...(kind ? { type: kind } : {}),
       meaningfulness: clamp(lg.meaningfulness || 3, 1, 5),
       ratings: ratingsOf(ratingsIn),
       ...(Object.keys(each).length ? { each } : {}),
       activeListening: [...new Set(listOf(lg.activeListening))].filter(k => AL_ITEMS.some(a => a.key === k)),
       summary: typeof lg.summary === 'string' ? lg.summary.trim().slice(0, 120) : '',
-      date: day && day <= today && day >= yearAgo ? toISODate(day) : null,
+      date: !kind && day && day <= today && day >= yearAgo ? toISODate(day) : null,
     },
   };
 }
@@ -388,7 +446,9 @@ export function analysisResult(raw, people, { today = new Date(), others = [], n
 // Logging an analysed chat keeps, on the Journal entry, the scores and state,
 // Claude's review and the chat itself (your choice on 2026-10-07): the chat
 // as you gave it, or for screenshots Claude's reading of them, with real
-// names. Only its last KEPT_CHAT characters, so saved data stays small.
+// names. Only its last KEPT_CHAT characters, so saved data stays small. A
+// conversation in person keeps your notes (notesText) as its chat, and which
+// kind it was (inPerson).
 export const KEPT_CHAT = 20000;
 export function analysisToKeep(result, { model, chat = '' } = {}) {
   const text = String(chat || '').trim()
@@ -397,6 +457,7 @@ export function analysisToKeep(result, { model, chat = '' } = {}) {
     grading: result.grading,
     conversationState: result.conversationState,
     ...(model ? { model } : {}),
+    ...(result.inPerson ? { inPerson: result.inPerson } : {}),
     review: {
       wentWell: result.wentWell, opportunity: result.opportunity, tryNextTime: result.tryNextTime,
       ...(result.moments && result.moments.length ? { moments: result.moments } : {}),

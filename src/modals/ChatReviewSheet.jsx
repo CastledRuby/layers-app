@@ -4,7 +4,8 @@
 // analysisToKeep); older analysed logs have only the scores and state.
 // Since 2026-10-11 it also shows last time's tip and whether you followed it,
 // the moments Claude pointed at, and the numbers, counted again from the
-// kept chat (lib/chatNumbers.js).
+// kept chat (lib/chatNumbers.js). A conversation in person (inPerson, from
+// 2026-10-14) keeps your notes instead of a chat, so it has no numbers.
 
 import { useState } from 'react';
 import { Sheet } from '../components/Sheet.jsx';
@@ -33,8 +34,9 @@ export function ChatReviewSheet({ entry, person, yourName = '', onClose }) {
   const g = a.grading;
   const r = a.review;
   const day = entry.at ? formatCalendarDate(parseISODay(entry.at)) : '';
+  const notes = !!a.inPerson;
   return (
-    <Sheet title={`Chat review: ${person ? person.name : 'them'}`} onClose={onClose} tall>
+    <Sheet title={`${notes ? 'Review' : 'Chat review'}: ${person ? person.name : 'them'}`} onClose={onClose} tall>
       <p className="text-xs" style={{ color: COLORS.inkSoft }}>{day}{a.model ? ` · read by ${analysisModel(a.model).name}` : ''}. A coach's suggestions, not facts.</p>
       <div className="mt-3"><ConvStateBadge stateKey={a.conversationState} /></div>
       <div className="rounded-2xl p-4 mt-3" style={{ background: COLORS.paperRaised, border: `1px solid ${COLORS.line}` }}>
@@ -79,11 +81,11 @@ export function ChatReviewSheet({ entry, person, yourName = '', onClose }) {
           )}
         </>
       )}
-      {a.chat && <div className="mt-4"><ChatNumbers numbers={chatNumbers(a.chat, { yourName })} theirName={person ? person.name.trim().split(/\s+/)[0] : 'Them'} /></div>}
+      {a.chat && !notes && <div className="mt-4"><ChatNumbers numbers={chatNumbers(a.chat, { yourName })} theirName={person ? person.name.trim().split(/\s+/)[0] : 'Them'} /></div>}
       {a.chat && (
-        <Section title="The chat">
-          <button type="button" onClick={() => setShowChat(v => !v)} aria-expanded={showChat} className="text-xs font-semibold" style={{ color: COLORS.accent }}>{showChat ? 'Hide the chat' : 'Show the chat'}</button>
-          {showChat && <p aria-label="The chat" className="text-xs mt-2 rounded-xl p-3" style={{ whiteSpace: 'pre-wrap', background: COLORS.paper, border: `1px solid ${COLORS.line}`, color: COLORS.ink, maxHeight: 320, overflowY: 'auto' }}>{a.chat}</p>}
+        <Section title={notes ? 'Your notes' : 'The chat'}>
+          <button type="button" onClick={() => setShowChat(v => !v)} aria-expanded={showChat} className="text-xs font-semibold" style={{ color: COLORS.accent }}>{showChat ? `Hide ${notes ? 'your notes' : 'the chat'}` : `Show ${notes ? 'your notes' : 'the chat'}`}</button>
+          {showChat && <p aria-label={notes ? 'Your notes' : 'The chat'} className="text-xs mt-2 rounded-xl p-3" style={{ whiteSpace: 'pre-wrap', background: COLORS.paper, border: `1px solid ${COLORS.line}`, color: COLORS.ink, maxHeight: 320, overflowY: 'auto' }}>{a.chat}</p>}
         </Section>
       )}
     </Sheet>

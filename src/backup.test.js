@@ -163,6 +163,13 @@ describe('validateBackup repairs or skips damaged records', () => {
     const without = validateBackup({ version: 1, people: [person()], journal: [{ id: 'j1', personId: 'p1', type: 'messaged', analysis: { grading: { overall: 70 }, review: { ...review, tipFollowed: '' } } }] });
     expect(without.data.journal[0].analysis.review).not.toHaveProperty('lastTip');
   });
+  it('keeps which kind of conversation in person an analysis was, and "Asked about" on an entry (from 2026-10-12)', () => {
+    const entry = (id, inPerson, extra = {}) => ({ id, personId: 'p1', type: 'talked', analysis: { grading: { overall: 70 }, chat: 'What you talked about:\nx', inPerson }, ...extra });
+    const { data } = validateBackup({ version: 1, people: [person()], journal: [entry('j1', 'hangout', { askedAbout: ['Her exam', '', 3] }), entry('j2', 'messaged', { askedAbout: [] }), entry('j3', 7)] });
+    expect(data.journal.map(j => j.analysis.inPerson)).toEqual(['hangout', undefined, undefined]);
+    expect(data.journal[0].askedAbout).toEqual(['Her exam']);
+    expect(data.journal[1]).not.toHaveProperty('askedAbout');
+  });
   it('skips goals without a title and saved details without text', () => {
     const result = validateBackup({ version: 1, people: [person({ goals: [{ id: 'g1', title: 'Hang out', progress: 140 }, { id: 'g2' }], interests: [{ text: 'Chess' }, { emoji: '⭐' }] })] });
     const [p] = result.data.people;

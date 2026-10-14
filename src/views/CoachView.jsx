@@ -11,9 +11,9 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Check, ImagePlus, Plus, X } from 'lucide-react';
 import { Avatar, ConvStateBadge, Kbd, LabeledBar, LayerBadge } from '../components/atoms.jsx';
 import { hasOpenSheet, isTyping } from '../components/sheetLayer.js';
-import { ANALYSIS_MODELS, analysisCost, analysisModel, analysisRequest, analysisResult, analysisToKeep, DEFAULT_ANALYSIS_MODEL, detectPeople, lastTipFor, MAX_SCREENSHOTS, otherSpeakers, recordSpend, typicalCost } from '../lib/analysis.js';
+import { ANALYSIS_MODELS, analysisCost, analysisModel, analysisRequest, analysisResult, analysisToKeep, DEFAULT_ANALYSIS_MODEL, detectPeople, hasNotes, IN_PERSON_KINDS, lastTipFor, MAX_SCREENSHOTS, NOTE_FIELDS, notesText, otherSpeakers, recordSpend, typicalCost } from '../lib/analysis.js';
 import { chatNumbers } from '../lib/chatNumbers.js';
-import { ChatNumbers, EachLog, MarkedTranscript, TipCheck } from '../components/AnalysisExtras.jsx';
+import { ChatNumbers, EachLog, MarkedTranscript, MomentList, TipCheck } from '../components/AnalysisExtras.jsx';
 import { DateDropdown } from '../components/pickers.jsx';
 import { ChatExports } from '../components/ChatExports.jsx';
 import { ChatBatchCard } from '../components/ChatBatch.jsx';
@@ -22,10 +22,10 @@ import { Practice } from '../components/Practice.jsx';
 import { ChatQueueSheet } from '../modals/ChatQueueSheet.jsx';
 import { batchPlan } from '../lib/chatBatch.js';
 import { chatPeople, conversationLabel, conversationText, isoDayOf, loadChatExports, readChatProgress, saveChatProgress, sourceLabel } from '../lib/chatImport.js';
-import { formatCalendarDate, parseISODay } from '../lib/dates.js';
+import { formatCalendarDate, parseISODay, toISODate } from '../lib/dates.js';
 import { isPictureFile } from '../data/avatars.js';
 import { loadPhoto, shrinkForAnalysis } from '../lib/photo.js';
-import { AL_ITEMS, categoryMeta, DIM_COLORS, DIM_LABELS, DIM_ORDER, getLayer, ML_LABELS } from '../data/constants.js';
+import { AL_ITEMS, categoryMeta, DIM_COLORS, DIM_LABELS, DIM_ORDER, getLayer, ML_LABELS, TYPE_META } from '../data/constants.js';
 import { SCENARIOS } from '../data/scenarios.js';
 import { buildPotentialHooks, HOOKS } from '../lib/text.js';
 import { COLORS } from '../theme.js';
@@ -39,6 +39,27 @@ function Tones({ item, intro }) {
       {[['natural', 'Natural'], ['playful', 'Playful'], ['deeper', 'Deeper']].filter(([k]) => item[k]).map(([k, label]) => (
         <p key={k} className="text-xs" style={{ color: COLORS.inkSoft }}><span className="font-semibold">{label}:</span> {item[k]}</p>
       ))}
+    </div>
+  );
+}
+
+// A conversation in person: the notes start empty, and the log says what you did.
+const EMPTY_NOTES = Object.fromEntries(NOTE_FIELDS.map(([k]) => [k, '']));
+const KIND_TITLE = { talked: 'Talked with', hangout: 'Hung out with', activity: 'Did something with', called: 'Called' };
+const firstNameOf = (p) => p.name.trim().split(/\s+/)[0];
+
+// Your notes on a conversation in person, as they were sent (the result's
+// "Your notes"), with Claude's moments quoted from them.
+function NotesCard({ notes, moments }) {
+  return (
+    <div className="rounded-2xl p-3.5 mb-4" style={{ background: COLORS.paper, border: `1px solid ${COLORS.line}` }} aria-label="Your notes">
+      {NOTE_FIELDS.filter(([k]) => String(notes[k] || '').trim()).map(([k, , label]) => (
+        <div key={k} className="mb-2.5">
+          <p className="text-xs font-semibold" style={{ color: COLORS.inkSoft }}>{label}</p>
+          <p className="text-sm" style={{ color: COLORS.ink, whiteSpace: 'pre-wrap' }}>{notes[k].trim()}</p>
+        </div>
+      ))}
+      <MomentList moments={moments} />
     </div>
   );
 }
@@ -97,6 +118,13 @@ export function CoachView({ people, journal, initialPersonId, initialTab, onOpen
   const [ownWithFrom, setOwnWithFrom] = useState(null);
   const [ownWithPicking, setOwnWithPicking] = useState(false);
   const [ownLogDate, setOwnLogDate] = useState(() => new Date());
+  // A conversation in person (decided 2026-10-14): your notes under four
+  // questions, what you did and the day, read by Claude like a chat.
+  const [ownMode, setOwnMode] = useState('chat'); // 'chat' | 'person'
+  const [notes, setNotes] = useState(EMPTY_NOTES);
+  const [notesKind, setNotesKind] = useState('talked');
+  const [notesDate, setNotesDate] = useState(() => new Date());
+  const [askingNotes, setAskingNotes] = useState(false);
   // Chats from your exports: what's in the Layers chats folder (null while
   // it's read), where you got up to in each, and the conversation in the box
   // ({ key, end, day, label }), which dates the log and moves you on.
@@ -215,19 +243,32 @@ export function CoachView({ people, journal, initialPersonId, initialTab, onOpen
       if (chat.source) saveProgress(chat.source.key, { at: Math.max((readChatProgress()[chat.source.key] || {}).at || 0, chat.source.end) });
     }
   }
-  // One model's answer to a chat; on a problem, back to `backTo` saying so.
+  // Your notes on a conversation in person, sent the same way.
+  async function analyseNotes() {
+    if (!onAnalyse || !ownPeople.length || !hasNotes(notes)) return;
+    const chat = { run: ++ownChats.current, people: ownPeople, notes: { ...notes }, kind: notesKind, date: notesDate };
+    if (await ask(chat, {}, model, 'pick')) { setNotes(EMPTY_NOTES); setOwnWith(null); setOwnWithFrom(null); setOwnWithPicking(false); }
+  }
+  // One model's answer to a chat (or notes); on a problem, back to `backTo` saying so.
   async function ask(chat, results, withModel, backTo) {
     const ticket = ++ownTicket.current;
     setOwnError(null);
     setAskingModel(withModel);
+    setAskingNotes(!!chat.notes);
     setStep('asking');
-    const answer = await Promise.resolve(onAnalyse(analysisRequest({ people: chat.people, yourName, text: chat.text, images: chat.images, model: withModel, journal }))).catch(() => null);
+    const request = chat.notes
+      ? analysisRequest({ people: chat.people, yourName, notes: chat.notes, kind: chat.kind, model: withModel, journal })
+      : analysisRequest({ people: chat.people, yourName, text: chat.text, images: chat.images, model: withModel, journal });
+    const answer = await Promise.resolve(onAnalyse(request)).catch(() => null);
     if (answer && answer.usage) recordSpend(answer.usage, answer.model || withModel); // charged, whatever happens next
     if (ticket !== ownTicket.current) return false;
     if (!answer || answer.error) { setOwnError((answer && answer.error) || "Couldn't analyse that chat."); setStep(backTo); return false; }
     const used = analysisModel(answer.model || withModel).id;
-    const result = analysisResult(answer.result, chat.people, { others: otherSpeakers(chat.text, chat.people, yourName), numbers: chat.text ? chatNumbers(chat.text, { yourName }) : null, lastTip: lastTipFor(chat.people, journal) });
+    const result = chat.notes
+      ? analysisResult(answer.result, chat.people, { inPerson: chat.kind, lastTip: lastTipFor(chat.people, journal) })
+      : analysisResult(answer.result, chat.people, { others: otherSpeakers(chat.text, chat.people, yourName), numbers: chat.text ? chatNumbers(chat.text, { yourName }) : null, lastTip: lastTipFor(chat.people, journal) });
     if (chat.source) result.log.date = chat.source.day; // the export's own times
+    if (chat.notes) result.log.date = toISODate(chat.date); // the day you picked
     setOwnChat(chat);
     setOwnResults({ ...results, [used]: { result, cost: analysisCost(answer.usage, used) } });
     showOwn(chat, used, result);
@@ -279,7 +320,7 @@ export function CoachView({ people, journal, initialPersonId, initialTab, onOpen
   // Claude's review and the chat kept on it (the Journal's Review).
   function logOwn() {
     if (logged || !onLogChat) return;
-    onLogChat({ ...scenario.log, date: ownLogDate, analysis: analysisToKeep(scenario, { model: ownModel, chat: ownChat && ownChat.text }) });
+    onLogChat({ ...scenario.log, date: ownLogDate, analysis: analysisToKeep(scenario, { model: ownModel, chat: ownChat && (ownChat.notes ? notesText(ownChat.notes) : ownChat.text) }) });
     updateSession(() => ({ logged: true }));
   }
   function handleLogAnalysis() {
@@ -303,6 +344,7 @@ export function CoachView({ people, journal, initialPersonId, initialTab, onOpen
         if (key === 'a' && plan && plan.items.length && !chatBatch.running) { act(startBatch); return; }
         if (key === 'r' && chatBatch.waiting.length) { act(() => setReviewing(true)); return; }
       }
+      if (tab === 'analyse' && step === 'pick' && scenarioPerson && analysisReady === 'ready' && key === 'i') { act(() => setOwnMode(m => (m === 'person' ? 'chat' : 'person'))); return; }
       if (tab === 'analyse' && step === 'results' && scenario && scenarioPerson) {
         if (key === 's' && unsavedInfo.length && onApproveInfoAll) act(saveAllInfo);
         else if (key === 'l' && !logged) act(() => (scenario.own ? logOwn() : handleLogAnalysis()));
@@ -507,7 +549,13 @@ export function CoachView({ people, journal, initialPersonId, initialTab, onOpen
                   {exportsOn && <ChatExports state={exportsState} people={people} yourName={yourName} progress={chatProgress} folder={chatsFolder || undefined} onPick={pickConversation} onPickMe={(key, name) => saveProgress(key, { me: name })} onOpenFolder={chatExports.openChatsFolder ? () => chatExports.openChatsFolder() : null} onReply={replyFromChat} />}
                   {analysisReady === 'ready' && (
                     <div className="rounded-2xl p-3.5 mb-4" style={{ background: COLORS.paperRaised, border: `1px solid ${COLORS.line}` }} aria-label="Your own chat">
-                      <p className="text-sm font-semibold" style={{ color: COLORS.ink }}>Analyse your own chat</p>
+                      <div className="flex items-center justify-between gap-2 flex-wrap">
+                        <p className="text-sm font-semibold" style={{ color: COLORS.ink }}>{ownMode === 'person' ? 'Analyse a conversation in person' : 'Analyse your own chat'}</p>
+                        <div className="seg seg--sm" role="group" aria-label="What to analyse" style={{ width: 200 }}>
+                          <button type="button" onClick={() => setOwnMode('chat')} aria-pressed={ownMode === 'chat'} className={`seg-btn${ownMode === 'chat' ? ' seg-btn--on' : ''}`}>Chat</button>
+                          <button type="button" onClick={() => setOwnMode('person')} aria-pressed={ownMode === 'person'} className={`seg-btn flex items-center justify-center gap-1${ownMode === 'person' ? ' seg-btn--on' : ''}`}>In person <Kbd onAccent={ownMode === 'person'}>I</Kbd></button>
+                        </div>
+                      </div>
                       <div role="group" aria-label="Who it's with" className="flex items-center gap-1.5 flex-wrap mt-2">
                         <span className="text-xs font-semibold mr-0.5" style={{ color: COLORS.ink }}>With</span>
                         {ownPeople.map(p => (
@@ -526,6 +574,24 @@ export function CoachView({ people, journal, initialPersonId, initialTab, onOpen
                           ))}
                         </div>
                       )}
+                      {ownMode === 'person' ? (
+                        <>
+                          <div role="group" aria-label="What you did" className="flex items-center gap-1.5 flex-wrap mt-2.5">
+                            {IN_PERSON_KINDS.map(k => (
+                              <button key={k} type="button" onClick={() => setNotesKind(k)} aria-pressed={notesKind === k} className={`chip${notesKind === k ? ' chip--on' : ''}`} style={{ padding: '4px 10px' }}>{TYPE_META[k].emoji} {TYPE_META[k].label}</button>
+                            ))}
+                            <DateDropdown compact value={notesDate} onChange={setNotesDate} maxDate={new Date()} />
+                          </div>
+                          {NOTE_FIELDS.map(([k, question]) => (
+                            <label key={k} className="block mt-2.5">
+                              <span className="text-xs font-semibold" style={{ color: COLORS.ink }}>{k === 'theyShared' && ownPeople.length === 1 ? `What did ${firstNameOf(ownPeople[0])} share?` : question}</span>
+                              <textarea value={notes[k]} onChange={e => { const v = e.target.value; setNotes(n => ({ ...n, [k]: v })); setOwnError(null); }} onKeyDown={e => { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); analyseNotes(); } }} rows={2}
+                                className="w-full text-sm rounded-xl px-3 py-2 mt-1" style={{ border: `1px solid ${COLORS.line}`, resize: 'vertical' }} />
+                            </label>
+                          ))}
+                          <p className="text-xs mt-1.5" style={{ color: COLORS.inkSoft }}>Any you skip are fine. Win+H lets you say it instead of typing.</p>
+                        </>
+                      ) : <>
                       {ownSource && (
                         <p className="text-xs mt-2 flex items-center gap-2" style={{ color: COLORS.inkSoft }}>
                           <span className="flex-1 min-w-0">From {ownSource.label}</span>
@@ -544,11 +610,16 @@ export function CoachView({ people, journal, initialPersonId, initialTab, onOpen
                         ))}
                         {ownShots.length < MAX_SCREENSHOTS && <button type="button" onClick={() => shotsInput.current && shotsInput.current.click()} className="chip"><ImagePlus size={14} color={COLORS.accent} /> Screenshots</button>}
                       </div>}
+                      </>}
                       <p className="text-xs font-semibold mt-3 mb-1.5" style={{ color: COLORS.ink }}>Model</p>
                       <ModelButtons label="Model" value={model} onPick={onModel} />
-                      <p className="text-xs mt-2.5" style={{ color: COLORS.inkSoft }}>Pressing Analyse sends this chat, and only this chat, to Anthropic for {analysisModel(model).name} to read ({typicalCost(model)}{model !== DEFAULT_ANALYSIS_MODEL && analysisModel(model).thinks ? '; it thinks longer first, so it takes longer and costs more' : ''}). {ownPeople.map(p => p.name.split(' ')[0]).join(', ')}'s name and yours are swapped for tags first{touch ? '; screenshots go as they are' : ''}.</p>
+                      <p className="text-xs mt-2.5" style={{ color: COLORS.inkSoft }}>Pressing Analyse sends {ownMode === 'person' ? 'these notes, and only these,' : 'this chat, and only this chat,'} to Anthropic for {analysisModel(model).name} to read ({typicalCost(model)}{model !== DEFAULT_ANALYSIS_MODEL && analysisModel(model).thinks ? '; it thinks longer first, so it takes longer and costs more' : ''}). {ownPeople.map(p => p.name.split(' ')[0]).join(', ')}'s name and yours are swapped for tags first{touch && ownMode === 'chat' ? '; screenshots go as they are' : ''}.</p>
                       {ownError && <p className="text-xs mt-2 font-semibold" role="alert" style={{ color: COLORS.alert }}>{ownError}</p>}
-                      <button type="button" onClick={analyseOwn} disabled={!ownPeople.length || (!ownText.trim() && !ownShots.length)} className="w-full flex items-center justify-center gap-1.5 text-sm font-semibold rounded-full py-2.5 mt-3" style={{ background: COLORS.accent, color: COLORS.onAccent, opacity: !ownPeople.length || (!ownText.trim() && !ownShots.length) ? 0.5 : 1 }}>Analyse with Claude <Kbd onAccent>Ctrl+↵</Kbd></button>
+                      {ownMode === 'person' ? (
+                        <button type="button" onClick={analyseNotes} disabled={!ownPeople.length || !hasNotes(notes)} className="w-full flex items-center justify-center gap-1.5 text-sm font-semibold rounded-full py-2.5 mt-3" style={{ background: COLORS.accent, color: COLORS.onAccent, opacity: !ownPeople.length || !hasNotes(notes) ? 0.5 : 1 }}>Analyse with Claude <Kbd onAccent>Ctrl+↵</Kbd></button>
+                      ) : (
+                        <button type="button" onClick={analyseOwn} disabled={!ownPeople.length || (!ownText.trim() && !ownShots.length)} className="w-full flex items-center justify-center gap-1.5 text-sm font-semibold rounded-full py-2.5 mt-3" style={{ background: COLORS.accent, color: COLORS.onAccent, opacity: !ownPeople.length || (!ownText.trim() && !ownShots.length) ? 0.5 : 1 }}>Analyse with Claude <Kbd onAccent>Ctrl+↵</Kbd></button>
+                      )}
                     </div>
                   )}
                   <p className="text-sm font-semibold mb-2" style={{ color: COLORS.ink }}>{analysisReady === 'ready' ? 'Or try a sample conversation' : 'Try a sample conversation'}</p>
@@ -568,7 +639,7 @@ export function CoachView({ people, journal, initialPersonId, initialTab, onOpen
           {step === 'asking' && (
             <div className="flex flex-col items-center justify-center py-16" role="status">
               <div style={{ width: 30, height: 30, borderRadius: '50%', border: `3px solid ${COLORS.line}`, borderTopColor: COLORS.accent }} className="spin" />
-              <p className="text-sm mt-4" style={{ color: COLORS.inkSoft }}>{analysisModel(askingModel).name} is reading the chat…</p>
+              <p className="text-sm mt-4" style={{ color: COLORS.inkSoft }}>{analysisModel(askingModel).name} is reading {askingNotes ? 'your notes' : 'the chat'}…</p>
               {askingModel !== DEFAULT_ANALYSIS_MODEL && analysisModel(askingModel).thinks && <p className="text-xs mt-1" style={{ color: COLORS.inkSoft }}>It thinks first, so this can take a minute.</p>}
             </div>
           )}
@@ -582,20 +653,29 @@ export function CoachView({ people, journal, initialPersonId, initialTab, onOpen
 
           {step === 'results' && scenario && (
             <div>
-              <button onClick={resetAnalyse} className="text-xs font-medium mb-3" style={{ color: COLORS.inkSoft }}>{scenario.own ? '← Analyse another chat' : '← Try a different sample'}</button>
+              <button onClick={resetAnalyse} className="text-xs font-medium mb-3" style={{ color: COLORS.inkSoft }}>{scenario.inPerson ? '← Analyse another conversation' : scenario.own ? '← Analyse another chat' : '← Try a different sample'}</button>
               {scenario.own && (
                 <div className="rounded-2xl p-3.5 mb-4" style={{ background: COLORS.paperRaised, border: `1px solid ${COLORS.line}` }}>
                   <p className="text-xs" style={{ color: COLORS.inkSoft }}>Read by {analysisModel(ownModel).name}: this one cost {ownResults[ownModel].cost}. These are a coach's suggestions, not facts.</p>
-                  <p className="text-xs font-semibold mt-2.5 mb-1.5" style={{ color: COLORS.ink }}>The same chat with another model</p>
+                  <p className="text-xs font-semibold mt-2.5 mb-1.5" style={{ color: COLORS.ink }}>{scenario.inPerson ? 'The same notes with another model' : 'The same chat with another model'}</p>
                   <ModelButtons label="The same chat with" value={ownModel} onPick={tryModel} done={ownResults} />
                   {ownError && <p className="text-xs mt-2 font-semibold" role="alert" style={{ color: COLORS.alert }}>{ownError}</p>}
                 </div>
               )}
 
-              <p className="text-sm font-semibold mb-2" style={{ color: COLORS.ink }}>Reconstructed conversation</p>
-              <div className="rounded-2xl p-3.5 mb-4" style={{ background: COLORS.paper, border: `1px solid ${COLORS.line}` }}>
-                <MarkedTranscript transcript={scenario.transcript} moments={scenario.moments || []} />
-              </div>
+              {scenario.inPerson ? (
+                <>
+                  <p className="text-sm font-semibold mb-2" style={{ color: COLORS.ink }}>Your notes</p>
+                  <NotesCard notes={(ownChat && ownChat.notes) || EMPTY_NOTES} moments={scenario.moments || []} />
+                </>
+              ) : (
+                <>
+                  <p className="text-sm font-semibold mb-2" style={{ color: COLORS.ink }}>Reconstructed conversation</p>
+                  <div className="rounded-2xl p-3.5 mb-4" style={{ background: COLORS.paper, border: `1px solid ${COLORS.line}` }}>
+                    <MarkedTranscript transcript={scenario.transcript} moments={scenario.moments || []} />
+                  </div>
+                </>
+              )}
               <ChatNumbers numbers={scenario.numbers} theirName={scenario.personIds && scenario.personIds.length > 1 ? 'Them' : ((people.find(p => scenario.personIds && p.id === scenario.personIds[0]) || {}).name || 'Them').trim().split(/\s+/)[0]} />
 
               <p className="text-sm font-semibold mb-2" style={{ color: COLORS.ink }}>Conversation state</p>
@@ -684,7 +764,7 @@ export function CoachView({ people, journal, initialPersonId, initialTab, onOpen
                 );
               })}
 
-              <p className="text-sm font-semibold mt-4 mb-2" style={{ color: COLORS.ink }}>What to say next</p>
+              <p className="text-sm font-semibold mt-4 mb-2" style={{ color: COLORS.ink }}>{scenario.inPerson ? 'What to send them after' : 'What to say next'}</p>
               {scenario.next.continueTopic && (
                 <div className="rounded-2xl p-3.5 mb-2" style={{ background: COLORS.paperRaised, border: `1px solid ${COLORS.line}` }}>
                   <p className="text-xs font-semibold" style={{ color: COLORS.accent }}>Continue the current topic</p>
@@ -717,19 +797,19 @@ export function CoachView({ people, journal, initialPersonId, initialTab, onOpen
               {scenario.own ? (
                 <div className="rounded-2xl p-4 mt-5" style={{ background: COLORS.paperRaised, border: `1px solid ${COLORS.line}` }} aria-label="Log it">
                   <p className="text-sm font-semibold" style={{ color: COLORS.ink }}>Log it</p>
-                  <p className="text-xs mt-1" style={{ color: COLORS.inkSoft }}>📱 Messaged {scenario.log.personIds.map(nameOf).join(', ')}{scenario.log.each ? '' : ` · ${ML_LABELS[scenario.log.meaningfulness - 1]} (${scenario.log.meaningfulness} of 5)`}</p>
+                  <p className="text-xs mt-1" style={{ color: COLORS.inkSoft }}>{scenario.inPerson ? `${TYPE_META[scenario.inPerson].emoji} ${KIND_TITLE[scenario.inPerson]}` : '📱 Messaged'} {scenario.log.personIds.map(nameOf).join(', ')}{scenario.log.each ? '' : ` · ${ML_LABELS[scenario.log.meaningfulness - 1]} (${scenario.log.meaningfulness} of 5)`}</p>
                   <div className="flex items-center gap-2 flex-wrap mt-2.5">
                     <DateDropdown key={`${scenarioKey}:${scenario.log.date}`} compact value={ownLogDate} onChange={setOwnLogDate} maxDate={new Date()} />
-                    <span className="text-xs" style={{ color: COLORS.inkSoft }}>{ownChat && ownChat.source ? "the conversation's day" : scenario.log.date ? "from the chat's times" : 'no times in the chat, so today'}</span>
+                    <span className="text-xs" style={{ color: COLORS.inkSoft }}>{scenario.inPerson ? 'the day you picked' : ownChat && ownChat.source ? "the conversation's day" : scenario.log.date ? "from the chat's times" : 'no times in the chat, so today'}</span>
                   </div>
                   <EachLog each={scenario.log.each} nameOf={nameOf} />
                   {!scenario.log.each && DIM_ORDER.some(k => scenario.log.ratings[k]) && <p className="text-xs mt-2.5" style={{ color: COLORS.ink }}>{DIM_ORDER.filter(k => scenario.log.ratings[k]).map(k => `${DIM_LABELS[k]} ${scenario.log.ratings[k]}`).join(' · ')}</p>}
                   {scenario.log.activeListening.length > 0 && <p className="text-xs mt-1.5" style={{ color: COLORS.good }}>✓ {scenario.log.activeListening.map(k => AL_ITEMS.find(a => a.key === k).label).join(' · ')}</p>}
                   {scenario.log.summary && <p className="text-xs mt-1.5 italic" style={{ color: COLORS.inkSoft }}>Note: {scenario.log.summary}</p>}
-                  <p className="text-xs mt-2" style={{ color: COLORS.inkSoft }}>The log keeps this review and the chat, to read again from the Journal.</p>
+                  <p className="text-xs mt-2" style={{ color: COLORS.inkSoft }}>The log keeps this review and {scenario.inPerson ? 'your notes' : 'the chat'}, to read again from the Journal.</p>
                   {logged
                     ? <p className="text-sm text-center font-medium mt-3" style={{ color: COLORS.good }}>✓ Logged</p>
-                    : <button type="button" onClick={logOwn} className="w-full flex items-center justify-center gap-1.5 text-sm font-semibold rounded-full py-3 mt-3" style={{ background: COLORS.accent, color: COLORS.onAccent }}>Log this chat <Kbd onAccent>L</Kbd></button>}
+                    : <button type="button" onClick={logOwn} className="w-full flex items-center justify-center gap-1.5 text-sm font-semibold rounded-full py-3 mt-3" style={{ background: COLORS.accent, color: COLORS.onAccent }}>{scenario.inPerson ? 'Log this conversation' : 'Log this chat'} <Kbd onAccent>L</Kbd></button>}
                 </div>
               ) : <div className="mt-5">
                 {logged ? (
