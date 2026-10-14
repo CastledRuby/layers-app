@@ -875,6 +875,9 @@ style). Most conversations happen face to face, where there's no chat for Claude
   Layers chats folder like Instagram's, shows its chats as Messenger, archived ones and
   those from before end-to-end encryption included, to analyse, reply to and learn your
   style from. Newer end-to-end encrypted chats may not be in Facebook's download.
+- **Discord, for your style**: its data package has only your own messages, so it isn't
+  listed to analyse, but your direct messages with people in Layers (matched by
+  username) teach Claude how you text with someone that close.
 
 ### Your style with people you're not close to (not released yet)
 

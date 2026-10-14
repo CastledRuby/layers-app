@@ -2,7 +2,7 @@
 // Android write it, Instagram's download, conversations split at long
 // pauses, who's who, and the text sent for analysis.
 import { describe, expect, it } from 'vitest';
-import { chatPeople, chatsFromExport, conversationLabel, conversationText, everywhereName, everywhereNames, fixMetaText, mergeChats, ownerOf, parseInstagram, parseSnapchat, parseWhatsApp, splitConversations } from './lib/chatImport.js';
+import { chatPeople, chatsFromExport, conversationLabel, conversationText, everywhereName, everywhereNames, fixMetaText, loadChatExports, loadedChats, mergeChats, ownerOf, parseInstagram, parseSnapchat, parseWhatsApp, splitConversations } from './lib/chatImport.js';
 
 const LRM = String.fromCharCode(0x200e);
 const NNBSP = String.fromCharCode(0x202f);
@@ -168,6 +168,29 @@ describe('Instagram downloads', () => {
     const instagram = chatsFromExport({ name: 'instagram.zip' }, { kind: 'instagram', files });
     expect(everywhereNames([...instagram, ...messenger]).sort()).toEqual(['Liam', 'Liam Ward']);
     expect(everywhereName([...instagram, ...messenger])).toEqual([]); // the two apps mixed would find nobody
+  });
+});
+
+describe("Discord's package (2026-10-14): your side only, for your style", () => {
+  const files = [
+    { path: 'messages/index.json', text: JSON.stringify({ 111: 'Direct Message with sam_lee#0', 222: 'general in Climbing Club', 333: 'Direct Message with zoe' }) },
+    { path: 'messages/c111/messages.json', text: JSON.stringify([{ ID: '2', Timestamp: '2026-10-01 18:40:00.500000+00:00', Contents: '', Attachments: 'https://cdn/x.png' }, { ID: '1', Timestamp: '2026-10-01 18:33:12.123000+00:00', Contents: 'u free sat?', Attachments: '' }]) },
+    { path: 'messages/c222/messages.json', text: JSON.stringify([{ ID: '3', Timestamp: '2026-10-01 10:00:00', Contents: 'server stuff' }]) },
+    { path: 'messages/333/messages.csv', text: 'ID,Timestamp,Contents,Attachments\r\n1,2026-10-02 09:00:00,"hey, you ""there""\nok",\r\n' },
+  ];
+  it('reads direct messages (JSON or CSV) as yours, with whoever they were with, and never a server channel', () => {
+    const chats = chatsFromExport({ name: 'package.zip' }, { kind: 'discord', files });
+    expect(chats.map(c => [c.key, c.title, c.me, c.onlyYours, c.messages.map(m => [m.sender, m.text])])).toEqual([
+      ['discord:111', 'sam_lee', 'Me', true, [['Me', 'u free sat?'], ['Me', '(attachment)']]],
+      ['discord:333', 'zoe', 'Me', true, [['Me', 'hey, you "there"\nok']]],
+    ]);
+    expect(chats[0].messages[0].at).toBe(Date.parse('2026-10-01T18:33:12.123+00:00'));
+  });
+  it('keeps them out of the chats listed to analyse, but there to learn your style from', async () => {
+    const bridge = { listChatExports: async () => [{ name: 'package.zip', kind: 'discord', modified: 1 }], readChatExport: async () => ({ kind: 'discord', files }) };
+    const { chats } = await loadChatExports(bridge);
+    expect(chats).toEqual([]);
+    expect(loadedChats().map(c => c.key)).toEqual(['discord:111', 'discord:333']);
   });
 });
 

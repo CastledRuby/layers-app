@@ -210,6 +210,21 @@ describe('the Layers chats folder', () => {
     expect(readExport(dir, 'facebook-html.zip').error).toMatch(/Facebook download is in HTML/);
   });
 
+  it("reads Discord's package for its direct messages only, never a server's channels (2026-10-14)", () => {
+    const INDEX = JSON.stringify({ 111: 'Direct Message with sam_lee#0', 222: 'general in Climbing Club', 333: 'Direct Message with zoe' });
+    const MSGS = JSON.stringify([{ ID: '1', Timestamp: '2026-10-01 18:33:12.123000+00:00', Contents: 'u free sat?', Attachments: '' }]);
+    const dir = folder({
+      'package.zip': zip({ 'messages/index.json': INDEX, 'messages/c111/channel.json': '{}', 'messages/c111/messages.json': MSGS, 'messages/c222/messages.json': MSGS, 'messages/333/messages.csv': 'ID,Timestamp,Contents,Attachments\n1,2026-10-02 09:00:00,"hey, you",\n', 'account/user.json': '{"secret":1}' }),
+    });
+    const put = (rel, data) => { const file = path.join(dir, ...rel.split('/')); fs.mkdirSync(path.dirname(file), { recursive: true }); fs.writeFileSync(file, data); };
+    put('discord/package/messages/index.json', INDEX); // unzipped
+    put('discord/package/messages/c111/messages.json', MSGS);
+    put('discord/package/messages/c222/messages.json', MSGS);
+    expect(listExports(dir).map(f => [f.name, f.kind]).sort()).toEqual([['discord/package', 'discord'], ['package.zip', 'discord']]);
+    expect(readExport(dir, 'package.zip').files.map(f => f.path)).toEqual(['messages/index.json', 'messages/c111/messages.json', 'messages/333/messages.csv']);
+    expect(readExport(dir, 'discord/package').files.map(f => f.path)).toEqual(['messages/index.json', 'messages/c111/messages.json']);
+  });
+
   it('notices a new export arriving', async () => {
     const dir = folder();
     let calls = 0;

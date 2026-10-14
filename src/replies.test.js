@@ -45,6 +45,12 @@ describe('your style', () => {
     for (const left of ['who is this lol', 'ask Kelsey if shes in', 'Annabelle?', 'here https://maps.example', 'call 0211234567', 'Liked "you coming?"', '(photo)']) expect(all).not.toContain(left);
   });
 
+  it("learns from Discord's direct messages too (your side only), matched by username", () => {
+    const discord = { key: 'discord:1', source: 'discord', title: 'noah_k', participants: ['noah_k'], me: 'Me', onlyYours: true, messages: [{ at: 9000, sender: 'Me', text: 'gg that was close' }] };
+    expect(chatStyleSamples([discord], { people: everyone, yourName: 'Liam', layer: 2 })).toEqual(['gg that was close']);
+    expect(chatStyleSamples([{ ...discord, title: 'xx_gamer', participants: ['xx_gamer'] }], { people: everyone, yourName: 'Liam', layer: 2 })).toEqual([]); // nobody in Layers
+  });
+
   it('tops up from logged chats only when your chats give fewer than half', () => {
     const fromBoth = yourSamples({ journal, yourName: 'Liam', people: everyone, layer: 4, chats, progress: {} });
     expect(fromBoth).toEqual(['love u', 'omg same 😭', 'see u at 7', 'omg yes 🍕 noah coming too?', 'heyy whats up']);

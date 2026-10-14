@@ -257,6 +257,64 @@ export function parseSnapchat(files = []) {
   return [...chats.values()].map(c => ({ ...c, title: c.title || c.participants.join(', ') || 'Snapchat', messages: c.messages.sort((a, b) => a.at - b.at) })).filter(c => c.messages.length);
 }
 
+// Discord's data package (decided 2026-10-14): only your own messages, so
+// its direct messages teach Layers how you text (lib/replies.js), and are
+// never listed to analyse (onlyYours). messages/index.json names each channel
+// ("Direct Message with sam_lee"); each one's messages are JSON ([{ ID,
+// Timestamp, Contents, Attachments }]) or, in older packages, CSV with
+// those columns. As chats: [{ key, source, title, participants, me,
+// onlyYours, messages }], the other person named by their username.
+const DISCORD_ME = 'Me';
+// A CSV's rows, quoted fields with commas, quotes and new lines included.
+function csvRows(text) {
+  const rows = [];
+  let row = [];
+  let field = '';
+  let quoted = false;
+  const s = String(text || '').replace(/^﻿/, '');
+  for (let i = 0; i < s.length; i++) {
+    const c = s[i];
+    if (quoted) {
+      if (c === '"' && s[i + 1] === '"') { field += '"'; i++; } else if (c === '"') quoted = false; else field += c;
+    } else if (c === '"') quoted = true;
+    else if (c === ',') { row.push(field); field = ''; } else if (c === '\n' || c === '\r') {
+      if (c === '\r' && s[i + 1] === '\n') i++;
+      row.push(field); rows.push(row); row = []; field = '';
+    } else field += c;
+  }
+  if (field || row.length) { row.push(field); rows.push(row); }
+  return rows;
+}
+function discordMessages(path, text) {
+  if (/\.csv$/i.test(path)) {
+    const [head = [], ...rows] = csvRows(text);
+    const col = (name) => head.findIndex(h => h.trim().toLowerCase() === name);
+    const [t, c, a] = [col('timestamp'), col('contents'), col('attachments')];
+    return rows.map(r => ({ Timestamp: r[t], Contents: r[c], Attachments: r[a] }));
+  }
+  try { const data = JSON.parse(text); return Array.isArray(data) ? data : []; } catch { return []; }
+}
+const discordTime = (s) => Date.parse(String(s || '').trim().replace(' ', 'T').replace(/(\.\d{3})\d+/, '$1'));
+export function parseDiscord(files = []) {
+  const indexFile = files.find(f => /(?:^|\/)messages\/index\.json$/i.test(String(f.path)));
+  let index = {};
+  try { index = JSON.parse(indexFile ? indexFile.text : '{}') || {}; } catch { index = {}; }
+  return files.map(({ path, text }) => {
+    const m = String(path).match(/messages\/c?(\d+)\/messages\.(?:json|csv)$/i);
+    const name = m && index[m[1]];
+    if (!m || !/^Direct Message with /i.test(String(name || ''))) return null;
+    const other = String(name).replace(/^Direct Message with /i, '').replace(/#\d{1,4}$/, '').trim();
+    const messages = discordMessages(path, text).map(msg => {
+      const at = discordTime(msg && (msg.Timestamp ?? msg.timestamp));
+      const words = String((msg && (msg.Contents ?? msg.contents)) || '').trim();
+      const attached = String((msg && (msg.Attachments ?? msg.attachments)) || '').trim();
+      const said = words || (attached ? '(attachment)' : '');
+      return Number.isFinite(at) && said ? { at, sender: DISCORD_ME, text: said, ...(words ? {} : { note: true }) } : null;
+    }).filter(Boolean).sort((a, b) => a.at - b.at);
+    return other && messages.length ? { key: `discord:${m[1]}`, source: 'discord', title: other, participants: [other], me: DISCORD_ME, onlyYours: true, messages } : null;
+  }).filter(Boolean);
+}
+
 // Instagram's messages files ({ path, text }), as chats: [{ id, title,
 // participants, messages: [{ at, sender, text, note?, reactions? }] }], each
 // chat's messages in order. Chats with Meta AI are left out.
@@ -308,6 +366,7 @@ export function chatsFromExport(file, read, { dayFirst } = {}) {
     return [{ key: `whatsapp:${named.toLowerCase()}`, source: 'whatsapp', title: named, participants, messages }];
   }
   if (read.kind === 'snapchat') return parseSnapchat(read.files);
+  if (read.kind === 'discord') return parseDiscord(read.files);
   if (read.kind === 'instagram' || read.kind === 'messenger') {
     const source = read.kind;
     return parseInstagram(read.files).map(t => ({ key: `${source}:${t.id}`, source, title: t.title || t.participants.join(', '), participants: t.participants, messages: t.messages }));
@@ -442,7 +501,7 @@ export function saveChatProgress(key, change) {
 }
 
 // Where a chat came from, in words.
-const SOURCES = { whatsapp: 'WhatsApp', instagram: 'Instagram', messenger: 'Messenger', imessage: 'iMessage', snapchat: 'Snapchat' };
+const SOURCES = { whatsapp: 'WhatsApp', instagram: 'Instagram', messenger: 'Messenger', imessage: 'iMessage', snapchat: 'Snapchat', discord: 'Discord' };
 export const sourceLabel = (source) => SOURCES[source] || 'Chat';
 
 // --- Reading the folder --------------------------------------------------------------
@@ -490,6 +549,7 @@ export async function loadChatExports(bridge, { dayFirst } = {}) {
     }
   }
   loaded = mergeChats(all);
-  return { chats: loaded, problems, iphone };
+  // Chats with only your side (Discord's) are for your style, not to analyse.
+  return { chats: loaded.filter(c => !c.onlyYours), problems, iphone };
 }
 export const loadedChats = () => loaded;

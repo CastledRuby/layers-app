@@ -885,6 +885,15 @@ Coach → Analyse a chat → **From your chats**: chats saved in the **Layers ch
   encrypted (`e2ee_cutover`, joined to the same chat) are read; message requests and
   filtered chats aren't. Newer end-to-end encrypted chats may not be in the download. A
   download in HTML is named, with "choose JSON".
+- **Discord**, for your style only (decided 2026-10-14): its data package (User Settings →
+  Data & Privacy → Request all of my data) has only your own messages, so there's nothing
+  to analyse. `parseDiscord` reads its direct messages (named in `messages/index.json` as
+  "Direct Message with …"; each channel's messages as JSON, or CSV in older packages) as
+  chats of yours with that username (`me`, `onlyYours`); server channels aren't read.
+  `loadChatExports` leaves them out of the chats it lists, but `loadedChats` keeps them,
+  so your direct messages with someone in Layers (matched by username, like a name:
+  "sam_lee" is Sam Lee) teach Claude how you text with someone that close
+  (`chatStyleSamples`).
 - **iMessage** (decided 2026-10-10): back up the iPhone to this laptop with Apple Devices
   (not encrypted), and its Messages chats, texts too, from the last three months show
   here as iMessage (read by the main process, [electron.md](../electron.md)), named from

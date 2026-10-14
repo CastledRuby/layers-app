@@ -25,6 +25,19 @@ const META_HTML = /(?:^|\/)messages\/(?:inbox|archived_threads|e2ee_cutover)\/[^
 // ("facebook-liam-2026-10-14.zip"), or folders only Facebook's has.
 const FACEBOOK_PART = /(?:^|\/)(?:your_facebook_activity|profile_information)(?:\/|$)/;
 const isFacebook = (name, entries = []) => /(?:^|\/)facebook-[^/]*$/i.test(name) || entries.some(e => FACEBOOK_PART.test(e.name));
+// Discord's data package (decided 2026-10-14, for your style only: it has
+// only your own messages): messages/index.json names each channel, and each
+// has messages/c<id>/ (or <id>/) with its messages (JSON, or CSV in older
+// packages). Only direct messages are read, never a server's channels.
+const DISCORD_INDEX = /(?:^|\/)messages\/index\.json$/i;
+const DISCORD_MESSAGES = /(?:^|\/)messages\/c?(\d+)\/messages\.(?:json|csv)$/i;
+const isDM = (name) => /^Direct Message with /i.test(String(name || ''));
+// The direct messages' files, from the package's index: [{ name, id }].
+function discordWanted(names, indexText) {
+  let index = {};
+  try { index = JSON.parse(indexText) || {}; } catch { return []; }
+  return names.filter(n => { const m = n.match(DISCORD_MESSAGES); return m && isDM(index[m[1]]); });
+}
 // Why a download in HTML can't be read.
 const HTML_ERROR = {
   'instagram-html': 'That Instagram download is in HTML. Download it again choosing JSON as the format.',
@@ -120,6 +133,7 @@ function kindOf(name, entries) {
   const meta = isFacebook(name, entries) ? 'messenger' : 'instagram';
   if (entries.some(e => META_JSON.test(e.name))) return meta;
   if (entries.some(e => META_HTML.test(e.name))) return `${meta}-html`;
+  if (entries.some(e => DISCORD_INDEX.test(e.name)) && entries.some(e => DISCORD_MESSAGES.test(e.name))) return 'discord';
   if (entries.some(e => /(?:^|\/)json\/chat_history\.json$/.test(e.name))) return 'snapchat';
   if (entries.some(e => SNAPCHAT_HTML.test(e.name))) return 'snapchat-html';
   if (entries.some(e => /(^|\/)[^/]*\.txt$/i.test(e.name) && !e.name.startsWith('__MACOSX'))) return 'whatsapp';
@@ -179,6 +193,7 @@ function findExports(dir) {
         if (/\.(zip|txt)$/i.test(e.name)) found.push({ name, file: full });
         return;
       }
+      if (/^messages$/i.test(e.name) && fs.existsSync(path.join(full, 'index.json'))) { found.push({ name: rel || e.name, discord: full }); return; }
       if (e.name === 'messages' && META_FOLDERS.some(f => isDir(path.join(full, f)))) {
         const facebook = /(?:^|\/)(?:your_facebook_activity|facebook-[^/]*)\//i.test(`${name}/`) || isDir(path.join(folder, 'profile_information'));
         found.push({ name: downloadName(name), messages: full, facebook });
@@ -233,9 +248,35 @@ function snapchatFiles(folder) {
   return files.some(f => f.path === 'json/chat_history.json') ? { kind: 'snapchat', files } : { kind: 'snapchat-html', files: [] };
 }
 
+// A Discord package zip's index and its direct messages' entries.
+function discordEntries(buf, entries) {
+  const index = entries.find(e => DISCORD_INDEX.test(e.name));
+  const dms = new Set(discordWanted(entries.map(e => e.name), zipEntryData(buf, index).toString('utf8')));
+  return [index, ...entries.filter(e => dms.has(e.name))];
+}
+
+// An unzipped Discord package's index and direct messages, named as in its
+// zip: { kind: 'discord', files }.
+function discordFiles(messages) {
+  const files = [];
+  const add = (rel) => {
+    const file = path.join(messages, ...rel.split('/'));
+    try { const stat = fs.statSync(file); if (stat.isFile()) files.push({ path: `messages/${rel}`, file, size: stat.size, modified: stat.mtimeMs }); } catch { /* not there */ }
+  };
+  add('index.json');
+  let indexText = '';
+  try { indexText = fs.readFileSync(path.join(messages, 'index.json'), 'utf8'); } catch { /* no index: nothing to read */ }
+  let channels = [];
+  try { channels = fs.readdirSync(messages).filter(n => /^c?\d+$/.test(n)); } catch { /* none */ }
+  const names = channels.flatMap(c => ['messages.json', 'messages.csv'].map(f => `messages/${c}/${f}`));
+  discordWanted(names, indexText).forEach(n => add(n.replace(/^messages\//, '')));
+  return { kind: 'discord', files: files.length > 1 ? files : [] };
+}
+
 // What's in an unzipped download that was found ({ kind, files }), or null
 // for a zip or .txt.
 function unzippedFiles(found) {
+  if (found.discord) return discordFiles(found.discord);
   if (found.messages) return messagesFiles(found.messages, found.facebook) || { kind: found.facebook ? 'messenger' : 'instagram', files: [] };
   if (found.snapchat) return snapchatFiles(found.snapchat);
   return null;
@@ -262,6 +303,7 @@ function listExports(dir) {
       const unzipped = unzippedFiles(found);
       if (unzipped) {
         if (!unzipped.files.length && !/-html$/.test(unzipped.kind)) return;
+        if (!unzipped.files.length && unzipped.kind === 'discord') return; // no direct messages in it
         const modified = unzipped.files.length ? Math.max(...unzipped.files.map(f => f.modified)) : fs.statSync(found.messages || found.snapchat).mtimeMs;
         out.push({ name: found.name, kind: unzipped.kind, title: null, size: unzipped.files.reduce((n, f) => n + f.size, 0), modified });
         return;
@@ -310,7 +352,8 @@ function readExport(dir, name) {
     if (!kind) return { error: "That zip doesn't have a WhatsApp, Instagram, Messenger or Snapchat chat in it." };
     const wanted = kind === 'instagram' || kind === 'messenger' ? entries.filter(e => META_JSON.test(e.name))
       : kind === 'snapchat' ? entries.filter(e => SNAPCHAT_JSON.test(e.name))
-        : entries.filter(e => /(^|\/)[^/]*\.txt$/i.test(e.name) && !e.name.startsWith('__MACOSX')).slice(0, 1);
+        : kind === 'discord' ? discordEntries(buf, entries)
+          : entries.filter(e => /(^|\/)[^/]*\.txt$/i.test(e.name) && !e.name.startsWith('__MACOSX')).slice(0, 1);
     let total = 0;
     const files = wanted.map(e => {
       total += e.size;
